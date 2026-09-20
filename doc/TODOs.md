@@ -41,7 +41,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
 | ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
 | ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (v1.31.0) |
-| 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
+| 4 | Discovery and onboarding | ~~4A~~, 4B–4E, ~~4F~~ | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
 | 6 | Member depth | 6A–6E | Retention |
 | 7 | Admin and content tools | 7A–7E | Running the site without a shell |
@@ -330,58 +330,57 @@ at today.
 **Goal.** A first-time visitor understands what the site is and finds something to read; a new member gets to a first post without a dead end, and can always get back into the account.
 
 **Done when:**
-- a guest's first page shows the site's purpose and the boards it has (P4-D1);
+- ~~a guest's first page shows the site's purpose and the boards it has (P4-D1);~~ **done** (4A)
 - search engines index public content without duplicates;
 - a new member is signed in and guided after registering;
 - a locked-out member has a documented way back in (D3).
 
-### 4A — Home and navigation (M)
+### Done
 
-- ~~**Home page.**~~ **Done (2026-09-20).** Boards, not a feed of articles
-  across them (P4-D1).
-  - Board cards carry last activity and no post count.
-    `Content.last_activity_by_board/1` rolls sub-board activity up to the
-    parent and **shares `unread_board_ids/2`'s filters deliberately**: an
-    article nobody can open must not make a board look busy, or the timestamp
-    becomes an existence signal a remote instance can drive. Both gates carry
-    a case for it (`remote_visibility_test.exs`,
-    `blocked_domain_hiding_test.exs`). A board with nothing in it renders
-    nothing — not a zero, which is the loudest entry on a scoreboard.
-  - `site_description`, a new admin setting, shown to guests on the home page.
-    `OpenGraph` already read the key; nothing wrote it.
-- ~~**Branding for guests.**~~ **Done (2026-09-20).**
-  - The welcome heading is `Welcome to %{site_name}`.
-  - A guest sees the site name at every width. Their mobile nav is the bottom
-    dock, which carries icons and no name, and the logo was `hidden lg:block`
-    for everyone — so on a phone the site never said what it was called.
-  - The footer links the site RSS and Atom feeds. They had existed since v1.x
-    with nothing linking them, so the only way to find one was to know the
-    path.
-- ~~**New pages.**~~ **Dropped, 2026-09-20**
-  ([ADR 0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)). All
-  four are refused, and 4A adds no page at all.
-  - `/recent` and `/popular` went with P4-D1 (ADR 0054).
-  - `/unanswered` ranks nothing, but a cross-board list of articles is a river
-    whatever orders it, and a post with no replies is mostly a post nobody has
-    read yet — so newest-first it is `/recent`, and oldest-first it is a
-    scoreboard of neglect. A per-board `/boards/:slug/unanswered` would
-    violate nothing; nobody has asked for one.
-  - A tag index at `/tags`: by use count it ranks topics, and a tag is a thing
-    people write *toward*, so the loop closes on production as well as
-    attention. Alphabetically it is a sitemap, which is 4B's `sitemap.xml`.
-    `/tags/:tag` already exists and is untouched — the reader named the tag.
-  - Both are in `@ranking_paths`, so mounting either fails the build.
+| Stage | What | Released | Recorded in |
+|-------|------|----------|-------------|
+| 4A | Home and navigation: the boards-only home page, last activity on a board card, `site_description`, guest branding, footer feed links | empty state in v1.32.0; the rest unreleased | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md), [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) |
+| 4F | Privacy and language: the footer language switcher and a one-year `locale` cookie | v1.32.0 | `doc/development.md` (resolution order, cookie inventory) |
 
-**Done early (2026-09-20): the empty state**, and the item was mis-stated.
-"When there are no boards" cannot happen — setup seeds the SysOp board and
-`delete_board/1` refuses to remove it. What happens is **no board this
-*viewer* may see**: the home page lists `list_visible_top_boards/1`, and
-nothing stops an admin raising SysOp's `min_role_to_view`, which empties the
-list for every guest. There was no empty state, so the guest got a page whose
-welcome text said "Browse the boards below" with nothing below it — a
-contradicted promise on the first page a visitor sees, which is what 4A is
-for. The empty state never distinguishes "none exist" from "none for you",
-because that difference is exactly what `min_role_to_view` is keeping.
+**4A adds no new page.** `/recent` and `/popular` went with P4-D1;
+`/unanswered` and a `/tags` index went with
+[0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md). All four are
+in `@ranking_paths`, so mounting one fails the build. `/tags/:tag` already
+exists and is untouched — the reader named the tag.
+
+### Only recorded here
+
+Everything else about 4A and 4F is in those records, in `CHANGELOG.md` and in
+the moduledocs. These are the facts that are not.
+
+- **Two of the six items were already done or mis-stated, and reading beat
+  guessing.** "YouTube embeds load only after a click" had shipped as
+  [0045](adr/0045-the-video-player-loads-on-a-click.md) during the Phase 3
+  audit, and the TODO line pointed at the click-to-load component itself.
+  "Fill the 5 empty strings" counted the PO header; the four real ones were
+  example values identical in every language. Neither needed building.
+- **A number in a TODO goes stale the next time anyone runs
+  `gettext.extract`,** so the translation chore became a gate
+  (`translation_coverage_test.exs`) rather than a recurring line here.
+- **"An empty state when there are no boards" was the wrong question.** No
+  boards cannot happen — setup seeds SysOp and `delete_board/1` refuses to
+  remove it. **No board this *viewer* may see** can: nothing stops an admin
+  raising SysOp's `min_role_to_view`, which empties the list for every guest,
+  who was then told to "browse the boards below" with nothing below. The empty
+  state never distinguishes "none exist" from "none for you", because that
+  difference is what `min_role_to_view` is keeping.
+- **A board's last-activity time shares the unread badge's filters
+  deliberately.** An article nobody can open must not make a board look busy:
+  the timestamp would be an existence signal a remote instance could drive.
+  Keeping them in step also stops the dot and the time contradicting each
+  other. Per-viewer blocks are not applied, for the same reason the badge
+  does not apply them.
+- **Changing language on `/profile` used to reach the database and stop.**
+  `SetLocale` reads a member's language from a session copy written at login,
+  and a LiveView cannot write the session, so every later full page load
+  rendered its dead HTML — and `lang=` on `<html>` — in the language they had
+  just left. Fixed by posting to `LocaleController`; the shape of the bug is
+  why that copy is documented as a cache.
 
 ### 4B — SEO and syndication feeds (S)
 
@@ -393,10 +392,13 @@ because that difference is exactly what `min_role_to_view` is keeping.
   - A real `robots.txt`.
 - [ ] **Unknown users** return 404 instead of redirecting (`web/live/user_profile_live.ex:28-37`).
 - [ ] **Syndication feed links** (`SyndicationFeedController` already serves
-  site, board and user RSS and Atom; this is about finding them).
-  - Visible links on the home, board, user and tag pages.
+  site, board and user RSS and Atom; this is about finding them). 4A put the
+  **site** feeds in the footer, so this is now the per-page ones.
+  - A board's own feed on its page, and a user's on theirs.
   - User feeds advertised in `<head>`.
-  - Tag feeds, which do not exist yet.
+  - Tag feeds, which do not exist yet. Still coherent after
+    [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md): a feed is
+    pulled, and `/tags/:tag` stays.
 
 ### 4C — Search (S)
 
@@ -465,16 +467,13 @@ was missing, and `/profile` now posts to it when the *effective* locale moves.
 ### Decisions (made 2026-09-20)
 
 - **P4-D1. The site does not rank content, and there is no river of posts
-  across boards.** The question recorded here was what "popular" should mean.
-  The answer is that it means nothing here: `/popular` is dropped rather than
-  defined, `/recent` with it, the home page lists boards rather than the
-  latest articles inside them, and the cards carry no post count. Promoted to
-  [ADR 0054](adr/0054-attention-follows-the-board-not-a-ranking.md), which
-  holds the reasoning, what is deliberately unaffected (search, tags, the
-  feeds, the personal timeline, unread markers) and the gate. Its one
-  exception that *did* cross boards, `/unanswered`, was removed by
-  [ADR 0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md).
-  Reversing it needs a superseding record, not a patch.
+  across boards.** The question was what "popular" should mean; the answer is
+  that it means nothing here. Promoted to
+  [ADR 0054](adr/0054-attention-follows-the-board-not-a-ranking.md), narrowed
+  by [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md), and
+  premised on [0056](adr/0056-boring-but-friendly.md). Those hold the
+  reasoning, what is deliberately unaffected, and the gate. Reversing any of
+  it needs a superseding record, not a patch.
 
 ### Decisions needed
 
