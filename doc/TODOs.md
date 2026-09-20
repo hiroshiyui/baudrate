@@ -41,7 +41,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
 | ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
 | ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (v1.31.0) |
-| 4 | Discovery and onboarding | ~~4A~~, 4B–4E, ~~4F~~ | Turns visitors into members, and keeps them able to sign in |
+| 4 | Discovery and onboarding | ~~4A~~, ~~4B~~, 4C–4E, ~~4F~~ | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
 | 6 | Member depth | 6A–6E | Retention |
 | 7 | Admin and content tools | 7A–7E | Running the site without a shell |
@@ -256,7 +256,7 @@ at today.
 
 **Done when:**
 - ~~a guest's first page shows the site's purpose and the boards it has (P4-D1);~~ **done** (4A)
-- search engines index public content without duplicates;
+- ~~search engines index public content without duplicates;~~ **done** (4B)
 - a new member is signed in and guided after registering;
 - a locked-out member has a documented way back in (D3).
 
@@ -265,6 +265,7 @@ at today.
 | Stage | What | Released | Recorded in |
 |-------|------|----------|-------------|
 | 4A | Home and navigation: the boards-only home page, last activity on a board card, `site_description`, guest branding, footer feed links | empty state in v1.32.0; the rest unreleased | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md), [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) |
+| 4B | SEO and syndication feeds: `sitemap.xml`, a real `robots.txt`, canonical/description/`noindex`, 404 for a missing account, per-page and tag feeds | unreleased | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
 | 4F | Privacy and language: the footer language switcher and a one-year `locale` cookie | v1.32.0 | `doc/development.md` (resolution order, cookie inventory) |
 
 **4A adds no new page.** `/recent` and `/popular` went with P4-D1;
@@ -307,24 +308,6 @@ the moduledocs. These are the facts that are not.
   just left. Fixed by posting to `LocaleController`; the shape of the bug is
   why that copy is documented as a cache.
 
-### 4B — SEO and syndication feeds (S)
-
-- [ ] **`sitemap.xml`** for public boards and articles, paginated.
-- [ ] **Canonical links and metadata.**
-  - Canonical `<link>` on paginated pages.
-  - `<meta name="description">`.
-  - `noindex` on search, login and registration pages.
-  - A real `robots.txt`.
-- [ ] **Unknown users** return 404 instead of redirecting (`web/live/user_profile_live.ex:28-37`).
-- [ ] **Syndication feed links** (`SyndicationFeedController` already serves
-  site, board and user RSS and Atom; this is about finding them). 4A put the
-  **site** feeds in the footer, so this is now the per-page ones.
-  - A board's own feed on its page, and a user's on theirs.
-  - User feeds advertised in `<head>`.
-  - Tag feeds, which do not exist yet. Still coherent after
-    [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md): a feed is
-    pulled, and `/tags/:tag` stays.
-
 ### 4C — Search (S)
 
 - [ ] Sort by relevance or date, and filter by board and date.
@@ -352,6 +335,39 @@ the moduledocs. These are the facts that are not.
 - [ ] **Service worker on every page,** independent of push (`assets/js/push_manager_hook.js:28-34`), with an offline fallback page.
 - [ ] **Copy-link fallback** when `navigator.share` is missing (`assets/js/web_share_hook.js:15`).
 - [ ] **"Follow from your instance":** a visitor enters their instance and is sent to its remote-follow page for a user or board.
+
+### ~~4B — SEO and syndication feeds~~ — **done** (2026-09-21)
+
+Four items, and the one that needed deciding was not on the list.
+
+- ~~**`sitemap.xml`** for public boards and articles, paginated.~~ Done, plus
+  tag pages — [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)
+  refused a `/tags` index on the grounds that an inventory of tags is wanted by
+  a crawler, so this is where that forward reference lands.
+  [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) holds the
+  predicate and the four exclusions.
+- ~~**Canonical links and metadata.**~~ Done: a self-referencing canonical
+  keeping only `?page`, one `<meta name="description">` per page (the
+  `og:description` the page already computed), `noindex` on search and the
+  sign-in flow, and a `robots.txt` that is a route rather than a file.
+- ~~**Unknown users return 404.**~~ Done, and banned accounts with them —
+  the two must stay indistinguishable. `/@handle` now redirects 301.
+- ~~**Syndication feed links.**~~ Done: board, profile and tag pages each
+  carry and advertise their own pair, and tag feeds now exist.
+
+**The decision the list did not contain: what "Unlisted" means.** The composer
+offers Public and Unlisted; the code made it an ActivityPub addressing term
+only, so an unlisted article sat on its board, went out in the site feed, and
+was as indexable as any other. The operator's call (2026-09-21) is that the
+word keeps its promise: unlisted articles are out of the sitemap **and** carry
+`noindex, follow`. Leaving them out of the sitemap alone would have promised
+nothing — a sitemap is an invitation, not a gate. The syndication feeds are
+deliberately unchanged, because a feed is pulled by someone who asked.
+
+**Member profiles are not enumerated** (operator, 2026-09-21), which is the
+other decision worth finding later. `/users/:name` stays public and crawlable
+through every byline; it is the *machine-readable member list* nobody opted
+into that is refused.
 
 ### ~~4F — Privacy and language~~ — **done** (2026-09-20)
 

@@ -76,6 +76,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0054](0054-attention-follows-the-board-not-a-ranking.md) | Attention follows the board, not a ranking | Accepted, except decision 5's `/unanswered` bullet, amended by [0055](0055-unanswered-is-a-river-and-tags-is-a-ranking.md) |
 | [0055](0055-unanswered-is-a-river-and-tags-is-a-ranking.md) | `/unanswered` is a river, `/tags` is a ranking | Accepted |
 | [0056](0056-boring-but-friendly.md) | Boring but friendly | Accepted |
+| [0057](0057-a-sitemap-invites-only-what-a-guest-sees.md) | A sitemap is an invitation, and it invites only what a guest sees | Accepted |
 
 ## Writing a new ADR
 

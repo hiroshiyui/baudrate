@@ -2879,6 +2879,8 @@ RSS 2.0 and Atom 1.0 feeds are available at three scopes:
 | `/feeds/boards/:slug/atom` | Atom 1.0 | Single public board |
 | `/feeds/users/:username/rss` | RSS 2.0 | User's articles in public boards |
 | `/feeds/users/:username/atom` | Atom 1.0 | User's articles in public boards |
+| `/feeds/tags/:tag/rss` | RSS 2.0 | Articles carrying a hashtag, in public boards |
+| `/feeds/tags/:tag/atom` | Atom 1.0 | Articles carrying a hashtag, in public boards |
 
 **Design decisions:**
 
@@ -2893,10 +2895,19 @@ RSS 2.0 and Atom 1.0 feeds are available at three scopes:
 - **Rate limited** — 30 requests/min per IP (via `:feeds` rate limit action)
 - **Board feeds** return 404 for private or nonexistent boards
 - **User feeds** return 404 for nonexistent or banned users
+- **Tag feeds** accept the same pattern `/tags/:tag` does (`\A\p{L}[\w]{0,63}\z`,
+  matched case-insensitively) and 404 for anything else; a tag nobody has used
+  is a valid empty feed, not an error
 
-**Autodiscovery:** `<link rel="alternate">` tags are injected into `<head>` on
-the home page (site-wide feeds) and public board pages (board-specific feeds)
-via optional socket assigns (`feed_site`, `feed_board_slug`).
+**Autodiscovery:** `<link rel="alternate">` tags are injected into `<head>` by
+the root layout from four optional socket assigns — `syndication_site` (the
+home page), `syndication_board_slug` (a public board), `syndication_user_username`
+(a profile and its article/comment tabs) and `syndication_tag` (a tag page).
+
+**Visible links:** the site-wide pair is in the footer; the board, profile and
+tag pages each carry their own through `<.feed_links>`
+(`core_components.ex`), so a reader looking at one thing can subscribe to *that
+thing* without knowing the path.
 
 ### Linked Data (JSON-LD + Dublin Core)
 
@@ -2953,6 +2964,60 @@ in `mount/3`; the root layout renders them with the correct attribute
 | Board (`/boards/:slug`) | `website` | `summary` | Site icon |
 | User profile (`/users/:username`) | `profile` | `summary` | User avatar → site icon |
 | Home (`/`) | `website` | `summary` | Site icon |
+
+### Crawlers: robots.txt, sitemap, canonical and noindex
+
+What this instance says to a search engine, before it reads a page
+([ADR 0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md)).
+
+| Endpoint | Contents |
+|----------|----------|
+| `/robots.txt` | Directives, and the absolute URL of the sitemap index |
+| `/sitemap.xml` | The index: every child document that exists |
+| `/sitemap/boards.xml` | One `<url>` per guest-viewable board |
+| `/sitemap/tags.xml` | One per tag carried by a listed article |
+| `/sitemap/articles-N.xml` | Article slugs, 5,000 per page |
+
+**One predicate,** in `Baudrate.Content.Sitemap`: an article is listed when it
+is local (`user_id` not nil), not soft-deleted, `visibility == "public"` and in
+at least one board with `min_role_to_view == "guest"` — the gate the
+syndication feeds and `Board.public?/1` already use. Boards and tags inherit
+it.
+
+**Four deliberate exclusions,** each of which reads like an oversight and is
+not: unlisted articles (which also carry `noindex`, because the word promises
+it), member profiles (public and crawlable, never *enumerated*), remote
+articles (published under the URI of the instance that minted them), and
+anything in a board a guest cannot open.
+
+**`noindex`, not `Disallow`.** A page blocked in `robots.txt` can still be
+indexed URL-only from its inbound links, and its `noindex` is never read
+because the crawler never fetches it. So `robots.txt` blocks only `/ap/`,
+`/api/` and `/exports/`; `/search`, `/login`, `/register` and `/password-reset`
+stay crawlable and say `noindex` themselves. `robots.txt` is a **route**, not a
+file in `priv/static`, because its `Sitemap:` directive needs an absolute URL.
+
+**`BaudrateWeb.Crawlers` decides both directives.** `noindex?/1` answers from
+three things — a `noindex` assign (an unlisted article sets it), an error
+page's `:status`, or a path in its list. `canonical_url/2` builds an absolute
+self-referencing URL keeping only `page`, and returns `nil` for a `noindex`
+path, because the two directives contradict. `AuthHooks` assigns both on every
+`handle_params`, so a LiveView gets them without doing anything; attached hooks
+run first, so a page can still override.
+
+**One description per page.** The root layout's `<meta name="description">` is
+the `og:description` the page already computed (`OpenGraph.description/1`); a
+page with no OG tags may assign `:meta_description` instead.
+
+**Caching.** Each child document answers `Last-Modified` from the newest row it
+contains and honours `If-Modified-Since` with a 304
+(`BaudrateWeb.HTTPCaching`, shared with the feeds). The index's per-child
+`<lastmod>` is an upper bound, so a crawler may refetch an unchanged child and
+get a 304, but is never told a changed one is current.
+
+**Missing pages answer 404,** including a *banned* account at `/users/:name`,
+`/users/:name/articles` and `/@handle` — indistinguishable from one that never
+existed. `/@handle` redirects 301.
 
 ## Continuous Integration
 
