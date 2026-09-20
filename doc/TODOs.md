@@ -101,7 +101,8 @@ Every stage's reasoning is in its record; this is only the index, so that
 
 ### Only recorded here
 
-Everything else about Phase 2 is in its ADRs. These are the facts that are not.
+Everything else about Phase 2 is in its ADRs, in `CLAUDE.md` and in
+`doc/sysop.md`. These are the facts that are not.
 
 - **The rotation path is exercised, not theoretical.** Production separated its
   keys on 2026-09-18 and has since rotated them once, end to end: 117 stored
@@ -113,21 +114,20 @@ Everything else about Phase 2 is in its ADRs. These are the facts that are not.
   `Baudrate.Release.key_census/0` says when that reaches zero.
 - **Retention's first production pass** (2026-09-18) removed 717 timeline
   items, 93 announces, 48 articles, 287 comments and 14 files, then settled.
-- **P2-D4 said "nobody has bookmarked or interacted with", but `bookmarks`
+- **P2-D4 says "nobody has bookmarked or interacted with", but `bookmarks`
   only targets articles and comments** — a timeline item cannot be bookmarked —
   so the keep rule is likes, boosts and replies.
-- **Never purge `bot_syndication_items`,** the `(bot_id, guid)` ledger of what
-  each bot has posted: delete a row and that bot republishes the entry. It was
-  one character from `feed_items` until
-  [0039](adr/0039-the-personal-stream-is-a-timeline.md) and
-  [0041](adr/0041-rss-and-atom-are-syndication.md) renamed both, and the
-  near-miss is why the exclusion is written down rather than left to the names.
-- **The health alert cannot live inside the backup task.** That can only report
-  a run that failed, never one that never happened — a masked timer, a disabled
-  unit, a host down at the hour — and those are the silent cases 2A was about.
-- **It still cannot tell you the server is down,** because it runs inside the
-  server. That half stays with an external monitor, which `doc/sysop.md`
-  documents and nobody has to build until they want it.
+- **There is no `/admin/roles` screen, and adding one would not be a screen.**
+  [0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md)
+  settled that roles are a fixed ordered set of four and capabilities are not
+  configurable. Revisiting it supersedes 0042 *and* needs a migration that
+  backfills grants: gating `/admin/settings` on a permission an existing role
+  row happens to lack locks an operator out of their own instance.
+- **`Baudrate.Content.Feed` keeps its name** (operator's call, 2026-09-19). It
+  is recent-content listings plus per-user statistics — a fifth sense of
+  "feed" — but after [0041](adr/0041-rss-and-atom-are-syndication.md) it
+  collides with nothing, and splitting it would be a cohesion change rather
+  than a naming one.
 
 ### Accepted knowingly
 
@@ -135,10 +135,10 @@ Recorded so a later reader can tell a decision from an oversight.
 
 - **Production allows SSH login as root** (key only), deferred by the operator.
   `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets
-  `PermitRootLogin yes`, and sshd keeps the first value it reads, so the
+  `PermitRootLogin yes`, and **sshd keeps the first value it reads**, so the
   `common` role's `PermitRootLogin no` has no effect (`sshd -T`, 2026-09-15).
-  The fix would be for the role to manage the drop-ins and assert the effective
-  value.
+  The fix would be for the role to manage the drop-ins and assert the
+  effective value.
 - **No restore rehearsal onto a fresh host, and no always-on puller** (declined
   2026-09-18). The rehearsal that was done restored into a scratch database on
   the same machine, so rebuilding the host from nothing is untested — and since
@@ -153,35 +153,19 @@ Recorded so a later reader can tell a decision from an oversight.
 
 ### Decisions (made 2026-09-17)
 
-- **P2-D1. No metrics endpoint.** The localhost-only detailed health view (2D) is the one place an operator polls. A metrics endpoint was declined: it is more surface to secure for history this instance does not yet need.
-- **P2-D2. No error reporting service.** Errors go to the logs. Sending them to a third party would leak request data, and with no metrics endpoint there is no error counter either.
-- **P2-D3. Releases are built in CI** on a project-owned Debian 12 image matching production, and attached to the GitHub release with a provenance attestation. **Amended by ADR 0037:** the deploy no longer installs that tarball — it builds the tag on the server — so the attestation now guards a manual install rather than the deploy.
-- **P2-D4. Retention periods:** timeline items nobody interacted with, 90 days; announces, 180 days; soft-deleted rows, after the 90-day evidence window.
-
-### Settled — the permission catalogue is documentation (ADR 0042)
-
-Investigated 2026-09-18. The answer was *neither wire the unenforced
-permissions nor delete them*:
-[ADR 0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md)
-records that roles are a fixed, totally ordered set of four and that
-capabilities are not configurable — the matrix has no write path, there is no
-roles screen, and only four of eleven permissions are consulted anywhere. Two
-authorization defects the audit turned up were fixed in v1.28.1 and v1.28.2 (a
-ban checked neither the permission nor the rank rule; article visibility had
-four implementations, three of them missing the remote refusals — the edit
-history page was the fourth and was found only after the first fix claimed
-three).
-
-The two follow-on questions are closed, not open:
-
-- **No `/admin/roles` screen.** ADR 0042 stands. If it is ever revisited it
-  supersedes 0042 and needs a migration that backfills grants, not just a
-  check: gating `/admin/settings` on a permission an existing role row happens
-  to lack locks an operator out of their own instance.
-- **`Baudrate.Content.Feed` keeps its name** (operator's call, 2026-09-19).
-  It is recent-content listings plus per-user statistics — a fifth sense of
-  "feed" — but after ADR 0041 it collides with nothing, and splitting it would
-  be a cohesion change, not a naming one.
+- **P2-D1. No metrics endpoint.** The loopback-only health report (2D) is the
+  one place an operator polls; a metrics endpoint is more surface to secure
+  for history this instance does not need yet.
+- **P2-D2. No error reporting service.** Errors go to the logs. A third party
+  would receive request data, and with no metrics endpoint there is no error
+  counter either.
+- **P2-D3. Releases are built in CI** on a project-owned image matching
+  production, attested and attached to the GitHub release. **Amended by
+  [0037](adr/0037-the-deploy-builds-on-the-server-again.md):** the deploy
+  builds on the server instead, so the attestation now guards a manual install
+  rather than the deploy.
+- **P2-D4. Retention periods:** timeline items nobody interacted with, 90 days;
+  announces, 180 days; soft-deleted rows, after the 90-day evidence window.
 
 ---
 
