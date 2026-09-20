@@ -900,7 +900,7 @@ msgstr "ブロックリスト（指定ドメインをブロック）"
 msgid "Board Federation"
 msgstr "掲示板連合設定"
 
-#: lib/baudrate_web/live/home_live.html.heex:15
+#: lib/baudrate_web/live/home_live.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Browse the boards below, or"
 msgstr "以下の掲示板を閲覧するか、"
@@ -1248,17 +1248,17 @@ msgstr "無効化"
 msgid "enabled"
 msgstr "有効化"
 
-#: lib/baudrate_web/live/home_live.html.heex:21
+#: lib/baudrate_web/live/home_live.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "register"
 msgstr "登録"
 
-#: lib/baudrate_web/live/home_live.html.heex:17
+#: lib/baudrate_web/live/home_live.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "sign in"
 msgstr "ログイン"
 
-#: lib/baudrate_web/live/home_live.html.heex:23
+#: lib/baudrate_web/live/home_live.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "to participate."
 msgstr "して参加しましょう。"
@@ -4247,8 +4247,8 @@ msgstr "ブックマークを解除"
 #: lib/baudrate_web/live/board_live.html.heex:115
 #: lib/baudrate_web/live/board_live.html.heex:149
 #: lib/baudrate_web/live/board_live.html.heex:151
-#: lib/baudrate_web/live/home_live.html.heex:50
-#: lib/baudrate_web/live/home_live.html.heex:52
+#: lib/baudrate_web/live/home_live.html.heex:72
+#: lib/baudrate_web/live/home_live.html.heex:74
 #: lib/baudrate_web/live/notifications_live.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Unread"
@@ -4694,7 +4694,7 @@ msgstr[0] "%{count} いいね"
 msgid "Failed to toggle like."
 msgstr "いいねの切り替えに失敗しました。"
 
-#: lib/baudrate_web/components/comment_components.ex:671
+#: lib/baudrate_web/components/comment_components.ex:677
 #: lib/baudrate_web/live/timeline_live.html.heex:569
 #, elixir-autogen, elixir-format
 msgid "Like"
@@ -5025,7 +5025,7 @@ msgid_plural "%{count} Boosts"
 msgstr[0] "%{count} ブースト"
 msgstr[1] "%{count} ブースト"
 
-#: lib/baudrate_web/components/comment_components.ex:713
+#: lib/baudrate_web/components/comment_components.ex:719
 #: lib/baudrate_web/live/timeline_live.html.heex:597
 #, elixir-autogen, elixir-format
 msgid "Boost"
@@ -8653,3 +8653,18 @@ msgstr "センシティブな内容"
 #, elixir-autogen, elixir-format
 msgid "Show"
 msgstr "表示"
+
+#: lib/baudrate_web/live/home_live.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "No boards are open to visitors yet —"
+msgstr "ゲストに公開されている掲示板はまだありません —"
+
+#: lib/baudrate_web/live/home_live.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "No boards to show."
+msgstr "表示できる掲示板はありません。"
+
+#: lib/baudrate_web/live/home_live.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "Signing in may show more."
+msgstr "ログインすると、さらに表示される場合があります。"

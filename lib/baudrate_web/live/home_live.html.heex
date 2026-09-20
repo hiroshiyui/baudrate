@@ -12,7 +12,12 @@
     {gettext("Welcome to Baudrate")}
   </h1>
   <p id="home-welcome-guest-intro" class="home-welcome-intro text-base-content/70 mb-8">
-    {gettext("Browse the boards below, or")}
+    <span :if={@boards != []} id="home-welcome-browse-hint" class="home-welcome-browse-hint">
+      {gettext("Browse the boards below, or")}
+    </span>
+    <span :if={@boards == []} id="home-welcome-nothing-hint" class="home-welcome-nothing-hint">
+      {gettext("No boards are open to visitors yet —")}
+    </span>
     <.link id="home-welcome-login-link" navigate="/login" class="link link-primary">
       {gettext("sign in")}
     </.link>
@@ -24,16 +29,33 @@
   </p>
 </div>
 
-<section
-  :if={@boards != []}
-  id="boards-section"
-  class="home-boards-section"
-  aria-labelledby="boards-heading"
->
+<section id="boards-section" class="home-boards-section" aria-labelledby="boards-heading">
   <h2 id="boards-heading" class="home-boards-heading text-xl font-bold mb-4">
     {gettext("Boards")}
   </h2>
-  <div id="boards" class="grid grid-cols-1 md:grid-cols-2 gap-2" data-focus-target>
+  <div
+    :if={@boards == []}
+    id="boards-empty"
+    class="home-boards-empty text-center py-12 text-base-content/70"
+  >
+    <.icon name="hero-rectangle-stack" class="size-12 mx-auto mb-4 opacity-50" />
+    <p id="boards-empty-message" class="home-boards-empty-message text-lg">
+      {gettext("No boards to show.")}
+    </p>
+    <p
+      :if={!@current_user}
+      id="boards-empty-guest-hint"
+      class="home-boards-empty-hint text-sm"
+    >
+      {gettext("Signing in may show more.")}
+    </p>
+  </div>
+  <div
+    :if={@boards != []}
+    id="boards"
+    class="grid grid-cols-1 md:grid-cols-2 gap-2"
+    data-focus-target
+  >
     <.link
       :for={board <- @boards}
       id={"board-#{board.slug}"}

@@ -335,13 +335,23 @@ while building 1A.
 - [ ] **Home page.** Boards, not a feed of articles across them (P4-D1).
   - Board cards with last activity, and no post count (P4-D1).
   - A site description, from a new admin setting `site_description`, which `web/open_graph.ex:151` already reads.
-  - An empty state when there are no boards.
 - [ ] **Branding for guests.**
   - The welcome text uses `site_name` instead of the hardcoded "Baudrate" (`web/live/home_live.html.heex:14`).
   - Guests on mobile see the site name.
   - The footer (1E) also links the syndication feeds.
 - [ ] **New pages:** `/unanswered`, plus a tag index at `/tags`. No `/recent`
   or `/popular` (P4-D1).
+
+**Done early (2026-09-20): the empty state**, and the item was mis-stated.
+"When there are no boards" cannot happen — setup seeds the SysOp board and
+`delete_board/1` refuses to remove it. What happens is **no board this
+*viewer* may see**: the home page lists `list_visible_top_boards/1`, and
+nothing stops an admin raising SysOp's `min_role_to_view`, which empties the
+list for every guest. There was no empty state, so the guest got a page whose
+welcome text said "Browse the boards below" with nothing below it — a
+contradicted promise on the first page a visitor sees, which is what 4A is
+for. The empty state never distinguishes "none exist" from "none for you",
+because that difference is exactly what `min_role_to_view` is keeping.
 
 ### 4B — SEO and syndication feeds (S)
 

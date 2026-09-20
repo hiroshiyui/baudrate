@@ -900,7 +900,7 @@ msgstr "封鎖清單（封鎖指定網域）"
 msgid "Board Federation"
 msgstr "看板聯邦設定"
 
-#: lib/baudrate_web/live/home_live.html.heex:15
+#: lib/baudrate_web/live/home_live.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Browse the boards below, or"
 msgstr "瀏覽下方的看板，或"
@@ -1248,17 +1248,17 @@ msgstr "停用"
 msgid "enabled"
 msgstr "啟用"
 
-#: lib/baudrate_web/live/home_live.html.heex:21
+#: lib/baudrate_web/live/home_live.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "register"
 msgstr "註冊"
 
-#: lib/baudrate_web/live/home_live.html.heex:17
+#: lib/baudrate_web/live/home_live.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "sign in"
 msgstr "登入"
 
-#: lib/baudrate_web/live/home_live.html.heex:23
+#: lib/baudrate_web/live/home_live.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "to participate."
 msgstr "來參與。"
@@ -4247,8 +4247,8 @@ msgstr "移除書籤"
 #: lib/baudrate_web/live/board_live.html.heex:115
 #: lib/baudrate_web/live/board_live.html.heex:149
 #: lib/baudrate_web/live/board_live.html.heex:151
-#: lib/baudrate_web/live/home_live.html.heex:50
-#: lib/baudrate_web/live/home_live.html.heex:52
+#: lib/baudrate_web/live/home_live.html.heex:72
+#: lib/baudrate_web/live/home_live.html.heex:74
 #: lib/baudrate_web/live/notifications_live.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Unread"
@@ -4694,7 +4694,7 @@ msgstr[0] "%{count} 讚"
 msgid "Failed to toggle like."
 msgstr "切換按讚狀態失敗。"
 
-#: lib/baudrate_web/components/comment_components.ex:671
+#: lib/baudrate_web/components/comment_components.ex:677
 #: lib/baudrate_web/live/timeline_live.html.heex:569
 #, elixir-autogen, elixir-format
 msgid "Like"
@@ -5025,7 +5025,7 @@ msgid_plural "%{count} Boosts"
 msgstr[0] "%{count} 次轉發"
 msgstr[1] "%{count} 次轉發"
 
-#: lib/baudrate_web/components/comment_components.ex:713
+#: lib/baudrate_web/components/comment_components.ex:719
 #: lib/baudrate_web/live/timeline_live.html.heex:597
 #, elixir-autogen, elixir-format
 msgid "Boost"
@@ -8653,3 +8653,18 @@ msgstr "敏感內容"
 #, elixir-autogen, elixir-format
 msgid "Show"
 msgstr "顯示"
+
+#: lib/baudrate_web/live/home_live.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "No boards are open to visitors yet —"
+msgstr "目前沒有開放給訪客的看板 —"
+
+#: lib/baudrate_web/live/home_live.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "No boards to show."
+msgstr "沒有可顯示的看板。"
+
+#: lib/baudrate_web/live/home_live.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "Signing in may show more."
+msgstr "登入後可能會看到更多。"

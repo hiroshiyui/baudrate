@@ -61,6 +61,85 @@ defmodule BaudrateWeb.HomeLiveTest do
     end
   end
 
+  describe "when no board is visible to the viewer" do
+    # Setup always seeds the SysOp board and `delete_board/1` refuses to remove
+    # it, so "no boards at all" cannot happen. "None this viewer may see" can:
+    # nothing stops an admin raising SysOp's `min_role_to_view`, and the home
+    # page lists `list_visible_top_boards/1`, not every board.
+
+    test "a guest is not told to browse boards that are not there", %{conn: conn} do
+      %Board{}
+      |> Board.changeset(%{
+        name: "Members Only",
+        slug: "restricted-home-#{System.unique_integer([:positive])}",
+        min_role_to_view: "user"
+      })
+      |> Repo.insert!()
+
+      {:ok, _lv, html} = live(conn, "/")
+
+      refute html =~ "Browse the boards below"
+      assert html =~ "No boards are open to visitors yet"
+    end
+
+    test "a guest gets an empty state rather than a bare heading", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/")
+
+      assert html =~ ~s(id="boards-empty")
+      assert html =~ "No boards to show."
+      assert html =~ "Signing in may show more."
+    end
+
+    test "the empty state never names a board the viewer cannot see", %{conn: conn} do
+      %Board{}
+      |> Board.changeset(%{
+        name: "Secret Cabal",
+        slug: "secret-home-#{System.unique_integer([:positive])}",
+        min_role_to_view: "admin"
+      })
+      |> Repo.insert!()
+
+      {:ok, _lv, html} = live(conn, "/")
+
+      assert html =~ ~s(id="boards-empty")
+      refute html =~ "Secret Cabal"
+    end
+
+    test "a signed-in member sees the empty state without the guest hint", %{conn: conn} do
+      user = setup_user("user")
+      conn = log_in_user(conn, user)
+
+      %Board{}
+      |> Board.changeset(%{
+        name: "Admin Only",
+        slug: "adminonly-home-#{System.unique_integer([:positive])}",
+        min_role_to_view: "admin"
+      })
+      |> Repo.insert!()
+
+      {:ok, _lv, html} = live(conn, "/")
+
+      assert html =~ "No boards to show."
+      refute html =~ "Signing in may show more."
+    end
+
+    test "the empty state is gone as soon as one board is visible", %{conn: conn} do
+      %Board{}
+      |> Board.changeset(%{
+        name: "Open Board",
+        slug: "open-home-#{System.unique_integer([:positive])}",
+        min_role_to_view: "guest"
+      })
+      |> Repo.insert!()
+
+      {:ok, _lv, html} = live(conn, "/")
+
+      refute html =~ ~s(id="boards-empty")
+      assert html =~ "Browse the boards below"
+      assert html =~ "Open Board"
+    end
+  end
+
   describe "unread indicators" do
     test "refreshes unread board indicator in real-time when article is created", %{conn: conn} do
       user = setup_user("user")
