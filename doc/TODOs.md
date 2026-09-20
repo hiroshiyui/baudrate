@@ -187,10 +187,11 @@ The two follow-on questions are closed, not open:
 
 ## Phase 3 — Federation reach — **complete** (v1.31.0)
 
-**Goal.** Conversations, mentions, profile changes and groups work the way Mastodon and Lemmy users expect.
+**Goal.** Conversations, mentions, profile changes and groups work the way
+Mastodon and Lemmy users expect.
 
-**Done when** — all five met in code; **none of them verified against a real
-peer yet**, which is the one thing tests cannot do for this phase:
+**Done when** — all five met in code, and **none verified against a real peer**,
+which is the one thing tests cannot do for this phase:
 
 - ✅ a reply to a comment threads under that comment on Mastodon (3B, 3A);
 - ✅ a mentioned remote user is notified (3A);
@@ -198,125 +199,65 @@ peer yet**, which is the one thing tests cannot do for this phase:
 - ✅ profile and board edits reach followers (3D);
 - ✅ content warnings survive in both directions (3E).
 
-Six new records: [0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md)
-(objects have dereferenceable URIs),
-[0051](adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md)
-(a mention is a surface of the outbound gate, not an exception),
-[0052](adr/0052-a-content-warning-is-a-field-not-a-prefix.md),
-[0053](adr/0053-a-group-announce-is-a-carrier.md), plus protocol hygiene (3F)
-and actor updates (3D), neither of which needed one.
+### Done
 
-**Released as v1.31.0 and deployed 2026-09-20.** v1.31.1 followed the same
-day, adding a `sobelow_skip` annotation to the comment renderer 3E extracted
-out of its template and nothing else: the expression was unchanged, but
-Sobelow does not see a `raw/1` call inside a template and does see one inside
-a function, so an untouched line began failing CI. The required backfill has
-been run here — 47 comments rewritten, 0 articles, 0 polls, and a re-run
-reports `0/0`.
+Each stage's reasoning is in its record; this is the index, so that "3C" in a
+commit or an ADR resolves to something.
 
-**Outstanding:** the interop pass above — thread a reply, send a mention, edit
-a display name, post with a content warning, follow a community — against a
-real Mastodon account and a real Lemmy community. Phase 4 (discovery and
-onboarding) is next.
+| Stage | What | Recorded in |
+|-------|------|-------------|
+| 3A | `inReplyTo` names the parent comment; `@user@domain` is its own syntax, resolved behind the board gate | [0051](adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md), `mentions_test.exs` |
+| 3B | Comments and polls are objects with their own URIs; every existing fragment id rewritten, `legacy_ap_id` keeping what peers hold | [0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md), `object_identity_test.exs` |
+| 3C | A group's `Announce` is a carrier, unwrapped one level, and the group speaks only for its own host | [0053](adr/0053-a-group-announce-is-a-carrier.md), `group_announce_test.exs` |
+| 3D | `Update(Person)`/`Update(Group)` on any rendered-document change; a closed poll announces its final counts once | no ADR; `CLAUDE.md` |
+| 3E | `summary`/`sensitive` are fields, never a body prefix; video and audio are links | [0052](adr/0052-a-content-warning-is-a-field-not-a-prefix.md), `content_warning_test.exs` |
+| 3F | NodeInfo counts honestly and serves 2.0 as well as 2.1; every `baudrate:` term is declared | no ADR; `protocol_hygiene_test.exs` |
 
-### ~~3A — Threading and mentions~~ — **done** (v1.31.0)
+**Released as v1.31.0 and deployed 2026-09-20.** v1.31.1 followed the same day
+with a `sobelow_skip` annotation and nothing else (`CHANGELOG.md`).
 
-`inReplyTo` names the parent comment, from one definition shared by the
-activity, the served object and the replies collection. `@user@domain` is a
-syntax of its own — it used to match `@alice` and link to the *local* user of
-that name — and resolves through `Federation.Mentions` into `Mention` tags,
-`cc` addressing and delivery, all behind ADR 0043's board gate, the lookup
-included.
-[ADR 0051](adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md),
-gate `test/baudrate/federation/mentions_test.exs`.
+### Only recorded here
 
-### ~~3B — Fetchable objects~~ — **done** (v1.31.0)
+Everything else about Phase 3 is in those records, in `CHANGELOG.md`,
+`doc/api.md` and `doc/sysop.md`. These are the facts that are not.
 
-Comments are served at `/ap/comments/:id` and polls at `/ap/polls/:id`, gated
-by the owning article. Every existing row was rewritten from its fragment id
-(P3-D1 as decided: the backfill, not the conservative option), with
-`legacy_ap_id` keeping the identity peers already hold — matched on every
-inbound path, and named alongside the new id in a withdrawal.
-[ADR 0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md),
-gate `test/baudrate/federation/object_identity_test.exs`.
-
-Operators must run `Baudrate.Release.backfill_ap_ids()` once after upgrading
-to v1.31.0 (`doc/sysop.md`, "Data Repair: `ap_id` Backfill"). Done on this
-instance on 2026-09-20.
-
-### ~~3C — Lemmy groups, FEP-1b12~~ — **done** (v1.31.0)
-
-A group's `Announce` is unwrapped one level. A carried `Create` goes to the
-announced-content path — verified through its object's own origin and routed
-to the boards following the **group** rather than the author — and
-`Update`/`Delete`/`Like`/`Undo` are honoured only when their actor is on the
-group's own host, which is all the group's signature can prove.
-[ADR 0053](adr/0053-a-group-announce-is-a-carrier.md), gate
-`test/baudrate/federation/group_announce_test.exs`, with a recorded Lemmy
-payload under `test/support/fixtures/`.
-
-**Not fetched when not embedded**, against the drafted plan: Lemmy embeds, and
-fetching an activity from a host in order to decide whether to trust that host
-is the same question with an extra request and an attacker-chosen URI in it.
-
-### ~~3D — Profile, board and poll updates~~ — **done** (v1.31.0)
-
-`Update(Person)` and `Update(Group)` go out whenever the rendered actor
-document changes — comparing documents rather than listing fields, so a field
-added to `ActorRenderer` federates by itself and a change no peer can see
-costs no fan-out. `Update(Question)` with final counts is published once per
-poll by a new hourly `SessionCleaner` step.
-
-**Not debounced**, against the drafted plan: `/profile` saves each section
-separately, so editing four sends four `Update`s. Coalescing would mean
-holding an activity in memory, which [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)
-forbids, and profile edits are rare enough that the trade goes the other way.
-If an instance ever sees queue pressure from this, coalesce in the delivery
-queue where the jobs are durable.
-
-**`Delete(Person)`** still ships with self-service account deletion (6E).
-
-### ~~3E — Content warnings and media~~ — **done** (v1.31.0)
-
-`summary` and `sensitive` are columns on four tables, the body is left as
-written, and warned content renders collapsed behind a `<details>`. Every
-local composer offers an optional warning. Outbound `summary` is the warning
-and nothing else — it had been carrying a body excerpt, which Mastodon renders
-as a spoiler, so every article arrived there hidden behind its own opening
-paragraph. Video and audio render as a link to the origin instead of being
-dropped.
-[ADR 0052](adr/0052-a-content-warning-is-a-field-not-a-prefix.md), gate
-`test/baudrate/federation/content_warning_test.exs`.
-
-Rows written before the upgrade keep their `[CW: …]` prefix; parsing it back
-out would be guessing where the warning ends.
-
-### ~~3F — Protocol hygiene~~ — **done** (v1.31.0)
-
-NodeInfo counts people (no bots, no banned accounts) and local content (no
-mirrored or deleted rows), reports `activeMonth`/`activeHalfyear` from a new
-`users.last_active_on` **date**, and is served at 2.0 as well as 2.1. The
-`baudrate:*` terms are declared in `Baudrate.Federation.Context`, which is now
-the one owner of every `@context` this instance publishes — they had been
-published undeclared, so any consumer expanding the document dropped them.
-Actor documents are cached for 180 s, except on errors, redirects, and
-whenever authorized fetch is on. Gate `test/baudrate_web/protocol_hygiene_test.exs`.
-
-The active counts could not come from `user_sessions`: a session lives 14 days
-and is then purged, so the table cannot answer a question about a month. They
-therefore start at zero after the upgrade and fill in as members sign in —
-`last_active_on` is deliberately not backfilled, because inventing a date for
-an account that has not been here would inflate the counts the column exists
-to make honest.
-
-The `Follow` notification bullet was struck on 2026-09-19 — already fixed
-while building 1A.
+- **Interop is still unverified, and it is the phase's one open item.**
+  Against a real Mastodon account and a real Lemmy community: thread a reply,
+  send a mention, edit a display name, post with a content warning, follow a
+  community. Tests cannot prove interop; only a peer can. Nothing in Phase 4
+  depends on it, so it is not a blocker — but the ✅ list above is "met in
+  code", not "seen working".
+- **The `ap_id` backfill has been run on this instance** (2026-09-20): 47
+  comments rewritten, 0 articles, 0 polls, and a re-run reports `0/0`. Any
+  *other* operator upgrading to v1.31.0 still has to run it once —
+  `doc/sysop.md`, "Data Repair: `ap_id` Backfill".
+- **Two things the drafted plan called for were deliberately not built,** and
+  both look like obvious improvements from outside:
+  - a carried activity is **not fetched when it is not embedded** (0053) —
+    fetching an activity from a host in order to decide whether to trust that
+    host is the same question with an extra request and an attacker-chosen
+    URI in it;
+  - `Update(Person)` is **not debounced** — coalescing means holding an
+    activity in memory, which [0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)
+    forbids. If queue pressure ever appears, coalesce in the delivery queue,
+    where the jobs are durable.
 
 ### Decisions (made 2026-09-19)
 
-- **P3-D1. Comment and poll ids: rewrite them all.** Every local comment and poll moves to a dereferenceable path, existing rows included — not just new ones, which was the option originally drafted here. Leaving old ids in place would have left every conversation this instance has already had permanently unthreadable. The cost of rewriting a public identity is covered by `legacy_ap_id`: inbound matches either id, and a withdrawal names both. [ADR 0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md).
-- **P3-D2. Resolving mentions of unknown handles: WebFinger at post time, rate limited per user.** A handle that does not resolve stays plain text, silently. `@alice` with no domain remains a local mention.
-- **P3-D3. A mention addresses; it never widens the audience.** Not previously recorded. [ADR 0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md)'s gate decides whether content leaves, and a `Mention` becomes a surface *of* that gate rather than an exception to it: in a private or AP-disabled board a remote mention produces no tag, no `cc` and no delivery. Otherwise typing a handle would be a one-step way to exfiltrate a private board's article to any instance.
+- **P3-D1. Comment and poll ids: rewrite them all,** existing rows included —
+  not just new ones, which was the option originally drafted. Leaving old ids
+  in place would have left every conversation this instance had already had
+  permanently unthreadable.
+  [0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md).
+- **P3-D2. Unknown `@user@domain` handles resolve by WebFinger at post time,**
+  rate limited per user; one that does not resolve stays plain text, silently.
+  `@alice` with no domain is still a local mention.
+  [0051](adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md).
+- **P3-D3. A mention addresses; it never widens the audience.** Recorded
+  nowhere before Phase 3. A `Mention` is a surface *of*
+  [0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md)'s outbound
+  gate, not an exception to it — otherwise typing a handle would be a one-step
+  way to exfiltrate a private board's article to any instance.
 
 ---
 
