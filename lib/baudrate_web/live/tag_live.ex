@@ -39,7 +39,9 @@ defmodule BaudrateWeb.TagLive do
        |> assign(:total, result.total)
        |> assign(:page, result.page)
        |> assign(:total_pages, result.total_pages)
-       |> assign(:page_title, gettext("Articles tagged #%{tag}", tag: tag))}
+       |> assign(:page_title, gettext("Articles tagged #%{tag}", tag: tag))
+       |> assign(:meta_description, tag_description(tag, result.total))
+       |> assign(:syndication_tag, tag)}
     else
       {:noreply,
        socket
@@ -50,5 +52,14 @@ defmodule BaudrateWeb.TagLive do
        |> assign(:total_pages, 1)
        |> assign(:page_title, gettext("Articles tagged #%{tag}", tag: raw_tag))}
     end
+  end
+
+  defp tag_description(tag, total) do
+    ngettext(
+      "One article tagged #%{tag}.",
+      "%{count} articles tagged #%{tag}.",
+      total,
+      tag: tag
+    )
   end
 end

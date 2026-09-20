@@ -1215,6 +1215,51 @@ defmodule BaudrateWeb.CoreComponents do
 
   defp link_preview_card(assigns), do: ~H""
 
+  @doc """
+  Renders the RSS and Atom links for one thing — a board, a profile, a tag.
+
+  The site-wide pair lives in the footer; this is the per-page half of the
+  same promise, so a reader who is looking at a board can subscribe to *that
+  board* without knowing the path (ADR 0057). `id_prefix` gives both links a
+  stable id, and the `type` attribute tells a browser extension what it is
+  pointing at.
+  """
+  attr :id_prefix, :string, required: true
+  attr :label, :string, required: true
+  attr :rss, :string, required: true
+  attr :atom, :string, required: true
+  attr :class, :string, default: nil
+
+  def feed_links(assigns) do
+    ~H"""
+    <nav id={@id_prefix} aria-label={@label} class={["feed-links", @class]}>
+      <ul class="feed-link-list flex flex-wrap items-center gap-x-4 gap-y-1 text-sm opacity-70">
+        <li class="feed-link-item">
+          <.link
+            id={"#{@id_prefix}-rss"}
+            href={@rss}
+            type="application/rss+xml"
+            class="feed-link link link-hover inline-flex items-center gap-1"
+          >
+            <.icon name="hero-rss" class="size-4" />
+            {gettext("RSS")}
+          </.link>
+        </li>
+        <li class="feed-link-item">
+          <.link
+            id={"#{@id_prefix}-atom"}
+            href={@atom}
+            type="application/atom+xml"
+            class="feed-link link link-hover inline-flex items-center gap-1"
+          >
+            {gettext("Atom")}
+          </.link>
+        </li>
+      </ul>
+    </nav>
+    """
+  end
+
   @youtube_url_pattern ~r/^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/watch\?.*v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
 
   @doc false

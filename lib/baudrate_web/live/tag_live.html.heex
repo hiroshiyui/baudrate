@@ -4,6 +4,14 @@
     {@tag}
   </h1>
 
+  <.feed_links
+    id_prefix="tag-feed"
+    label={gettext("Syndication feeds for this tag")}
+    rss={~p"/feeds/tags/#{@tag}/rss"}
+    atom={~p"/feeds/tags/#{@tag}/atom"}
+    class="tag-feeds mb-4"
+  />
+
   <div :if={@total > 0} class="tag-result-count text-sm text-base-content/70 mb-4">
     {ngettext("1 result", "%{count} results", @total)}
   </div>

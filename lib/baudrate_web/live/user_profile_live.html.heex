@@ -39,6 +39,13 @@
       >
         {gettext("Bot")}
       </span>
+      <.feed_links
+        id_prefix="user-profile-feed"
+        label={gettext("Syndication feeds for this account")}
+        rss={~p"/feeds/users/#{@profile_user.username}/rss"}
+        atom={~p"/feeds/users/#{@profile_user.username}/atom"}
+        class="user-profile-feeds mt-1"
+      />
       <p class="user-profile-member-since text-sm text-base-content/70 mt-1">
         {gettext("Member since")}
         <time datetime={format_date(@profile_user.inserted_at)}>

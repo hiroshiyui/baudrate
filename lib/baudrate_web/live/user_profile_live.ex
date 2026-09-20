@@ -73,6 +73,7 @@ defmodule BaudrateWeb.UserProfileLive do
            is_blocked: is_blocked,
            is_following: is_following,
            page_title: user.username,
+           syndication_user_username: user.username,
            linked_data_json: jsonld,
            dc_meta: dc_meta,
            og_meta: OpenGraph.user_tags(user, article_count, comment_count),

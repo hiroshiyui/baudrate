@@ -250,6 +250,8 @@ defmodule BaudrateWeb.Router do
     get "/boards/:slug/atom", SyndicationFeedController, :board_atom
     get "/users/:username/rss", SyndicationFeedController, :user_rss
     get "/users/:username/atom", SyndicationFeedController, :user_atom
+    get "/tags/:tag/rss", SyndicationFeedController, :tag_rss
+    get "/tags/:tag/atom", SyndicationFeedController, :tag_atom
   end
 
   # What this instance tells a crawler, before it reads a page (ADR 0057).

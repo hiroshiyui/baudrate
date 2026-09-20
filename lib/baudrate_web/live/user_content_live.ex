@@ -26,7 +26,7 @@ defmodule BaudrateWeb.UserContentLive do
         raise BaudrateWeb.NotFoundError
 
       user ->
-        {:ok, assign(socket, profile_user: user)}
+        {:ok, assign(socket, profile_user: user, syndication_user_username: user.username)}
     end
   end
 

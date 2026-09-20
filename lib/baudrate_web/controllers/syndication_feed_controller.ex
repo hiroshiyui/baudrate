@@ -7,6 +7,7 @@ defmodule BaudrateWeb.SyndicationFeedController do
     * **Site-wide** — all public boards (`/feeds/rss`, `/feeds/atom`)
     * **Per-board** — single public board (`/feeds/boards/:slug/rss`, `/feeds/boards/:slug/atom`)
     * **Per-user** — user's articles in public boards (`/feeds/users/:username/rss`, `/feeds/users/:username/atom`)
+    * **Per-tag** — articles carrying a hashtag (`/feeds/tags/:tag/rss`, `/feeds/tags/:tag/atom`)
 
   Only local articles are included (no remote/federated articles). Feeds include
   `Cache-Control` and `Last-Modified` headers, with `If-Modified-Since` → 304
@@ -21,6 +22,9 @@ defmodule BaudrateWeb.SyndicationFeedController do
 
   @slug_re ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/
   @username_re ~r/\A[a-zA-Z0-9_]+\z/
+  # The same pattern `BaudrateWeb.TagLive` accepts, so a feed exists for
+  # exactly the tag pages that do.
+  @tag_re ~r/\A\p{L}[\w]{0,63}\z/u
 
   # --- Site-wide feeds ---
 
@@ -125,6 +129,33 @@ defmodule BaudrateWeb.SyndicationFeedController do
       })
     else
       _ -> send_resp(conn, 404, "Not Found")
+    end
+  end
+
+  # --- Tag feeds ---
+
+  @doc "Renders the RSS 2.0 feed of local public articles carrying a tag."
+  def tag_rss(conn, %{"tag" => tag}), do: render_tag_feed(conn, :rss, tag)
+
+  @doc "Renders the Atom 1.0 feed of local public articles carrying a tag."
+  def tag_atom(conn, %{"tag" => tag}), do: render_tag_feed(conn, :atom, tag)
+
+  defp render_tag_feed(conn, format, raw_tag) do
+    tag = String.downcase(raw_tag)
+
+    if Regex.match?(@tag_re, tag) do
+      articles = Content.list_recent_public_articles_by_tag(tag)
+      base = BaudrateWeb.Endpoint.url()
+      suffix = if format == :rss, do: "rss", else: "atom"
+
+      render_feed(conn, format, articles, %{
+        title: gettext("Articles tagged #%{tag}", tag: tag),
+        link: base <> "/tags/" <> URI.encode(tag),
+        description: gettext("Recent articles tagged #%{tag}", tag: tag),
+        self_url: base <> "/feeds/tags/" <> URI.encode(tag) <> "/" <> suffix
+      })
+    else
+      send_resp(conn, 404, "Not Found")
     end
   end
 

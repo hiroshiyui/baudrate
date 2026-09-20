@@ -300,6 +300,9 @@ defmodule Baudrate.Content do
   def list_recent_public_articles_by_user(user_id, limit \\ 20),
     do: Feed.list_recent_public_articles_by_user(user_id, limit)
 
+  def list_recent_public_articles_by_tag(tag, limit \\ 20),
+    do: Feed.list_recent_public_articles_by_tag(tag, limit)
+
   # All user-page listings take `viewer:` (a user or nil) and hide content in
   # boards the viewer cannot open. Pass the current user from every caller.
   def list_recent_articles_by_user(user_id, limit \\ 10, opts \\ []),

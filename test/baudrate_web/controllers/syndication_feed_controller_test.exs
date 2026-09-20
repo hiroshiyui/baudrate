@@ -246,6 +246,74 @@ defmodule BaudrateWeb.FeedControllerTest do
 
   # --- Helpers ---
 
+  # --- Tag feeds ---
+
+  describe "GET /feeds/tags/:tag/:format" do
+    test "lists local articles carrying the tag", %{conn: conn, user: user, public_board: board} do
+      {:ok, _} = insert_tagged_article(user, board, "tag-rss-article", "elixir")
+
+      body = conn |> get("/feeds/tags/elixir/rss") |> response(200)
+
+      assert body =~ ~s(<rss version="2.0")
+      assert body =~ "tag-rss-article"
+    end
+
+    test "serves Atom as well", %{conn: conn, user: user, public_board: board} do
+      {:ok, _} = insert_tagged_article(user, board, "tag-atom-article", "elixir")
+
+      conn = get(conn, "/feeds/tags/elixir/atom")
+
+      assert response_content_type(conn, :xml) =~ "application/atom+xml"
+      assert response(conn, 200) =~ "tag-atom-article"
+    end
+
+    test "excludes an article in a private board", %{conn: conn, user: user, private_board: board} do
+      {:ok, _} = insert_tagged_article(user, board, "private-tagged", "elixir")
+
+      refute conn |> get("/feeds/tags/elixir/rss") |> response(200) =~ "private-tagged"
+    end
+
+    test "excludes a soft-deleted article", %{conn: conn, user: user, public_board: board} do
+      {:ok, %{article: article}} = insert_tagged_article(user, board, "deleted-tagged", "elixir")
+      Content.soft_delete_article(article, deleted_by: article.user_id)
+
+      refute conn |> get("/feeds/tags/elixir/rss") |> response(200) =~ "deleted-tagged"
+    end
+
+    test "matches the tag case-insensitively, like the tag page", %{
+      conn: conn,
+      user: user,
+      public_board: board
+    } do
+      {:ok, _} = insert_tagged_article(user, board, "cased-tagged", "elixir")
+
+      assert conn |> get("/feeds/tags/ELIXIR/rss") |> response(200) =~ "cased-tagged"
+    end
+
+    test "returns 404 for a tag that cannot be one", %{conn: conn} do
+      assert conn |> get("/feeds/tags/not a tag/rss") |> response(404)
+      assert conn |> get("/feeds/tags/123abc/atom") |> response(404)
+    end
+
+    test "an empty tag is a valid empty feed, not an error", %{conn: conn} do
+      body = conn |> get("/feeds/tags/nobodyusesthis/rss") |> response(200)
+
+      assert body =~ ~s(<rss version="2.0")
+    end
+  end
+
+  defp insert_tagged_article(user, board, slug, tag) do
+    Content.create_article(
+      %{
+        title: "Article #{slug}",
+        body: "Writing about ##{tag} today.",
+        slug: slug,
+        user_id: user.id
+      },
+      [board.id]
+    )
+  end
+
   defp insert_board(slug, opts) do
     {:ok, board} =
       %Board{}

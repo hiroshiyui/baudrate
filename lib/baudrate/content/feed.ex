@@ -38,6 +38,7 @@ defmodule Baudrate.Content.Feed do
   alias Baudrate.Content.{
     Article,
     ArticleBoost,
+    ArticleTag,
     Board,
     BoardArticle,
     Comment,
@@ -117,6 +118,34 @@ defmodule Baudrate.Content.Feed do
       where:
         a.user_id == ^user_id and
           is_nil(a.deleted_at) and
+          b.min_role_to_view == "guest",
+      distinct: a.id,
+      order_by: [desc: a.inserted_at, desc: a.id],
+      limit: ^limit,
+      preload: [:user, :boards]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns recent local articles carrying `tag` that appear in at least one
+  public board.
+
+  The same local-only, guest-visible predicate as the other syndication
+  listings, so a tag feed can never carry what the site-wide feed would not.
+  """
+  def list_recent_public_articles_by_tag(tag, limit \\ 20) do
+    from(a in Article,
+      join: at in ArticleTag,
+      on: at.article_id == a.id,
+      join: ba in BoardArticle,
+      on: ba.article_id == a.id,
+      join: b in Board,
+      on: b.id == ba.board_id,
+      where:
+        at.tag == ^tag and
+          is_nil(a.deleted_at) and
+          not is_nil(a.user_id) and
           b.min_role_to_view == "guest",
       distinct: a.id,
       order_by: [desc: a.inserted_at, desc: a.id],

@@ -56,6 +56,34 @@
         href={~p"/feeds/boards/#{assigns[:syndication_board_slug]}/atom"}
       />
     <% end %>
+    <%= if assigns[:syndication_user_username] do %>
+      <link
+        rel="alternate"
+        type="application/rss+xml"
+        title={gettext("User RSS Feed")}
+        href={~p"/feeds/users/#{assigns[:syndication_user_username]}/rss"}
+      />
+      <link
+        rel="alternate"
+        type="application/atom+xml"
+        title={gettext("User Atom Feed")}
+        href={~p"/feeds/users/#{assigns[:syndication_user_username]}/atom"}
+      />
+    <% end %>
+    <%= if assigns[:syndication_tag] do %>
+      <link
+        rel="alternate"
+        type="application/rss+xml"
+        title={gettext("Tag RSS Feed")}
+        href={~p"/feeds/tags/#{assigns[:syndication_tag]}/rss"}
+      />
+      <link
+        rel="alternate"
+        type="application/atom+xml"
+        title={gettext("Tag Atom Feed")}
+        href={~p"/feeds/tags/#{assigns[:syndication_tag]}/atom"}
+      />
+    <% end %>
     <%= if assigns[:ap_alternate_url] do %>
       <link rel="alternate" type="application/activity+json" href={@ap_alternate_url} />
     <% end %>
