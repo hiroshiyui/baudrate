@@ -27,16 +27,11 @@ defmodule BaudrateWeb.UserProfileLive do
   def mount(%{"username" => username}, _session, socket) do
     case Auth.get_user_by_username(username) do
       nil ->
-        {:ok,
-         socket
-         |> put_flash(:error, gettext("User not found."))
-         |> redirect(to: ~p"/")}
+        raise BaudrateWeb.NotFoundError
 
+      # A banned account answers exactly as one that never existed does.
       %{status: "banned"} ->
-        {:ok,
-         socket
-         |> put_flash(:error, gettext("User not found."))
-         |> redirect(to: ~p"/")}
+        raise BaudrateWeb.NotFoundError
 
       user ->
         article_count = Content.count_articles_by_user(user.id)

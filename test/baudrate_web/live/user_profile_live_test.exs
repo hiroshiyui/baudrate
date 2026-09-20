@@ -35,16 +35,18 @@ defmodule BaudrateWeb.UserProfileLiveTest do
     assert html =~ "Comments"
   end
 
-  test "redirects for nonexistent user", %{conn: conn} do
-    assert {:error, {:redirect, %{to: "/"}}} = live(conn, "/users/doesnotexist999")
+  # 404, not a redirect: a redirect tells a crawler the page moved, so it keeps
+  # asking and `/` collects the authority of every mistyped handle (ADR 0057).
+  test "a nonexistent user is 404", %{conn: conn} do
+    assert_error_sent 404, fn -> get(conn, "/users/doesnotexist999") end
   end
 
-  test "redirects for banned user", %{conn: conn} do
+  test "a banned user is 404, indistinguishable from one that never existed", %{conn: conn} do
     admin = setup_user("admin")
     user = setup_user("user")
     {:ok, _, _} = Auth.ban_user(user, admin, "test")
 
-    assert {:error, {:redirect, %{to: "/"}}} = live(conn, "/users/#{user.username}")
+    assert_error_sent 404, fn -> get(conn, "/users/#{user.username}") end
   end
 
   test "shows article and comment counts", %{conn: conn} do

@@ -109,19 +109,17 @@ defmodule BaudrateWeb.UserContentLiveTest do
     end
   end
 
-  describe "redirects" do
-    test "redirects for nonexistent user", %{conn: conn} do
-      assert {:error, {:redirect, %{to: "/"}}} =
-               live(conn, "/users/doesnotexist999/articles")
+  describe "a user who is not there" do
+    test "a nonexistent user is 404", %{conn: conn} do
+      assert_error_sent 404, fn -> get(conn, "/users/doesnotexist999/articles") end
     end
 
-    test "redirects for banned user", %{conn: conn} do
+    test "a banned user is 404", %{conn: conn} do
       admin = setup_user("admin")
       user = setup_user("user")
       {:ok, _, _} = Baudrate.Auth.ban_user(user, admin, "test")
 
-      assert {:error, {:redirect, %{to: "/"}}} =
-               live(conn, "/users/#{user.username}/articles")
+      assert_error_sent 404, fn -> get(conn, "/users/#{user.username}/articles") end
     end
   end
 
