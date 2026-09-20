@@ -447,8 +447,11 @@ sent to the server, so dereferencing it returned the author's profile.
 **Fix:** run the backfill once after upgrading to v1.31.0:
 
 ```bash
-bin/baudrate eval "Baudrate.Release.backfill_ap_ids(dry_run: true)"
-bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"
+cd /opt/baudrate   # not /root — see "`remote`, `rpc` or `eval` dies with a
+                   # `persistent_term` error" below
+set -a; . /opt/baudrate/env/baudrate.env; set +a
+current/bin/baudrate eval "Baudrate.Release.backfill_ap_ids(dry_run: true)"
+current/bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"
 ```
 
 See [`doc/sysop.md`](sysop.md), "Data Repair: `ap_id` Backfill". Comments
@@ -868,12 +871,45 @@ which is public. The systemd service gets `RELEASE_COOKIE` from
 source the file first, as the service user:
 
 ```bash
+cd /opt/baudrate
 sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; exec /opt/baudrate/current/bin/baudrate remote'
 ```
+
+The `cd` is not decoration: `sudo` and `runuser` keep root's working
+directory, and a node that cannot search its cwd dies with an unrelated-looking
+error — see below.
 
 `bin/baudrate eval` (migrations, backups, dumps) needs no cookie. If the
 service itself fails with this message, the environment file lacks the line:
 re-run the deploy, which generates the cookie once per server.
+
+### `remote`, `rpc` or `eval` dies with a `persistent_term` error
+
+The whole output is a `Kernel pid terminated (logger)` line with a `badarg`
+inside `persistent_term:get(code_server)`, then a promise to write
+`erl_crash.dump` — which never appears. It looks like a corrupt release. It is
+the **working directory**.
+
+`sudo -u baudrate` and `runuser -u baudrate` both keep the *calling* shell's
+cwd, so arriving from a root shell leaves the node in `/root`, mode 700. The
+service account cannot search it, ERTS cannot start the code server, and the
+first log call trips over its absence — so the one subsystem that would report
+the problem is the one that is broken. The crash dump is written relative to
+that same directory, so it does not land either.
+
+```bash
+cd /opt/baudrate        # anywhere the service account can search
+```
+
+Three things make this hard to recognise:
+
+- it is the **search (`x`) bit**, not read — a mode 711 directory works, 700
+  owned by someone else does not;
+- `getcwd()` still succeeds, so `pwd` prints a perfectly good path from the
+  same shell, as the same user;
+- `eval` fails identically, though it starts no distribution and needs no
+  cookie — so it is not a cookie or networking problem, and the usual fixes
+  for those change nothing.
 
 ### `remote` or `rpc` cannot reach the node
 

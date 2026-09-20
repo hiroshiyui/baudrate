@@ -1667,10 +1667,17 @@ sudo -u baudrate sh -c 'cd /opt/baudrate && set -a; . /opt/baudrate/env/baudrate
 sudo -u baudrate sh -c 'cd /opt/baudrate && set -a; . /opt/baudrate/env/baudrate.env; exec /opt/baudrate/current/bin/baudrate rpc "IO.puts(node())"'
 ```
 
-**The `cd` matters.** `sudo` keeps root's working directory, and a node that
-cannot stat its own cwd dies before it can say why: the whole error is
-`Kernel pid terminated (logger)` and a `badarg` inside `persistent_term`,
-which looks like a broken release rather than a shell problem.
+**The `cd` matters.** `sudo` and `runuser` both keep root's working
+directory, and `/root` is mode 700 — so the service account arrives somewhere
+it has no permission to search, and the node dies before it can say why. The
+whole error is `Kernel pid terminated (logger)` and a `badarg` inside
+`persistent_term`, which looks like a broken release rather than a shell
+problem: the code server never registers, and the first log call is what
+trips over its absence. It is the **search (`x`) bit** that is needed, not
+read — a mode 711 directory is fine, 700 owned by someone else is not — and
+`getcwd()` itself still works, so the usual way of checking ("can I `pwd`
+here?") says everything is fine. The crash dump named in the last line is
+written relative to that same directory, so it does not land either.
 
 **To run a script this way, put the file under `/opt/baudrate`**, not in
 `/tmp`. The unit sets `PrivateTmp`, so the running node has a `/tmp` of its
@@ -1874,6 +1881,8 @@ release is healthy.
 ### Running Migrations in Production
 
 ```bash
+cd /opt/baudrate/current   # not /root: the node must be able to search its cwd
+
 # Convenience script (recommended)
 bin/migrate
 
@@ -2071,16 +2080,20 @@ fits your operational comfort:
 the function inside the live VM, so the repo and config are already
 running, with no port collision. It needs the server's `RELEASE_COOKIE`
 ([Erlang distribution](#erlang-distribution-and-the-remote-console)), so
-source the env file, as the service user:
+source the env file, as the service user, **from a directory that account can
+search** — arriving from a root shell leaves you in `/root`, where the node
+dies with an error about `persistent_term` that says nothing about the
+working directory ([above](#erlang-distribution-and-the-remote-console)):
 
 ```bash
+cd /opt/baudrate
 set -a; . /opt/baudrate/env/baudrate.env; set +a
 
 # Inspect what would be stamped, without writing
-bin/baudrate rpc "Baudrate.Release.backfill_ap_ids(dry_run: true)"
+current/bin/baudrate rpc "Baudrate.Release.backfill_ap_ids(dry_run: true)"
 
 # Apply the backfill
-bin/baudrate rpc "Baudrate.Release.backfill_ap_ids()"
+current/bin/baudrate rpc "Baudrate.Release.backfill_ap_ids()"
 ```
 
 Logs land in the production node's stdout (`journalctl -u baudrate.service`).
@@ -2092,9 +2105,10 @@ starts only the repo (not the endpoint), avoiding the port-4000
 collision with the live node:
 
 ```bash
+cd /opt/baudrate
 set -a; . /opt/baudrate/env/baudrate.env; set +a
-bin/baudrate eval "Baudrate.Release.backfill_ap_ids(dry_run: true)"
-bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"
+current/bin/baudrate eval "Baudrate.Release.backfill_ap_ids(dry_run: true)"
+current/bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"
 ```
 
 Either form is idempotent and skips remote rows (`remote_actor_id`
