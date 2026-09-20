@@ -3,6 +3,10 @@
 Public BBS / Web Forum built with Elixir/Phoenix + LiveView, federating via **ActivityPub**.
 Baudrate is a **public information hub**, not a social network — public content
 should remain visible to all; blocking controls interaction, not visibility.
+Nothing here is ranked by engagement and there is no river of posts across
+boards ([ADR 0054](doc/adr/0054-attention-follows-the-board-not-a-ranking.md)):
+a hub helps you find the board you want, it does not decide what you should
+look at today.
 **Information security is the top priority** — this is a public-facing system.
 
 ## Quick Reference
@@ -80,6 +84,7 @@ when the row drops an ADR number or a relationship verb the Status line uses.
 
 ### Key Gotchas
 
+- **Nothing is ranked by engagement, and no page rivers posts across boards** (ADR 0054). No `/popular`, `/trending`, `/hot`, `/recent` or `/top`; the home page lists boards, not the articles inside them; board cards carry no post count; the order is the admin's `Board.position`, never activity. A ranking is not a measurement but a feedback loop — what it surfaces gets read, which keeps it surfaced, so attention settles on whoever already had it and a quiet board never appears — and engagement cannot tell an argument from a conversation, so ranking on activity promotes a flame war to the front page, to everyone. Deliberately **unaffected**, because none of it is the site choosing for a reader: chronological order *within* a board, search, tag pages, the syndication feeds, the personal timeline (ADR 0039), per-viewer unread markers, and `/unanswered`, which is the inverse loop and is kept on purpose. **`test/baudrate_web/no_content_ranking_test.exs` is the acceptance gate**; it covers the four falsifiable shapes, and whether some *new* surface is a ranking is a judgement review has to make.
 - Layout receives `@inner_content` (NOT `@inner_block`) — use `{@inner_content}`
 - Do NOT wrap templates with `<Layouts.app>` — causes duplicate flash IDs
 - LiveView uses `phx-trigger-action` for session writes (POST to `SessionController`)

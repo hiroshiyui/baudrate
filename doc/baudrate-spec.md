@@ -181,6 +181,10 @@ What a member may write, and what happens to it afterwards.
 | Article.changeset/2 casts a fixed user-field list; ap_id, url and published_at are never among them | [0049](adr/0049-user-facing-changesets-are-allow-lists.md) | `Baudrate.Content.Article.changeset/2` | [`article_test.exs`](../test/baudrate/content/article_test.exs) |
 | Comment.changeset/2 never casts ap_id; only remote_changeset/2 accepts a peer-supplied URI | [0049](adr/0049-user-facing-changesets-are-allow-lists.md) | `Baudrate.Content.Comment.changeset/2` | [`comment_test.exs`](../test/baudrate/content/comment_test.exs) |
 | Local content accepts only public or unlisted; trusted fields need trusted_changeset/2 | [0049](adr/0049-user-facing-changesets-are-allow-lists.md) | `Baudrate.Content.Article.trusted_changeset/2` | [`article_test.exs`](../test/baudrate/content/article_test.exs) |
+| No route ranks content or rivers it across boards: no /popular, /trending, /hot, /recent or /top | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) | `BaudrateWeb.Router` | [`no_content_ranking_test.exs`](../test/baudrate_web/no_content_ranking_test.exs) |
+| The home page lists boards, never the articles inside them | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) | `BaudrateWeb.HomeLive.mount/3` | [`no_content_ranking_test.exs`](../test/baudrate_web/no_content_ranking_test.exs) |
+| Board order is the admin's position, never activity | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) | `Baudrate.Content.Boards.list_top_boards/0` | [`no_content_ranking_test.exs`](../test/baudrate_web/no_content_ranking_test.exs) |
+| A board card carries no post count, so nothing on the page compares one board with another | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) | `BaudrateWeb.HomeLive.mount/3` | [`no_content_ranking_test.exs`](../test/baudrate_web/no_content_ranking_test.exs) |
 
 ## Operations
 
@@ -276,7 +280,8 @@ place where drift would be silent.
 | The deploy refuses a host whose Debian release differs from the one CI builds and tests on | [0037](adr/0037-the-deploy-builds-on-the-server-again.md) | Enforced by Ansible pre-flight asserts, outside the Elixir suite. |
 | Every context operation that writes state anyone can observe is named on the context facade | [0047](adr/0047-the-facade-lists-every-way-a-context-changes-the-world.md) | Deliberate. "Changes the world" is a judgement; the record says an approximating test would either fail on render helpers or pass on what it should catch. |
 | Render helpers, schemas, PubSub topics, web-tier plumbing and admin read models may bypass the facade | [0047](adr/0047-the-facade-lists-every-way-a-context-changes-the-world.md) | Deliberate. "Changes the world" is a judgement; the record says an approximating test would either fail on render helpers or pass on what it should catch. |
+| No surface anywhere allocates attention by engagement, however it is computed | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) | The four falsifiable shapes are gated. Whether some *future* surface is a ranking is a judgement: a decayed score, a "most active" list and an activity-sorted board list are all rankings, and no test recognises one it has not been told about. Review is what catches it. |
 
 ---
 
-137 rows across 50 records, 84 distinct gates, 17 ungated. Generated and verified 2026-09-19.
+176 rows across 55 records, 90 distinct gates, 18 ungated. Counted 2026-09-20.

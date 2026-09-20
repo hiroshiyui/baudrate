@@ -73,6 +73,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0051](0051-a-mention-addresses-and-the-board-gate-still-decides.md) | A mention addresses, and the board gate still decides | Accepted |
 | [0052](0052-a-content-warning-is-a-field-not-a-prefix.md) | A content warning is a field, not a prefix | Accepted |
 | [0053](0053-a-group-announce-is-a-carrier.md) | A group's Announce is a carrier, and the group speaks only for its own host | Accepted |
+| [0054](0054-attention-follows-the-board-not-a-ranking.md) | Attention follows the board, not a ranking | Accepted |
 
 ## Writing a new ADR
 

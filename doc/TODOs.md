@@ -405,30 +405,14 @@ because that difference is exactly what `min_role_to_view` is keeping.
 ### Decisions (made 2026-09-20)
 
 - **P4-D1. The site does not rank content, and there is no river of posts
-  across boards.** The question recorded here was what "popular" should mean —
-  likes, boosts and comments over some window. The answer is that it means
-  nothing here: `/popular` is dropped rather than defined, `/recent` with it,
-  and the home page lists boards rather than the latest articles inside them.
-  Two reasons, both about what such a list *does* rather than what it shows.
-  It is a feedback loop — what it surfaces gets read, which keeps it surfaced,
-  so attention concentrates on whoever already had it and a quiet board never
-  appears. And the activity it would rank on cannot tell an argument from a
-  conversation: a flame war is the highest-engagement thing a forum produces,
-  so ranking by engagement promotes it, to everyone, on the first page anyone
-  sees. Baudrate is a public information hub whose unit is the **board**; a
-  visitor picks one and reads it in order. That is slower than a river of the
-  newest posts, and it is the trade this makes on purpose.
-  **No counts on the board cards either.** A post count is a scoreboard
-  between boards, and it reads as a verdict on the quiet ones before a visitor
-  has opened either. Last activity stays — it answers "is anyone here", which
-  a newcomer needs and which no board loses by telling. The cards are ordered
-  by the admin's `Board.position`, and that is the whole ordering: if they are
-  ever sorted by activity instead, the ranking is back, arranged by the
-  site rather than chosen by it.
-  **Unaffected:** `/unanswered`, which spends attention where none has been
-  and is the opposite loop; chronological order *within* a board; search; tag
-  pages; and the site-wide RSS and Atom feeds, which a reader pulls instead of
-  being handed. Reversing any of this needs a new decision here, not a patch.
+  across boards.** The question recorded here was what "popular" should mean.
+  The answer is that it means nothing here: `/popular` is dropped rather than
+  defined, `/recent` with it, the home page lists boards rather than the
+  latest articles inside them, and the cards carry no post count. Promoted to
+  [ADR 0054](adr/0054-attention-follows-the-board-not-a-ranking.md), which
+  holds the reasoning, what is deliberately unaffected (`/unanswered`, search,
+  tags, the feeds, the personal timeline, unread markers) and the gate.
+  Reversing it needs a superseding record, not a patch.
 
 ### Decisions needed
 
