@@ -59,6 +59,13 @@ defmodule Baudrate.Federation.InboxHandler do
   # in `Baudrate.Content.LinkPreview.Fetcher`.
   alias BaudrateWeb.RateLimits
 
+  # A Lemmy community does not boost a post; it **relays** the activity that
+  # made it (FEP-1b12, ADR 0053). These are the activity types a group may
+  # carry. `Announce` is deliberately absent: wrapping is bounded to one
+  # level, so an Announce inside an Announce is refused rather than unwrapped
+  # recursively by an attacker-chosen depth.
+  @carried_activity_types ~w(Create Update Delete Like Undo)
+
   @doc """
   The checks an activity must pass before the inbox stores it
   (`Federation.Inbound`): well-formed with an id on the actor's host, from a
@@ -323,6 +330,17 @@ defmodule Baudrate.Federation.InboxHandler do
     handle_announce_content(ap_id, object_uri, remote_actor)
 
     :ok
+  end
+
+  # --- Announce carrying an activity (Lemmy groups, FEP-1b12) ---
+
+  defp dispatch(
+         %{"type" => "Announce", "object" => %{"type" => inner_type} = inner} = activity,
+         group_actor,
+         target
+       )
+       when inner_type in @carried_activity_types do
+    handle_group_announce(activity, inner, group_actor, target)
   end
 
   # --- Announce with embedded object map (Lemmy interop) ---
@@ -960,6 +978,124 @@ defmodule Baudrate.Federation.InboxHandler do
         end
     end
   end
+
+  # --- Group Announce (FEP-1b12) ---
+
+  # A Lemmy community is a hub, not a booster: members send activities *to*
+  # the community, and the community announces them to every subscriber. So
+  # its `Announce` wraps an **activity** — `Create`, `Update`, `Delete`,
+  # `Like`, `Undo` — where a Mastodon boost wraps an object. These were
+  # dropped: `handle_announce_object/3` accepts only `Note`/`Article`/`Page`,
+  # so every post in every followed Lemmy community was silently discarded.
+  #
+  # The whole security question is **who may speak for the inner actor**. The
+  # HTTP signature on the outer Announce is the *group's*; the inner activity
+  # carries no signature we can check. So there are exactly two safe readings,
+  # and this takes both:
+  #
+  #   * a **`Create`** names an object, and an object has an origin that can
+  #     be checked. It goes to the announced-content path, which binds the
+  #     object's `attributedTo` to its own host and routes it to the boards
+  #     following the group. No host comparison, and no new trust: the object
+  #     is verified by the host that can prove it.
+  #
+  #   * **everything else** — `Update`, `Delete`, `Like`, `Undo` — is an
+  #     activity whose entire meaning is "this actor did this". There is
+  #     nothing to fetch and verify, because the claim *is* the actor's. So it
+  #     is honoured only when the actor is on the **group's own host**: the
+  #     group's signature proves that host, so the same instance vouches for
+  #     both. That is the whole basis for trusting a relayed activity, and it
+  #     is why the comparison is `Validator.same_host?/2` — the strict one —
+  #     rather than a prefix or suffix test. A community relaying another
+  #     instance's `Delete` is asking to be taken at its word about somebody
+  #     else's actor; taking it would let any community delete any post
+  #     anywhere.
+  #
+  # An honoured activity runs through `admit/2`'s checks one by one —
+  # id-to-actor binding, not-local, domain block, suspension — and then
+  # through `dispatch/3` with **its own** actor rather than the group's. The
+  # single check that cannot apply is `validate_actor_match/2`, because the
+  # inner activity carries no signature of its own; the host comparison above
+  # is what stands in for it.
+  #
+  # Processing is at-least-once and the same activity may also arrive
+  # directly, so the handlers' existing idempotency (unique `ap_id`) is what
+  # makes the double delivery harmless.
+  defp handle_group_announce(announce, inner, group_actor, target) do
+    with {:ok, inner} <- Validator.validate_activity(inner),
+         :ok <- validate_not_local(inner),
+         {:ok, inner_actor} <- resolve_carried_actor(inner["actor"]),
+         :ok <- validate_domain(inner_actor),
+         :ok <- validate_not_suspended(inner_actor) do
+      carry(announce, inner, inner_actor, group_actor, target)
+    else
+      {:error, reason} ->
+        Logger.info(
+          "federation.group_announce_refused: group=#{group_actor.ap_id} reason=#{inspect(reason)}"
+        )
+
+        # `:ok`, not an error: a refused relay must not make the sender retry
+        # forever, exactly like a refused Like or reply.
+        :ok
+    end
+  end
+
+  # A `Create` is content arriving in the community, and the announced-content
+  # path already knows exactly what to do with it — including the part that is
+  # easy to get wrong. The post belongs in the boards that follow the
+  # **group**, not the boards that follow its author, whom nobody here need
+  # follow at all; `maybe_route_announce_to_boards/3` routes on the announcer
+  # while attributing the article to `attributedTo`, bound to the object's own
+  # origin. So this needs no host comparison and grants no new trust: the
+  # object is verified by the host that can prove it, exactly as a Mastodon
+  # boost of the same post would be.
+  defp carry(announce, %{"type" => "Create", "object" => object}, _inner, group_actor, _target)
+       when is_map(object) do
+    case object["id"] do
+      id when is_binary(id) ->
+        handle_announce_content(announce["id"], id, group_actor, object)
+
+      _ ->
+        :ok
+    end
+  end
+
+  # Everything else — `Update`, `Delete`, `Like`, `Undo` — is an activity
+  # whose whole meaning is "this actor did this". There is no object to fetch
+  # and verify: the claim *is* the actor's. So it is honoured only when the
+  # group can speak for that actor, which means only when the actor is on the
+  # group's own host.
+  defp carry(_announce, inner, inner_actor, group_actor, target) do
+    if Validator.same_host?(inner["actor"], group_actor.ap_id) do
+      Logger.info(
+        "federation.activity: type=Announce(#{inner["type"]}) relayed_by=#{group_actor.ap_id}"
+      )
+
+      dispatch(inner, inner_actor, target)
+    else
+      # A community relaying somebody else's Delete or Like is asking to be
+      # taken at its word about another instance's actor. Taking it would let
+      # any community delete any post or fake any like, anywhere.
+      Logger.info(
+        "federation.group_announce_cross_origin_dropped: group=#{group_actor.ap_id} " <>
+          "type=#{inner["type"]} actor=#{inner["actor"]}"
+      )
+
+      :ok
+    end
+  end
+
+  # Resolving the inner actor is what refuses a blocked domain before anything
+  # else happens (`ActorResolver` passes `refuse_blocked: true`), and what
+  # binds the fetched document's `id` to the host it came from (ADR 0046).
+  defp resolve_carried_actor(actor_uri) when is_binary(actor_uri) do
+    case ActorResolver.resolve(actor_uri) do
+      {:ok, actor} -> {:ok, actor}
+      {:error, reason} -> {:error, {:carried_actor_unresolved, reason}}
+    end
+  end
+
+  defp resolve_carried_actor(_), do: {:error, :carried_actor_missing}
 
   # --- Announce content routing ---
 

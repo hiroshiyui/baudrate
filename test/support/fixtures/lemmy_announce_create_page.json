@@ -1,0 +1,32 @@
+{
+  "id": "https://lemmy.example/activities/announce/8a5f3c1e-0000-4000-8000-000000000001",
+  "type": "Announce",
+  "actor": "https://lemmy.example/c/tech",
+  "to": ["https://www.w3.org/ns/activitystreams#Public"],
+  "cc": ["https://lemmy.example/c/tech/followers"],
+  "object": {
+    "id": "https://lemmy.example/activities/create/8a5f3c1e-0000-4000-8000-000000000002",
+    "type": "Create",
+    "actor": "https://lemmy.example/u/alice",
+    "to": ["https://www.w3.org/ns/activitystreams#Public"],
+    "cc": ["https://lemmy.example/c/tech"],
+    "audience": "https://lemmy.example/c/tech",
+    "object": {
+      "id": "https://lemmy.example/post/4242",
+      "type": "Page",
+      "attributedTo": "https://lemmy.example/u/alice",
+      "to": ["https://lemmy.example/c/tech", "https://www.w3.org/ns/activitystreams#Public"],
+      "audience": "https://lemmy.example/c/tech",
+      "name": "A packet radio primer",
+      "content": "<p>AX.25 is older than you think.</p>",
+      "mediaType": "text/html",
+      "source": {
+        "content": "AX.25 is older than you think.",
+        "mediaType": "text/markdown"
+      },
+      "language": { "identifier": "en", "name": "English" },
+      "published": "2026-09-20T07:00:00.000000+00:00",
+      "sensitive": false
+    }
+  }
+}
