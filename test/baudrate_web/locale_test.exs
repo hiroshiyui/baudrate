@@ -31,8 +31,10 @@ defmodule BaudrateWeb.LocaleTest do
       assert Locale.locale_display_name("en") == "English"
     end
 
-    test "returns 正體中文 for 'zh_TW'" do
-      assert Locale.locale_display_name("zh_TW") == "正體中文"
+    test "returns 台灣漢語 for 'zh_TW' — the language, not the script" do
+      # 繁體中文 and 正體中文 both name a script. The terms and the privacy
+      # policy say 台灣漢語; the switcher has to agree with them.
+      assert Locale.locale_display_name("zh_TW") == "台灣漢語"
     end
 
     test "falls back to code for unknown locale" do

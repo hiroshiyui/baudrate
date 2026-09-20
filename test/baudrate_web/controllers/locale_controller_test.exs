@@ -116,6 +116,44 @@ defmodule BaudrateWeb.LocaleControllerTest do
 
       assert redirected_to(conn) == "/boards/sysop"
     end
+
+    test "carries the query string back, so a search or a page is not lost", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("referer", "http://#{conn.host}/search?q=elixir&page=3")
+        |> post(~p"/locale", %{"locale" => "ja_JP", "return_to" => "/search"})
+
+      assert redirected_to(conn) == "/search?q=elixir&page=3"
+    end
+
+    test "takes the query only from a referer whose path the form already named", %{conn: conn} do
+      # The destination stays the CSRF-protected field's; the header only ever
+      # supplies a query string for that same path.
+      conn =
+        conn
+        |> put_req_header("referer", "http://#{conn.host}/admin/users?role=admin")
+        |> post(~p"/locale", %{"locale" => "ja_JP", "return_to" => "/search"})
+
+      assert redirected_to(conn) == "/search"
+    end
+
+    test "ignores a referer on another host", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("referer", "https://evil.example/search?q=stolen")
+        |> post(~p"/locale", %{"locale" => "ja_JP", "return_to" => "/search"})
+
+      assert redirected_to(conn) == "/search"
+    end
+
+    test "survives a referer that is not a URL at all", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("referer", "::::")
+        |> post(~p"/locale", %{"locale" => "ja_JP", "return_to" => "/search"})
+
+      assert redirected_to(conn) == "/search"
+    end
   end
 
   describe "a signed-in member" do

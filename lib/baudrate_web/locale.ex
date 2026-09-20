@@ -42,7 +42,7 @@ defmodule BaudrateWeb.Locale do
   @display_names %{
     "en" => "English",
     "ja_JP" => "日本語",
-    "zh_TW" => "正體中文"
+    "zh_TW" => "台灣漢語"
   }
 
   @auto "auto"
@@ -99,9 +99,18 @@ defmodule BaudrateWeb.Locale do
   @doc """
   Returns a human-readable display name for a locale code.
 
-  Falls back to the code itself if no display name is configured. The names are
-  deliberately written in their own language — someone looking for Japanese is
-  looking for 日本語, not for the word "Japanese" in a language they cannot read.
+  Falls back to the code itself if no display name is configured.
+
+  The names are autonyms — each written in its own language, because someone
+  looking for Japanese is looking for 日本語, not for the word "Japanese" in a
+  language they cannot read. That is also why they are not `gettext`ed.
+
+  **`zh_TW` is 台灣漢語, never 繁體中文 or 正體中文.** Both of those name a
+  *script*, and frame the variety as a typographic variant of something else;
+  台灣漢語 names the language as it is spoken and written in Taiwan. The site's
+  own governing-language clauses in `doc/eua.md` and `doc/privacy-policy.md`
+  already say 台灣漢語, and a switcher that disagreed with them was offering a
+  reader a different thing from the one the terms are written in.
   """
   def locale_display_name(code) when is_binary(code) do
     Map.get(@display_names, code, code)

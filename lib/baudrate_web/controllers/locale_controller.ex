@@ -53,7 +53,37 @@ defmodule BaudrateWeb.LocaleController do
     conn
     |> apply_choice(params["locale"])
     |> sync_session_preferences()
-    |> redirect(to: Helpers.local_path(params["return_to"], "/"))
+    |> redirect(to: return_path(conn, params["return_to"]))
+  end
+
+  # The path comes from the form field, which CSRF protection covers. The query
+  # string cannot: `AuthHooks.attach_current_path_hook/1` assigns the path
+  # alone, so switching language on `/search?q=…` or `?page=3` would drop the
+  # reader back at the top of an unfiltered first page.
+  #
+  # `referer` has the whole URL, but it is a header and not something to
+  # navigate on by itself. So it is used for the query string **only**, and
+  # only when it is same-origin and its path is the one the form already
+  # named — the destination is still decided by the field.
+  defp return_path(conn, return_to) do
+    path = Helpers.local_path(return_to, "/")
+
+    case referer_uri(conn) do
+      %URI{path: ^path, query: query} when is_binary(query) and query != "" ->
+        path <> "?" <> query
+
+      _ ->
+        path
+    end
+  end
+
+  defp referer_uri(conn) do
+    with [referer] <- get_req_header(conn, "referer"),
+         %URI{host: host} = uri when host == conn.host <- URI.parse(referer) do
+      uri
+    else
+      _ -> nil
+    end
   end
 
   # A member's click is also a statement about their account, so the chosen

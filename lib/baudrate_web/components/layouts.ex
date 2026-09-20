@@ -783,7 +783,8 @@ defmodule BaudrateWeb.Layouts do
   lesson in `CLAUDE.md`.
 
   `current_path` comes from `AuthHooks.attach_current_path_hook/1` and carries
-  no query string, so switching language on `/search?q=…` returns to `/search`.
+  no query string. `LocaleController` puts one back from the `referer` when it
+  agrees with this path, so a search or a page number survives the switch.
   """
   attr :current_locale, :string, default: nil
   attr :current_path, :string, default: nil
