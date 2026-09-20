@@ -16,6 +16,7 @@ defmodule BaudrateWeb.SyndicationFeedController do
   use BaudrateWeb, :controller
 
   alias Baudrate.{Auth, Content}
+  alias BaudrateWeb.HTTPCaching
   alias BaudrateWeb.SyndicationFeedXML
 
   @slug_re ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/
@@ -140,7 +141,7 @@ defmodule BaudrateWeb.SyndicationFeedController do
   defp render_feed(conn, format, articles, meta) do
     last_modified = newest_date(articles)
 
-    if not_modified_since?(conn, last_modified) do
+    if HTTPCaching.not_modified_since?(conn, last_modified) do
       send_resp(conn, 304, "")
     else
       content_type =
@@ -162,91 +163,11 @@ defmodule BaudrateWeb.SyndicationFeedController do
       conn
       |> put_resp_content_type(content_type)
       |> put_resp_header("cache-control", "public, max-age=300")
-      |> maybe_put_last_modified(last_modified)
+      |> HTTPCaching.put_last_modified(last_modified)
       |> send_resp(200, xml)
     end
   end
 
   defp newest_date([article | _]), do: article.inserted_at
   defp newest_date([]), do: nil
-
-  defp maybe_put_last_modified(conn, nil), do: conn
-
-  defp maybe_put_last_modified(conn, dt) do
-    put_resp_header(conn, "last-modified", format_http_date(dt))
-  end
-
-  defp not_modified_since?(_conn, nil), do: false
-
-  defp not_modified_since?(conn, last_modified) do
-    case get_req_header(conn, "if-modified-since") do
-      [ims_string] ->
-        case parse_http_date(ims_string) do
-          {:ok, ims_dt} ->
-            DateTime.compare(last_modified, ims_dt) in [:lt, :eq]
-
-          _ ->
-            false
-        end
-
-      _ ->
-        false
-    end
-  end
-
-  @http_days ~w(Mon Tue Wed Thu Fri Sat Sun)
-  @http_months ~w(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)
-
-  defp format_http_date(%DateTime{} = dt) do
-    day_name = Enum.at(@http_days, Date.day_of_week(dt) - 1)
-    month_name = Enum.at(@http_months, dt.month - 1)
-
-    "#{day_name}, #{pad2(dt.day)} #{month_name} #{dt.year} #{pad2(dt.hour)}:#{pad2(dt.minute)}:#{pad2(dt.second)} GMT"
-  end
-
-  defp pad2(n) when n < 10, do: "0#{n}"
-  defp pad2(n), do: "#{n}"
-
-  @month_map %{
-    "Jan" => 1,
-    "Feb" => 2,
-    "Mar" => 3,
-    "Apr" => 4,
-    "May" => 5,
-    "Jun" => 6,
-    "Jul" => 7,
-    "Aug" => 8,
-    "Sep" => 9,
-    "Oct" => 10,
-    "Nov" => 11,
-    "Dec" => 12
-  }
-
-  defp parse_http_date(string) do
-    # Parse RFC 7231 / IMF-fixdate: "Sun, 23 Feb 2026 05:57:22 GMT"
-    case Regex.run(
-           ~r/\w+, (\d{2}) (\w{3}) (\d{4}) (\d{2}):(\d{2}):(\d{2}) GMT/,
-           string
-         ) do
-      [_, day, month_str, year, hour, min, sec] ->
-        # Non-bang on purpose: the regex happily matches day 32 and hour 99, so
-        # `Date.new!`/`Time.new!` turned a malformed `If-Modified-Since` into an
-        # ArgumentError and a 500 on every /feeds/* route, unauthenticated.
-        with month when is_integer(month) <- Map.get(@month_map, month_str),
-             {:ok, date} <- Date.new(String.to_integer(year), month, String.to_integer(day)),
-             {:ok, time} <-
-               Time.new(
-                 String.to_integer(hour),
-                 String.to_integer(min),
-                 String.to_integer(sec)
-               ) do
-          DateTime.new(date, time)
-        else
-          _ -> :error
-        end
-
-      _ ->
-        :error
-    end
-  end
 end

@@ -24,17 +24,10 @@ defmodule BaudrateWeb.SyndicationFeedXML do
 
   @doc """
   Escapes a string for safe inclusion in XML text nodes and attributes.
-  """
-  def xml_escape(nil), do: ""
 
-  def xml_escape(text) when is_binary(text) do
-    text
-    |> String.replace("&", "&amp;")
-    |> String.replace("<", "&lt;")
-    |> String.replace(">", "&gt;")
-    |> String.replace("\"", "&quot;")
-    |> String.replace("'", "&apos;")
-  end
+  Delegates to `BaudrateWeb.XML.escape/1`, which the sitemap templates share.
+  """
+  defdelegate xml_escape(text), to: BaudrateWeb.XML, as: :escape
 
   @doc """
   Returns the display name for an article's author.
