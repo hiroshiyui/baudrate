@@ -7,11 +7,12 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.28.2).** The review named five gaps: broken promises (the
-UI or docs saying something happens when it does not), moderation reach,
-operability, federation reach, and discovery and onboarding. The first three
-are closed — Phase 0 in v1.18.2, Phase 1 in v1.21.0, Phase 2 with the
-alerting item that followed v1.28.2. **Phase 3 is next.**
+**Current state (v1.30.0, plus unreleased Phase 3).** The review named five
+gaps: broken promises (the UI or docs saying something happens when it does
+not), moderation reach, operability, federation reach, and discovery and
+onboarding. The first four are closed — Phase 0 in v1.18.2, Phase 1 in
+v1.21.0, Phase 2 with the alerting item that followed v1.28.2, and Phase 3 in
+the commits after v1.30.0. **Phase 4 is next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -39,7 +40,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
 | ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
-| 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
+| ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (unreleased) |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
 | 6 | Member depth | 6A–6E | Retention |
@@ -184,16 +185,32 @@ The two follow-on questions are closed, not open:
 
 ---
 
-## Phase 3 — Federation reach (scope)
+## Phase 3 — Federation reach — **complete** (unreleased)
 
 **Goal.** Conversations, mentions, profile changes and groups work the way Mastodon and Lemmy users expect.
 
-**Done when:**
-- a reply to a comment threads under that comment on Mastodon;
-- a mentioned remote user is notified;
-- Lemmy community activity arriving through a group appears here;
-- profile and board edits reach followers;
-- content warnings survive in both directions.
+**Done when** — all five met in code; **none of them verified against a real
+peer yet**, which is the one thing tests cannot do for this phase:
+
+- ✅ a reply to a comment threads under that comment on Mastodon (3B, 3A);
+- ✅ a mentioned remote user is notified (3A);
+- ✅ Lemmy community activity arriving through a group appears here (3C);
+- ✅ profile and board edits reach followers (3D);
+- ✅ content warnings survive in both directions (3E).
+
+Six new records: [0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md)
+(objects have dereferenceable URIs),
+[0051](adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md)
+(a mention is a surface of the outbound gate, not an exception),
+[0052](adr/0052-a-content-warning-is-a-field-not-a-prefix.md),
+[0053](adr/0053-a-group-announce-is-a-carrier.md), plus protocol hygiene (3F)
+and actor updates (3D), neither of which needed one.
+
+**Before release:** `Baudrate.Release.backfill_ap_ids()` must be run once
+(`doc/sysop.md`). **After release:** interop against a real Mastodon account
+and a real Lemmy community — thread a reply, send a mention, edit a display
+name, post with a content warning, follow a community. Phase 4 (discovery and
+onboarding) is next.
 
 ### ~~3A — Threading and mentions~~ — **done** (unreleased)
 
@@ -219,11 +236,20 @@ gate `test/baudrate/federation/object_identity_test.exs`.
 Operators must run `Baudrate.Release.backfill_ap_ids()` once after the upgrade
 (`doc/sysop.md`, "Data Repair: `ap_id` Backfill").
 
-### 3C — Lemmy groups, FEP-1b12 (M)
+### ~~3C — Lemmy groups, FEP-1b12~~ — **done** (unreleased)
 
-- [ ] **Accept an `Announce` from a group that wraps `Create`, `Update`, `Delete`, `Like` or `Undo`** (`core/federation/inbox_handler.ex:948` drops them).
-  - Each wrapped activity passes the same origin checks as a direct delivery, and is fetched by id when it is not embedded.
-- [ ] **Interop tests** with recorded Lemmy fixtures, both for a Lemmy community a board follows and for a Lemmy user who follows a board.
+A group's `Announce` is unwrapped one level. A carried `Create` goes to the
+announced-content path — verified through its object's own origin and routed
+to the boards following the **group** rather than the author — and
+`Update`/`Delete`/`Like`/`Undo` are honoured only when their actor is on the
+group's own host, which is all the group's signature can prove.
+[ADR 0053](adr/0053-a-group-announce-is-a-carrier.md), gate
+`test/baudrate/federation/group_announce_test.exs`, with a recorded Lemmy
+payload under `test/support/fixtures/`.
+
+**Not fetched when not embedded**, against the drafted plan: Lemmy embeds, and
+fetching an activity from a host in order to decide whether to trust that host
+is the same question with an extra request and an attacker-chosen URI in it.
 
 ### ~~3D — Profile, board and poll updates~~ — **done** (unreleased)
 

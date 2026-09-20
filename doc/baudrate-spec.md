@@ -96,6 +96,10 @@ The trust boundary. Everything here is reachable by an unauthenticated remote in
 | Every schema that accepts a warning applies the same normalisation, implication and bound | [0052](adr/0052-a-content-warning-is-a-field-not-a-prefix.md) | `Baudrate.Content.ContentWarning.fields/0` | [`content_warning_test.exs`](../test/baudrate/federation/content_warning_test.exs) |
 | An outbound summary is the content warning and never a body excerpt | [0052](adr/0052-a-content-warning-is-a-field-not-a-prefix.md) | `Baudrate.Federation.ObjectBuilder.article_object/1` | [`content_warning_test.exs`](../test/baudrate/federation/content_warning_test.exs) |
 | Video and audio attachments render as a link to the origin, never an embed or a proxied subresource | [0052](adr/0052-a-content-warning-is-a-field-not-a-prefix.md) | `Baudrate.Federation.AttachmentExtractor.playable?/1` | [`content_warning_test.exs`](../test/baudrate/federation/content_warning_test.exs) |
+| A group's Announce may carry one activity, and an Announce inside an Announce is never unwrapped | [0053](adr/0053-a-group-announce-is-a-carrier.md) | `Baudrate.Federation.InboxHandler.admit/2` | [`group_announce_test.exs`](../test/baudrate/federation/group_announce_test.exs) |
+| A carried Create is verified through its object's own origin, and routed to the boards following the group | [0053](adr/0053-a-group-announce-is-a-carrier.md) | `Baudrate.Federation.Validator.validate_object_origin/2` | [`group_announce_test.exs`](../test/baudrate/federation/group_announce_test.exs) |
+| A carried Update, Delete, Like or Undo is honoured only when its actor shares a host with the announcing group | [0053](adr/0053-a-group-announce-is-a-carrier.md) | `Baudrate.Federation.Validator.same_host?/2` | [`group_announce_test.exs`](../test/baudrate/federation/group_announce_test.exs) |
+| A carried activity faces the id-to-actor binding, the local-actor refusal, the domain block and the suspension check | [0053](adr/0053-a-group-announce-is-a-carrier.md) | `Baudrate.Federation.Validator.validate_activity/1` | [`group_announce_test.exs`](../test/baudrate/federation/group_announce_test.exs) |
 
 ## Auth
 

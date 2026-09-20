@@ -9,7 +9,13 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Phase 3 (federation reach), stages 3B, 3A, 3D, 3F and 3E.
+Phase 3 (federation reach), complete: stages 3A–3F.
+
+Federation that stopped at the instance boundary. None of it was a bug in
+something that worked — a reply that did not thread, a mention that named the
+wrong person, a Lemmy community whose posts were discarded, a profile edit
+nobody heard about. All of it was invisible from here and visible only from
+another server, which is why it lasted.
 
 **Upgrading:** four migrations, and **one release task that must be run**:
 `bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"` (see
@@ -18,6 +24,25 @@ created before the upgrade keep their old IDs and stay unthreadable from other
 instances; nothing breaks either way, and the task is idempotent and resumable.
 
 ### Added
+
+- **Lemmy communities work**
+  ([ADR 0053](doc/adr/0053-a-group-announce-is-a-carrier.md)). A community is a
+  hub rather than a booster: members send activities *to* it and it announces
+  them on, so its `Announce` wraps an **activity** where a Mastodon boost wraps
+  an object. The handler accepted only `Note`/`Article`/`Page` objects and
+  returned `:ok` for everything else, so **every post in every followed Lemmy
+  community was silently discarded** — the board followed the community, the
+  activities arrived, and nothing appeared.
+
+  A carried `Create` now goes to the announced-content path, which verifies
+  the object through its own origin and routes it to the boards following the
+  **group** rather than the author's (nobody here need follow the author at
+  all). `Update`, `Delete`, `Like` and `Undo` are honoured only when their
+  actor is on the group's own host: the signature on the Announce is the
+  group's and the inner activity carries none, so that host is the whole of
+  what the group can prove. A community relaying another instance's `Delete`
+  is asking to be taken at its word about somebody else's actor, and taking it
+  would let any community delete any post anywhere.
 
 - **Content warnings, in both directions**
   ([ADR 0052](doc/adr/0052-a-content-warning-is-a-field-not-a-prefix.md)).
