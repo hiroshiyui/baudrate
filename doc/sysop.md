@@ -324,6 +324,15 @@ Three admin-authored markdown documents, each edited in its own card at
 | `/rules` | *(`rules` table)* | What members may and may not do here — a numbered list, edited at `/admin/rules` |
 | `/privacy` | `privacy_policy` | What the site records about visitors, and what happens to it |
 
+**Writing the privacy policy?** The instance sets exactly two cookies, and
+`doc/development.md` (“Cookies this instance sets”) lists both with their
+lifetimes and attributes: `_baudrate_key`, the signed and encrypted session,
+and `locale`, the language a visitor picked in the footer. Both are strictly
+necessary in the sense the ePrivacy guidance uses — one carries the session,
+the other exists only because the reader asked for it — so neither needs a
+consent prompt. Theme and text size are kept in the browser's `localStorage`
+and never reach the server.
+
 The footer links the documents you have actually written, and nothing while
 all three are empty — a link to a page saying "not published yet" is worse
 than no link. The registration form keeps showing the terms inline and now

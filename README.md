@@ -44,6 +44,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - **Personal timeline** -- follow remote accounts and local users from `/following`, and read their posts at `/timeline`, merged with local articles from people you follow and with comments on threads you took part in; reply, like, boost, or forward an item to a board. Non-public posts stay out: a boost of a followers-only post is never shown, and a direct message never appears
 - **Link previews** -- server-side Open Graph / Twitter Card metadata fetching with image proxy for articles, comments, and DMs
 - **No page contacts a third party on your behalf** -- every remote image, avatar and preview thumbnail is re-encoded and served from this host, so reading a federated thread discloses nothing to the instance that wrote it; the one embed, the YouTube player, loads only when you press play, from a poster stored locally
+- **Nothing is ranked by engagement** -- there is no "popular", "trending" or "hot" page, no river of posts across boards, and no post count comparing one board with another; the home page lists the boards in the order the admin chose. A ranking is a feedback loop, not a measurement, and engagement cannot tell an argument from a conversation ([ADR 0054](doc/adr/0054-attention-follows-the-board-not-a-ranking.md))
 - **User public profiles** -- public profile pages with stats, recent articles, and clickable author names
 - **Avatar system** -- upload, crop, WebP conversion with server-side security
 - **Flexible registration** -- open, approval-required, or invite-only modes with admin-managed invite codes
@@ -63,7 +64,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - **User blocking, muting and reporting** -- block local or remote accounts to stop replies, likes, boosts, follows and messages in both directions; mute to hide content locally; report posts, comments, timeline items, received messages and accounts to moderators
 - **Push notifications** -- PWA with Web Push support and service worker
 - **Web Share** -- share the current page to other apps via the OS-level share sheet (smartphone / installed PWA), powered by the Web Share API
-- **Internationalization** -- Gettext with zh_TW and ja_JP locales and Accept-Language auto-detection
+- **Internationalization** -- Gettext with zh_TW and ja_JP locales, Accept-Language auto-detection, and a footer language switcher any visitor can use; the choice is kept in a cookie for a year, and works with JavaScript off
 
 ## Setup
 

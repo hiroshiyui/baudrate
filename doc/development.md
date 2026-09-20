@@ -2466,6 +2466,16 @@ member had just left. The resolved answer is also written to `session[:locale]`,
 which `AuthHooks` reads so a LiveView mount does not flip the language after
 the dead render.
 
+Every string zh_TW and ja_JP are missing fails the build:
+`test/baudrate_web/translation_coverage_test.exs` refuses an empty `msgstr`
+in either. `en` is exempt, because its `msgid`s *are* the source text Gettext
+falls back to. A string whose translation genuinely is the English — an
+example value in a placeholder — is written out in full with a translator
+comment saying so, because an empty entry cannot be told from an oversight.
+The locale display names are autonyms and deliberately not `gettext`ed;
+`zh_TW` is **台灣漢語**, never 繁體中文 or 正體中文, which name a script
+rather than a language.
+
 The switcher is a `<details>` dropdown in the footer holding a plain form
 POST, not a LiveView event. Both halves are deliberate: `<details>` is the one
 disclosure widget the browser implements itself, so opening the menu needs no

@@ -601,6 +601,37 @@ touches it
 | Token rotation | Every 24 hours (via `RefreshSession` plug) |
 | Max concurrent sessions | 3 per user (oldest evicted) |
 
+### A member says the site is in the wrong language
+
+The likely cause is that it is in the language they *chose*, once, and forgot.
+
+`BaudrateWeb.Plugs.SetLocale` answers in this order: the `locale` cookie, then
+the member's `preferred_locales` as cached in the session at login, then
+`Accept-Language`, then `en`. The cookie is an explicit choice made in the
+footer switcher, it lasts a year, and it deliberately outranks everything —
+including a browser whose `Accept-Language` says something else, which is what
+makes this look like a bug rather than a preference.
+
+Ask them to press **Match my browser** at the foot of any page. That deletes
+the cookie and hands the decision back to their account and then their browser.
+It is the only thing that clears it; signing out does not, because the choice
+is not kept in the session.
+
+Two related cases:
+
+- **A member changed their language on `/profile` and one page is still
+  wrong.** The session copy of `preferred_locales` is written at login, and a
+  LiveView cannot write the session, so `/profile` posts to `LocaleController`
+  to refresh it. If that POST were blocked — a proxy stripping `Referer` will
+  not do it, but a CSRF failure would — the first paint of every later page
+  would keep the old language while the connected render corrected itself. Look
+  for `POST /locale` in the access log.
+- **Everyone is getting English.** Check that the catalogues shipped:
+  `ls priv/gettext/*/LC_MESSAGES/*.po` inside the release. An empty `msgstr`
+  renders the English source rather than failing, which is why the gap is
+  silent; `test/baudrate_web/translation_coverage_test.exs` is what stops one
+  reaching a release.
+
 ### Session cleanup
 
 The `SessionCleaner` GenServer runs every hour and carries seventeen steps —
