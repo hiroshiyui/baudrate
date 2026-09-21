@@ -439,6 +439,11 @@ defmodule BaudrateWeb.Router do
 
     # The personal stream moved from /feed to /timeline; members bookmark it.
     get "/feed", PageController, :feed_redirect
+
+    # The service worker's offline fallback (ADR 0059). Reachable directly so
+    # it can be precached, and so it can be looked at without pulling the
+    # network cable.
+    get "/offline", PageController, :offline
   end
 
   # Public browsable routes (accessible to guests and authenticated users)

@@ -1,0 +1,29 @@
+<main id="main-content" class="min-h-[60vh] flex items-center justify-center px-4 py-10">
+  <section
+    id="offline-section"
+    aria-labelledby="offline-heading"
+    class="offline-section card bg-base-200 shadow-sm max-w-lg w-full"
+  >
+    <div class="card-body items-center text-center gap-3">
+      <.icon name="hero-signal-slash" class="size-12 text-base-content/50" />
+      <h1 id="offline-heading" class="offline-heading card-title text-2xl">
+        {gettext("You are offline")}
+      </h1>
+      <p id="offline-message" class="offline-message text-base-content/70">
+        {gettext(
+          "This page could not be loaded because the connection was lost. Nothing you were reading is stored on this device, so it will be here again once you are back online."
+        )}
+      </p>
+      <div class="card-actions">
+        <%!--
+          A full page load, not a LiveView `navigate`: there is no socket to
+          navigate over, and reaching the server is the whole point.
+        --%>
+        <a id="offline-retry-link" href={~p"/"} class="offline-retry-link btn btn-primary">
+          <.icon name="hero-arrow-path" class="size-4" />
+          {gettext("Try again")}
+        </a>
+      </div>
+    </div>
+  </section>
+</main>

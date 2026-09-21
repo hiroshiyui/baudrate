@@ -47,4 +47,28 @@ defmodule BaudrateWeb.PageControllerTest do
       assert redirected_to(conn, 301) == "/timeline"
     end
   end
+
+  # The service worker's offline fallback (ADR 0059). It is precached, so it
+  # has to answer without a session and without the network having worked for
+  # anything else on the page.
+  describe "GET /offline" do
+    setup do
+      Baudrate.Repo.insert!(%Baudrate.Setup.Setting{key: "setup_completed", value: "true"})
+      :ok
+    end
+
+    test "renders for a guest", %{conn: conn} do
+      html = conn |> get(~p"/offline") |> html_response(200)
+
+      assert html =~ ~s(id="offline-section")
+      assert html =~ ~s(id="offline-retry-link")
+    end
+
+    test "carries noindex and no canonical", %{conn: conn} do
+      html = conn |> get(~p"/offline") |> html_response(200)
+
+      assert html =~ ~s(<meta name="robots" content="noindex, follow">)
+      refute html =~ ~s(rel="canonical")
+    end
+  end
 end

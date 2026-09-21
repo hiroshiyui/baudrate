@@ -25,13 +25,25 @@ const PushManagerHook = {
   mounted() {
     this.vapidKey = document.querySelector('meta[name="vapid-public-key"]')?.content
 
+    // An instance with no VAPID key cannot offer push. That is all this
+    // means now — it used to also decide whether the service worker was
+    // registered at all, and so whether the site could be installed, which
+    // are unrelated questions that nothing in the admin UI connected.
     if (!this.vapidKey || !("serviceWorker" in navigator) || !("PushManager" in window)) {
       this.pushEvent("push_support", { supported: false, subscribed: false })
       return
     }
 
-    navigator.serviceWorker
-      .register("/service_worker.js", { scope: "/" })
+    // `app.js` registers the worker on every page now, so this hook waits for
+    // whatever is already installed rather than registering a second time.
+    // `ready` resolves only once a worker is active and controlling, which is
+    // exactly the precondition `pushManager.subscribe()` needs.
+    //
+    // Both subscribe() and unsubscribe() below return silently when
+    // `this.registration` is unset, so a broken handoff would show up as
+    // buttons that do nothing rather than as an error — hence the explicit
+    // `push_support: false` on failure, and the browser test that clicks them.
+    navigator.serviceWorker.ready
       .then((registration) => {
         this.registration = registration
         return registration.pushManager.getSubscription()

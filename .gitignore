@@ -29,6 +29,12 @@ baudrate-*.tar
 
 # Ignore assets that are produced by build tools.
 /priv/static/assets/
+# The service worker is an esbuild bundle of assets/js/service_worker.js, not
+# a source file. It was tracked from the commit that introduced it, so the
+# built copy — the one browsers actually run — could drift from its source
+# with nothing to catch it. `mix assets.build` and `mix assets.deploy` produce
+# it; the deploy runs the latter on the server.
+/priv/static/service_worker.js
 
 # Ignore digested assets cache.
 /priv/static/cache_manifest.json

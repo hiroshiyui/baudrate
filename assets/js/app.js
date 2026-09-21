@@ -370,6 +370,32 @@ window.addEventListener("phx:scroll-to-top", () => {
   window.scrollTo({ top, behavior: "instant" })
 })
 
+// Register the service worker, on every page and independently of push.
+//
+// It used to be registered by PushManagerHook, which mounts only on /profile
+// and returns early when no VAPID key is configured — so on an instance that
+// never set up Web Push, no worker was ever registered anywhere and the site
+// was not installable at all. Push availability and PWA installability are
+// different questions; the hook still answers the first one.
+//
+// **The path is a bare string literal on purpose. Never make it `~p`.** That
+// would resolve to the digest-stamped `/service_worker-<md5>.js?vsn=d`, so
+// every deploy would register a *new* worker at a *new* URL and leave the old
+// one controlling clients for ever, with no way to dislodge it. `phx.digest`
+// keeps the undigested original next to the stamped copy, and both
+// `Plug.Static` and nginx serve it, which is what makes the literal correct
+// and what preserves the same-URL byte-diff update check.
+//
+// Failures are swallowed deliberately: registration rejects routinely in
+// private windows, over plain HTTP and under Selenium, and
+// `features/js_errors_test.exs` fails the build on `console.error` and on an
+// unhandled rejection.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service_worker.js", {scope: "/"}).catch(() => {})
+  })
+}
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

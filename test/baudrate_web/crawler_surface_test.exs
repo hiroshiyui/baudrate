@@ -228,7 +228,7 @@ defmodule BaudrateWeb.CrawlerSurfaceTest do
 
   describe "noindex" do
     test "the pages with nothing worth indexing carry it, and no canonical", %{conn: conn} do
-      for path <- ~w(/search /login /register /password-reset) do
+      for path <- ~w(/search /login /register /password-reset /offline) do
         html = conn |> get(path) |> html_response(200)
 
         assert html =~ ~s(<meta name="robots" content="noindex, follow">),

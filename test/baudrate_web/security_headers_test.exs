@@ -38,6 +38,17 @@ defmodule BaudrateWeb.SecurityHeadersTest do
       assert csp =~ "connect-src 'self' blob: ws: wss:"
     end
 
+    # `app.js` registers the service worker on every page (ADR 0059). Dropping
+    # this directive would not break anything visibly — `default-src 'self'`
+    # covers it in most engines — so it is exactly the kind of line that gets
+    # tidied away, and the failure would be an un-installable PWA and no
+    # offline page, on some browsers only.
+    test "allows the service worker with worker-src 'self'", %{conn: conn} do
+      conn = get(conn, "/login")
+      [csp] = get_resp_header(conn, "content-security-policy")
+      assert csp =~ "worker-src 'self'"
+    end
+
     test "restricts script-src to self only", %{conn: conn} do
       conn = get(conn, "/login")
       [csp] = get_resp_header(conn, "content-security-policy")

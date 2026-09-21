@@ -10,6 +10,33 @@ defmodule BaudrateWeb.PageController do
   end
 
   @doc """
+  The page the service worker serves when a navigation cannot reach us.
+
+  It is a route rather than a file in `priv/static` so it is translated and
+  themed like every other page — the worker re-fetches it after each
+  successful navigation, so the cached copy follows the reader's language
+  instead of freezing whichever one was active when the worker installed.
+
+  `noindex` is assigned directly rather than by path: `Crawlers.noindex?/1`
+  reads `:current_path` from assigns, which `AuthHooks` sets for LiveViews
+  and nothing sets for a controller. It is listed in `@noindex_paths` as well,
+  so the two agree however the page is reached.
+
+  It needs nothing from the network to render: the Cache API stores a response
+  with its headers, so the cached copy carries its own CSP — including the
+  hash of the theme bootstrap inlined in that same copy, which is why the two
+  stay consistent however old the copy gets. What can go stale is the theme
+  and the language, and the worker's refresh after each successful navigation
+  is what keeps those current.
+  """
+  def offline(conn, _params) do
+    conn
+    |> assign(:noindex, true)
+    |> assign(:page_title, gettext("You are offline"))
+    |> render(:offline)
+  end
+
+  @doc """
   Redirects `/feed` to `/timeline`, where the personal stream now lives.
 
   The page was `/feed` until the vocabulary was settled: "feed" also names the
