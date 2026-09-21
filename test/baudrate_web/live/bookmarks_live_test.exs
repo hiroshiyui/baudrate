@@ -24,7 +24,7 @@ defmodule BaudrateWeb.BookmarksLiveTest do
   test "redirects unauthenticated user to login", %{conn: _conn} do
     conn = Phoenix.ConnTest.build_conn()
 
-    assert {:error, {:redirect, %{to: "/login"}}} =
+    assert {:error, {:redirect, %{to: "/login" <> _}}} =
              live(conn, "/bookmarks")
   end
 

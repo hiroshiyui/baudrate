@@ -16,7 +16,7 @@ defmodule BaudrateWeb.TotpResetLiveTest do
   end
 
   test "redirects to /login when not authenticated", %{conn: conn} do
-    assert {:error, {:redirect, %{to: "/login"}}} = live(conn, "/profile/totp-reset")
+    assert {:error, {:redirect, %{to: "/login" <> _}}} = live(conn, "/profile/totp-reset")
   end
 
   test "renders enable mode when user has no TOTP", %{conn: conn} do

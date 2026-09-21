@@ -26,7 +26,7 @@ defmodule BaudrateWeb.AuthHooksTest do
       session = %{}
 
       assert {:halt, socket} = AuthHooks.on_mount(:require_auth, %{}, session, socket)
-      assert {:redirect, %{to: "/login"}} = socket.redirected
+      assert {:redirect, %{to: "/login" <> _}} = socket.redirected
     end
 
     test "redirects to /login when session_token is invalid" do
@@ -34,7 +34,7 @@ defmodule BaudrateWeb.AuthHooksTest do
       session = %{"session_token" => "invalid_token"}
 
       assert {:halt, socket} = AuthHooks.on_mount(:require_auth, %{}, session, socket)
-      assert {:redirect, %{to: "/login"}} = socket.redirected
+      assert {:redirect, %{to: "/login" <> _}} = socket.redirected
     end
   end
 
@@ -56,7 +56,7 @@ defmodule BaudrateWeb.AuthHooksTest do
       assert {:halt, socket} =
                AuthHooks.on_mount(:require_password_auth, %{}, session, socket)
 
-      assert {:redirect, %{to: "/login"}} = socket.redirected
+      assert {:redirect, %{to: "/login" <> _}} = socket.redirected
     end
 
     test "redirects to /login when user_id does not exist" do
@@ -66,7 +66,7 @@ defmodule BaudrateWeb.AuthHooksTest do
       assert {:halt, socket} =
                AuthHooks.on_mount(:require_password_auth, %{}, session, socket)
 
-      assert {:redirect, %{to: "/login"}} = socket.redirected
+      assert {:redirect, %{to: "/login" <> _}} = socket.redirected
     end
   end
 
@@ -168,7 +168,7 @@ defmodule BaudrateWeb.AuthHooksTest do
       session = %{"session_token" => session_token}
 
       assert {:halt, socket} = AuthHooks.on_mount(:require_auth, %{}, session, socket)
-      assert {:redirect, %{to: "/login"}} = socket.redirected
+      assert {:redirect, %{to: "/login" <> _}} = socket.redirected
     end
 
     test "optional_auth assigns nil for banned user", %{
@@ -190,7 +190,7 @@ defmodule BaudrateWeb.AuthHooksTest do
       assert {:halt, socket} =
                AuthHooks.on_mount(:require_password_auth, %{}, session, socket)
 
-      assert {:redirect, %{to: "/login"}} = socket.redirected
+      assert {:redirect, %{to: "/login" <> _}} = socket.redirected
     end
 
     test "redirect_if_authenticated allows banned user to continue", %{

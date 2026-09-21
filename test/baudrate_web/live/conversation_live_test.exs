@@ -16,7 +16,7 @@ defmodule BaudrateWeb.ConversationLiveTest do
 
   describe "authenticated access" do
     test "redirects to login when not authenticated", %{conn: conn, other: other} do
-      assert {:error, {:redirect, %{to: "/login"}}} =
+      assert {:error, {:redirect, %{to: "/login" <> _}}} =
                live(conn, "/messages/new?to=#{other.username}")
     end
 

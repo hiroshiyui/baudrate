@@ -35,7 +35,7 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
   test "redirects unauthenticated user to login", %{article: article} do
     conn = Phoenix.ConnTest.build_conn()
 
-    assert {:error, {:redirect, %{to: "/login"}}} =
+    assert {:error, {:redirect, %{to: "/login" <> _}}} =
              live(conn, "/articles/#{article.slug}/edit")
   end
 

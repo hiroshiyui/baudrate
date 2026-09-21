@@ -20,7 +20,7 @@ defmodule BaudrateWeb.LoginLive do
   import BaudrateWeb.Helpers, only: [extract_peer_ip: 1]
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
     peer_ip = if connected?(socket), do: extract_peer_ip(socket), else: "unknown"
 
     socket =
@@ -29,6 +29,10 @@ defmodule BaudrateWeb.LoginLive do
       |> assign(:trigger_action, false)
       |> assign(:token, nil)
       |> assign(:peer_ip, peer_ip)
+      # Where a guest was headed when `:require_auth` sent them here. It is
+      # carried, never trusted: `SessionController` runs it through
+      # `Helpers.local_path/2` before redirecting anywhere.
+      |> assign(:return_to, BaudrateWeb.Helpers.local_path(params["return_to"], nil))
       |> assign(:page_title, gettext("Sign In"))
 
     {:ok, socket}

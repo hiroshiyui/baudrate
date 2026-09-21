@@ -12,7 +12,7 @@ defmodule BaudrateWeb.RecoveryCodesLiveTest do
   end
 
   test "redirects to /login when not authenticated", %{conn: conn} do
-    assert {:error, {:redirect, %{to: "/login"}}} = live(conn, "/profile/recovery-codes")
+    assert {:error, {:redirect, %{to: "/login" <> _}}} = live(conn, "/profile/recovery-codes")
   end
 
   test "redirects to / when no recovery codes in session", %{conn: conn} do

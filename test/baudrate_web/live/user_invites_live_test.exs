@@ -22,7 +22,7 @@ defmodule BaudrateWeb.UserInvitesLiveTest do
   end
 
   test "unauthenticated user is redirected", %{conn: conn} do
-    assert {:error, {:redirect, %{to: "/login"}}} = live(conn, "/invites")
+    assert {:error, {:redirect, %{to: "/login" <> _}}} = live(conn, "/invites")
   end
 
   test "user sees quota info", %{conn: conn} do

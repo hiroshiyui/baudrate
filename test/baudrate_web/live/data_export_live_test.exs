@@ -45,7 +45,7 @@ defmodule BaudrateWeb.DataExportLiveTest do
   end
 
   test "requires authentication", %{conn: conn} do
-    assert {:error, {:redirect, %{to: "/login"}}} = live(conn, "/profile/export")
+    assert {:error, {:redirect, %{to: "/login" <> _}}} = live(conn, "/profile/export")
   end
 
   test "without TOTP, explains why and links to TOTP setup", %{conn: conn} do

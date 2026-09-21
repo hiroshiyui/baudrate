@@ -123,7 +123,7 @@ defmodule BaudrateWeb.SilencedMemberTest do
     # Even a session minted afterwards does not get them onto an
     # authenticated page, and a public page treats them as a guest.
     conn = log_in_user(conn, member)
-    assert {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/profile")
+    assert {:error, {:redirect, %{to: "/login" <> _}}} = live(conn, ~p"/profile")
 
     {:ok, lv, _html} = live(conn, ~p"/articles/#{article.slug}")
     refute has_element?(lv, "#comment-form")

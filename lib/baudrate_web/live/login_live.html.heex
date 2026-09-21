@@ -55,6 +55,7 @@
   >
     <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
     <input type="hidden" name="token" value={@token} />
+    <input :if={@return_to} type="hidden" name="return_to" value={@return_to} />
   </form>
 
   <nav id="login-help-nav" aria-label={gettext("Login help")}>

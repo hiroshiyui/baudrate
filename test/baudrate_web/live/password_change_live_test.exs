@@ -31,7 +31,7 @@ defmodule BaudrateWeb.PasswordChangeLiveTest do
   end
 
   test "redirects to /login when not authenticated" do
-    assert {:error, {:redirect, %{to: "/login"}}} =
+    assert {:error, {:redirect, %{to: "/login" <> _}}} =
              live(Phoenix.ConnTest.build_conn(), "/profile/password")
   end
 

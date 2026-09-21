@@ -28,7 +28,7 @@ defmodule BaudrateWeb.TotpVerifyLiveTest do
   end
 
   test "redirects to /login without session", %{conn: conn} do
-    assert {:error, {:redirect, %{to: "/login"}}} = live(conn, "/totp/verify")
+    assert {:error, {:redirect, %{to: "/login" <> _}}} = live(conn, "/totp/verify")
   end
 
   test "valid 6-digit code triggers phx-trigger-action", %{conn: conn} do

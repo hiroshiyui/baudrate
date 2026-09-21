@@ -117,7 +117,7 @@ defmodule BaudrateWeb.ArticleHistoryLiveTest do
     # Guest conn (no auth)
     guest_conn = Phoenix.ConnTest.build_conn()
 
-    assert {:error, {:redirect, %{to: "/login"}}} =
+    assert {:error, {:redirect, %{to: "/login" <> _}}} =
              live(guest_conn, "/articles/#{restricted_article.slug}/history")
   end
 

@@ -17,7 +17,7 @@ defmodule BaudrateWeb.NotificationsLiveTest do
 
   describe "authenticated access" do
     test "redirects to login when not authenticated", %{conn: conn} do
-      assert {:error, {:redirect, %{to: "/login"}}} = live(conn, "/notifications")
+      assert {:error, {:redirect, %{to: "/login" <> _}}} = live(conn, "/notifications")
     end
 
     test "renders empty state when no notifications", %{conn: conn, user: user} do

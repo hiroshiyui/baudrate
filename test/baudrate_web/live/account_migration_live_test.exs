@@ -45,7 +45,7 @@ defmodule BaudrateWeb.AccountMigrationLiveTest do
   end
 
   test "requires authentication" do
-    assert {:error, {:redirect, %{to: "/login"}}} = live(build_conn(), "/profile/move")
+    assert {:error, {:redirect, %{to: "/login" <> _}}} = live(build_conn(), "/profile/move")
   end
 
   test "is linked from the profile page", %{conn: conn} do

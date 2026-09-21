@@ -76,7 +76,7 @@ defmodule BaudrateWeb.SessionController do
   @max_totp_attempts 5
 
   @doc "Verifies the short-lived Phoenix.Token from LoginLive and routes to the next auth step."
-  def create(conn, %{"token" => token}) do
+  def create(conn, %{"token" => token} = params) do
     case Phoenix.Token.verify(conn, "user_auth", token, max_age: 60) do
       {:ok, user_id} ->
         user = Auth.get_user(user_id)
@@ -108,7 +108,7 @@ defmodule BaudrateWeb.SessionController do
               |> redirect(to: "/totp/setup")
 
             :authenticated ->
-              establish_session(conn, user)
+              establish_session(conn, user, login_landing(params))
           end
         else
           conn
@@ -586,7 +586,10 @@ defmodule BaudrateWeb.SessionController do
     final_redirect =
       if redirect_to == "/" do
         case get_session(conn, :return_to) do
-          nil -> "/"
+          # A member who asked for a particular page gets it: they said where
+          # they were going, and the first-visit step has not. It is shown on
+          # their next ordinary sign-in instead.
+          nil -> default_landing(user)
           path -> sanitize_return_to(path)
         end
       else
@@ -614,6 +617,24 @@ defmodule BaudrateWeb.SessionController do
     |> put_session(:live_socket_id, Auth.live_socket_id(session_id))
     |> put_session(:preferred_locales, user.preferred_locales || [])
     |> redirect(to: final_redirect)
+  end
+
+  # `return_to` comes from the login form, which got it from `:require_auth`.
+  # It is sanitised here and not only there: what a controller receives is
+  # whatever the browser posted, whatever the page that rendered it did.
+  # Falling back to "/" keeps `establish_session/3`'s own `return_to` branch
+  # (the PWA share target's) reachable.
+  defp login_landing(%{"return_to" => path}) when is_binary(path) do
+    BaudrateWeb.Helpers.local_path(path, "/")
+  end
+
+  defp login_landing(_params), do: "/"
+
+  # A newly registered member lands on the first-visit step (P4-D2). Accounts
+  # that predate the column were backfilled by its migration, so a nil here
+  # means "registered since 4D and has not seen /welcome" rather than "old".
+  defp default_landing(user) do
+    if Auth.onboarded?(user), do: "/", else: "/welcome"
   end
 
   # Failed TOTP codes at login count toward the per-account login throttle

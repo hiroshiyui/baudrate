@@ -64,7 +64,7 @@ defmodule BaudrateWeb.AdminTotpVerifyLiveTest do
     end
 
     test "guest is redirected to login", %{conn: conn} do
-      assert {:error, {:redirect, %{to: "/login"}}} = live(conn, "/admin/verify")
+      assert {:error, {:redirect, %{to: "/login" <> _}}} = live(conn, "/admin/verify")
     end
 
     test "return_to passed through to hidden field", %{conn: conn} do
