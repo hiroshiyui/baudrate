@@ -40,6 +40,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_inbound_flag/1`        | `inbound_flag:`    | 1 hour  | 10    |
   | `check_account_reset_by_ip/1` | `account_reset:ip:` | 1 hour | 10   |
   | `check_recovery_codes/1`      | `recovery_codes:`  | 1 hour  | 5     |
+  | `check_remote_follow_domain/1` | `remote_follow_domain:` | 1 min | 10 |
   """
 
   require Logger
@@ -286,6 +287,29 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_reply_chain_fetch(String.t()) :: :ok | {:error, :rate_limited}
   def check_reply_chain_fetch(host) do
     check("reply_chain:#{host}", 60_000, 10, :reply_chain_fetch)
+  end
+
+  @doc """
+  Remote-follow lookup against a domain: 10 per minute per **target** domain.
+
+  A visitor types a handle and this instance fetches that domain's WebFinger
+  document, so the limit is keyed on the domain being asked, not on who asked
+  — exactly `check_reply_chain_fetch/1`'s reasoning. Keyed on the visitor
+  alone, many visitors (or one behind many addresses) could combine into a
+  respectable amount of traffic aimed at a single server that never asked to
+  hear from us.
+
+  Ten a minute is the same number as the reply-chain walk, and for the same
+  reason: a real instance is looked up once per visitor who wants to follow
+  someone, which for any one domain is a rare event. Anything approaching the
+  limit is not people following each other.
+
+  The per-IP half is `BaudrateWeb.Plugs.RateLimit`'s `:remote_follow` bucket;
+  both apply, and it is the one that stops a single visitor looping.
+  """
+  @spec check_remote_follow_domain(String.t()) :: :ok | {:error, :rate_limited}
+  def check_remote_follow_domain(domain) do
+    check("remote_follow_domain:#{domain}", 60_000, 10, :remote_follow_domain)
   end
 
   @doc """

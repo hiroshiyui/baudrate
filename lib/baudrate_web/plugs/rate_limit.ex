@@ -16,6 +16,9 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     * `:health` — 120 requests per minute per IP
     * `:push_subscription` — 10 requests per minute per IP
     * `:share_target` — 10 requests per minute per IP
+    * `:remote_follow` — 10 requests per minute per IP (each one makes this
+      instance fetch a WebFinger document from a domain the visitor named, so
+      the per-domain half is `RateLimits.check_remote_follow_domain/1`)
     * `:media` — 300 requests per minute per IP (media proxy, cache hits included)
     * `:data_export_download` — 10 requests per 15 minutes per IP (a legitimate
       user downloads an export at most 3 times)
@@ -55,6 +58,7 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     # robots.txt and the sitemap documents (ADR 0057). Each sitemap request
     # runs a count and a page query, and the page number is client-supplied.
     sitemap: {60_000, 10},
+    remote_follow: {60_000, 10},
     # Generous: a load balancer probing every few seconds stays well inside it,
     # and it was the only public route with no bucket at all.
     health: {60_000, 120}

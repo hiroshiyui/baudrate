@@ -46,6 +46,21 @@
         atom={~p"/feeds/users/#{@profile_user.username}/atom"}
         class="user-profile-feeds mt-1"
       />
+      <%!--
+        Offered to everyone, not only guests: a member here may well keep an
+        account elsewhere, and the local Follow button below answers a
+        different question. Withheld for a moved account, which the local
+        button is also withheld for — a move is a redirect, and following the
+        old address would be following nothing.
+      --%>
+      <.remote_follow
+        :if={@federation_enabled and is_nil(@moved_to)}
+        id_prefix="user-profile"
+        type="user"
+        name={@profile_user.username}
+        handle={fediverse_handle(@profile_user)}
+        class="user-profile-remote-follow mt-2"
+      />
       <p class="user-profile-member-since text-sm text-base-content/70 mt-1">
         {gettext("Member since")}
         <time datetime={format_date(@profile_user.inserted_at)}>

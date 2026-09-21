@@ -1,0 +1,70 @@
+<main id="main-content" class="min-h-[60vh] flex items-center justify-center px-4 py-10">
+  <section
+    id="remote-follow-section"
+    aria-labelledby="remote-follow-heading"
+    class="remote-follow-section card bg-base-200 shadow-sm max-w-lg w-full"
+  >
+    <div class="card-body gap-4">
+      <h1 id="remote-follow-heading" class="remote-follow-heading card-title text-2xl">
+        {gettext("Follow from your instance")}
+      </h1>
+
+      <div :if={@subscribe_url} id="remote-follow-result" class="remote-follow-result">
+        <p id="remote-follow-explanation" class="remote-follow-explanation text-base-content/70">
+          {gettext(
+            "%{server} can follow %{target} for you. You will be asked to confirm there.",
+            server: @destination,
+            target: @target_label
+          )}
+        </p>
+        <div class="card-actions mt-4">
+          <%!--
+            A link, not a redirect. The visitor reads the host they are about
+            to hand themselves to before committing, and this stays the one
+            place in the application that sends anyone off-site.
+          --%>
+          <a
+            id="remote-follow-continue"
+            class="remote-follow-continue btn btn-primary"
+            href={@subscribe_url}
+            rel="noopener noreferrer"
+          >
+            <.icon name="hero-arrow-top-right-on-square" class="size-4" />
+            {gettext("Continue to %{server}", server: @destination)}
+          </a>
+        </div>
+      </div>
+
+      <div :if={is_nil(@subscribe_url)} id="remote-follow-failure" class="remote-follow-failure">
+        <%!--
+          One message for every failure — a bad handle, a blocked domain, a
+          server that answered nothing useful. Telling them apart would make
+          this a way to ask us about other servers.
+        --%>
+        <p
+          id="remote-follow-failure-message"
+          class="remote-follow-failure-message text-base-content/70"
+        >
+          {gettext(
+            "We could not reach that server, or it does not support following from another site this way."
+          )}
+        </p>
+        <p
+          id="remote-follow-failure-fallback"
+          class="remote-follow-failure-fallback text-base-content/70 mt-2"
+        >
+          {gettext(
+            "You can still follow %{target} by searching for its handle on your own server.",
+            target: @target_label
+          )}
+        </p>
+      </div>
+
+      <div class="card-actions">
+        <.link id="remote-follow-back" navigate={~p"/"} class="remote-follow-back btn btn-ghost">
+          {gettext("Back to home")}
+        </.link>
+      </div>
+    </div>
+  </section>
+</main>

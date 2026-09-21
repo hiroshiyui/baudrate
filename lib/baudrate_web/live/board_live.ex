@@ -64,6 +64,7 @@ defmodule BaudrateWeb.BoardLive do
          unread_sub_board_ids: unread_sub_board_ids,
          page_title: board.name,
          syndication_board_slug: syndication_slug,
+         federation_enabled: Baudrate.Setup.federation_enabled?(),
          linked_data_json: jsonld,
          dc_meta: dc_meta,
          og_meta: OpenGraph.board_tags(board)

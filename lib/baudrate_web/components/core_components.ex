@@ -29,6 +29,13 @@ defmodule BaudrateWeb.CoreComponents do
   use Phoenix.Component
   use Gettext, backend: BaudrateWeb.Gettext
 
+  # `~p` for the one component here that posts to a route of its own
+  # (`remote_follow/1`). Everything else takes its paths as attributes.
+  use Phoenix.VerifiedRoutes,
+    endpoint: BaudrateWeb.Endpoint,
+    router: BaudrateWeb.Router,
+    statics: BaudrateWeb.static_paths()
+
   alias Phoenix.LiveView.JS
 
   @doc """
@@ -1257,6 +1264,107 @@ defmodule BaudrateWeb.CoreComponents do
         </li>
       </ul>
     </nav>
+    """
+  end
+
+  @doc """
+  Offers a fediverse visitor a way to follow this user or board from their own
+  instance.
+
+  Two paths, and the first always works: the handle, with a copy button, to
+  search for on their own server. Under it, a box for their handle — we ask
+  their server where its follow page is and hand them a link to it, which
+  saves a copy, a switch of tab and a search.
+
+  A `<details>`, so it is one line until someone wants it, and a plain form
+  post, so both halves survive scripting having gone wrong. The form carries
+  the *kind and name*, never the actor URI:
+  `BaudrateWeb.RemoteFollowController` rebuilds that and re-checks
+  eligibility, because a posted URI could otherwise name something this page
+  would never have offered.
+
+  Render it only where following is actually possible — a board must satisfy
+  `Content.Board.federated?/1`, not merely have `ap_enabled` set.
+  """
+  attr :id_prefix, :string, required: true
+  attr :type, :string, required: true, values: ~w(user board)
+  attr :name, :string, required: true, doc: "username or board slug"
+  attr :handle, :string, required: true, doc: "the @name@host to show and copy"
+  attr :class, :string, default: nil
+
+  def remote_follow(assigns) do
+    ~H"""
+    <details id={"#{@id_prefix}-remote-follow"} class={["remote-follow", @class]}>
+      <summary
+        id={"#{@id_prefix}-remote-follow-summary"}
+        class="remote-follow-summary btn btn-ghost btn-sm"
+      >
+        <.icon name="hero-globe-alt" class="size-4" />
+        {gettext("Follow from your instance")}
+      </summary>
+
+      <div class="remote-follow-body card bg-base-200 mt-2 max-w-md">
+        <div class="card-body gap-3 p-4">
+          <div class="remote-follow-handle-row flex items-center gap-2 min-w-0">
+            <code class="remote-follow-handle text-sm break-all min-w-0">{@handle}</code>
+            <button
+              id={"#{@id_prefix}-remote-follow-copy"}
+              type="button"
+              phx-hook="CopyToClipboardHook"
+              class="remote-follow-copy btn btn-ghost btn-xs shrink-0"
+              data-copy-text={@handle}
+              data-copied-label={gettext("Copied!")}
+              title={gettext("Copy this handle")}
+              aria-label={gettext("Copy this handle")}
+            >
+              <.icon name="hero-clipboard-document" class="size-4" />
+            </button>
+          </div>
+
+          <p class="remote-follow-hint text-sm text-base-content/70">
+            {gettext("Search for this handle on your own server to follow from there.")}
+          </p>
+
+          <form
+            id={"#{@id_prefix}-remote-follow-form"}
+            method="post"
+            action={~p"/remote-follow"}
+            class="remote-follow-form flex flex-wrap items-end gap-2"
+          >
+            <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+            <input type="hidden" name="type" value={@type} />
+            <input type="hidden" name="name" value={@name} />
+
+            <div class="remote-follow-field grow min-w-0">
+              <label
+                for={"#{@id_prefix}-remote-follow-input"}
+                class="remote-follow-label label label-text text-sm"
+              >
+                {gettext("Or enter your own handle")}
+              </label>
+              <input
+                id={"#{@id_prefix}-remote-follow-input"}
+                type="text"
+                name="handle"
+                inputmode="email"
+                autocomplete="off"
+                spellcheck="false"
+                class="remote-follow-input input input-bordered input-sm w-full"
+                placeholder={gettext("@you@example.social")}
+              />
+            </div>
+
+            <button
+              type="submit"
+              id={"#{@id_prefix}-remote-follow-submit"}
+              class="remote-follow-submit btn btn-primary btn-sm"
+            >
+              {gettext("Go")}
+            </button>
+          </form>
+        </div>
+      </div>
+    </details>
     """
   end
 

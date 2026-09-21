@@ -262,6 +262,10 @@ defmodule BaudrateWeb.Router do
     plug BaudrateWeb.Plugs.RateLimit, action: :sitemap
   end
 
+  pipeline :remote_follow do
+    plug BaudrateWeb.Plugs.RateLimit, action: :remote_follow
+  end
+
   scope "/", BaudrateWeb do
     pipe_through :crawlers
 
@@ -444,6 +448,17 @@ defmodule BaudrateWeb.Router do
     # it can be precached, and so it can be looked at without pulling the
     # network cable.
     get "/offline", PageController, :offline
+  end
+
+  # "Follow from your instance" — a plain form post, so it works with
+  # scripting off, and so the per-IP limiter has a plug to hang on. Each
+  # submission makes this instance fetch a WebFinger document from a domain
+  # the visitor named; `RateLimits.check_remote_follow_domain/1` is the other
+  # half, keyed on that domain rather than on who asked.
+  scope "/", BaudrateWeb do
+    pipe_through [:browser, :remote_follow]
+
+    post "/remote-follow", RemoteFollowController, :create
   end
 
   # Public browsable routes (accessible to guests and authenticated users)

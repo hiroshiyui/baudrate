@@ -67,6 +67,7 @@ defmodule BaudrateWeb.UserProfileLive do
          |> assign(
            profile_user: user,
            moved_to: Baudrate.AccountMigration.moved_target(user),
+           federation_enabled: Baudrate.Setup.federation_enabled?(),
            article_count: article_count,
            comment_count: comment_count,
            is_muted: is_muted,

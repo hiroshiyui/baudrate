@@ -345,21 +345,52 @@ defmodule Baudrate.Federation.Discovery do
     end
   end
 
-  defp webfinger_lookup(user, domain, opts) do
+  @doc """
+  Fetches and decodes a remote instance's WebFinger document for
+  `acct:user@domain`.
+
+  Returns the decoded JRD, whatever links it holds — callers pick the `rel`
+  they care about. `lookup_remote_actor/2` wants `self`;
+  `Baudrate.Federation.RemoteFollow` wants the OStatus subscribe template.
+
+  **A blocked domain is refused here** (`refuse_blocked: true`, ADR 0030
+  decision 9), on every redirect hop. That flag used to be missing, and the
+  only reason it was not a hole is that the one caller followed this with
+  `ActorResolver.resolve/2`, which re-checks. A caller that stops at the
+  WebFinger document has no such backstop, and a guest chooses the domain.
+
+  ## Options
+
+    * `:timeout` — shortens the deadline. Somebody is usually waiting on this.
+  """
+  @spec webfinger_document(String.t(), String.t(), keyword()) ::
+          {:ok, map()} | {:error, term()}
+  def webfinger_document(user, domain, opts \\ []) do
     resource = "acct:#{user}@#{domain}"
     url = "https://#{domain}/.well-known/webfinger?resource=#{URI.encode_www_form(resource)}"
 
-    get_opts = [headers: [{"accept", "application/jrd+json"}], timeout: opts[:timeout]]
+    get_opts = [
+      headers: [{"accept", "application/jrd+json"}],
+      timeout: opts[:timeout],
+      refuse_blocked: true
+    ]
 
     case HTTPClient.get(url, get_opts) do
       {:ok, %{body: body}} ->
-        with {:ok, jrd} <- Jason.decode(body),
-             {:ok, actor_url} <- extract_self_link(jrd) do
-          ActorResolver.resolve(actor_url, opts)
+        case Jason.decode(body) do
+          {:ok, jrd} when is_map(jrd) -> {:ok, jrd}
+          _ -> {:error, :invalid_webfinger}
         end
 
       {:error, reason} ->
         {:error, {:webfinger_failed, reason}}
+    end
+  end
+
+  defp webfinger_lookup(user, domain, opts) do
+    with {:ok, jrd} <- webfinger_document(user, domain, opts),
+         {:ok, actor_url} <- extract_self_link(jrd) do
+      ActorResolver.resolve(actor_url, opts)
     end
   end
 

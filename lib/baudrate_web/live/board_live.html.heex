@@ -31,6 +31,21 @@
   <span title={gettext("Fediverse handle")}>{fediverse_handle(@board)}</span>
 </div>
 
+<%!--
+  `Board.federated?/1`, not the `ap_enabled` the handle above is guarded on:
+  a members-only board with AP switched on has an actor that answers 404 and
+  a `Follow` that is `Reject`ed (ADR 0004/0043), so offering this there would
+  be a broken promise and an existence oracle at once.
+--%>
+<.remote_follow
+  :if={@federation_enabled and Board.federated?(@board)}
+  id_prefix="board"
+  type="board"
+  name={@board.slug}
+  handle={fediverse_handle(@board)}
+  class="board-remote-follow mb-4"
+/>
+
 <.feed_links
   :if={@syndication_board_slug}
   id_prefix="board-feed"
