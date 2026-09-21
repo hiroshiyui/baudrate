@@ -206,6 +206,7 @@ lib/
 │   │   ├── publisher.ex         # High-level activity publishing API
 │   │   ├── pubsub.ex            # Federation PubSub (user timeline events)
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
+│   │   ├── remote_follow.ex     # The visitor's own instance, from its WebFinger subscribe template
 │   │   ├── remote_actors.ex     # Instance-wide suspension of a single remote actor (ADR 0030, decision 6)
 │   │   ├── sanitizer.ex         # HTML sanitizer for federated content (Ammonia NIF)
 │   │   ├── stale_actor_cleaner.ex # GenServer: daily stale remote actor cleanup
@@ -287,10 +288,11 @@ lib/
 │   │   │   └── atom.xml.eex    # Atom 1.0 feed + entries template
 │   │   ├── health_controller.ex # Health check endpoint
 │   │   ├── locale_controller.ex # POST /locale — the footer language switcher's cookie and session write
-│   │   ├── page_controller.ex   # Static page controller
+│   │   ├── page_controller.ex   # Static pages, /feed redirect, and /offline (ADR 0059)
 │   │   ├── page_html.ex         # Page HTML view module
 │   │   ├── handle_redirect_controller.ex  # Redirects /@username to /users/:username (Mastodon compat)
 │   │   ├── push_subscription_controller.ex  # POST/DELETE /api/push-subscriptions (Web Push)
+│   │   ├── remote_follow_controller.ex  # POST /remote-follow — hands a visitor to their own instance
 │   │   ├── session_controller.ex  # POST endpoints for session mutations
 │   │   └── share_target_controller.ex  # PWA Web Share Target POST handler
 │   ├── live/
@@ -2761,6 +2763,8 @@ these responses loads a subresource.
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
 | robots.txt and sitemap documents | 10 / min | per IP |
+| Follow-from-your-instance lookups | 10 / min | per IP |
+| Follow-from-your-instance lookups | 10 / min | per target domain |
 | Account reset redemption | 10 / hour | per IP |
 | Recovery code regeneration | 5 / hour | per user |
 | Direct messages | 20 / min | per user |
@@ -3015,9 +3019,39 @@ beyond OTP `:crypto`.
 7. Service worker receives push event and displays native notification
 
 **Service worker:** `assets/js/service_worker.js` — handles `push` (show
-notification) and `notificationclick` (focus/open window) events. Built
-separately via the `service_worker` esbuild target to `/service_worker.js`
-(must be at root for maximum scope).
+notification), `notificationclick` (focus/open window), and `fetch` (the
+offline fallback). Built separately via the `service_worker` esbuild target to
+`/service_worker.js`, which must be at the origin root for `scope: "/"` to be
+legal without a `Service-Worker-Allowed` header. The built bundle is **not**
+tracked in git; `mix assets.build` and `mix assets.deploy` produce it.
+
+### The service worker, and what it may keep (ADR 0059)
+
+**`app.js` registers it, on every page, independently of push.** It used to be
+registered by `PushManagerHook`, which mounts only on `/profile` and returns
+early when no VAPID key is configured — so an instance that never set up Web
+Push had no service worker anywhere and could not be installed. The hook now
+takes what is already installed from `navigator.serviceWorker.ready`, and its
+VAPID check means only that push is unavailable.
+
+**The registration path is a bare string literal and must stay one.** `~p`
+would resolve to the digest-stamped `/service_worker-<md5>.js?vsn=d`, so every
+deploy would register a new worker at a new URL and leave the old one
+controlling clients for ever. `phx.digest` keeps the undigested original, which
+is what makes the literal correct.
+
+**It caches the shell and never content.** Two things reach a cache: the
+offline page, and fingerprinted files under `/assets/` (immutable by
+construction, bounded to 60 entries). Navigations are network-first and fall
+back to the offline page only when there was no answer at all — a 404 or a 500
+is the server talking and passes straight through. Nothing else gets a
+`respondWith`, so the browser keeps its own fast path. No article, comment, DM
+or board page is written to disk: a cache on a forum is a record of what
+somebody read, on a device that may not be theirs alone.
+
+**`/offline` is a route**, not a file in `priv/static`, so it is translated and
+themed; the worker re-fetches it after each successful navigation so the cached
+copy follows the reader's language. It carries `noindex`.
 
 ### PWA Manifest
 
@@ -3025,9 +3059,12 @@ separately via the `service_worker` esbuild target to `/service_worker.js`
 Progressive Web App. The manifest is linked from `root.html.heex` via
 `<link rel="manifest">` alongside a `<meta name="theme-color">` tag.
 
-With the service worker (Phase 6) and manifest in place, browsers show an
-"Install" prompt. The app opens in `standalone` mode (no browser chrome) and
-uses the SVG favicon as the app icon.
+With the service worker and manifest in place, browsers show an "Install"
+prompt. The app opens in `standalone` mode (no browser chrome) and uses the SVG
+favicon as the app icon. **A reverse proxy serving the manifest from disk must
+be told its type** — `.webmanifest` is absent from Debian's nginx
+`mime.types`, and `application/octet-stream` stops browsers treating the site
+as installable; the shipped configs give it a `location` of its own.
 
 #### Web Share Target
 
@@ -3058,15 +3095,71 @@ forwarding the current page to other apps (Messages, Mail, Mastodon, etc.).
   and `aria-label="Share this page"`. The button is rendered with both the
   HTML5 `hidden` attribute and the Tailwind `hidden` class so it stays
   invisible by default.
-- **Hook**: `WebShareHook` in `assets/js/web_share_hook.js` checks
-  `navigator.share` on mount; if unavailable (most desktop browsers) the
-  button stays hidden, otherwise it's revealed and the click handler calls
-  `navigator.share({title, text, url})`.
-- **Default payload**: `document.title` and `location.href`. Per-page
-  overrides are supported via `data-share-title`, `data-share-text`, and
-  `data-share-url` attributes on the button element.
-- **AbortError** (user dismissed the share sheet) is silently ignored;
-  other errors are logged via `console.warn`.
+- **Hook**: `WebShareHook` in `assets/js/web_share_hook.js` reveals the button
+  when **either** `navigator.share` or the clipboard is available, and decides
+  which to use at click time. On a desktop browser, where `navigator.share`
+  does not exist, it copies the link and relabels itself to say so — it used
+  to hide itself there, leaving the site with no sharing affordance at all on
+  the machines most writing happens on. The server still renders it hidden and
+  the hook reveals it, because a button that can do nothing without JavaScript
+  should not be visible without it.
+- **Default payload**: `document.title` and `location.href`. The header passes
+  the page's canonical URL and title where there is one, so a share carries
+  the article's own address rather than whatever tracking parameters the
+  reader arrived with; per-page overrides use `data-share-title`,
+  `data-share-text` and `data-share-url`.
+- **Labels** arrive as server-rendered gettext in `data-copy-label` and
+  `data-copied-label`. A missing one means the feedback is skipped — the
+  client never falls back to English.
+- **AbortError** (the reader dismissed the share sheet) returns silently and
+  does **not** fall through to copying: they just said no. A sheet that could
+  not open at all does fall through.
+- **Copying and its feedback** live in `assets/js/clipboard.js`, shared with
+  `CopyToClipboardHook`: announce through the `#copy-announcer` polite live
+  region, swap `title`/`aria-label` for two seconds, then restore exactly what
+  was there. `copy/1` never throws and never rejects — `navigator.clipboard`
+  is undefined outside a secure context, and the previous code threw a
+  synchronous `TypeError` inside a click listener and gave no feedback at all.
+
+#### Follow from your instance
+
+A fediverse visitor on a user profile or a federated board page can hand
+themselves to their own server rather than copying a handle. The control is a
+`<details>` holding the handle (with a copy button) and a plain form post to
+`POST /remote-follow` — `<details>` and a real form both work with scripting
+off, and CSP's `form-action 'self'` means the form has to come back here
+whatever happens.
+
+`Baudrate.Federation.RemoteFollow` resolves the visitor's own WebFinger
+document and reads its `http://ostatus.org/schema/1.0/subscribe` template.
+Discovering it beats guessing: Mastodon uses `/authorize_interaction`, Akkoma
+`/ostatus_subscribe`, Misskey `/authorize-follow`.
+
+Both values are chosen by someone else, so neither is trusted:
+
+- The domain comes from a visitor, so the lookup passes `refuse_blocked: true`
+  (ADR 0030 decision 9). `Discovery.webfinger_document/3` owns that now, so
+  `lookup_remote_actor/2` gets it too — it was missing there, and was covered
+  only because `ActorResolver` re-checks downstream.
+- The template comes from that domain, so it must be HTTPS, must contain
+  `{uri}`, and must be **on the host the visitor typed**. Without the last one
+  a hostile server answers WebFinger with a link to anywhere and this site
+  renders it.
+- The form carries a **kind and a name**, never an actor URI:
+  `RemoteFollowController` rebuilds it and re-checks eligibility. A board must
+  satisfy `Content.Board.federated?/1` — not `ap_enabled` alone, which the
+  board page's handle is guarded on and which would offer a handle whose actor
+  404s and whose `Follow` is `Reject`ed (ADR 0004/0043).
+
+**It renders a link, never an external redirect.** Nothing else in `lib/`
+calls `redirect(external:)`, and `Helpers.local_path/2` exists to refuse
+anything that leaves the site; a link keeps that true and lets the visitor
+read the destination host first.
+
+Every failure renders one page, naming no server. Two rate limits apply: the
+per-IP `:remote_follow` plug bucket and
+`RateLimits.check_remote_follow_domain/1`, keyed on the **target** domain so
+many visitors cannot combine against one server.
 
 [Web Share API]: https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share
 

@@ -264,7 +264,7 @@ at today.
 - ~~a new member is signed in and guided after registering;~~ **done** (4D)
 - ~~a locked-out member has a documented way back in (D3).~~ **done** (4D)
 
-Only **4E** is left, and it is the smallest of the six.
+**Phase 4 is complete.**
 
 ### Done
 
@@ -274,6 +274,7 @@ Only **4E** is left, and it is the smallest of the six.
 | 4B | SEO and syndication feeds: `sitemap.xml`, a real `robots.txt`, canonical/description/`noindex`, 404 for a missing account, per-page and tag feeds | v1.33.0 | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
 | 4C | Search: relevance or date sorting, a board and date filter, the same operators on the Comments tab, a paged Users tab capped at five pages | v1.33.0 | `doc/development.md` (Search), spec rows under [0054](adr/0054-attention-follows-the-board-not-a-ranking.md)/[0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)/[0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
 | 4D | Onboarding and account recovery: sign-in on registering, `/welcome`, private pages that bring you back, replaceable recovery codes, OpenPGP recovery contacts, admin-issued reset links | v1.33.0 | [0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md), `doc/sysop.md` (the operator's procedure) |
+| 4E | Sharing and PWA: the service worker on every page with an offline fallback, a copy-link share fallback, follow-from-your-instance | v1.34.0 | [0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md), `doc/development.md` (the service worker; Follow from your instance) |
 | 4F | Privacy and language: the footer language switcher and a one-year `locale` cookie | v1.32.0 | `doc/development.md` (resolution order, cookie inventory) |
 
 **4A adds no new page.** `/recent` and `/popular` went with P4-D1;
@@ -331,11 +332,31 @@ Everything else about the finished stages is in those records, in
   just left. Fixed by posting to `LocaleController`; the shape of the bug is
   why that copy is documented as a cache.
 
-### 4E — Sharing and PWA (S)
+### What 4E's three lines turned out to be
 
-- [ ] **Service worker on every page,** independent of push (`assets/js/push_manager_hook.js:28-34`), with an offline fallback page.
-- [ ] **Copy-link fallback** when `navigator.share` is missing (`assets/js/web_share_hook.js:15`).
-- [ ] **"Follow from your instance":** a visitor enters their instance and is sent to its remote-follow page for a user or board.
+Same pattern as every stage before it, recorded once more because it kept
+holding:
+
+- **"Service worker on every page" understated it.** Registration was gated on
+  a **VAPID key being configured**, not merely on the page — so an instance
+  that never set up Web Push had no service worker anywhere and could not be
+  installed at all, and nothing in the admin UI connected the two. The `fetch`
+  handler it already had was a bare pass-through added for Firefox's
+  installability check: it routed the whole site through the worker and cached
+  nothing. And there was no `install`/`activate` at all, so an update waited
+  for every tab to close.
+- **"Copy-link fallback" was two bugs, not one.** The share button hid itself
+  on desktop, and `CopyToClipboardHook` — the thing to reuse — had no
+  `.catch()` and no feature test, so outside a secure context it threw a
+  synchronous `TypeError` inside a click listener and gave no feedback at all.
+- **"Follow from your instance" had a gap one module away.**
+  `Discovery.webfinger_lookup/3` never passed `refuse_blocked: true`, and got
+  away with it only because `ActorResolver.resolve/2` re-checks downstream.
+  A flow that *stops* at the WebFinger document has no such backstop.
+- **The ops fix from the morning had already drifted.**
+  `doc/examples/nginx.conf.example` still carried both bugs the Ansible
+  template had just lost, because the gate watched one of the two places the
+  rule is written.
 
 ### Decisions (made 2026-09-20)
 

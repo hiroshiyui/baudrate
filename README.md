@@ -73,7 +73,9 @@ third party on your behalf.
 - **RSS/Atom bot accounts** -- admin-managed feed bots that periodically fetch RSS 0.9x/2.0, RSS 1.0 (RDF), Atom, and JSON Feed sources and post articles to target boards; configurable fetch interval, per-bot bio and profile fields, automatic favicon avatar fetching, error tracking with exponential backoff, and manual reset-and-retry
 - **User blocking, muting and reporting** -- block local or remote accounts to stop replies, likes, boosts, follows and messages in both directions; mute to hide content locally; report posts, comments, timeline items, received messages and accounts to moderators
 - **Push notifications** -- PWA with Web Push support and service worker
-- **Web Share** -- share the current page to other apps via the OS-level share sheet (smartphone / installed PWA), powered by the Web Share API
+- **Installable, and it survives a dropped connection** -- the service worker is registered on every page, independently of whether push is configured, and serves an offline page when a navigation cannot reach the server. It caches that page and the fingerprinted CSS/JS and **nothing else**: no article, comment or message is written to a reader's disk, because a cache on a forum is a record of what somebody read on a device that may not be theirs alone ([ADR 0059](doc/adr/0059-the-service-worker-caches-the-shell-and-never-content.md))
+- **Web Share** -- share the current page to other apps via the OS-level share sheet (smartphone / installed PWA), and copy the link instead on the desktop browsers that have no share sheet
+- **Follow from your instance** -- a fediverse visitor on a profile or a federated board enters their own handle and is handed a link to their own server's follow page, discovered from its WebFinger subscribe template rather than guessed; the handle is always there to copy as well
 - **Internationalization** -- Gettext with zh_TW and ja_JP locales, Accept-Language auto-detection, and a footer language switcher any visitor can use; the choice is kept in a cookie for a year, and works with JavaScript off
 
 ## Setup

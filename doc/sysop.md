@@ -1253,6 +1253,8 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
 | robots.txt and sitemap documents | 10 / min | per IP |
+| Follow-from-your-instance lookups | 10 / min | per IP |
+| Follow-from-your-instance lookups | 10 / min | per target domain |
 | Account reset redemption | 10 / hour | per IP |
 | Recovery code regeneration | 5 / hour | per user |
 | Data export download | 10 / 15 min | per IP |
@@ -1569,7 +1571,12 @@ Safari, Firefox).
 **Requirements:**
 
 - The site must be served over **HTTPS** (required for service workers and PWA)
-- VAPID keys must be generated in Admin Settings for push notifications to work
+- VAPID keys must be generated in Admin Settings for push notifications to
+  work. **They no longer gate installability.** Until v1.34.0 the service
+  worker was registered only by the push settings section on `/profile`, and
+  only when a VAPID key was configured, so an instance that never set up push
+  could not be installed at all and nothing said so. It is now registered on
+  every page.
 - A reverse proxy serving `/site.webmanifest` from disk must be told its type.
   Debian's `/etc/nginx/mime.types` has no `webmanifest` entry, so nginx falls
   back to `default_type` and answers `application/octet-stream`; the shipped
@@ -1583,8 +1590,14 @@ Safari, Firefox).
   mode (`standalone`), theme color, and icon
 - `root.html.heex` includes `<link rel="manifest">` and
   `<meta name="theme-color">` in the `<head>`
-- Combined with the service worker (registered by `PushManagerHook`), browsers
-  detect the app as installable and may show an install prompt
+- The service worker (registered from `app.js` on every page) also serves an
+  **offline page** when a navigation cannot reach the server. It caches that
+  page and the fingerprinted CSS/JS, and deliberately **nothing else** — no
+  article, comment or direct message is written to a reader's disk (ADR 0059),
+  so there is no offline reading and no cache to purge when someone signs out
+  on a shared machine
+- Together these make the app installable, and browsers may show an install
+  prompt
 
 No additional configuration is required. The manifest declares four icons — the
 SVG favicon, `icon-192.png`, `icon-512.png`, and the same 512 px image again as
