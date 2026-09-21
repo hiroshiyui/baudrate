@@ -1570,6 +1570,12 @@ Safari, Firefox).
 
 - The site must be served over **HTTPS** (required for service workers and PWA)
 - VAPID keys must be generated in Admin Settings for push notifications to work
+- A reverse proxy serving `/site.webmanifest` from disk must be told its type.
+  Debian's `/etc/nginx/mime.types` has no `webmanifest` entry, so nginx falls
+  back to `default_type` and answers `application/octet-stream`; the shipped
+  config gives the manifest a `location` of its own with
+  `default_type application/manifest+json`. Phoenix gets this right by itself,
+  so a proxy that forwards the path instead of serving it needs nothing.
 
 **How it works:**
 

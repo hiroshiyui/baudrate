@@ -159,8 +159,29 @@ server {
     # sitemap and no `Disallow` at all. Every path in this list must be a real
     # file under `BaudrateWeb.static_paths/0`; anything the application
     # generates belongs in `location /`.
-    location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|service_worker[^/]*\.js|site[^/]*\.webmanifest) {
+    location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|service_worker[^/]*\.js) {
         root {{ static_path }};
+        expires 1h;
+        add_header Cache-Control "public";
+        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        access_log off;
+    }
+
+    # --- Web app manifest (short cache, explicit type) ---
+    # Debian's /etc/nginx/mime.types has no `webmanifest` entry, so the shared
+    # static block above served it as the `default_type`,
+    # `application/octet-stream`. Phoenix gets this right by itself
+    # (`MIME.type("webmanifest")`), but this path never reaches it.
+    #
+    # It needs its own `location` rather than a line in the block above: a
+    # `types { … }` inside a location *replaces* the inherited map for that
+    # whole location, which would turn every font, image and favicon served
+    # beside it into `application/octet-stream` — the bug, widened. Overriding
+    # `default_type` where nothing else is served is the contained fix.
+    location ~ ^/site[^/]*\.webmanifest$ {
+        root {{ static_path }};
+        default_type application/manifest+json;
         expires 1h;
         add_header Cache-Control "public";
         add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
