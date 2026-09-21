@@ -441,24 +441,27 @@ v1.37.0.
 - DMs notify;
 - members can delete their account and manage their sessions.
 
-### 6A — Comments and composer (M)
+### 6A — Comments and composer (M) — **complete**
 
-Editing and image descriptions are done and unreleased
-([ADR 0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md),
-[ADR 0061](adr/0061-an-image-description-is-not-a-form-field.md)). What is
-left:
+Comment editing with a public history
+([ADR 0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md)) and image
+descriptions ([ADR 0061](adr/0061-an-image-description-is-not-a-form-field.md))
+shipped in v1.35.0. Server-side drafts
+([ADR 0062](adr/0062-a-draft-is-kept-in-two-places-on-purpose.md)) are done and
+unreleased: articles only, beside the localStorage autosave rather than
+instead of it, because the two fail in opposite directions.
 
-- [ ] **Drafts on the server,** with a drafts list, next to the local
-  autosave (articles only — a comment draft is the right size for the
-  localStorage one, which stays).
-  - The local hook's two defects were fixed alongside 6A's first half: its key
-    is now per account (it was a constant, so on a shared browser one member's
-    unsent post restored into the next member's composer), and a submit the
-    server rejects no longer throws the draft away.
-  - `/articles/:slug/history` still cannot show what the **most recent** edit
-    changed, because a revision holds the state *before* a change.
-    `CommentHistoryLive` renders the live text as a version to close that;
-    the article page was left alone.
+Two things this stage deliberately left standing:
+
+- `/articles/:slug/history` still cannot show what the **most recent** edit
+  changed, because a revision holds the state *before* a change.
+  `CommentHistoryLive` renders the live text as a version to close that; the
+  article page was left alone.
+- The article **edit** composer has no server draft. An unsaved rewrite is
+  still covered by the localStorage hook and the published text is never at
+  risk, so this is deferred rather than refused — it needs a draft that
+  belongs to an article, and a rule for what happens when that article is
+  edited from elsewhere in between (ADR 0062's rejected alternatives).
 
 ### 6B — Reading and notifications (M)
 

@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [Unreleased]
+
+Phase 6A's second half, and with it 6A is complete: an unfinished article is
+now saved to your account as you write, so a post begun on a phone can be
+finished on a laptop.
+
+**The browser's autosave stays, and that is the decision**
+([ADR 0062](doc/adr/0062-a-draft-is-kept-in-two-places-on-purpose.md)). The
+tidy version of this feature deletes the `localStorage` hook and keeps only
+the server — and it makes the feature worse in the case that actually
+happens. The hook is the only half that works when the connection is gone,
+which is exactly when a tab gets lost; the server row is the only half that
+crosses devices. Losing a draft now takes both failures at once.
+
+### Added
+
+- **Drafts on the server**, at `/drafts`, with a link in the account menu.
+  The composer saves as you type, a fresh composer picks up where you left
+  off, and posting deletes the draft it came from. Articles only: a comment
+  draft is the right size for the browser-side one, which is unchanged.
+- A draft holds the **whole composer** — the content warning, the visibility,
+  the forwardable flag, the selected boards, the uploaded images and the poll
+  — where the browser hook could only ever reach the title and the body,
+  because those are the only two inputs with a `name` attribute.
+- Drafts are included in a member's data export.
+
+### Changed
+
+- The composer refuses to restore a draft in three cases, each of which would
+  otherwise put the wrong text in front of somebody: a composer opened from
+  the **PWA share target** (the post you just shared would be buried), one
+  opened **from a board** (a draft addressed to other boards is a
+  non-sequitur), and an **empty** draft, which is the residue of opening the
+  composer and closing it again.
+- A draft's boards and images are re-checked when it is resumed rather than
+  trusted from the row: a board can be deleted, or your right to post in it
+  withdrawn, while a draft is sitting there.
+- Drafts untouched for 90 days are removed by the hourly cleaner, and a member
+  keeps at most 20. The limit applies to *starting* a draft, never to typing
+  into one you already have open, and the composer says so when you reach it.
+
+### Fixed
+
+- **An image held by a draft is no longer swept as an orphan.** An upload
+  belongs to no article until the post is submitted — which is exactly the
+  state a draft preserves — so without this a post drafted overnight would be
+  resumed with its pictures already unlinked from disk.
+
+### Security
+
+- Every read of a draft is scoped to its owner **in the query**, never fetched
+  and then checked, and another member's draft id answers exactly as one that
+  never existed. A refusal that can be told apart from a miss would report how
+  many drafts an account has.
+- `user_id` is not castable on the draft changeset, so an autosave cannot name
+  somebody else as the owner of what is being typed.
+- Draft autosave is rate-limited per member, and the body carries the same
+  64 KB ceiling as an article, so a draft cannot hold something that would
+  then refuse to publish.
+
+### Records
+
+- **[ADR 0062](doc/adr/0062-a-draft-is-kept-in-two-places-on-purpose.md) — a
+  draft is kept in two places, on purpose.** Why both halves stay, why a draft
+  is not content, why the cap is counted rather than stored, and why the
+  orphan image sweep had to learn about drafts.
+
 ## [1.35.0] — 2026-09-22
 
 Phase 6A's first half: a comment can be edited, and what it used to say stays

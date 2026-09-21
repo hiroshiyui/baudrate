@@ -131,6 +131,8 @@ lib/
 │   │   ├── comment_image.ex     # CommentImage schema (image attachments on comments)
 │   │   ├── comment_revision.ex  # CommentRevision schema (what an edit replaced, ADR 0060)
 │   │   ├── content_warning.ex   # The summary/sensitive rules all four warned schemas share (ADR 0052)
+│   │   ├── article_draft.ex     # ArticleDraft schema (an unfinished article, private to its author)
+│   │   ├── drafts.ex            # Server-side drafts, beside the browser's autosave rather than instead of it (ADR 0062)
 │   │   ├── image_alt.ex         # An image's description: one rule for three tables, federated as the attachment `name`
 │   │   ├── interactions.ex      # Shared like/boost/bookmark interaction helpers
 │   │   ├── title_deriver.ex     # Title derivation for federation-imported articles
@@ -323,6 +325,7 @@ lib/
 │   │   ├── article_helpers.ex   # Pure helper logic extracted from ArticleLive
 │   │   ├── article_history_live.ex # Article edit history with inline diffs
 │   │   ├── comment_history_live.ex # A comment's edit history, public like the article's (ADR 0060)
+│   │   ├── drafts_live.ex       # /drafts — a member's own unfinished articles (ADR 0062)
 │   │   ├── article_live.ex      # Single article view with paginated comments
 │   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
@@ -2804,6 +2807,7 @@ these responses loads a subresource.
 | Article update | 20 / 5 min | per user |
 | Comment creation | 30 / 5 min | per user |
 | Comment update | 20 / 5 min | per user |
+| Draft autosave | 60 / min | per user |
 | Content deletion | 20 / 5 min | per user |
 | User muting | 10 / 5 min | per user |
 | Search (authenticated) | 15 / min | per user |
