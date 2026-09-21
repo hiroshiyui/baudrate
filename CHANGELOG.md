@@ -7,6 +7,149 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.33.0] — 2026-09-21
+
+The rest of Phase 4: discovery from outside (4A, 4B), search worth using (4C),
+and a way back into an account (4D).
+
+The one that changes the most for an operator is **account recovery**. This
+instance sends no email, so recovery codes were the only way back — and until
+now there was no way to mint new ones after registration, which meant a member
+who spent all ten had lost the account. Codes can be replaced, and past them
+recovery is anchored on an OpenPGP key the member registers here and signs
+with elsewhere; an admin verifies a signed message in their own mail client
+and issues a single-use link. Baudrate sends no mail, verifies no signature
+and fetches no key ([ADR 0058](doc/adr/0058-account-recovery-is-anchored-outside-the-instance.md),
+and `doc/sysop.md` holds the procedure, because no code enforces it).
+
+**Upgrading:** four migrations run on deploy — two new tables
+(`recovery_contacts`, `account_resets`), two columns on `users`, and a trigram
+index for the member search. Nothing to configure.
+
+**One thing to check:** `priv/static/robots.txt` no longer exists. It is a
+route now, because its `Sitemap:` directive needs an absolute URL that a file
+cannot know for an arbitrary host. **If you customised that file, your edits
+are gone** — the served version blocks `/ap/`, `/api/` and `/exports/` and
+names the sitemap. Pages that should not be indexed carry `noindex`
+themselves, which is deliberate and not interchangeable with `Disallow`: a
+blocked page can still be indexed URL-only from its inbound links, and its
+`noindex` is never read because the crawler never fetches it.
+
+### Added
+
+- **Account recovery anchored outside the instance.** A member registers one
+  or more email addresses and an armored OpenPGP public key at `/profile`,
+  behind step-up re-authentication. It arrives unverified; an admin confirms,
+  out of band, that a signed message from that address checks out against that
+  key, and can then issue a reset link that works once and expires in 24
+  hours. Four rules hold it up and each looks like a restriction that could be
+  relaxed: a reset needs a **verified** contact, changing the address or the
+  key drops it back to pending, nobody resets an account at or above their own
+  role, and clearing someone's TOTP and security keys is a separate tick with
+  its own audit line. The member registers the anchor; an admin can only ever
+  confirm one ([ADR 0058](doc/adr/0058-account-recovery-is-anchored-outside-the-instance.md)).
+- **Recovery codes can be replaced** from `/profile`, behind the same step-up
+  unlock. The page shows how many are unused, never the codes.
+- **Registering signs you in.** All three modes; approval mode signs in as
+  pending, which can browse and set up a profile. The ten recovery codes are
+  shown *before* the session starts and acknowledging them is what completes
+  the sign-in, so nobody is carried past the only time they are shown. A
+  one-time step at `/welcome` then asks for a display name and a picture —
+  skipping counts as answering.
+- **Approval is no longer silent.** An approved member is told; staff are told
+  about a new pending registration. Neither notice can be switched off.
+- **A private page says what it needs and brings you back.** `:require_auth`
+  carries the refused path through sign-in, sanitised on the way in and again
+  on the way out by the one open-redirect guard.
+- **A notice for an account with no way back in** — no unused codes and no
+  verified contact. Dismissible, remembered, no count and no badge.
+- **`sitemap.xml`, and a `robots.txt` that is a route.** Boards, articles
+  (5,000 per page) and tag pages, listing only what a guest can already see —
+  local, public, not deleted, in a guest-readable board. Unlisted articles are
+  out of it *and* carry `noindex, follow`, because the word in the composer
+  promises that and leaving them out of a sitemap alone promises nothing. Member
+  profiles stay crawlable through every byline and are never enumerated
+  ([ADR 0057](doc/adr/0057-a-sitemap-invites-only-what-a-guest-sees.md)).
+- **Every page names itself.** A self-referencing canonical URL keeping only
+  `?page`, one `<meta name="description">` per page, and `noindex` on search
+  and the sign-in flow. A `noindex` page gets no canonical — the two
+  contradict.
+- **Feeds you can find.** Board, profile and tag pages each carry and
+  advertise their own RSS and Atom pair; tag feeds are new.
+- **Search you can steer.** Sort by relevance or date, filter by board and
+  date range, and the same `author:` / `board:` / `tag:` / `has:` /
+  `before:` / `after:` operators on the Comments tab as on Articles. The
+  controls write operators into the query string rather than carrying
+  parameters of their own, so the box stays the one description of a search.
+- **The Users tab pages** past the first twenty, capped at five pages.
+- **Board cards say when a board was last active,** and a guest's first page
+  says what the site is and what it is called.
+
+### Changed
+
+- **Search defaults to relevance** rather than newest. The weighted tsvector
+  behind it has been stored on every article since February and never read:
+  the ranking clause was built and discarded on the next line. `/ap/search`
+  is pinned to newest-first rather than inheriting the default, because an
+  `OrderedCollection` is reverse-chronological by contract.
+- **A search has to name something to search within** — words, or an
+  `author:`, `board:` or `tag:`. `?q=after:2026-01-01` used to return every
+  article the viewer could see, newest first, which is
+  [ADR 0055](doc/adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)'s
+  own description of `/recent` reachable from the search box.
+- **`robots.txt` is a route**, and `priv/static/robots.txt` is deleted. See
+  the upgrade note above.
+- **An unknown or banned account answers 404** at `/users/:name`,
+  `/users/:name/articles` and `/@handle`, instead of redirecting to `/`. A
+  redirect tells a crawler the page moved, so it keeps asking and `/`
+  collects the authority of every mistyped handle. Banned and absent stay
+  indistinguishable. `/@handle` now redirects 301.
+
+### Fixed
+
+- **Recovery codes could not be regenerated at all.**
+  `/profile/recovery-codes` read a session key nothing in the codebase ever
+  wrote, and `RecoveryCode`'s own documentation claimed a TOTP reset re-issued
+  them — it never touched the table.
+- **The recovery-code password reset sent no security notice,** while changing
+  a password while signed in always had. The flow most likely to be somebody
+  else was the only silent one. Its username lookup was also case-sensitive
+  while the throttle downcases, so registering `Alice` and typing `alice` gave
+  a generic refusal *and* burned a throttle slot.
+- **The Comments tab had been ordered oldest-first since it was written.**
+  `distinct: c.id` compiles to `DISTINCT ON`, PostgreSQL requires those
+  expressions to lead the `ORDER BY`, and Ecto therefore prepends them — so
+  the newest-first the code asked for never had any effect.
+- **A mistyped date returned the whole site.** `before:not-a-date` parsed to
+  no operator and no search term, and that was read as "match everything".
+- **Staff could mute the approval queue.** `pending_registration` is
+  always-delivered now, like the other operational notices.
+
+### Security
+
+- **`mint` 1.10.0 → 1.10.1** (CVE-2026-82672 / GHSA-rj5m-69wp-cxq9, MEDIUM):
+  unvalidated chunk-size line tail enabling response smuggling against strict
+  intermediaries on pooled connections. A production dependency, reached by
+  every federation fetch, feed poll, link preview and media-proxy request.
+- **Recovery addresses are encrypted at rest** under the `:auth` keyring and
+  bound to their owner, like TOTP secrets. On a pseudonymous forum that column
+  is the one thing linking an account to a real-world identity. It is the
+  first secret column that does not live in its owner's own row, so key
+  rotation now tracks the owning column explicitly.
+- **A reset link is stored only as a SHA-256**, is claimed with a single
+  conditional `UPDATE` so two simultaneous redemptions cannot both win, and
+  answers every failure identically — unknown, expired, spent, revoked or a
+  since-banned account — so the page cannot be used to discover whether a link
+  ever existed. It carries `noindex` and no canonical, because the token is in
+  its path.
+- **An always-delivered notice when a reset link is *issued*,** not only when
+  it is used. The member who asked cannot read it; the one who did not ask is
+  exactly who needs to see it while it is still outstanding.
+- A crash on `/welcome` for an account the interaction gate refused, a
+  five-per-hour limit on recovery-code regeneration, and a
+  `translation_coverage_test` gate that fails the build when a translation
+  interpolates a binding its message never passes.
+
 ## [1.32.0] — 2026-09-20
 
 Phase 4F (privacy and language), and the first pieces of 4A.
