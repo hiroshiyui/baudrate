@@ -52,7 +52,7 @@ defmodule BaudrateWeb.ProfileLive do
   alias BaudrateWeb.Locale
   alias BaudrateWeb.RateLimits
 
-  import BaudrateWeb.Helpers, only: [translate_role: 1, extract_peer_ip: 1]
+  import BaudrateWeb.Helpers, only: [translate_role: 1, extract_peer_ip: 1, parse_id: 1]
 
   @security_reauth_seconds 300
 
@@ -94,6 +94,12 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:locale_sync_value, nil)
       |> assign(:security_reauth_until, nil)
       |> assign(:security_reauth_form, empty_security_reauth_form())
+      # Account recovery (ADR 0058). `:fresh_recovery_codes` holds a batch
+      # just generated, shown once and never read back from anywhere.
+      |> assign(:fresh_recovery_codes, nil)
+      |> assign(:unused_recovery_codes, Auth.unused_recovery_code_count(user))
+      |> assign(:recovery_contacts, Auth.list_recovery_contacts(user))
+      |> assign(:contact_form, empty_contact_form())
       |> assign(:sign_out_form, to_form(%{"password" => "", "code" => ""}, as: :sign_out))
       # Session row id (stable across token rotation) of the session to keep
       # when signing out everywhere else.
@@ -478,7 +484,9 @@ defmodule BaudrateWeb.ProfileLive do
          )
          |> put_flash(
            :info,
-           gettext("Identity confirmed. You can manage your security keys for 5 minutes.")
+           gettext(
+             "Identity confirmed. You can change your account security settings for 5 minutes."
+           )
          )
          |> push_event("focus", %{id: "profile-security-key-register"})}
 
@@ -502,6 +510,81 @@ defmodule BaudrateWeb.ProfileLive do
          |> put_flash(:error, gettext("Invalid credentials. Please try again."))
          |> push_event("focus", %{id: "security_reauth_password"})}
     end
+  end
+
+  @impl true
+  def handle_event("regenerate_recovery_codes", _params, socket) do
+    with_security_reauth(socket, fn socket ->
+      user = socket.assigns.current_user
+      codes = Auth.regenerate_recovery_codes(user)
+
+      {:noreply,
+       socket
+       |> assign(:fresh_recovery_codes, codes)
+       |> assign(:unused_recovery_codes, length(codes))
+       |> put_flash(:info, gettext("New recovery codes issued. The old ones no longer work."))}
+    end)
+  end
+
+  @impl true
+  def handle_event("dismiss_recovery_codes", _params, socket) do
+    # They are shown once and are not stored in readable form anywhere, so
+    # this is genuinely the last chance — the button says so.
+    {:noreply, assign(socket, :fresh_recovery_codes, nil)}
+  end
+
+  @impl true
+  def handle_event("validate_recovery_contact", %{"contact" => params}, socket) do
+    {:noreply, assign(socket, :contact_form, to_form(params, as: :contact))}
+  end
+
+  @impl true
+  def handle_event("add_recovery_contact", %{"contact" => params}, socket) do
+    with_security_reauth(socket, fn socket ->
+      user = socket.assigns.current_user
+
+      case Auth.add_recovery_contact(user, params) do
+        {:ok, _contact} ->
+          {:noreply,
+           socket
+           |> assign(:recovery_contacts, Auth.list_recovery_contacts(user))
+           |> assign(:contact_form, empty_contact_form())
+           |> put_flash(
+             :info,
+             gettext("Recovery contact saved. An admin has to verify it before it can be used.")
+           )}
+
+        {:error, :too_many} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("You can register at most %{count} recovery contacts.",
+               count: Auth.max_recovery_contacts()
+             )
+           )}
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          {:noreply, assign(socket, :contact_form, to_form(changeset, as: :contact))}
+      end
+    end)
+  end
+
+  @impl true
+  def handle_event("remove_recovery_contact", %{"id" => id}, socket) do
+    with_security_reauth(socket, fn socket ->
+      user = socket.assigns.current_user
+
+      with {:ok, contact_id} <- parse_id(id),
+           {:ok, _contact} <- Auth.remove_recovery_contact(user, contact_id) do
+        {:noreply,
+         socket
+         |> assign(:recovery_contacts, Auth.list_recovery_contacts(user))
+         |> put_flash(:info, gettext("Recovery contact removed."))}
+      else
+        _ -> {:noreply, put_flash(socket, :error, gettext("Could not remove that contact."))}
+      end
+    end)
   end
 
   @impl true
@@ -765,6 +848,10 @@ defmodule BaudrateWeb.ProfileLive do
   # Runs `fun` only while a step-up re-authentication is still fresh. This is
   # the server-side gate: the template hides the key management controls when
   # locked, but events can be sent regardless of what is rendered.
+  defp empty_contact_form do
+    to_form(%{"email" => "", "pgp_public_key" => "", "label" => ""}, as: :contact)
+  end
+
   defp with_security_reauth(socket, fun) do
     until = socket.assigns.security_reauth_until
 
@@ -776,7 +863,7 @@ defmodule BaudrateWeb.ProfileLive do
        |> assign(:security_reauth_until, nil)
        |> put_flash(
          :error,
-         gettext("Please confirm your identity before managing security keys.")
+         gettext("Please confirm your identity before changing account security settings.")
        )
        |> push_event("focus", %{id: "security_reauth_password"})}
     end

@@ -464,6 +464,27 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("data_export_cancelled"),
     do: gettext("A data export request on your account was cancelled.")
 
+  def notification_text("recovery_codes_regenerated"),
+    do: gettext("New recovery codes were issued. Every earlier code has stopped working.")
+
+  def notification_text("recovery_contact_added"),
+    do: gettext("A recovery contact was added to your account. An admin has to verify it.")
+
+  def notification_text("recovery_contact_removed"),
+    do: gettext("A recovery contact was removed from your account.")
+
+  def notification_text("recovery_contact_verified"),
+    do: gettext("An admin verified one of your recovery contacts.")
+
+  def notification_text("account_reset_used"),
+    do:
+      gettext(
+        "An admin-issued recovery link was used on your account: the password was replaced and every session signed out."
+      )
+
+  def notification_text("registration_approved"),
+    do: gettext("Your account was approved. You can post, comment and send messages now.")
+
   def notification_text(_), do: gettext("sent you a notification")
 
   @doc "Flash text when a moved account tries to post or interact (ADR 0025)."
@@ -616,6 +637,12 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("data_export_ready"), do: "hero-archive-box-arrow-down"
   def notification_icon("data_export_downloaded"), do: "hero-arrow-down-tray"
   def notification_icon("data_export_cancelled"), do: "hero-archive-box-x-mark"
+  def notification_icon("recovery_codes_regenerated"), do: "hero-key"
+  def notification_icon("recovery_contact_added"), do: "hero-envelope"
+  def notification_icon("recovery_contact_removed"), do: "hero-envelope"
+  def notification_icon("recovery_contact_verified"), do: "hero-check-badge"
+  def notification_icon("account_reset_used"), do: "hero-lock-open"
+  def notification_icon("registration_approved"), do: "hero-hand-raised"
   def notification_icon(_), do: "hero-bell"
 
   @doc """

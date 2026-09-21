@@ -409,6 +409,7 @@ defmodule BaudrateWeb.Layouts do
         <.account_moved_notice :if={assigns[:current_user] && @current_user.moved_to} />
         <.sanction_notice :if={assigns[:active_sanction]} sanction={@active_sanction} />
         <.terms_notice :if={assigns[:terms_pending]} />
+        <.recovery_notice :if={assigns[:recovery_pending]} />
         {@inner_content}
       </div>
     </main>
@@ -610,6 +611,56 @@ defmodule BaudrateWeb.Layouts do
       <.link id="terms-notice-link" navigate={~p"/terms"} class="terms-notice-link btn btn-sm">
         {gettext("Review")}
       </.link>
+    </aside>
+    """
+  end
+
+  @doc """
+  Notice for an account that cannot currently be recovered: no unused recovery
+  codes and no verified recovery contact (ADR 0058).
+
+  This site sends no email, so an account in that state has no way back if its
+  password is lost — which makes this safety work, and decision 5 of ADR 0056
+  is explicit that "boring" is never an argument against that. It stays inside
+  0056's other rules all the same: no count, no badge, no colour that shouts,
+  and dismissing it is final. It is named `-notice` like its siblings, because
+  a name containing `banner` is one a content blocker hides.
+  """
+  def recovery_notice(assigns) do
+    ~H"""
+    <aside
+      id="recovery-notice"
+      class="recovery-notice alert"
+      aria-labelledby="recovery-notice-heading"
+    >
+      <.icon name="hero-key" class="size-5 shrink-0" />
+      <div class="min-w-0 space-y-1">
+        <h2 id="recovery-notice-heading" class="recovery-notice-heading font-semibold">
+          {gettext("You have no way back into this account")}
+        </h2>
+        <p id="recovery-notice-text" class="recovery-notice-text text-sm break-words">
+          {gettext(
+            "Your recovery codes are used up and no recovery contact is verified. This site sends no email, so if you lose your password there is nothing we can do."
+          )}
+        </p>
+      </div>
+      <div class="recovery-notice-actions flex gap-2">
+        <.link
+          id="recovery-notice-link"
+          navigate={~p"/profile"}
+          class="recovery-notice-link btn btn-sm"
+        >
+          {gettext("Set it up")}
+        </.link>
+        <button
+          type="button"
+          id="recovery-notice-dismiss"
+          phx-click="dismiss_recovery_notice"
+          class="recovery-notice-dismiss btn btn-sm btn-ghost"
+        >
+          {gettext("Not now")}
+        </button>
+      </div>
     </aside>
     """
   end

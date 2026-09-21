@@ -61,7 +61,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
 
       html = render_click(lv, "begin_registration", %{})
 
-      assert html =~ "Please confirm your identity before managing security keys."
+      assert html =~ "Please confirm your identity before changing account security settings."
       refute_push_event(lv, "webauthn_register", %{})
     end
 
@@ -71,7 +71,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
 
       html = render_click(lv, "delete_webauthn_credential", %{"id" => to_string(cred.id)})
 
-      assert html =~ "Please confirm your identity before managing security keys."
+      assert html =~ "Please confirm your identity before changing account security settings."
       assert [%{id: id}] = Auth.list_webauthn_credentials(user)
       assert id == cred.id
     end
@@ -150,7 +150,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
 
       html = render_click(lv, "begin_registration", %{})
 
-      assert html =~ "Please confirm your identity before managing security keys."
+      assert html =~ "Please confirm your identity before changing account security settings."
       refute_push_event(lv, "webauthn_register", %{})
       assert has_element?(lv, "#profile-security-reauth-form")
     end

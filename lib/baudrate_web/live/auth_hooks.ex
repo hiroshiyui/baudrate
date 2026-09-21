@@ -46,6 +46,7 @@ defmodule BaudrateWeb.AuthHooks do
   alias BaudrateWeb.AutocompleteSuggestHook
   alias BaudrateWeb.Crawlers
   alias BaudrateWeb.MarkdownPreviewHook
+  alias BaudrateWeb.RecoveryNoticeHook
   alias BaudrateWeb.UnreadDmCountHook
   alias BaudrateWeb.UnreadNotificationCountHook
   import BaudrateWeb.Helpers, only: [extract_peer_ip: 1]
@@ -97,8 +98,11 @@ defmodule BaudrateWeb.AuthHooks do
                 |> assign(:active_sanction, List.first(Auth.active_sanctions(user)))
                 # Published terms this member has not accepted yet (P1-D8).
                 |> assign(:terms_pending, Auth.terms_pending?(user))
+                # Whether this account can be recovered at all (ADR 0058).
+                |> assign(:recovery_pending, recovery_pending?(user))
                 |> MarkdownPreviewHook.attach()
                 |> AutocompleteSuggestHook.attach()
+                |> RecoveryNoticeHook.attach()
                 |> UnreadDmCountHook.attach(user)
                 |> UnreadNotificationCountHook.attach(user)
                 |> attach_page_metadata_hook()
@@ -107,10 +111,10 @@ defmodule BaudrateWeb.AuthHooks do
           end
 
         {:error, _reason} ->
-          {:halt, redirect(socket, to: "/login")}
+          {:halt, to_login(socket)}
       end
     else
-      {:halt, redirect(socket, to: "/login")}
+      {:halt, to_login(socket)}
     end
   end
 
@@ -149,8 +153,11 @@ defmodule BaudrateWeb.AuthHooks do
               |> assign(:active_sanction, List.first(Auth.active_sanctions(user)))
               # Published terms this member has not accepted yet (P1-D8).
               |> assign(:terms_pending, Auth.terms_pending?(user))
+              # Whether this account can be recovered at all (ADR 0058).
+              |> assign(:recovery_pending, recovery_pending?(user))
               |> MarkdownPreviewHook.attach()
               |> AutocompleteSuggestHook.attach()
+              |> RecoveryNoticeHook.attach()
               |> UnreadDmCountHook.attach(user)
               |> UnreadNotificationCountHook.attach(user)
               |> attach_page_metadata_hook()
@@ -171,6 +178,7 @@ defmodule BaudrateWeb.AuthHooks do
        socket
        |> assign(:current_user, nil)
        |> assign(:locale, locale)
+       |> assign(:recovery_pending, false)
        |> MarkdownPreviewHook.attach()
        |> attach_page_metadata_hook()}
     end
@@ -382,6 +390,61 @@ defmodule BaudrateWeb.AuthHooks do
 
   # The admin page to come back to after sudo verification. `:uri` comes from
   # the conn on the HTTP render and from the socket's connect info once
+  # A guest who asked for a private page is told why they are at `/login`, and
+  # brought back afterwards. Before Phase 4D this was a bare redirect: no
+  # flash, no memory, so the page they wanted was simply gone and the only
+  # clue was that the URL had changed.
+  #
+  # The path travels as a query parameter because a LiveView cannot write the
+  # session — the same shape admin sudo already uses. `LoginLive` carries it
+  # into the sign-in POST, and `SessionController` sanitises it through
+  # `Helpers.local_path/2`, the one open-redirect guard.
+  # Reading the dismissal column first is what keeps this cheap: it is already
+  # on the loaded user, and the two existence queries behind `arranged?/1` run
+  # only for somebody who has neither dismissed the notice nor acted on it.
+  defp recovery_pending?(%{recovery_notice_dismissed_at: nil} = user),
+    do: not Auth.recovery_arranged?(user)
+
+  defp recovery_pending?(_user), do: false
+
+  defp to_login(socket) do
+    socket = refusal_flash(socket)
+
+    case return_path(socket) do
+      nil -> redirect(socket, to: "/login")
+      path -> redirect(socket, to: "/login?" <> URI.encode_query(%{"return_to" => path}))
+    end
+  end
+
+  # The redirect is what matters; the message is the courtesy. A socket with
+  # no flash (a bare `%Socket{}` in a unit test, or a lifecycle that has not
+  # got that far) must not turn a refusal into a crash.
+  defp refusal_flash(%{assigns: %{flash: _}} = socket),
+    do: Phoenix.LiveView.put_flash(socket, :error, gettext("Please sign in to see that page."))
+
+  defp refusal_flash(socket), do: socket
+
+  defp return_path(socket) do
+    case connect_uri(socket) do
+      %URI{path: path, query: query} when is_binary(path) ->
+        candidate = if query in [nil, ""], do: path, else: path <> "?" <> query
+        if BaudrateWeb.Helpers.local_path(candidate, nil), do: candidate
+
+      _ ->
+        nil
+    end
+  end
+
+  # `get_connect_info/2` raises outside `mount/3`. This hook runs at mount in
+  # production, but remembering where somebody was going is a convenience and
+  # refusing entry is the job: the convenience must never turn the refusal
+  # into a crash.
+  defp connect_uri(socket) do
+    get_connect_info(socket, :uri)
+  rescue
+    RuntimeError -> nil
+  end
+
   # connected (the page the socket was opened on). Anything outside `/admin/`
   # falls back to the settings page; `/admin/verify` re-sanitizes it anyway.
   defp admin_return_path(socket) do
