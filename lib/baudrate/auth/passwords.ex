@@ -28,7 +28,17 @@ defmodule Baudrate.Auth.Passwords do
           {:ok, User.t()}
           | {:error, :invalid_credentials | :banned | :bot_account | {:suspended, Sanction.t()}}
   def authenticate_by_password(username, password) do
-    user = Repo.one(from u in User, where: u.username == ^username, preload: :role)
+    # Case-insensitively, like every other username lookup: the unique index is
+    # on `lower(username)` and `check_login_throttle/1` downcases, so a
+    # case-sensitive match here meant somebody who registered `Alice` and typed
+    # `alice` got a generic refusal *and* burned a throttle slot against a name
+    # the throttle had already folded.
+    user =
+      Repo.one(
+        from u in User,
+          where: fragment("lower(?)", u.username) == ^String.downcase(username),
+          preload: :role
+      )
 
     if user && Bcrypt.verify_pass(password, user.hashed_password) do
       cond do
@@ -168,6 +178,11 @@ defmodule Baudrate.Auth.Passwords do
               Sessions.delete_all_sessions_for_user(user.id)
               Baudrate.DataPortability.cancel_active_exports(user.id, "password_changed")
               Baudrate.AccountMigration.cancel_active_moves(user.id, "password_changed")
+
+              # `change_password/3` has always sent this; the recovery-code
+              # path did not, which left the flow most likely to be somebody
+              # else the only silent one.
+              Hooks.notify_account_security(user.id, "password_changed")
               {:ok, user}
 
             {:error, changeset} ->

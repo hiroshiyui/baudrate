@@ -326,6 +326,10 @@ defmodule Baudrate.Auth.SecondFactor do
   codes (5 bytes → 8 base32 chars, ~41 bits of entropy each), stores their
   HMAC-SHA256 hashes, and returns the formatted codes (`xxxx-xxxx`) for
   one-time display to the user.
+
+  This is the low-level mint, called at account creation. A member asking for
+  a fresh set goes through `regenerate_recovery_codes/1`, which also tells
+  them it happened.
   """
   def generate_recovery_codes(user) do
     from(rc in RecoveryCode, where: rc.user_id == ^user.id)
@@ -354,6 +358,31 @@ defmodule Baudrate.Auth.SecondFactor do
     Repo.insert_all(RecoveryCode, entries)
 
     Enum.map(raw_codes, &format_recovery_code/1)
+  end
+
+  @doc """
+  Issues a fresh set of recovery codes, retiring every existing one.
+
+  There was no way to do this until Phase 4D: codes were minted at account
+  creation and nowhere else, so a member who spent all
+  #{@recovery_code_count} was left with no recovery route at all — and with no
+  email in this system there is no second route to fall back on
+  ([ADR 0058](../../../doc/adr/0058-account-recovery-is-anchored-outside-the-instance.md)).
+
+  Always delivered as `recovery_codes_regenerated`, because invalidating
+  somebody's recovery codes is exactly the kind of change they need to hear
+  about when they did not make it. Callers put it behind step-up
+  re-authentication (ADR 0022) — the printed codes are a credential.
+  """
+  @spec regenerate_recovery_codes(User.t()) :: [String.t()]
+  def regenerate_recovery_codes(user) do
+    codes = generate_recovery_codes(user)
+
+    Hooks.notify_account_security(user.id, "recovery_codes_regenerated", %{
+      "count" => length(codes)
+    })
+
+    codes
   end
 
   @doc """

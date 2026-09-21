@@ -15,7 +15,15 @@ defmodule Baudrate.Auth.RecoveryCode do
   column, so a wrong value cannot lock anyone out. It is set when the batch is
   written, never from a form.
 
-  Old codes are deleted whenever new ones are generated (e.g., on TOTP reset).
+  A batch is all-or-nothing: generating new codes deletes every existing one.
+  That happens at account creation, when a member asks for a fresh set at
+  `/profile`, and when an admin-issued reset link is redeemed (ADR 0058).
+
+  It does **not** happen on a TOTP reset, which this line claimed until Phase
+  4D — that flow disables and re-enables TOTP and never touches this table. The
+  claim mattered, because until `regenerate_recovery_codes/1` existed there was
+  no way to mint a new batch at all, and a member who spent all ten was left
+  with no recovery route and no email to fall back on.
   """
 
   use Ecto.Schema
