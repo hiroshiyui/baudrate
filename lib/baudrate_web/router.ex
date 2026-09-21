@@ -283,6 +283,20 @@ defmodule BaudrateWeb.Router do
       live "/login", LoginLive
       live "/register", RegisterLive
       live "/password-reset", PasswordResetLive
+    end
+
+    # Redeeming an admin-issued recovery link (ADR 0058) deliberately sits
+    # outside `:public`: `:redirect_if_authenticated` would bounce a member who
+    # still has a session on some device, which is precisely the person being
+    # handed one. `:optional_auth` is what attaches the page-metadata hook that
+    # `noindex` depends on, and the token is in the path — a page that names
+    # itself canonically would publish it.
+    live_session :recovery,
+      layout: {BaudrateWeb.Layouts, :app},
+      on_mount: [
+        {BaudrateWeb.AuthHooks, :rate_limit_mount},
+        {BaudrateWeb.AuthHooks, :optional_auth}
+      ] do
       live "/account-reset/:token", AccountResetLive
     end
 

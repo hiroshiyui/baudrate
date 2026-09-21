@@ -81,6 +81,21 @@ defmodule BaudrateWeb.WelcomeLive do
 
       {:error, message} when is_binary(message) ->
         {:noreply, put_flash(socket, :error, message)}
+
+      {:error, reason} ->
+        # The interaction gate refuses a silenced, suspended or moved account
+        # (ADR 0029), and a brand-new one can be silenced — or meet a terms
+        # version published in the last minute — between registering and
+        # reaching this page. Without this clause `update_display_name/2`'s
+        # atom refusal fell out of the `with` and took the LiveView with it.
+        # Every `{:error, reason}` catch-all routes through `refusal_message/3`
+        # so the member is told what stands against them.
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           BaudrateWeb.Helpers.refusal_message(reason, user, gettext("Could not save that."))
+         )}
     end
   end
 

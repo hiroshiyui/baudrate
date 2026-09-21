@@ -97,6 +97,24 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
       assert html =~ ~s(name="robots" content="noindex, follow")
       refute html =~ ~s(rel="canonical")
     end
+
+    test "survives the interaction gate refusing the save" do
+      user = new_member()
+      admin = setup_user("admin")
+      conn = log_in_user(build_conn(), user)
+
+      {:ok, lv, _html} = live(conn, "/welcome")
+
+      # A brand-new account can be silenced between registering and reaching
+      # this page. `update_display_name/2` then refuses with an atom, which
+      # used to fall out of the `with` and take the LiveView down with it.
+      {:ok, _sanction} = Auth.issue_sanction(admin, user, "silence", reason: "spam")
+
+      html = lv |> form("#welcome-form", user: %{display_name: "Hedy"}) |> render_submit()
+
+      assert html =~ "silenced" or html =~ "Could not save"
+      assert Process.alive?(lv.pid)
+    end
   end
 
   describe "a private page brings you back" do
@@ -309,6 +327,29 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
       refute html =~ "not valid"
     end
 
+    test "a member who still has a session elsewhere can redeem their own link", %{
+      conn: conn,
+      user: user,
+      token: token
+    } do
+      # The person being handed a recovery link is the one locked out of their
+      # password — not necessarily out of every session. `:redirect_if_authenticated`
+      # used to bounce them to `/` with no explanation.
+      signed_in = log_in_user(conn, user)
+
+      {:ok, lv, html} = live(signed_in, "/account-reset/#{token}")
+      assert html =~ ~s(id="account-reset-form")
+
+      html =
+        lv
+        |> form("#account-reset-form",
+          reset: %{password: "BrandNew123!xy", password_confirmation: "BrandNew123!xy"}
+        )
+        |> render_submit()
+
+      assert html =~ ~s(id="account-reset-codes")
+    end
+
     test "carries noindex and no canonical", %{conn: conn, token: token} do
       {:ok, _lv, html} = live(conn, "/account-reset/#{token}")
 
@@ -390,6 +431,20 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
       # Personal data, and the anchor a reset rests on.
       refute html =~ ~s(id="admin-user-detail-recovery")
       refute html =~ "owner@example.com"
+    end
+
+    test "and cannot verify one by sending the event anyway", %{user: user, contact: contact} do
+      moderator = setup_user("moderator")
+      conn = log_in_admin(build_conn(), moderator)
+
+      {:ok, lv, _html} = live(conn, "/admin/users/#{user.id}")
+
+      # A moderator can reach this page, so hiding the control is presentation.
+      # The refusal has to be in the context (ADR 0016), and this is what says
+      # it is.
+      render_click(lv, "verify_contact", %{"id" => to_string(contact.id), "status" => "verified"})
+
+      assert Repo.get!(Baudrate.Auth.RecoveryContact, contact.id).status == "pending"
     end
 
     test "a peer admin cannot be reset from the page", %{conn: conn, admin: admin} do

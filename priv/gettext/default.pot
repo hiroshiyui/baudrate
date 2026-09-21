@@ -430,7 +430,7 @@ msgstr ""
 #: lib/baudrate_web/live/data_export_live.ex:275
 #: lib/baudrate_web/live/password_change_live.ex:138
 #: lib/baudrate_web/live/profile_live.ex:510
-#: lib/baudrate_web/live/profile_live.ex:646
+#: lib/baudrate_web/live/profile_live.ex:673
 #: lib/baudrate_web/live/totp_reset_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Invalid credentials. Please try again."
@@ -526,12 +526,12 @@ msgstr ""
 msgid "Are you sure you want to remove your avatar?"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:723
+#: lib/baudrate_web/live/profile_live.ex:750
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:758
+#: lib/baudrate_web/live/profile_live.ex:785
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr ""
@@ -569,14 +569,14 @@ msgstr ""
 msgid "Crop Avatar"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:780
-#: lib/baudrate_web/live/welcome_live.ex:151
+#: lib/baudrate_web/live/profile_live.ex:807
+#: lib/baudrate_web/live/welcome_live.ex:166
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:771
-#: lib/baudrate_web/live/welcome_live.ex:148
+#: lib/baudrate_web/live/profile_live.ex:798
+#: lib/baudrate_web/live/welcome_live.ex:163
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr ""
@@ -596,7 +596,7 @@ msgid "Save"
 msgstr ""
 
 #: lib/baudrate_web/live/profile_live.ex:150
-#: lib/baudrate_web/live/profile_live.ex:733
+#: lib/baudrate_web/live/profile_live.ex:760
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr ""
@@ -767,12 +767,12 @@ msgstr ""
 msgid "Add Language"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:819
+#: lib/baudrate_web/live/profile_live.ex:846
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:814
+#: lib/baudrate_web/live/profile_live.ex:841
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr ""
@@ -1614,7 +1614,7 @@ msgstr ""
 msgid "You cannot change your own role."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:537
+#: lib/baudrate_web/helpers.ex:543
 #: lib/baudrate_web/live/auth_hooks.ex:65
 #, elixir-autogen, elixir-format
 msgid "Your account has been banned."
@@ -2143,7 +2143,8 @@ msgstr ""
 #: lib/baudrate_web/live/password_change_live.ex:121
 #: lib/baudrate_web/live/password_reset_live.ex:53
 #: lib/baudrate_web/live/profile_live.ex:495
-#: lib/baudrate_web/live/profile_live.ex:631
+#: lib/baudrate_web/live/profile_live.ex:528
+#: lib/baudrate_web/live/profile_live.ex:658
 #: lib/baudrate_web/live/totp_reset_live.ex:94
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please try again later."
@@ -2682,17 +2683,17 @@ msgstr ""
 msgid "Markdown preview"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:714
+#: lib/baudrate_web/helpers.ex:721
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:713
+#: lib/baudrate_web/helpers.ex:720
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:712
+#: lib/baudrate_web/helpers.ex:719
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr ""
@@ -2839,7 +2840,7 @@ msgstr ""
 msgid "You cannot send messages to this user."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:711
+#: lib/baudrate_web/helpers.ex:718
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -3119,17 +3120,17 @@ msgstr ""
 msgid "Unblock User"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:731
+#: lib/baudrate_web/helpers.ex:738
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:734
+#: lib/baudrate_web/helpers.ex:741
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:737
+#: lib/baudrate_web/helpers.ex:744
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr ""
@@ -4096,7 +4097,7 @@ msgstr ""
 msgid "replied to your comment"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:488
+#: lib/baudrate_web/helpers.ex:494
 #, elixir-autogen, elixir-format
 msgid "sent you a notification"
 msgstr ""
@@ -4631,12 +4632,12 @@ msgstr ""
 msgid "Select a user"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:728
+#: lib/baudrate_web/live/profile_live.ex:755
 #, elixir-autogen, elixir-format
 msgid "Failed to remove avatar."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:763
+#: lib/baudrate_web/live/profile_live.ex:790
 #, elixir-autogen, elixir-format
 msgid "Failed to update avatar."
 msgstr ""
@@ -5403,7 +5404,7 @@ msgstr ""
 msgid "Failed to delete bot."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:705
+#: lib/baudrate_web/live/profile_live.ex:732
 #, elixir-autogen, elixir-format
 msgid "Failed to remove security key."
 msgstr ""
@@ -5524,17 +5525,17 @@ msgid "Security key registered successfully."
 msgstr ""
 
 #: lib/baudrate_web/controllers/session_controller.ex:445
-#: lib/baudrate_web/live/profile_live.ex:677
+#: lib/baudrate_web/live/profile_live.ex:704
 #, elixir-autogen, elixir-format
 msgid "Security key registration failed. Please try again."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:675
+#: lib/baudrate_web/live/profile_live.ex:702
 #, elixir-autogen, elixir-format
 msgid "Security key registration was cancelled or timed out."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:701
+#: lib/baudrate_web/live/profile_live.ex:728
 #, elixir-autogen, elixir-format
 msgid "Security key removed."
 msgstr ""
@@ -5587,7 +5588,7 @@ msgid "Username cannot be changed after creation."
 msgstr ""
 
 #: lib/baudrate_web/live/admin_totp_verify_live.ex:97
-#: lib/baudrate_web/live/profile_live.ex:676
+#: lib/baudrate_web/live/profile_live.ex:703
 #, elixir-autogen, elixir-format
 msgid "WebAuthn is not supported by this browser."
 msgstr ""
@@ -6127,7 +6128,7 @@ msgstr ""
 #: lib/baudrate_web/live/data_export_live.ex:271
 #: lib/baudrate_web/live/password_change_live.ex:129
 #: lib/baudrate_web/live/profile_live.ex:502
-#: lib/baudrate_web/live/profile_live.ex:638
+#: lib/baudrate_web/live/profile_live.ex:665
 #: lib/baudrate_web/live/totp_reset_live.ex:102
 #, elixir-autogen, elixir-format
 msgid "Too many failed attempts. Please try again in %{seconds} seconds."
@@ -6259,7 +6260,7 @@ msgstr ""
 msgid "Sign out of every other browser or device where your account is signed in. This one stays signed in."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:620
+#: lib/baudrate_web/live/profile_live.ex:647
 #, elixir-autogen, elixir-format
 msgid "Signed out %{count} other session."
 msgid_plural "Signed out %{count} other sessions."
@@ -6279,7 +6280,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/data_export_live.ex:301
 #: lib/baudrate_web/live/password_change_live.ex:78
-#: lib/baudrate_web/live/profile_live.ex:651
+#: lib/baudrate_web/live/profile_live.ex:678
 #, elixir-autogen, elixir-format
 msgid "Your session has expired. Please sign in again."
 msgstr ""
@@ -7088,7 +7089,7 @@ msgstr ""
 msgid "This account has moved. New account:"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:492
+#: lib/baudrate_web/helpers.ex:498
 #, elixir-autogen, elixir-format
 msgid "Your account has moved and is read-only. Remove the redirect to post again."
 msgstr ""
@@ -7446,7 +7447,7 @@ msgstr ""
 msgid "User unblocked."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:499
+#: lib/baudrate_web/helpers.ex:505
 #, elixir-autogen, elixir-format
 msgid "You cannot interact with this account."
 msgstr ""
@@ -7570,7 +7571,7 @@ msgid "Failed to refuse the registration."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:726
-#: lib/baudrate_web/helpers.ex:571
+#: lib/baudrate_web/helpers.ex:577
 #, elixir-autogen, elixir-format
 msgid "It ends %{at}."
 msgstr ""
@@ -7591,7 +7592,7 @@ msgid "Reason for refusing %{username}"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:723
-#: lib/baudrate_web/helpers.ex:570
+#: lib/baudrate_web/helpers.ex:576
 #, elixir-autogen, elixir-format
 msgid "Reason: %{reason}"
 msgstr ""
@@ -7645,7 +7646,7 @@ msgstr ""
 msgid "Warn User"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:551
+#: lib/baudrate_web/helpers.ex:557
 #, elixir-autogen, elixir-format
 msgid "You cannot do that right now."
 msgstr ""
@@ -7658,14 +7659,14 @@ msgid "You cannot do that."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:719
-#: lib/baudrate_web/helpers.ex:540
+#: lib/baudrate_web/helpers.ex:546
 #, elixir-autogen, elixir-format
 msgid "Your account is silenced and cannot post."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:717
-#: lib/baudrate_web/helpers.ex:543
-#: lib/baudrate_web/helpers.ex:559
+#: lib/baudrate_web/helpers.ex:549
+#: lib/baudrate_web/helpers.ex:565
 #: lib/baudrate_web/live/auth_hooks.ex:74
 #, elixir-autogen, elixir-format
 msgid "Your account is suspended."
@@ -8313,7 +8314,7 @@ msgstr ""
 msgid "The agreement was saved, but members were not asked to accept it again."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:548
+#: lib/baudrate_web/helpers.ex:554
 #, elixir-autogen, elixir-format
 msgid "The terms have changed. Read and accept them to post again."
 msgstr ""
@@ -8914,7 +8915,7 @@ msgstr ""
 msgid "Could not issue a reset link."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:585
+#: lib/baudrate_web/live/profile_live.ex:612
 #, elixir-autogen, elixir-format
 msgid "Could not remove that contact."
 msgstr ""
@@ -8999,7 +9000,7 @@ msgstr ""
 msgid "New password"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:525
+#: lib/baudrate_web/live/profile_live.ex:537
 #, elixir-autogen, elixir-format
 msgid "New recovery codes issued. The old ones no longer work."
 msgstr ""
@@ -9030,12 +9031,12 @@ msgstr ""
 msgid "Picture"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:866
+#: lib/baudrate_web/live/profile_live.ex:893
 #, elixir-autogen, elixir-format
 msgid "Please confirm your identity before changing account security settings."
 msgstr ""
 
-#: lib/baudrate_web/live/auth_hooks.ex:412
+#: lib/baudrate_web/live/auth_hooks.ex:423
 #, elixir-autogen, elixir-format
 msgid "Please sign in to see that page."
 msgstr ""
@@ -9050,12 +9051,12 @@ msgstr ""
 msgid "Recovery contact"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:583
+#: lib/baudrate_web/live/profile_live.ex:610
 #, elixir-autogen, elixir-format
 msgid "Recovery contact removed."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:554
+#: lib/baudrate_web/live/profile_live.ex:567
 #, elixir-autogen, elixir-format
 msgid "Recovery contact saved. An admin has to verify it before it can be used."
 msgstr ""
@@ -9155,7 +9156,7 @@ msgstr ""
 msgid "This account has registered no recovery contact, so it cannot be reset."
 msgstr ""
 
-#: lib/baudrate_web/live/account_reset_live.ex:109
+#: lib/baudrate_web/live/account_reset_live.ex:113
 #, elixir-autogen, elixir-format
 msgid "This link is not valid. It may have expired or already been used."
 msgstr ""
@@ -9170,7 +9171,7 @@ msgstr ""
 msgid "This site sends no email, so those codes are how you get back in if you forget your password. You can replace them, or set up a recovery contact, in your profile."
 msgstr ""
 
-#: lib/baudrate_web/live/welcome_live.ex:130
+#: lib/baudrate_web/live/welcome_live.ex:145
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Try again later."
 msgstr ""
@@ -9216,7 +9217,7 @@ msgstr ""
 msgid "You can read the boards and set up your profile now. Posting, commenting and messages open up once a moderator approves the account — you will get a notification."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:562
+#: lib/baudrate_web/live/profile_live.ex:575
 #, elixir-autogen, elixir-format
 msgid "You can register at most %{count} recovery contacts."
 msgstr ""
@@ -9271,7 +9272,7 @@ msgstr ""
 msgid "An admin verified one of your recovery contacts."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:481
+#: lib/baudrate_web/helpers.ex:487
 #, elixir-autogen, elixir-format
 msgid "An admin-issued recovery link was used on your account: the password was replaced and every session signed out."
 msgstr ""
@@ -9281,7 +9282,22 @@ msgstr ""
 msgid "New recovery codes were issued. Every earlier code has stopped working."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:486
+#: lib/baudrate_web/helpers.ex:492
 #, elixir-autogen, elixir-format
 msgid "Your account was approved. You can post, comment and send messages now."
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:481
+#, elixir-autogen, elixir-format
+msgid "An admin issued a recovery link for your account. If you did not ask for one, tell them now."
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.ex:593
+#, elixir-autogen, elixir-format
+msgid "Could not save that recovery contact."
+msgstr ""
+
+#: lib/baudrate_web/live/welcome_live.ex:97
+#, elixir-autogen, elixir-format
+msgid "Could not save that."
 msgstr ""

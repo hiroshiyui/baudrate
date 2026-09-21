@@ -60,6 +60,10 @@ defmodule Baudrate.Notification.Notification do
       contact was registered or taken off the account (`data.label`, ADR 0058)
     * `recovery_contact_verified` — an admin confirmed a recovery contact
       (`data.label`)
+    * `account_reset_issued` — an admin issued a recovery link for this
+      account (`data.expires_at`, `data.second_factors_cleared`). Sent when
+      the link is created, so a member who did *not* ask for one and still has
+      a session finds out while it is outstanding
     * `account_reset_used` — an admin-issued reset link was redeemed: the
       password was replaced and every session signed out
       (`data.second_factors_cleared`)
@@ -131,6 +135,7 @@ defmodule Baudrate.Notification.Notification do
     recovery_contact_added
     recovery_contact_removed
     recovery_contact_verified
+    account_reset_issued
     account_reset_used
     registration_approved
     sanction_applied
@@ -164,6 +169,7 @@ defmodule Baudrate.Notification.Notification do
     recovery_contact_added
     recovery_contact_removed
     recovery_contact_verified
+    account_reset_issued
     account_reset_used
     registration_approved
   )

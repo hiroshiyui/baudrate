@@ -99,7 +99,11 @@ defmodule BaudrateWeb.AccountResetLive do
            )
          )}
 
-      {:error, :invalid} ->
+      # Every other outcome is this one too: an unknown token, an expired one,
+      # a spent one, a revoked one and a banned account all answer alike, so
+      # the page is no oracle. The catch-all is deliberate — a CaseClauseError
+      # here would be a 500 on an unauthenticated page.
+      {:error, _reason} ->
         Logger.warning("auth.account_reset_invalid: ip=#{socket.assigns.peer_ip}")
 
         {:noreply,

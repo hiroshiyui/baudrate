@@ -476,6 +476,12 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("recovery_contact_verified"),
     do: gettext("An admin verified one of your recovery contacts.")
 
+  def notification_text("account_reset_issued"),
+    do:
+      gettext(
+        "An admin issued a recovery link for your account. If you did not ask for one, tell them now."
+      )
+
   def notification_text("account_reset_used"),
     do:
       gettext(
@@ -641,6 +647,7 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("recovery_contact_added"), do: "hero-envelope"
   def notification_icon("recovery_contact_removed"), do: "hero-envelope"
   def notification_icon("recovery_contact_verified"), do: "hero-check-badge"
+  def notification_icon("account_reset_issued"), do: "hero-exclamation-triangle"
   def notification_icon("account_reset_used"), do: "hero-lock-open"
   def notification_icon("registration_approved"), do: "hero-hand-raised"
   def notification_icon(_), do: "hero-bell"

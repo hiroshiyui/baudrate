@@ -249,6 +249,17 @@ defmodule Baudrate.Auth.Recovery do
       case Repo.insert(changeset) do
         {:ok, reset} ->
           audit_issue(admin, user, reset)
+
+          # Told at *issue* time, not only after redemption. The member who
+          # asked for this cannot read it — they are locked out — but the one
+          # who did not asked is exactly who needs to see it, and a live
+          # session is the only in-band channel there is. It is the cheapest
+          # check on a talked-into admin that exists here.
+          Hooks.notify_account_security(user.id, "account_reset_issued", %{
+            "expires_at" => DateTime.to_iso8601(reset.expires_at),
+            "second_factors_cleared" => reset.clear_second_factors
+          })
+
           {:ok, token, reset}
 
         error ->
@@ -347,6 +358,18 @@ defmodule Baudrate.Auth.Recovery do
   defp apply_reset(%AccountReset{} = reset, password, password_confirmation) do
     user = Repo.get!(User, reset.user_id) |> Repo.preload(:role)
 
+    # The status is re-checked at redemption, not only at issue: a link is
+    # good for 24 hours and an account can be banned inside that window.
+    # `SessionController.create/2` re-checks for the same reason. The refusal
+    # is `:invalid`, like every other one, so the page stays uninformative.
+    if user.status == "banned" do
+      {:error, :invalid}
+    else
+      do_apply_reset(user, reset, password, password_confirmation)
+    end
+  end
+
+  defp do_apply_reset(%User{} = user, %AccountReset{} = reset, password, password_confirmation) do
     changeset =
       User.password_reset_changeset(user, %{
         "password" => password,

@@ -289,6 +289,30 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
       assert {:error, :invalid} = Recovery.redeem(first, "NewPassword123!x", "NewPassword123!x")
     end
 
+    test "tells the member while the link is still outstanding" do
+      admin = create_user("admin")
+      user = create_user()
+      contact = verified_contact(user, admin)
+
+      {:ok, _token, _} = Recovery.issue(admin, user, contact.id)
+
+      types =
+        Repo.all(
+          from(n in Baudrate.Notification.Notification,
+            where: n.user_id == ^user.id,
+            select: n.type
+          )
+        )
+
+      assert "account_reset_issued" in types,
+             """
+             The member who asked for this cannot read it — they are locked
+             out. The one who did *not* ask is exactly who needs to see it,
+             and a live session is the only in-band channel there is. It is
+             the cheapest check on a talked-into admin available here.
+             """
+    end
+
     test "writes an audit entry, and a second one only when second factors are cleared" do
       admin = create_user("admin")
       user = create_user()
@@ -371,6 +395,26 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
 
     test "an unknown token is refused with the same answer as every other failure" do
       assert {:error, :invalid} = Recovery.redeem("nonsense", "BrandNew123!xy", "BrandNew123!xy")
+    end
+
+    test "a link for an account banned since it was issued is refused", ctx do
+      {:ok, token, _} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+
+      Repo.update!(Ecto.Changeset.change(ctx.user, status: "banned"))
+
+      assert {:error, :invalid} = Recovery.redeem(token, "BrandNew123!xy", "BrandNew123!xy"),
+             """
+             A link is good for 24 hours and an account can be banned inside
+             that window. The status is re-checked at redemption for the same
+             reason `SessionController.create/2` re-checks it, and the refusal
+             is `:invalid` like every other one so the page stays
+             uninformative.
+             """
+
+      # The refusal is total: the password was never set, so the link bought
+      # its holder nothing at all.
+      assert {:error, :invalid_credentials} =
+               Auth.authenticate_by_password(ctx.user.username, "BrandNew123!xy")
     end
 
     test "revokes every session, and cancels exports and moves", ctx do

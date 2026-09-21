@@ -593,12 +593,26 @@ Baudrate.Auth.regenerate_recovery_codes(user)   # prints ten fresh codes
 Keep your own recovery codes offline, and treat that as the backup this feature
 does not provide.
 
-#### 8. Privacy
+#### 8. Privacy, and where the link ends up
 
 A recovery address is encrypted at rest and readable only on the admin page.
 Do not copy it anywhere else — not into a ticket, not into a chat. It is a new
 category of personal data this instance holds, so it belongs in your privacy
 policy; see [Policy Pages](#policy-pages).
+
+**The reset token is in the URL, so it is written to your logs.** Both the
+nginx access log and the application log record the request path, which means
+a live recovery link sits in plaintext in two places for as long as you keep
+those logs. This is inherent to a link anyone can click, and three things
+bound it: the link expires in 24 hours, it works exactly once, and redeeming
+it tells the member (`account_reset_used`) and writes to
+`/admin/moderation-log`. Issuing one also notifies the account immediately, so
+somebody who still has a session finds out while it is outstanding.
+
+If your log retention is long or your logs are shipped somewhere else, treat
+`/account-reset/` lines as credential material: exclude them at the shipper,
+or shorten retention. Revoking an outstanding link from `/admin/users/:id`
+makes any copy worthless at once.
 
 ### TOTP Two-Factor Authentication
 

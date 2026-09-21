@@ -516,13 +516,26 @@ defmodule BaudrateWeb.ProfileLive do
   def handle_event("regenerate_recovery_codes", _params, socket) do
     with_security_reauth(socket, fn socket ->
       user = socket.assigns.current_user
-      codes = Auth.regenerate_recovery_codes(user)
 
-      {:noreply,
-       socket
-       |> assign(:fresh_recovery_codes, codes)
-       |> assign(:unused_recovery_codes, length(codes))
-       |> put_flash(:info, gettext("New recovery codes issued. The old ones no longer work."))}
+      # The step-up unlock is rate-limited, but it opens a five-minute window
+      # in which this handler is free. Each call mints ten codes and sends an
+      # always-delivered notice, which can be a Web Push per subscribed
+      # device — outbound traffic a scripted loop should not be able to
+      # generate.
+      case RateLimits.check_recovery_codes(user.id) do
+        {:error, :rate_limited} ->
+          {:noreply,
+           put_flash(socket, :error, gettext("Too many attempts. Please try again later."))}
+
+        :ok ->
+          codes = Auth.regenerate_recovery_codes(user)
+
+          {:noreply,
+           socket
+           |> assign(:fresh_recovery_codes, codes)
+           |> assign(:unused_recovery_codes, length(codes))
+           |> put_flash(:info, gettext("New recovery codes issued. The old ones no longer work."))}
+      end
     end)
   end
 
@@ -566,6 +579,20 @@ defmodule BaudrateWeb.ProfileLive do
 
         {:error, %Ecto.Changeset{} = changeset} ->
           {:noreply, assign(socket, :contact_form, to_form(changeset, as: :contact))}
+
+        # Typed patterns above, so anything else — a gate refusal, a new
+        # error value — would be a CaseClauseError rather than a flash.
+        {:error, reason} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             BaudrateWeb.Helpers.refusal_message(
+               reason,
+               user,
+               gettext("Could not save that recovery contact.")
+             )
+           )}
       end
     end)
   end

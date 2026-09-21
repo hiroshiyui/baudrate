@@ -14,7 +14,7 @@ defmodule Baudrate.DataPortability.ArchiveTest do
   import Ecto.Query
 
   alias Baudrate.{Auth, Content, Messaging, Moderation, Notification, Repo}
-  alias Baudrate.Auth.{LoginAttempt, RecoveryCode, UserSession}
+  alias Baudrate.Auth.{LoginAttempt, RecoveryCode, RecoveryContact, UserSession}
   alias Baudrate.Content.{ArticleImage, ArticleRevision, Board}
   alias Baudrate.DataPortability.{Archive, Files}
   alias Baudrate.Federation.KeyVault
@@ -141,6 +141,7 @@ defmodule Baudrate.DataPortability.ArchiveTest do
       site_ap_private_key: marker("SITEAPKEY"),
       vapid_private_key: marker("VAPIDKEY"),
       recovery_hash: marker("RECOVERY"),
+      recovery_contact_email: marker("RECOVERYCONTACT"),
       session_token: marker("SESSTOKEN"),
       session_refresh: marker("SESSREFRESH"),
       session_ip: marker("SESSIP"),
@@ -172,6 +173,27 @@ defmodule Baudrate.DataPortability.ArchiveTest do
 
     Repo.insert_all(RecoveryCode, [
       %{user_id: user.id, code_hash: m.recovery_hash, inserted_at: now}
+    ])
+
+    # The encrypted recovery address (ADR 0058), seeded past the vault so the
+    # marker is what sits in the column. `Collector` has no recovery section
+    # today, which is exactly why this belongs here: the ciphertext is a
+    # secret at rest like `totp_secret`, and must not reach an archive even
+    # its owner asked for.
+    #
+    # The armored public key beside it is deliberately *not* a canary — it is
+    # published material and the member's own, so an export that one day
+    # included it would be portability working, not a leak.
+    Repo.insert_all(RecoveryContact, [
+      %{
+        user_id: user.id,
+        email_encrypted: m.recovery_contact_email,
+        pgp_public_key:
+          "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nx\n-----END PGP PUBLIC KEY BLOCK-----",
+        status: "verified",
+        inserted_at: now,
+        updated_at: now
+      }
     ])
 
     # The other three signing-key columns (ADR 0038). `Collector` has no

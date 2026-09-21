@@ -39,6 +39,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_reauth/1`              | `reauth:`          | 15 min  | 5     |
   | `check_inbound_flag/1`        | `inbound_flag:`    | 1 hour  | 10    |
   | `check_account_reset_by_ip/1` | `account_reset:ip:` | 1 hour | 10   |
+  | `check_recovery_codes/1`      | `recovery_codes:`  | 1 hour  | 5     |
   """
 
   require Logger
@@ -72,6 +73,21 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_reauth(integer()) :: :ok | {:error, :rate_limited}
   def check_reauth(user_id) do
     check("reauth:#{user_id}", 900_000, 5, :reauth)
+  end
+
+  @doc """
+  Issuing a fresh set of recovery codes: 5 per hour per user.
+
+  Step-up re-authentication is itself limited, but it opens a five-minute
+  window in which the handler behind it is free. Each regeneration writes ten
+  rows and sends an always-delivered notice, which can be one Web Push per
+  subscribed device — nobody needs five sets of codes in an hour, and a
+  scripted loop should not be able to turn a member's own session into
+  outbound push traffic.
+  """
+  @spec check_recovery_codes(integer()) :: :ok | {:error, :rate_limited}
+  def check_recovery_codes(user_id) do
+    check("recovery_codes:#{user_id}", 3_600_000, 5, :recovery_codes)
   end
 
   @doc """
