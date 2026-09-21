@@ -18,6 +18,60 @@ defmodule BaudrateWeb.CoreComponentsTest do
     end
   end
 
+  describe "image_alt_input/1" do
+    # ADR 0061. These two attributes are the whole design: without them the
+    # control is an ordinary form input, and LiveView patches an ordinary form
+    # input back to the server's value on every `phx-change` re-render — which
+    # is to say, it erases what the member is typing as soon as they touch any
+    # other field in the composer.
+    test "carries no name, so it never joins the form params" do
+      html = render_component(&CoreComponents.image_alt_input/1, image: %{id: 7, alt: nil})
+
+      refute html =~ ~s(name=")
+      assert html =~ ~s(id="image-alt-7")
+      assert html =~ ~s(phx-value-id="7")
+    end
+
+    test "sits in an ignored container, so a re-render cannot patch it back" do
+      html = render_component(&CoreComponents.image_alt_input/1, image: %{id: 7, alt: nil})
+
+      assert html =~ ~s(id="image-alt-wrap-7")
+      assert html =~ ~s(phx-update="ignore")
+    end
+
+    test "renders the stored description, and saves on blur as well as keyup" do
+      html =
+        render_component(&CoreComponents.image_alt_input/1,
+          image: %{id: 9, alt: "a cat on a fence"}
+        )
+
+      assert html =~ ~s(value="a cat on a fence")
+      # Blur alone loses a description typed and then submitted with the
+      # keyboard; keyup alone loses one that was pasted.
+      assert html =~ ~s(phx-blur="save_image_alt")
+      assert html =~ ~s(phx-keyup="save_image_alt")
+      assert html =~ ~s(maxlength="#{Baudrate.Content.ImageAlt.max_length()}")
+    end
+
+    test "the label is present for a screen reader even though it is not shown" do
+      html = render_component(&CoreComponents.image_alt_input/1, image: %{id: 3, alt: nil})
+
+      assert html =~ ~s(for="image-alt-3")
+      assert html =~ "image-alt-label sr-only"
+    end
+
+    test "a caller may name its own handler, which the timeline needs" do
+      html =
+        render_component(&CoreComponents.image_alt_input/1,
+          image: %{id: 4, alt: nil},
+          event: "save_reply_image_alt"
+        )
+
+      assert html =~ ~s(phx-blur="save_reply_image_alt")
+      refute html =~ ~s(phx-blur="save_image_alt")
+    end
+  end
+
   describe "translate_errors/2" do
     test "extracts and translates errors for a specific field" do
       errors = [name: {"can't be blank", []}, email: {"is invalid", []}]

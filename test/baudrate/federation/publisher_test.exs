@@ -982,6 +982,55 @@ defmodule Baudrate.Federation.PublisherTest do
 
       assert activity["@context"] == Baudrate.Federation.Context.activity()
     end
+
+    test "an image's description travels as the attachment name (ADR 0061)" do
+      user = create_user()
+      remote = create_remote_actor()
+      follow_remote!(user, remote)
+
+      {:ok, timeline_item} =
+        Baudrate.Federation.create_timeline_item(%{
+          remote_actor_id: remote.id,
+          activity_type: "Create",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          body: "Remote post",
+          body_html: "<p>Remote post</p>",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      {:ok, reply} =
+        Baudrate.Federation.create_timeline_item_reply(timeline_item, user, "Nice post!")
+
+      for {name, alt} <- [{"described.webp", "a cat on a fence"}, {"bare.webp", nil}] do
+        Repo.insert!(%Baudrate.Federation.TimelineItemReplyImage{
+          filename: name,
+          storage_path: "/tmp/#{name}",
+          width: 100,
+          height: 80,
+          reply_id: reply.id,
+          user_id: user.id,
+          alt: alt
+        })
+      end
+
+      {activity, _actor_uri} =
+        Publisher.build_create_timeline_item_reply(reply, timeline_item, user)
+
+      attachments = activity["object"]["attachment"]
+      assert length(attachments) == 2
+
+      described = Enum.find(attachments, &(&1["url"] =~ "described.webp"))
+      bare = Enum.find(attachments, &(&1["url"] =~ "bare.webp"))
+
+      assert described["name"] == "a cat on a fence"
+
+      # Absent, not empty. An empty `name` tells the receiver the image is
+      # decorative, which is a different claim from "nobody described it" —
+      # this is the third of the three attachment builders and the one that
+      # had no test of its own.
+      refute Map.has_key?(bare, "name")
+    end
   end
 
   describe "publish_timeline_item_reply/2" do
