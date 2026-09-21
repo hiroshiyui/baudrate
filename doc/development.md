@@ -389,6 +389,7 @@ lib/
 │   ├── health_detail.ex         # Loopback-only listener serving Baudrate.Health (HEALTH_DETAIL_PORT)
 │   ├── helpers.ex               # Shared translation helpers (translate_role/1, translate_status/1, etc.)
 │   ├── http_caching.ex          # Cache-control for actor documents, and when `public` is unsafe
+│   ├── image_alt_fallback.ex    # Announces an undescribed <img> in stored HTML instead of skipping it (ADR 0061)
 │   ├── locale.ex                # Locale resolution order, the known-locale allow-list, the cookie's facts
 │   ├── not_found_error.ex       # 404 for a missing subject — never a redirect (ADR 0057)
 │   ├── linked_data.ex          # JSON-LD + Dublin Core metadata builders (SIOC/FOAF/DC)
@@ -1080,7 +1081,8 @@ served by `BaudrateWeb.MediaController` from a local re-encoded copy.
 | `Media.NegativeCache` | 1-hour suppression of retries for URLs that failed |
 | `Media.Rewriter` | `rewrite_img_src/1` over already-sanitized HTML |
 | `Media.Warmer` | opportunistic pre-fetch at ingest (disabled in tests) |
-| `BaudrateWeb.SafeHTML` | `body_html/1` — use instead of `raw/1` for stored HTML |
+| `BaudrateWeb.SafeHTML` | `body_html/1` for an HTML column, `markdown/1` for a Markdown one — use instead of `raw/1` for any stored content |
+| `BaudrateWeb.ImageAltFallback` | `fill/1` — names an `<img>` that carries no description, so it is announced rather than skipped (ADR 0061) |
 
 Design notes:
 
@@ -1095,7 +1097,12 @@ Design notes:
 - **Rewrite at render, not ingest.** Applying the rewrite in
   `Markdown.to_html/1` and `SafeHTML.body_html/1` covers every row written
   before the proxy existed, so no migration or backfill was needed, and the
-  canonical remote URL is preserved so a failed fetch stays retryable.
+  canonical remote URL is preserved so a failed fetch stays retryable. The
+  accessible-name fallback of
+  [ADR 0061](adr/0061-an-image-description-is-not-a-form-field.md) rides on the
+  same two entry points for the same reason, which is why every render site
+  goes through `SafeHTML` and `rendered_html_passes_test.exs` holds an
+  allow-list of the `raw/1` calls that remain.
 - **Storage location is forced by ops.** The systemd unit grants write access
   only to `shared/uploads`, and only that directory is symlinked into each
   release. nginx denies `/uploads/media_cache/` so the signature cannot be

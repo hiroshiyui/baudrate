@@ -119,19 +119,56 @@ directly.**
   until the 24-hour orphan sweep removes the row and the file with it. That is
   the cost of the row existing first, and it is the same cost the upload itself
   already had.
-- **One surface still claims "decorative" when it means "undescribed", and it
-  is named here rather than quietly fixed.** Images on an inbound *comment* or
-  DM are not rows at all — `InboxHandler.append_attachment_images/2` appends
-  them to `body_html` as inline `<img>` tags — and it emits `alt=""` when the
-  peer sent no `name`, which decision 2 calls a lie. It cannot simply fall back
-  to "Image N" the way the gallery does, because that string would be written
-  into stored HTML in whatever locale the ingest process happened to be in and
-  would stay that way for ever. Closing it properly means the attachments
-  becoming rows, rendered at read time, which is a change to ingest and not a
-  fallback string. Tracked in `doc/TODOs.md`.
+- **Remote images arrive by two different routes, and only one of them is a
+  row.** An image on a remote *article* is fetched and stored as an
+  `article_images` row carrying `alt`, so it renders through the gallery like
+  any other. An image on a remote *comment* or DM is not: it is appended to
+  `body_html` as an inline `<img>` by
+  `InboxHandler.append_attachment_images/2`. The second route therefore cannot
+  use the gallery's `Image N` fallback, and it cannot choose any fallback at
+  ingest either — a translated string written into stored HTML would freeze the
+  ingest process's locale into the row, and a Japanese reader would be read a
+  Mandarin sentence for ever because of which request happened to deliver the
+  comment first.
+- **So the fallback is applied at render, by `BaudrateWeb.ImageAltFallback`.**
+  This is the shape `Baudrate.Media.Rewriter` already uses on the same string
+  for the same reason: it covers every row written before the pass existed with
+  no backfill, and it leaves the stored HTML saying what the peer actually
+  sent. It means every `<img>` inside a post is announced — an empty `alt`
+  there is the absence of a description, never a claim about the picture,
+  because nothing on this site authors a decorative image inside a post.
+- **It rides on `SafeHTML`, which now has two entry points rather than one.**
+  `body_html/1` for an HTML column and `markdown/1` for a Markdown one. Eleven
+  sites rendered Markdown without either — ten, the article body among them,
+  with a bare `raw(Markdown.to_html(...))`, and one that built the HTML in the
+  LiveView and wrote `raw(@assign)` in the template. Nothing hotlinked,
+  because `to_html/1` carries the proxy rewrite itself; what it cannot carry
+  is a *translated* fallback from inside the Content context. Without the
+  second entry point this decision would have reached comments and direct
+  messages and stopped there, which is the failure mode worth naming — a
+  half-applied accessibility rule reads as a working one from every page that
+  happens to be checked.
 - **`test/baudrate/content/image_alt_test.exs` is the acceptance gate**, with
   the federated half in
-  [`object_builder_test.exs`](../../test/baudrate/federation/object_builder_test.exs)
-  and the control's two load-bearing properties — no `name`, and the ignored
+  [`object_builder_test.exs`](../../test/baudrate/federation/object_builder_test.exs),
+  the control's two load-bearing properties — no `name`, and the ignored
   container — in
-  [`core_components_test.exs`](../../test/baudrate_web/components/core_components_test.exs).
+  [`core_components_test.exs`](../../test/baudrate_web/components/core_components_test.exs),
+  and the render-time fallback in
+  [`image_alt_fallback_test.exs`](../../test/baudrate_web/image_alt_fallback_test.exs).
+- **A render site cannot skip the passes.**
+  [`rendered_html_passes_test.exs`](../../test/baudrate_web/rendered_html_passes_test.exs)
+  is an **allow-list of every `raw/1` call under `lib/baudrate_web/`**, with a
+  reason per entry, rather than a search for one spelling — the eleventh site
+  was split across two files and no pattern match on
+  `raw(Markdown.to_html(` could have seen it, which is the kind that survives
+  review. A third case checks the allow-list has not gone stale, and a fourth
+  counts the real users of the replacement, so renaming the thing being
+  scanned for turns the gate red rather than green.
+- **A sixth composer cannot ship without the field.**
+  [`image_alt_coverage_test.exs`](../../test/baudrate_web/image_alt_coverage_test.exs)
+  fails the build when a template renders an image upload and no
+  `<.image_alt_input>`, with avatars the one named exemption. It needs a gate
+  because of how the failure presents: everything works, every other test
+  passes, and the only people who find out are the ones who cannot see the
+  picture.

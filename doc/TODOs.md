@@ -448,15 +448,6 @@ Editing and image descriptions are done and unreleased
 [ADR 0061](adr/0061-an-image-description-is-not-a-form-field.md)). What is
 left:
 
-- [ ] **An inbound comment's images announce themselves as decorative.**
-  `InboxHandler.append_attachment_images/2` appends them to `body_html` as
-  inline `<img alt="">` when the peer sent no `name`, and `alt=""` means
-  "announce nothing" — so a screen reader skips an image it should at least
-  mention. A gallery image falls back to `Image N`; this path cannot, because
-  a string chosen at ingest is frozen into stored HTML in the ingest
-  process's locale. The fix is for those attachments to become rows rendered
-  at read time, like an article's. Named in ADR 0061's consequences.
-
 - [ ] **Drafts on the server,** with a drafts list, next to the local
   autosave (articles only — a comment draft is the right size for the
   localStorage one, which stays).
