@@ -307,7 +307,19 @@ Configure `registration_mode` at `/admin/settings`:
 | `open` | New users are `active` immediately |
 | `invite_only` | Requires a valid invite code; invited users are `active` immediately |
 
-Approve pending users at `/admin/pending-users`.
+Approve pending users at `/admin/pending-users`. **Approval now tells the
+member** — they used to find out by trying to post and discovering they could.
+Staff are told about a new pending registration the same way, and neither
+notice can be switched off in preferences: an approval queue nobody is told
+about is an approval queue nobody empties.
+
+**Registering signs the new member in**, in every mode. Approval mode signs
+them in as `pending`, which can browse and set up a profile but not post. The
+recovery codes are shown *before* the session starts and acknowledging them is
+what completes the sign-in — with no email in this system those codes are the
+only self-service way back, so nobody is carried past the one time they are
+shown. A first-visit step at `/welcome` then asks for a display name and a
+picture; both it and the Skip button count as answered, so it appears once.
 
 Registration requires accepting terms: a system activity-logging notice (always
 shown) and an optional site-specific End User Agreement (configurable at
@@ -1240,6 +1252,9 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
+| robots.txt and sitemap documents | 10 / min | per IP |
+| Account reset redemption | 10 / hour | per IP |
+| Recovery code regeneration | 5 / hour | per user |
 | Data export download | 10 / 15 min | per IP |
 | Direct messages | 20 / min | per user |
 | Timeline item replies | 20 / 5 min | per user |
@@ -2687,7 +2702,7 @@ If you put one in front anyway:
 | `/admin/settings` | Site name, registration mode, timezone, federation settings; read-only system information (Baudrate, Elixir, Erlang/OTP and ERTS versions) |
 | `/admin/rules` | Site rules: create, edit, reorder, retire, restore |
 | `/admin/users` | User management (search, ban/unban, role changes) |
-| `/admin/users/:id` | One account: sanction history, warn/silence/suspend, lift ([Acting on an account](#acting-on-an-account)) |
+| `/admin/users/:id` | One account: sanction history, warn/silence/suspend, lift ([Acting on an account](#acting-on-an-account)); recovery contacts and reset links, admin-only ([Account Recovery](#account-recovery-when-the-codes-are-gone-too)) |
 | `/admin/pending-users` | Approve pending registrations |
 | `/admin/boards` | Board CRUD, permissions, moderator assignment |
 | `/admin/bots` | RSS/Atom feed bot accounts ([Feed Bots](#feed-bots-adminbots)) |

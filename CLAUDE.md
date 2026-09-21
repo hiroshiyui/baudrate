@@ -74,7 +74,7 @@ when the row drops an ADR number or a relationship verb the Status line uses.
 
 ### Contexts
 
-- **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, WebAuthn/FIDO2 security keys, sessions, password reset), user management (avatars, invite codes, blocks, mutes)
+- **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, WebAuthn/FIDO2 security keys, sessions, password reset), account recovery (replaceable recovery codes, OpenPGP recovery contacts, admin-issued reset links — ADR 0058), user management (avatars, invite codes, blocks, mutes)
 - **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, boosts, polls, permissions, board moderators, search, link previews
 - **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery, user outbound follows, timeline item replies, timeline item likes/boosts, mentions, actor updates
 - **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation

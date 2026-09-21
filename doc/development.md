@@ -63,6 +63,10 @@ lib/
 │   │   ├── profiles.ex          # User profile updates: display name, bio, signature, profile_fields
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
 │   │   ├── reauthentication.ex  # Step-up re-authentication (password + TOTP) for factor changes
+│   │   ├── account_reset.ex     # Admin-issued single-use reset link; only its hash is stored (ADR 0058)
+│   │   ├── recovery.ex          # Account recovery: the out-of-band anchor and the reset link on it (ADR 0058)
+│   │   ├── recovery_contact.ex  # A member's recovery address + OpenPGP public key; editing drops it to pending
+│   │   ├── recovery_contact_vault.ex # Recovery addresses, encrypted with the :auth key
 │   │   ├── reserved_handle.ex   # Reserved username/handle list (system, sysop, admin, etc.)
 │   │   ├── sanction.ex          # Sanction schema: a warning, silence or suspension with an explicit end (ADR 0029)
 │   │   ├── sanctions.ex         # Issuing and lifting sanctions, and the active-sanction query behind the gate
@@ -73,7 +77,7 @@ lib/
 │   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
 │   │   ├── user_mute.ex         # UserMute schema (local-only soft-mute/ignore)
 │   │   ├── user_session.ex      # Ecto schema for server-side sessions
-│   │   ├── users.ex             # User CRUD, lookup, and registration
+│   │   ├── users.ex             # User CRUD, lookup, registration, approval and onboarding state
 │   │   ├── webauthn.ex          # WebAuthn context: registration, authentication, credential CRUD
 │   │   ├── webauthn_challenges.ex # ETS-backed challenge store (60s TTL, single-use, GenServer)
 │   │   └── webauthn_credential.ex # WebAuthnCredential schema (credential_id, public_key_cbor, sign_count)
@@ -329,16 +333,19 @@ lib/
 │   │   ├── policy_live.ex       # The public terms, rules and privacy documents
 │   │   ├── poll_composer.ex     # Keeps a composer's poll inputs in socket assigns while editing
 │   │   ├── password_reset_live.ex  # Password reset via recovery codes
-│   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs, signature, WebAuthn security key management, blocked and muted accounts
+│   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs, signature, WebAuthn security key management, recovery codes and contacts, blocked and muted accounts
+│   │   ├── account_reset_live.ex  # Redeeming an admin-issued recovery link (/account-reset/:token)
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
+│   │   ├── recovery_notice_hook.ex       # Shared attach_hook: dismissing the "no way back in" notice
 │   │   ├── register_live.ex     # Public user registration (supports invite-only mode, terms notice, recovery codes)
 │   │   ├── safety_actions.ex    # Shared handlers: block/mute remote accounts, report timeline items, DMs, accounts
-│   │   ├── search_live.ex       # Full-text search + remote actor lookup (WebFinger/AP)
+│   │   ├── search_live.ex       # Full-text search, sort and filters + remote actor lookup (WebFinger/AP)
 │   │   ├── tag_live.ex          # Browse articles by hashtag (/tags/:tag)
 │   │   ├── user_invites_live.ex # User invite code management (quota-limited, generate, revoke)
 │   │   ├── user_content_live.ex # Paginated user articles/comments (/users/:username/articles|comments)
 │   │   ├── user_profile_live.ex # Public user profile pages (stats, recent articles)
+│   │   ├── welcome_live.ex      # One-time first-visit step: display name, picture, what a pending account may do
 │   │   ├── setup_live.ex        # First-run setup wizard
 │   │   ├── totp_reset_live.ex   # Self-service TOTP reset/enable
 │   │   ├── totp_setup_live.ex   # TOTP enrollment with QR code
@@ -2753,6 +2760,9 @@ these responses loads a subresource.
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
+| robots.txt and sitemap documents | 10 / min | per IP |
+| Account reset redemption | 10 / hour | per IP |
+| Recovery code regeneration | 5 / hour | per user |
 | Direct messages | 20 / min | per user |
 | Timeline item replies | 20 / 5 min | per user |
 | LiveView mount | 60 / min | per IP |

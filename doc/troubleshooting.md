@@ -716,6 +716,60 @@ locked out to prevent DoS via deliberate failed logins.
 
 Admins can view login attempts at `/admin/login-attempts`.
 
+### A member cannot get back into their account
+
+Work down this list. **There is no email in this system**, so every step
+before the last is something the member has to have arranged in advance.
+
+1. **They know the password but not the TOTP code.** They sign in with a
+   recovery code at `/totp/recovery`.
+2. **They forgot the password but still have a recovery code.** They reset it
+   at `/password-reset` with their username, one code and a new password. Each
+   code works once. This signs out every session and cancels any pending data
+   export or account move.
+3. **They are signed in somewhere and are simply low on codes.** `/profile`
+   shows how many are unused and issues a fresh set behind step-up
+   re-authentication. The old ones stop working immediately.
+4. **Password and codes are both gone.** This is the admin-assisted path, and
+   it works only if they registered a recovery contact *before* losing access:
+   an email address and an OpenPGP public key, verified by an admin. The
+   procedure is [SysOp Guide → Account
+   Recovery](sysop.md#account-recovery-when-the-codes-are-gone-too), and every
+   cryptographic check in it happens in the admin's own mail client.
+5. **They registered no recovery contact.** There is nothing to do, and saying
+   so plainly is the correct answer. The account is not recoverable; they can
+   register a new one. Members in this state see a dismissible notice on every
+   page telling them so *before* it matters — that notice is the whole reason
+   it exists.
+
+Two things that look like this problem and are not:
+
+- **`/admin/users/:id` shows no recovery section.** You are signed in as a
+  moderator. Recovery contacts are admin-only: they are personal data and they
+  are the anchor a reset rests on.
+- **"Issue reset link" is missing next to a verified contact.** The target's
+  role is at or above your own, which the instance refuses (ADR 0029's rule
+  applied to recovery). Recovering staff needs the server console —
+  [SysOp Guide §7](sysop.md#7-when-you-are-the-one-locked-out).
+
+### An admin-issued reset link does not work
+
+Every failure renders the same message on purpose, so the page cannot be used
+to find out whether a link ever existed. Check `/admin/users/:id`, which now
+says which of these it was:
+
+| What it says | What happened |
+|---|---|
+| *…is outstanding until…* | still good; the member has not used it |
+| *…was used on…* | redeemed already. Links work exactly once |
+| *…was revoked and never used* | an admin called it back |
+| *…expired unused on…* | 24 hours passed |
+
+A redemption that failed on a weak password **also spends the link** — the
+token is claimed before the password is validated, or a single-use link would
+become a password-guessing oracle. Issue a fresh one rather than hunting for
+the old.
+
 ---
 
 ## Rate Limiting

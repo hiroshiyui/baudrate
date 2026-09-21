@@ -31,6 +31,7 @@ third party on your behalf.
 - **TOTP two-factor authentication** -- required for admin/moderator, optional for users, with recovery codes
 - **WebAuthn / FIDO2 security keys** -- register hardware security keys or passkeys (e.g. YubiKey, Touch ID) for second-factor and admin sudo-mode re-verification
 - **Account security** -- password change and sign out everywhere behind step-up re-authentication; always-delivered notices when a password, second factor, or session changes
+- **Account recovery without email** -- this instance sends no mail, so recovery codes are the way back and they can be replaced from your profile at any time. Past them, recovery is anchored on an OpenPGP key: a member registers an address and a public key from their own session, an admin verifies a signed message against that key **in their own mail client**, and only then can a single-use reset link be issued. Baudrate sends no mail, verifies no signature and fetches no key ([ADR 0058](doc/adr/0058-account-recovery-is-anchored-outside-the-instance.md))
 - **Account migration** -- aliases (`alsoKnownAs`) and ActivityPub `Move` to another server, with a 24-hour cooling-off and warning banner, a destination check at request and send time, and a read-only old account whose redirect can be removed; followers of accounts that move elsewhere are refollowed properly
 - **Data export** -- download a JSON + media archive of what you wrote and own, designed against data leakage: TOTP-gated, 24-hour cooling-off with a site-wide warning banner, re-authentication for every download, and no archive ever stored on the server
 - **ActivityPub federation** -- federate with Mastodon, Lemmy, and the Fediverse
@@ -55,19 +56,20 @@ third party on your behalf.
 - **Nothing is ranked by engagement** -- there is no "popular", "trending" or "hot" page, no river of posts across boards, and no post count comparing one board with another; the home page lists the boards in the order the admin chose. A ranking is a feedback loop, not a measurement, and engagement cannot tell an argument from a conversation ([ADR 0054](doc/adr/0054-attention-follows-the-board-not-a-ranking.md))
 - **User public profiles** -- public profile pages with stats, recent articles, and clickable author names
 - **Avatar system** -- upload, crop, WebP conversion with server-side security
-- **Flexible registration** -- open, approval-required, or invite-only modes with admin-managed invite codes
+- **Flexible registration** -- open, approval-required, or invite-only modes with admin-managed invite codes; registering signs you in once you have saved your recovery codes, and a one-time first-visit step asks for a display name and picture. An account waiting for approval is told what it may do meanwhile, and told again when it is approved
 - **Admin dashboard** -- site settings, registration mode, pending user approval, federation dashboard, moderation queue, moderation log, invite code management
 - **Rate limiting** on login, TOTP, registration, avatar uploads, and federation endpoints
 - **Security hardened** -- HSTS, CSP, signed + encrypted cookies, and secrets encrypted at rest under per-class keys that can be rotated without locking anyone out
 - **Retention** -- hourly purges destroy a deleted article or comment, its revisions and its image files 90 days after deletion, untouched timeline items after 90 days, and remote boost records after 180 days; anything a moderation report points at is kept at any age
 - **Notifications** -- real-time in-app notifications for replies, mentions, follows, likes, boosts, moderator actions and account-security events; admins are also told when a health check has been failing for over an hour, so a backup that stopped does not stay quiet
 - **Direct messages** -- 1-on-1 conversations with read cursors, mute controls, and federated delivery
-- **Search** -- full-text search across articles and comments with CJK support and search operators
+- **Search** -- full-text search across articles and comments with CJK support, sorted by relevance or date, with a board and date filter and the same `author:` / `board:` / `tag:` / `has:` / `before:` / `after:` operators on both tabs. A search has to name something to search within: a date range on its own is not a search, it is a list of everything recent
 - **Polls** -- single/multi-choice polls with anonymous voting, expiration, and denormalized counters
 - **Bookmarks** -- bookmark articles and comments for later reference
 - **Emoji autocomplete** -- type `:shortcode` in any textarea for instant emoji suggestions
 - **Markdown toolbar** -- toolbar with formatting shortcuts for article and comment editing
-- **Syndication feeds** -- RSS 2.0 and Atom for the site, each board and each user
+- **Syndication feeds** -- RSS 2.0 and Atom for the site, each board, each user and each tag; every page carries and advertises the feed for the thing you are looking at
+- **Findable from outside** -- a `sitemap.xml` that invites only what a guest can already see, a `robots.txt` that blocks machine endpoints rather than pages, and a self-referencing canonical URL and description on every page. Unlisted articles stay out of both, and member profiles are crawlable but never enumerated ([ADR 0057](doc/adr/0057-a-sitemap-invites-only-what-a-guest-sees.md))
 - **RSS/Atom bot accounts** -- admin-managed feed bots that periodically fetch RSS 0.9x/2.0, RSS 1.0 (RDF), Atom, and JSON Feed sources and post articles to target boards; configurable fetch interval, per-bot bio and profile fields, automatic favicon avatar fetching, error tracking with exponential backoff, and manual reset-and-retry
 - **User blocking, muting and reporting** -- block local or remote accounts to stop replies, likes, boosts, follows and messages in both directions; mute to hide content locally; report posts, comments, timeline items, received messages and accounts to moderators
 - **Push notifications** -- PWA with Web Push support and service worker
