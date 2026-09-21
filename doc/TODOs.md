@@ -14,12 +14,12 @@ onboarding. **All five are now closed** — Phase 0 in v1.18.2, Phase 1 in
 v1.21.0, Phase 2 with the alerting item that followed v1.28.2, Phase 3 in
 v1.31.0, and Phase 4 across v1.32.0–v1.34.0.
 
-**Phase 5 was deferred, deliberately** (2026-09-21): the roadmap puts
-anti-spam next, on the premise that growth from Phase 4 attracts spam, and the
-operator chose to take Phase 6 first. Nothing about Phase 5 changed and
-nothing depends on it; it is next again whenever the premise starts to bite.
-6A shipped as its first half — comment editing with a public history and
-image descriptions — with server-side drafts as its second.
+**Phase 5 was deferred on 2026-09-21 and planned on 2026-09-22.** The roadmap
+puts anti-spam next, on the premise that growth from Phase 4 attracts spam; the
+operator took Phase 6 first, and 6A's first half — comment editing with a public
+history, and image descriptions — is committed and unreleased. The agreed order
+is now 6A's second half (server-side drafts), then Phase 5's three releases.
+Its three decisions are settled and recorded below.
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -342,36 +342,91 @@ These are the facts that are still nowhere else.
 
 **Done when:** automated sign-ups are slowed down, new accounts cannot mass-post links, and moderators can stop a wave with filters and IP bans.
 
+**Planned 2026-09-22, three releases:** 5A + 5E (the door), then 5B (trust),
+then 5C + 5D — 5D's "hold for review" has nowhere to put a submission until 5C
+exists. Phase 5 starts after 6A's second half, so the first of the three is
+v1.37.0.
+
 ### 5A — Registration friction (S)
 
-- [ ] **A self-hosted proof-of-work challenge** on registration (P5-D1). No third-party CAPTCHA, in line with the no-third-party rule.
-- [ ] **Ban an account and the accounts it invited** in one audited action, using the invite chain (`invited_by_id`).
+- [ ] **A self-hosted proof-of-work challenge** on registration (P5-D1), in all
+  three registration modes. Held in socket assigns and stored nowhere; the
+  solver is a same-origin worker file because `worker-src` is `'self'`, and its
+  path is a bare literal for [ADR 0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md)'s
+  reason. It must survive a browser with no `Worker` and a submit that arrives
+  before the solve: registration is the one page a visitor cannot route around.
+- [ ] **Ban an account and the accounts it invited** in one audited action,
+  using the invite chain (`invited_by_id`). The transitive tree is shown with
+  each account's age and post count and the moderator ticks what goes — not
+  cascaded automatically, because a spammer's invitee is sometimes a real
+  member.
 
 ### 5B — Limits for new accounts (M)
 
-- [ ] **A trust level, earned by age and approved activity (P5-D2).** Until a member earns it, they have lower rate limits, at most one link per post, no DMs to non-followers, and fewer images.
+- [ ] **A trust level, earned by age and approved activity (P5-D2).** Until a
+  member earns it: lower rate limits, at most one link per post, no DMs to
+  non-followers, fewer images. Computed at check time, never a stored flag a
+  sweep flips ([ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)'s
+  rule). **Bots are exempt inside the predicate's own query** — a bot has no age
+  and no approved activity, and an RSS item routinely carries several links, so
+  without the exemption turning trust on stops every feed, exactly as
+  [ADR 0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md) found for
+  the terms gate.
+- [ ] `extract_urls/2` on the `baudrate_html_parser` NIF. Counting links needs
+  every URL and it exposes only the first; 5D needs it too.
 
 ### 5C — Hold first posts (S)
 
-- [ ] **An optional setting** that holds a new account's first post (or first N) in the Phase 1 moderation queue until a moderator approves it.
+- [ ] **An optional setting** that holds a new account's first N posts —
+  articles and comments — until a moderator approves them.
+  - A held submission is **a row in its own table, not an article with a flag.**
+    Nothing chokepoints listings, so a flag would have to be excluded by hand
+    from board lists, search and `/ap/search`, tag pages, feeds, the sitemap,
+    the AP outbox, user pages, bookmarks, the timeline merge and unread badges —
+    the shape that leaked twice and left the `remote_visibility` and
+    `blocked_domain_hiding` gates behind it. Approval replays creation as the
+    author, so publication is when it publishes.
+  - The 24-hour orphan-image sweep has to spare images a pending held post
+    names, or a post held overnight is approved with its images already
+    unlinked.
 
 ### 5D — Keyword and link filters (M)
 
 - [ ] **Admin-managed filters** on words, patterns and domains.
-  - Each filter blocks, holds for review, or flags (P5-D3).
-  - Applied when local content is created and when remote content arrives.
-  - Every match is audited.
+  - Each filter blocks, holds for review, or flags (P5-D3); remote content can
+    only be dropped or flagged, never held. A filter set to hold **degrades to
+    flag** where holding is impossible — bots, forwarding, inbound.
+  - Applied when local content is created **and when it is edited.** Since 6A
+    both articles and comments are editable, so a filter that only checks
+    creation is bypassed by posting clean and editing dirty.
+  - No raw regular expressions from the form: an admin-entered pattern that
+    backtracks catastrophically hangs every write on the instance. Whole word,
+    substring with `*`, or domain, compiled here.
+  - Every match is audited, whatever the action — that is what makes a bad
+    filter findable.
 
 ### 5E — IP bans (S)
 
 - [ ] **IP and CIDR bans** for registration and sign-in, with a reason and an optional expiry, audited.
-  - Resolve addresses through `RealIp` only.
+  - Resolve addresses through `RealIp` only. Expiry is decided by the clock at
+    read time, never by a sweep.
+  - Refuse a loopback or private range — that is a `RealIp` misconfiguration
+    rather than a visitor, and banning it bans everyone — plus `/0` and any
+    range holding the acting admin's own address.
+  - Checked at registration, at sign-in, and at `SessionController.create/2`,
+    which is the only one of the three that mints a session.
 
-### Decisions needed
+### Decisions (made 2026-09-22)
 
-- [ ] **P5-D1. Challenge type.** [A self-hosted proof-of-work challenge; no external CAPTCHA.]
-- [ ] **P5-D2. Trust thresholds.** [3 days old and 3 posts not removed; admins and moderators are always trusted.]
-- [ ] **P5-D3. Filter actions.** [Block, hold for review, or flag; remote content can only be dropped or flagged.]
+- **P5-D1. Challenge type:** a self-hosted proof-of-work challenge, no external
+  CAPTCHA ([ADR 0006](adr/0006-media-proxy-no-third-party-subresources.md)), in all three
+  registration modes — `approval_required` still lets a bot mint pending
+  accounts, and each one notifies every admin.
+- **P5-D2. Trust thresholds:** 3 days old **and** 3 posts not removed. Admins
+  and moderators are always trusted; an invite grants nothing, which is the case
+  5A's second item exists for.
+- **P5-D3. Filter actions:** block, hold for review, or flag; remote content can
+  only be dropped or flagged.
 
 ---
 
