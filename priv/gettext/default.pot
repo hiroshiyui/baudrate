@@ -263,7 +263,7 @@ msgid "Set Up Two-Factor Authentication"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:285
-#: lib/baudrate_web/components/layouts.ex:1108
+#: lib/baudrate_web/components/layouts.ex:1127
 #: lib/baudrate_web/live/login_live.ex:36
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:46
@@ -340,8 +340,8 @@ msgid "Boards"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:183
-#: lib/baudrate_web/components/layouts.ex:1006
-#: lib/baudrate_web/components/layouts.ex:1090
+#: lib/baudrate_web/components/layouts.ex:1025
+#: lib/baudrate_web/components/layouts.ex:1109
 #: lib/baudrate_web/live/board_follows_live.html.heex:8
 #: lib/baudrate_web/live/board_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -1152,7 +1152,7 @@ msgid "Reason:"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:292
-#: lib/baudrate_web/components/layouts.ex:1117
+#: lib/baudrate_web/components/layouts.ex:1136
 #: lib/baudrate_web/live/register_live.ex:48
 #, elixir-autogen, elixir-format
 msgid "Register"
@@ -1369,8 +1369,8 @@ msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:203
 #: lib/baudrate_web/components/layouts.ex:282
-#: lib/baudrate_web/components/layouts.ex:1024
-#: lib/baudrate_web/components/layouts.ex:1099
+#: lib/baudrate_web/components/layouts.ex:1043
+#: lib/baudrate_web/components/layouts.ex:1118
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:26
 #: lib/baudrate_web/live/board_follows_live.html.heex:99
 #: lib/baudrate_web/live/search_live.ex:84
@@ -1669,12 +1669,12 @@ msgstr ""
 msgid "Change role for %{username}"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:982
+#: lib/baudrate_web/components/layouts.ex:1001
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:971
+#: lib/baudrate_web/components/layouts.ex:990
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr ""
@@ -1684,7 +1684,7 @@ msgstr ""
 msgid "Open navigation menu"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:960
+#: lib/baudrate_web/components/layouts.ex:979
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr ""
@@ -2563,7 +2563,7 @@ msgstr ""
 msgid "Font size"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:949
+#: lib/baudrate_web/components/layouts.ex:968
 #: lib/baudrate_web/live/admin/settings_live.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Theme"
@@ -2763,7 +2763,7 @@ msgid "Message"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:213
-#: lib/baudrate_web/components/layouts.ex:1042
+#: lib/baudrate_web/components/layouts.ex:1061
 #: lib/baudrate_web/live/conversation_live.html.heex:163
 #: lib/baudrate_web/live/conversations_live.ex:35
 #: lib/baudrate_web/live/conversations_live.html.heex:9
@@ -4033,7 +4033,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: lib/baudrate_web/components/layouts.ex:241
-#: lib/baudrate_web/components/layouts.ex:1070
+#: lib/baudrate_web/components/layouts.ex:1089
 #: lib/baudrate_web/live/notifications_live.ex:38
 #: lib/baudrate_web/live/notifications_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -4963,7 +4963,7 @@ msgstr ""
 msgid "TOTP must be configured before accessing admin pages."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:999
+#: lib/baudrate_web/components/layouts.ex:1018
 #, elixir-autogen, elixir-format
 msgid "Mobile navigation"
 msgstr ""
@@ -5699,8 +5699,8 @@ msgstr[1] ""
 msgid "Page %{page} of %{total_pages} — %{count} results total"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:838
-#: lib/baudrate_web/components/layouts.ex:839
+#: lib/baudrate_web/components/layouts.ex:853
+#: lib/baudrate_web/components/layouts.ex:854
 #, elixir-autogen, elixir-format
 msgid "Share this page"
 msgstr ""
@@ -5932,7 +5932,7 @@ msgstr ""
 msgid "Matching users"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:1036
+#: lib/baudrate_web/components/layouts.ex:1055
 #, elixir-autogen, elixir-format
 msgid "Messages, %{count} unread"
 msgid_plural "Messages, %{count} unread"
@@ -5971,7 +5971,7 @@ msgstr[1] ""
 msgid "Note"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:1064
+#: lib/baudrate_web/components/layouts.ex:1083
 #, elixir-autogen, elixir-format
 msgid "Notifications, %{count} unread"
 msgid_plural "Notifications, %{count} unread"
@@ -8537,7 +8537,7 @@ msgid "Reported Timeline Item:"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:193
-#: lib/baudrate_web/components/layouts.ex:1015
+#: lib/baudrate_web/components/layouts.ex:1034
 #: lib/baudrate_web/live/timeline_live.ex:50
 #: lib/baudrate_web/live/timeline_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -8685,13 +8685,13 @@ msgstr ""
 msgid "Signing in may show more."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:925
+#: lib/baudrate_web/components/layouts.ex:944
 #, elixir-autogen, elixir-format
 msgid "Match my browser"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:886
-#: lib/baudrate_web/components/layouts.ex:900
+#: lib/baudrate_web/components/layouts.ex:905
+#: lib/baudrate_web/components/layouts.ex:919
 #, elixir-autogen, elixir-format
 msgid "Site language"
 msgstr ""
@@ -9315,4 +9315,30 @@ msgstr ""
 #: lib/baudrate_web/live/admin/user_detail_live.ex:120
 #, elixir-autogen, elixir-format
 msgid "A reset link issued by %{admin} was used on %{used}."
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:857
+#, elixir-autogen, elixir-format
+msgid "Copy a link to this page"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:858
+#, elixir-autogen, elixir-format
+msgid "Link copied"
+msgstr ""
+
+#: lib/baudrate_web/controllers/page_html/offline.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "This page could not be loaded because the connection was lost. Nothing you were reading is stored on this device, so it will be here again once you are back online."
+msgstr ""
+
+#: lib/baudrate_web/controllers/page_html/offline.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Try again"
+msgstr ""
+
+#: lib/baudrate_web/controllers/page_controller.ex:35
+#: lib/baudrate_web/controllers/page_html/offline.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "You are offline"
 msgstr ""

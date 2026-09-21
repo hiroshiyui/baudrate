@@ -263,7 +263,7 @@ msgid "Set Up Two-Factor Authentication"
 msgstr "設定雙因素驗證"
 
 #: lib/baudrate_web/components/layouts.ex:285
-#: lib/baudrate_web/components/layouts.ex:1108
+#: lib/baudrate_web/components/layouts.ex:1127
 #: lib/baudrate_web/live/login_live.ex:36
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:46
@@ -340,8 +340,8 @@ msgid "Boards"
 msgstr "看板"
 
 #: lib/baudrate_web/components/layouts.ex:183
-#: lib/baudrate_web/components/layouts.ex:1006
-#: lib/baudrate_web/components/layouts.ex:1090
+#: lib/baudrate_web/components/layouts.ex:1025
+#: lib/baudrate_web/components/layouts.ex:1109
 #: lib/baudrate_web/live/board_follows_live.html.heex:8
 #: lib/baudrate_web/live/board_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -1152,7 +1152,7 @@ msgid "Reason:"
 msgstr "原因："
 
 #: lib/baudrate_web/components/layouts.ex:292
-#: lib/baudrate_web/components/layouts.ex:1117
+#: lib/baudrate_web/components/layouts.ex:1136
 #: lib/baudrate_web/live/register_live.ex:48
 #, elixir-autogen, elixir-format
 msgid "Register"
@@ -1368,8 +1368,8 @@ msgstr "儲存變更"
 
 #: lib/baudrate_web/components/layouts.ex:203
 #: lib/baudrate_web/components/layouts.ex:282
-#: lib/baudrate_web/components/layouts.ex:1024
-#: lib/baudrate_web/components/layouts.ex:1099
+#: lib/baudrate_web/components/layouts.ex:1043
+#: lib/baudrate_web/components/layouts.ex:1118
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:26
 #: lib/baudrate_web/live/board_follows_live.html.heex:99
 #: lib/baudrate_web/live/search_live.ex:84
@@ -1668,12 +1668,12 @@ msgstr "無法刪除含有子看板的看板。"
 msgid "Change role for %{username}"
 msgstr "更改 %{username} 的角色"
 
-#: lib/baudrate_web/components/layouts.ex:982
+#: lib/baudrate_web/components/layouts.ex:1001
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr "深色主題"
 
-#: lib/baudrate_web/components/layouts.ex:971
+#: lib/baudrate_web/components/layouts.ex:990
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr "淺色主題"
@@ -1683,7 +1683,7 @@ msgstr "淺色主題"
 msgid "Open navigation menu"
 msgstr "開啟導覽選單"
 
-#: lib/baudrate_web/components/layouts.ex:960
+#: lib/baudrate_web/components/layouts.ex:979
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr "系統主題"
@@ -2562,7 +2562,7 @@ msgstr "頭像預覽"
 msgid "Font size"
 msgstr "字體大小"
 
-#: lib/baudrate_web/components/layouts.ex:949
+#: lib/baudrate_web/components/layouts.ex:968
 #: lib/baudrate_web/live/admin/settings_live.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Theme"
@@ -2762,7 +2762,7 @@ msgid "Message"
 msgstr "訊息"
 
 #: lib/baudrate_web/components/layouts.ex:213
-#: lib/baudrate_web/components/layouts.ex:1042
+#: lib/baudrate_web/components/layouts.ex:1061
 #: lib/baudrate_web/live/conversation_live.html.heex:163
 #: lib/baudrate_web/live/conversations_live.ex:35
 #: lib/baudrate_web/live/conversations_live.html.heex:9
@@ -4021,7 +4021,7 @@ msgid_plural "%{count} unread notifications"
 msgstr[0] "%{count} 則未讀通知"
 
 #: lib/baudrate_web/components/layouts.ex:241
-#: lib/baudrate_web/components/layouts.ex:1070
+#: lib/baudrate_web/components/layouts.ex:1089
 #: lib/baudrate_web/live/notifications_live.ex:38
 #: lib/baudrate_web/live/notifications_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -4949,7 +4949,7 @@ msgstr "為了安全起見，請重新輸入 TOTP 驗證碼以存取管理功能
 msgid "TOTP must be configured before accessing admin pages."
 msgstr "在存取管理頁面之前必須設定 TOTP。"
 
-#: lib/baudrate_web/components/layouts.ex:999
+#: lib/baudrate_web/components/layouts.ex:1018
 #, elixir-autogen, elixir-format
 msgid "Mobile navigation"
 msgstr "行動導覽列"
@@ -5696,8 +5696,8 @@ msgstr[0] "共 %{count} 筆結果"
 msgid "Page %{page} of %{total_pages} — %{count} results total"
 msgstr "第 %{page} / %{total_pages} 頁 — 共 %{count} 筆結果"
 
-#: lib/baudrate_web/components/layouts.ex:838
-#: lib/baudrate_web/components/layouts.ex:839
+#: lib/baudrate_web/components/layouts.ex:853
+#: lib/baudrate_web/components/layouts.ex:854
 #, elixir-autogen, elixir-format
 msgid "Share this page"
 msgstr "分享此頁面"
@@ -5924,7 +5924,7 @@ msgstr "符合的看板"
 msgid "Matching users"
 msgstr "符合的使用者"
 
-#: lib/baudrate_web/components/layouts.ex:1036
+#: lib/baudrate_web/components/layouts.ex:1055
 #, elixir-autogen, elixir-format
 msgid "Messages, %{count} unread"
 msgid_plural "Messages, %{count} unread"
@@ -5961,7 +5961,7 @@ msgstr[0] "新通知。%{count} 則未讀通知"
 msgid "Note"
 msgstr "貼文"
 
-#: lib/baudrate_web/components/layouts.ex:1064
+#: lib/baudrate_web/components/layouts.ex:1083
 #, elixir-autogen, elixir-format
 msgid "Notifications, %{count} unread"
 msgid_plural "Notifications, %{count} unread"
@@ -8519,7 +8519,7 @@ msgid "Reported Timeline Item:"
 msgstr "被檢舉的時間軸項目："
 
 #: lib/baudrate_web/components/layouts.ex:193
-#: lib/baudrate_web/components/layouts.ex:1015
+#: lib/baudrate_web/components/layouts.ex:1034
 #: lib/baudrate_web/live/timeline_live.ex:50
 #: lib/baudrate_web/live/timeline_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -8666,13 +8666,13 @@ msgstr "沒有可顯示的看板。"
 msgid "Signing in may show more."
 msgstr "登入後可能會看到更多。"
 
-#: lib/baudrate_web/components/layouts.ex:925
+#: lib/baudrate_web/components/layouts.ex:944
 #, elixir-autogen, elixir-format
 msgid "Match my browser"
 msgstr "依照瀏覽器語言設定"
 
-#: lib/baudrate_web/components/layouts.ex:886
-#: lib/baudrate_web/components/layouts.ex:900
+#: lib/baudrate_web/components/layouts.ex:905
+#: lib/baudrate_web/components/layouts.ex:919
 #, elixir-autogen, elixir-format
 msgid "Site language"
 msgstr "網站語言"
@@ -9295,3 +9295,29 @@ msgstr "%{admin} 發出的重設連結已被撤銷，未曾使用。"
 #, elixir-autogen, elixir-format
 msgid "A reset link issued by %{admin} was used on %{used}."
 msgstr "%{admin} 發出的重設連結已於 %{used} 被使用。"
+
+#: lib/baudrate_web/components/layouts.ex:857
+#, elixir-autogen, elixir-format
+msgid "Copy a link to this page"
+msgstr "複製此頁面的連結"
+
+#: lib/baudrate_web/components/layouts.ex:858
+#, elixir-autogen, elixir-format
+msgid "Link copied"
+msgstr "連結已複製"
+
+#: lib/baudrate_web/controllers/page_html/offline.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "This page could not be loaded because the connection was lost. Nothing you were reading is stored on this device, so it will be here again once you are back online."
+msgstr "連線中斷，因此無法載入此頁面。你先前閱讀的內容並未儲存在這臺裝置上，等連線恢復後就會再次出現。"
+
+#: lib/baudrate_web/controllers/page_html/offline.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Try again"
+msgstr "重試"
+
+#: lib/baudrate_web/controllers/page_controller.ex:35
+#: lib/baudrate_web/controllers/page_html/offline.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "You are offline"
+msgstr "目前離線"

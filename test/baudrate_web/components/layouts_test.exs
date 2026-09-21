@@ -126,6 +126,36 @@ defmodule BaudrateWeb.LayoutsTest do
       assert html =~ ~s(id="web-share-button")
       assert html =~ ~s(phx-hook="WebShareHook")
     end
+
+    # On a desktop browser `navigator.share` does not exist and the button
+    # copies the link instead, relabelling itself to say so. The hook never
+    # invents English, so if these attributes stop being rendered the button
+    # silently keeps the wrong label and the copy announces nothing — a
+    # degradation with no visible symptom, which is why it is asserted here
+    # rather than left to the browser crawl.
+    test "carries the labels the copy fallback needs", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+
+      assert html =~ ~s(data-copy-label="Copy a link to this page")
+      assert html =~ ~s(data-copied-label="Link copied")
+    end
+
+    # `canonical_url` is what the page says it is (ADR 0057), so a share
+    # carries the article's own address rather than whatever tracking
+    # parameters the reader happened to arrive with.
+    test "shares the page's canonical URL where there is one", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/")
+
+      assert html =~ ~r/id="web-share-button"[^>]*data-share-url="https?:[^"]+"/
+    end
+
+    # A noindex page has no canonical by design, and the hook then falls back
+    # to `location.href` — the attribute must be absent rather than empty.
+    test "omits the share URL on a page that names no canonical", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/search")
+
+      refute html =~ ~r/id="web-share-button"[^>]*data-share-url=""/
+    end
   end
 
   describe "mobile bottom nav (authenticated)" do

@@ -270,7 +270,7 @@ defmodule BaudrateWeb.Layouts do
       >
         <.font_size_controls />
         <.theme_toggle />
-        <.share_button />
+        <.share_button url={assigns[:canonical_url]} title={assigns[:page_title]} />
 
         <%!-- Guest auth links (desktop only — mobile uses hamburger menu) --%>
         <div
@@ -820,13 +820,28 @@ defmodule BaudrateWeb.Layouts do
   end
 
   @doc """
-  Renders a share button that invokes the browser's Web Share API
-  (smartphone / PWA "Share to..." sheet).
+  Renders a button that hands the current page on.
 
-  Hidden on platforms where `navigator.share` is unavailable; the
-  `WebShareHook` JS hook in `assets/js/web_share_hook.js` toggles
-  visibility on mount and dispatches the share request.
+  On a phone or an installed PWA it opens the OS share sheet through
+  `navigator.share`. On a desktop browser, where that does not exist, it
+  copies the link and says so — it used to hide itself there, which left the
+  site with no sharing affordance at all on the machines most writing happens
+  on. `WebShareHook` decides which, and relabels the button when it will be
+  the copy.
+
+  It is rendered hidden and revealed by the hook, because a button that can do
+  nothing without JavaScript should not be visible without it. The server
+  cannot know which of the two capabilities the browser has, so it cannot
+  render the right label either; both are passed as translated `data-*`
+  attributes for the hook to choose between.
+
+  Pages pass `url` and `title` when the thing worth sharing is not the address
+  bar — an article's canonical URL rather than whatever query string the
+  reader arrived with.
   """
+  attr :url, :string, default: nil, doc: "canonical URL to share; defaults to location.href"
+  attr :title, :string, default: nil, doc: "title to share; defaults to document.title"
+
   def share_button(assigns) do
     ~H"""
     <button
@@ -837,6 +852,10 @@ defmodule BaudrateWeb.Layouts do
       class="toolbar-share-button hidden btn btn-ghost btn-circle btn-sm"
       aria-label={gettext("Share this page")}
       title={gettext("Share this page")}
+      data-share-url={@url}
+      data-share-title={@title}
+      data-copy-label={gettext("Copy a link to this page")}
+      data-copied-label={gettext("Link copied")}
     >
       <.icon name="hero-share" class="size-5" />
     </button>

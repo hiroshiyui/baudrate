@@ -263,7 +263,7 @@ msgid "Set Up Two-Factor Authentication"
 msgstr "二要素認証のセットアップ"
 
 #: lib/baudrate_web/components/layouts.ex:285
-#: lib/baudrate_web/components/layouts.ex:1108
+#: lib/baudrate_web/components/layouts.ex:1127
 #: lib/baudrate_web/live/login_live.ex:36
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:46
@@ -340,8 +340,8 @@ msgid "Boards"
 msgstr "掲示板"
 
 #: lib/baudrate_web/components/layouts.ex:183
-#: lib/baudrate_web/components/layouts.ex:1006
-#: lib/baudrate_web/components/layouts.ex:1090
+#: lib/baudrate_web/components/layouts.ex:1025
+#: lib/baudrate_web/components/layouts.ex:1109
 #: lib/baudrate_web/live/board_follows_live.html.heex:8
 #: lib/baudrate_web/live/board_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -1152,7 +1152,7 @@ msgid "Reason:"
 msgstr "理由："
 
 #: lib/baudrate_web/components/layouts.ex:292
-#: lib/baudrate_web/components/layouts.ex:1117
+#: lib/baudrate_web/components/layouts.ex:1136
 #: lib/baudrate_web/live/register_live.ex:48
 #, elixir-autogen, elixir-format
 msgid "Register"
@@ -1368,8 +1368,8 @@ msgstr "変更を保存"
 
 #: lib/baudrate_web/components/layouts.ex:203
 #: lib/baudrate_web/components/layouts.ex:282
-#: lib/baudrate_web/components/layouts.ex:1024
-#: lib/baudrate_web/components/layouts.ex:1099
+#: lib/baudrate_web/components/layouts.ex:1043
+#: lib/baudrate_web/components/layouts.ex:1118
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:26
 #: lib/baudrate_web/live/board_follows_live.html.heex:99
 #: lib/baudrate_web/live/search_live.ex:84
@@ -1668,12 +1668,12 @@ msgstr "サブ掲示板がある掲示板は削除できません。"
 msgid "Change role for %{username}"
 msgstr "%{username} の役割を変更"
 
-#: lib/baudrate_web/components/layouts.ex:982
+#: lib/baudrate_web/components/layouts.ex:1001
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr "ダークテーマ"
 
-#: lib/baudrate_web/components/layouts.ex:971
+#: lib/baudrate_web/components/layouts.ex:990
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr "ライトテーマ"
@@ -1683,7 +1683,7 @@ msgstr "ライトテーマ"
 msgid "Open navigation menu"
 msgstr "ナビゲーションメニューを開く"
 
-#: lib/baudrate_web/components/layouts.ex:960
+#: lib/baudrate_web/components/layouts.ex:979
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr "システムテーマ"
@@ -2562,7 +2562,7 @@ msgstr "アバタープレビュー"
 msgid "Font size"
 msgstr "文字サイズ"
 
-#: lib/baudrate_web/components/layouts.ex:949
+#: lib/baudrate_web/components/layouts.ex:968
 #: lib/baudrate_web/live/admin/settings_live.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Theme"
@@ -2762,7 +2762,7 @@ msgid "Message"
 msgstr "メッセージ"
 
 #: lib/baudrate_web/components/layouts.ex:213
-#: lib/baudrate_web/components/layouts.ex:1042
+#: lib/baudrate_web/components/layouts.ex:1061
 #: lib/baudrate_web/live/conversation_live.html.heex:163
 #: lib/baudrate_web/live/conversations_live.ex:35
 #: lib/baudrate_web/live/conversations_live.html.heex:9
@@ -4021,7 +4021,7 @@ msgid_plural "%{count} unread notifications"
 msgstr[0] "%{count} 件の未読通知"
 
 #: lib/baudrate_web/components/layouts.ex:241
-#: lib/baudrate_web/components/layouts.ex:1070
+#: lib/baudrate_web/components/layouts.ex:1089
 #: lib/baudrate_web/live/notifications_live.ex:38
 #: lib/baudrate_web/live/notifications_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -4949,7 +4949,7 @@ msgstr "セキュリティのため、管理機能にアクセスするにはTOT
 msgid "TOTP must be configured before accessing admin pages."
 msgstr "管理ページにアクセスする前にTOTPを設定する必要があります。"
 
-#: lib/baudrate_web/components/layouts.ex:999
+#: lib/baudrate_web/components/layouts.ex:1018
 #, elixir-autogen, elixir-format
 msgid "Mobile navigation"
 msgstr "モバイルナビゲーション"
@@ -5696,8 +5696,8 @@ msgstr[0] "%{count} 件の結果"
 msgid "Page %{page} of %{total_pages} — %{count} results total"
 msgstr "%{page} / %{total_pages} ページ — 合計 %{count} 件の結果"
 
-#: lib/baudrate_web/components/layouts.ex:838
-#: lib/baudrate_web/components/layouts.ex:839
+#: lib/baudrate_web/components/layouts.ex:853
+#: lib/baudrate_web/components/layouts.ex:854
 #, elixir-autogen, elixir-format
 msgid "Share this page"
 msgstr "このページを共有"
@@ -5924,7 +5924,7 @@ msgstr "一致する掲示板"
 msgid "Matching users"
 msgstr "一致するユーザー"
 
-#: lib/baudrate_web/components/layouts.ex:1036
+#: lib/baudrate_web/components/layouts.ex:1055
 #, elixir-autogen, elixir-format
 msgid "Messages, %{count} unread"
 msgid_plural "Messages, %{count} unread"
@@ -5961,7 +5961,7 @@ msgstr[0] "新しい通知。未読の通知 %{count} 件"
 msgid "Note"
 msgstr "投稿"
 
-#: lib/baudrate_web/components/layouts.ex:1064
+#: lib/baudrate_web/components/layouts.ex:1083
 #, elixir-autogen, elixir-format
 msgid "Notifications, %{count} unread"
 msgid_plural "Notifications, %{count} unread"
@@ -8519,7 +8519,7 @@ msgid "Reported Timeline Item:"
 msgstr "通報されたタイムライン項目："
 
 #: lib/baudrate_web/components/layouts.ex:193
-#: lib/baudrate_web/components/layouts.ex:1015
+#: lib/baudrate_web/components/layouts.ex:1034
 #: lib/baudrate_web/live/timeline_live.ex:50
 #: lib/baudrate_web/live/timeline_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -8666,13 +8666,13 @@ msgstr "表示できる掲示板はありません。"
 msgid "Signing in may show more."
 msgstr "ログインすると、さらに表示される場合があります。"
 
-#: lib/baudrate_web/components/layouts.ex:925
+#: lib/baudrate_web/components/layouts.ex:944
 #, elixir-autogen, elixir-format
 msgid "Match my browser"
 msgstr "ブラウザの言語設定に合わせる"
 
-#: lib/baudrate_web/components/layouts.ex:886
-#: lib/baudrate_web/components/layouts.ex:900
+#: lib/baudrate_web/components/layouts.ex:905
+#: lib/baudrate_web/components/layouts.ex:919
 #, elixir-autogen, elixir-format
 msgid "Site language"
 msgstr "サイトの言語"
@@ -9295,3 +9295,29 @@ msgstr "%{admin} が発行したリセットリンクは取り消され、使用
 #, elixir-autogen, elixir-format
 msgid "A reset link issued by %{admin} was used on %{used}."
 msgstr "%{admin} が発行したリセットリンクは %{used} に使用されました。"
+
+#: lib/baudrate_web/components/layouts.ex:857
+#, elixir-autogen, elixir-format
+msgid "Copy a link to this page"
+msgstr "このページのリンクをコピー"
+
+#: lib/baudrate_web/components/layouts.ex:858
+#, elixir-autogen, elixir-format
+msgid "Link copied"
+msgstr "リンクをコピーしました"
+
+#: lib/baudrate_web/controllers/page_html/offline.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "This page could not be loaded because the connection was lost. Nothing you were reading is stored on this device, so it will be here again once you are back online."
+msgstr "接続が失われたため、このページを読み込めませんでした。閲覧していた内容はこの端末に保存されていないので、オンラインに戻ればまた表示できます。"
+
+#: lib/baudrate_web/controllers/page_html/offline.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Try again"
+msgstr "再試行"
+
+#: lib/baudrate_web/controllers/page_controller.ex:35
+#: lib/baudrate_web/controllers/page_html/offline.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "You are offline"
+msgstr "オフラインです"
