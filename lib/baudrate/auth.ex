@@ -17,6 +17,7 @@ defmodule Baudrate.Auth do
     Moderation,
     Passwords,
     Profiles,
+    Recovery,
     Sanctions,
     SecondFactor,
     Sessions,
@@ -50,6 +51,9 @@ defmodule Baudrate.Auth do
   defdelegate accept_current_terms(user), to: Users
   defdelegate terms_pending?(user), to: Users
   defdelegate approve_user(user), to: Users
+  defdelegate onboarded?(user), to: Users
+  defdelegate mark_onboarded(user), to: Users
+  defdelegate dismiss_recovery_notice(user), to: Users
   defdelegate list_pending_users, to: Users
   defdelegate list_invitees(user_id, limit \\ 20), to: Users
   defdelegate user_active?(user), to: Users
@@ -97,7 +101,31 @@ defmodule Baudrate.Auth do
   defdelegate disable_totp(user), to: SecondFactor
   defdelegate totp_enabled_for_at_least?(user, days), to: SecondFactor
   defdelegate generate_recovery_codes(user), to: SecondFactor
+  defdelegate regenerate_recovery_codes(user), to: SecondFactor
   defdelegate verify_recovery_code(user, code), to: SecondFactor
+
+  # --- Account recovery (ADR 0058) ---
+  defdelegate list_recovery_contacts(user), to: Recovery, as: :list_contacts
+  defdelegate add_recovery_contact(user, attrs), to: Recovery, as: :add_contact
+  defdelegate update_recovery_contact(user, contact_id, attrs), to: Recovery, as: :update_contact
+  defdelegate remove_recovery_contact(user, contact_id), to: Recovery, as: :remove_contact
+
+  defdelegate set_recovery_contact_verification(admin, contact_id, status),
+    to: Recovery,
+    as: :set_verification
+
+  defdelegate recovery_arranged?(user), to: Recovery, as: :arranged?
+  defdelegate verified_recovery_contact?(user), to: Recovery, as: :verified_contact?
+  defdelegate unused_recovery_code_count(user), to: Recovery, as: :unused_code_count
+  defdelegate max_recovery_contacts, to: Recovery, as: :max_contacts
+  defdelegate issue_account_reset(admin, user, contact_id, opts \\ []), to: Recovery, as: :issue
+  defdelegate can_issue_account_reset?(admin, user), to: Recovery, as: :can_issue?
+  defdelegate revoke_account_reset(admin, user), to: Recovery, as: :revoke
+  defdelegate live_account_reset(user), to: Recovery, as: :live_reset
+
+  defdelegate redeem_account_reset(token, password, password_confirmation),
+    to: Recovery,
+    as: :redeem
 
   # --- Invites ---
   defdelegate can_generate_invite?(user), to: Invites

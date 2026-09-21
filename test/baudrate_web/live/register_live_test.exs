@@ -90,7 +90,7 @@ defmodule BaudrateWeb.RegisterLiveTest do
     assert html =~ "Save these recovery codes"
   end
 
-  test "ack_codes redirects to login", %{conn: conn} do
+  test "acknowledging the codes signs the new member in (P4-D2)", %{conn: conn} do
     Repo.insert!(%Setting{key: "registration_mode", value: "open"})
 
     {:ok, lv, _html} = live(conn, "/register")
@@ -105,6 +105,27 @@ defmodule BaudrateWeb.RegisterLiveTest do
       }
     )
     |> render_submit()
+
+    html = lv |> render_click("ack_codes")
+
+    # The same `phx-trigger-action` POST `LoginLive` uses, so a new member
+    # never types the password they just chose a second time. The token is
+    # minted on this click rather than at registration: it lives 60 seconds,
+    # and writing down ten codes takes longer than that.
+    assert html =~ ~s(id="session-form")
+    assert html =~ ~s(action="/auth/session")
+    assert html =~ ~s(phx-trigger-action)
+    assert [_, token] = Regex.run(~r/name="token" value="([^"]+)"/, html)
+
+    assert {:ok, user_id} =
+             Phoenix.Token.verify(BaudrateWeb.Endpoint, "user_auth", token, max_age: 60)
+
+    assert Baudrate.Auth.get_user(user_id).username == "newuser2"
+  end
+
+  test "acknowledging with no registration behind it goes to /login rather than signing anyone in",
+       %{conn: conn} do
+    {:ok, lv, _html} = live(conn, "/register")
 
     lv |> render_click("ack_codes")
     assert_redirect(lv, "/login")

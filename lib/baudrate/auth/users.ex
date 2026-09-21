@@ -180,11 +180,62 @@ defmodule Baudrate.Auth.Users do
   end
 
   @doc """
-  Approves a pending user by setting their status to `"active"`.
+  Approves a pending user by setting their status to `"active"`, and tells
+  them.
+
+  The notice is sent from here rather than from the admin LiveView because
+  that is where every other account notice comes from — a second approval path
+  must not be able to skip it. Until Phase 4D approval was silent, and a member
+  discovered it by trying to post and finding they now could.
   """
   def approve_user(user) do
     user
     |> User.status_changeset(%{status: "active"})
+    |> Repo.update()
+    |> tap(fn
+      {:ok, approved} ->
+        Baudrate.Notification.Hooks.notify_account_security(approved.id, "registration_approved")
+
+      _ ->
+        :ok
+    end)
+  end
+
+  @doc """
+  Whether this account has been through the first-visit step.
+
+  Existing accounts were backfilled when the column was added, so a `nil` here
+  means "registered since Phase 4D and has not finished /welcome" rather than
+  "old account".
+  """
+  @spec onboarded?(User.t()) :: boolean()
+  def onboarded?(%User{onboarded_at: nil}), do: false
+  def onboarded?(%User{}), do: true
+
+  @doc """
+  Marks the first-visit step done, whether the member filled it in or skipped
+  it. Idempotent, and stamped here rather than cast from a form.
+  """
+  @spec mark_onboarded(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def mark_onboarded(%User{onboarded_at: nil} = user) do
+    user
+    |> Ecto.Changeset.change(onboarded_at: DateTime.utc_now(:second))
+    |> Repo.update()
+  end
+
+  def mark_onboarded(%User{} = user), do: {:ok, user}
+
+  @doc """
+  Dismisses the recovery notice for this account, for good.
+
+  Dismissal is remembered rather than re-asked, because a notice that comes
+  back is the manufactured urgency ADR 0056 refuses — and because the member
+  may have deliberate reasons for arranging recovery their own way.
+  """
+  @spec dismiss_recovery_notice(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def dismiss_recovery_notice(%User{} = user) do
+    user
+    |> Ecto.Changeset.change(recovery_notice_dismissed_at: DateTime.utc_now(:second))
     |> Repo.update()
   end
 

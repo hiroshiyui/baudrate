@@ -1,17 +1,20 @@
 defmodule BaudrateWeb.RegisterLive do
   @moduledoc """
-  LiveView for public user registration.
+  LiveView for public registration at `/register`.
 
-  Registration is handled entirely within LiveView (no phx-trigger-action
-  needed since there are no session writes). Rate limiting is enforced
-  via Hammer at 5 registrations per hour per IP.
+  Honours all three registration modes (`open`, `approval_required`,
+  `invite_only`); `Setup.registration_mode/0` decides which, and the mode only
+  changes what the new account's status is and what the flash says.
 
-  After successful registration, recovery codes are displayed to the user.
-  The user must acknowledge saving them before being redirected to `/login`.
+  Registration shows the ten recovery codes **once**, and acknowledging them is
+  what signs the member in (P4-D2). With no email in this system those codes
+  are the only self-service way back into the account, so they come before the
+  session rather than after it — a new member who closes the tab at the wrong
+  moment has an account they cannot recover.
 
-  The registration mode (`Setup.registration_mode/0`) determines:
-    * `"open"` — account is immediately active
-    * `"approval_required"` — account is pending admin approval
+  The sign-in itself is the same `phx-trigger-action` POST to
+  `SessionController.create/2` that `LoginLive` uses, so a role whose TOTP
+  policy is `:required` still lands on `/totp/setup` rather than the home page.
   """
 
   use BaudrateWeb, :live_view
@@ -38,6 +41,9 @@ defmodule BaudrateWeb.RegisterLive do
       |> assign(:password_strength, password_strength(""))
       |> assign(:peer_ip, peer_ip)
       |> assign(:recovery_codes, nil)
+      |> assign(:registered_user_id, nil)
+      |> assign(:token, nil)
+      |> assign(:trigger_action, false)
       |> assign(:eua, eua)
       |> assign(:page_title, gettext("Register"))
       |> assign(:invite_code_value, nil)
@@ -88,30 +94,45 @@ defmodule BaudrateWeb.RegisterLive do
 
   @impl true
   def handle_event("ack_codes", _params, socket) do
-    {:noreply, redirect(socket, to: ~p"/login")}
+    # P4-D2: acknowledging the codes is what signs a new member in, so nobody
+    # is carried past the only copy of them they will ever see — and nobody
+    # types the password they just chose a second time.
+    #
+    # The token is minted *here* rather than at registration because it is
+    # only good for 60 seconds and writing down ten codes takes longer than
+    # that. The user id it names has sat in socket assigns since `do_register`
+    # — server-side state, never anything the client supplied.
+    case socket.assigns.registered_user_id do
+      nil ->
+        {:noreply, redirect(socket, to: ~p"/login")}
+
+      user_id ->
+        token = Phoenix.Token.sign(socket.endpoint, "user_auth", user_id)
+
+        {:noreply,
+         socket
+         |> assign(:token, token)
+         |> assign(:trigger_action, true)}
+    end
   end
 
   defp do_register(socket, params) do
     case Auth.register_user(params) do
-      {:ok, _user, codes} ->
+      {:ok, user, codes} ->
         flash_msg =
-          case socket.assigns.registration_mode do
-            "open" ->
-              gettext("Registration successful! You can now sign in.")
-
-            "invite_only" ->
-              gettext("Registration successful! You can now sign in.")
-
-            _ ->
-              gettext(
-                "Your account has been created and is pending admin approval. You can sign in and update your profile, but posting is restricted until approved."
-              )
+          if socket.assigns.registration_mode in ["open", "invite_only"] do
+            gettext("Welcome! Save your recovery codes and you are in.")
+          else
+            gettext(
+              "Your account has been created and is waiting for a moderator to approve it. You can look around and set up your profile in the meantime."
+            )
           end
 
         {:noreply,
          socket
          |> put_flash(:info, flash_msg)
-         |> assign(:recovery_codes, codes)}
+         |> assign(:recovery_codes, codes)
+         |> assign(:registered_user_id, user.id)}
 
       {:error, :invite_required} ->
         {:noreply, put_flash(socket, :error, gettext("An invite code is required to register."))}

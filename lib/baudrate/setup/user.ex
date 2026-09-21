@@ -141,6 +141,14 @@ defmodule Baudrate.Setup.User do
     field :terms_accepted_at, :utc_datetime
     field :terms_version, :integer, default: 0
 
+    # When the first-visit step was finished or skipped, and when the recovery
+    # notice was dismissed (ADR 0058). Both are stamped by `Baudrate.Auth`,
+    # never cast from params: a member who could set `onboarded_at` in a form
+    # gains nothing, but one who could clear somebody else's would be deciding
+    # what another account is shown.
+    field :onboarded_at, :utc_datetime
+    field :recovery_notice_dismissed_at, :utc_datetime
+
     belongs_to :role, Baudrate.Setup.Role
     belongs_to :invited_by, __MODULE__
 

@@ -1,0 +1,146 @@
+<section
+  id="welcome-page"
+  aria-labelledby="welcome-heading"
+  class="welcome-page mx-auto max-w-md"
+>
+  <h1 id="welcome-heading" class="welcome-heading text-2xl font-bold mb-2">
+    {gettext("Welcome, %{username}!", username: @current_user.username)}
+  </h1>
+
+  <p id="welcome-intro" class="welcome-intro text-base-content/70 mb-6">
+    {gettext("A couple of things before you start. You can skip both and change them later.")}
+  </p>
+
+  <%!--
+    Approval mode: the registration flash used to be the only place this was
+    said, and a flash is gone by the next page.
+  --%>
+  <aside
+    :if={!@is_active}
+    id="welcome-pending-notice"
+    class="welcome-pending-notice alert alert-info mb-6"
+    aria-labelledby="welcome-pending-heading"
+  >
+    <.icon name="hero-clock" class="size-5 shrink-0" />
+    <div class="min-w-0 space-y-1">
+      <h2 id="welcome-pending-heading" class="welcome-pending-heading font-semibold">
+        {gettext("Your account is waiting for approval")}
+      </h2>
+      <p id="welcome-pending-text" class="welcome-pending-text text-sm break-words">
+        {gettext(
+          "You can read the boards and set up your profile now. Posting, commenting and messages open up once a moderator approves the account — you will get a notification."
+        )}
+      </p>
+    </div>
+  </aside>
+
+  <.form
+    for={@form}
+    id="welcome-form"
+    phx-change="validate"
+    phx-submit="save"
+    class="welcome-form space-y-6"
+  >
+    <div class="welcome-field">
+      <label for="welcome-display-name" class="welcome-field-label label label-text">
+        {gettext("Display name")}
+      </label>
+      <input
+        type="text"
+        id="welcome-display-name"
+        name="user[display_name]"
+        value={@form[:display_name].value}
+        maxlength="64"
+        placeholder={@current_user.username}
+        class="welcome-display-name input input-bordered w-full"
+        aria-describedby="welcome-display-name-help"
+      />
+      <p
+        id="welcome-display-name-help"
+        class="welcome-field-help text-xs text-base-content/70 mt-1"
+      >
+        {gettext(
+          "Shown instead of your username. Your username stays the same in links and @mentions."
+        )}
+      </p>
+      <p
+        :for={msg <- Enum.map(@form[:display_name].errors, &translate_error/1)}
+        class="welcome-field-error text-error text-sm mt-1"
+      >
+        {msg}
+      </p>
+    </div>
+
+    <div class="welcome-field" phx-drop-target={@uploads.avatar.ref}>
+      <label for={@uploads.avatar.ref} class="welcome-field-label label label-text">
+        {gettext("Picture")}
+      </label>
+      <div class="flex items-center gap-4 min-w-0">
+        <.avatar user={@current_user} size={48} />
+        <.live_file_input
+          upload={@uploads.avatar}
+          id="welcome-avatar-input"
+          class="welcome-avatar-input file-input file-input-bordered file-input-sm flex-1 min-w-0"
+        />
+      </div>
+      <p id="welcome-avatar-help" class="welcome-field-help text-xs text-base-content/70 mt-1">
+        {gettext("Square works best. You can crop it properly later in your profile.")}
+      </p>
+      <p
+        :for={err <- upload_errors(@uploads.avatar)}
+        class="welcome-avatar-error text-error text-sm mt-1"
+      >
+        {BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "5 MB")}
+      </p>
+    </div>
+
+    <div class="welcome-actions flex gap-2">
+      <button
+        type="submit"
+        id="welcome-save"
+        class="welcome-save btn btn-primary flex-1"
+        phx-disable-with={gettext("Saving...")}
+      >
+        {gettext("Save and continue")}
+      </button>
+      <button
+        type="button"
+        id="welcome-skip"
+        phx-click="skip"
+        class="welcome-skip btn btn-ghost"
+      >
+        {gettext("Skip")}
+      </button>
+    </div>
+  </.form>
+
+  <%!--
+    Worth saying here and not only on /profile: with no email in this system,
+    the recovery codes shown at registration are the only self-service way
+    back into an account (ADR 0058).
+  --%>
+  <aside
+    id="welcome-recovery-note"
+    class="welcome-recovery-note alert mt-8"
+    aria-labelledby="welcome-recovery-heading"
+  >
+    <.icon name="hero-key" class="size-5 shrink-0" />
+    <div class="min-w-0 space-y-1">
+      <h2 id="welcome-recovery-heading" class="welcome-recovery-heading font-semibold">
+        {gettext("Keep your recovery codes")}
+      </h2>
+      <p id="welcome-recovery-text" class="welcome-recovery-text text-sm break-words">
+        {gettext(
+          "This site sends no email, so those codes are how you get back in if you forget your password. You can replace them, or set up a recovery contact, in your profile."
+        )}
+      </p>
+    </div>
+    <.link
+      id="welcome-recovery-link"
+      navigate={~p"/profile"}
+      class="welcome-recovery-link btn btn-sm"
+    >
+      {gettext("Profile")}
+    </.link>
+  </aside>
+</section>

@@ -39,9 +39,26 @@
       id="register-ack-codes"
       phx-click="ack_codes"
       class="register-ack-codes btn btn-primary w-full"
+      phx-disable-with={gettext("Signing in...")}
     >
       {gettext("I have saved my recovery codes")}
     </button>
+
+    <%!--
+      Acknowledging the codes signs the new member in (P4-D2), through the
+      same POST `LoginLive` uses. The token is minted on the click, not at
+      registration: it is good for 60 seconds and writing down ten codes
+      takes longer than that.
+    --%>
+    <form
+      id="session-form"
+      action="/auth/session"
+      method="post"
+      phx-trigger-action={@trigger_action}
+    >
+      <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+      <input type="hidden" name="token" value={@token} />
+    </form>
   </div>
 
   <%!-- Registration form --%>

@@ -86,8 +86,11 @@ defmodule BaudrateWeb.RegisterLiveInviteTest do
 
     assert html =~ "Recovery Codes"
 
-    lv |> render_click("ack_codes")
-    assert_redirect(lv, "/login")
+    # Invite mode signs in like open mode does (P4-D2), through the same
+    # trigger-action POST rather than a bounce to /login.
+    html = lv |> render_click("ack_codes")
+    assert html =~ ~s(action="/auth/session")
+    assert html =~ ~s(phx-trigger-action)
   end
 
   defp setup_admin do

@@ -70,6 +70,10 @@ defmodule BaudrateWeb.ConnCase do
         "role_id" => role.id
       })
       |> Ecto.Changeset.cast(attrs, [:status, :display_name, :bio, :signature])
+      # An established member, not somebody who just registered: the
+      # first-visit step (P4-D2) is behind them, so signing in lands on `/`.
+      # A test about `/welcome` clears this deliberately.
+      |> Ecto.Changeset.put_change(:onboarded_at, DateTime.utc_now(:second))
       |> Repo.insert()
 
     Repo.preload(user, :role)
