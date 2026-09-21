@@ -162,7 +162,7 @@ directly.**
   reason per entry, rather than a search for one spelling — the eleventh site
   was split across two files and no pattern match on
   `raw(Markdown.to_html(` could have seen it, which is the kind that survives
-  review. A third case checks the allow-list has not gone stale, and a fourth
+  review. A second case checks the allow-list has not gone stale, and a third
   counts the real users of the replacement, so renaming the thing being
   scanned for turns the gate red rather than green.
 - **A sixth composer cannot ship without the field.**
