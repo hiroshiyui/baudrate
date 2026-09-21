@@ -56,6 +56,7 @@ defmodule Baudrate.Auth do
   defdelegate can_create_content?(user), to: Users
   defdelegate can_upload_avatar?(user), to: Users
   defdelegate search_users(term, opts \\ []), to: Users
+  defdelegate search_users_page(term, opts \\ []), to: Users
   defdelegate list_users(opts \\ []), to: Users
   defdelegate paginate_users(opts \\ []), to: Users
   defdelegate count_users_by_status, to: Users

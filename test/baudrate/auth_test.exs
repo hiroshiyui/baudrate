@@ -466,6 +466,83 @@ defmodule Baudrate.AuthTest do
     end
   end
 
+  describe "search_users_page/2" do
+    test "pages past the first screenful, which search_users/2 cannot" do
+      for i <- 1..25, do: create_user("user", username: "paged_user_#{i}")
+
+      first = Auth.search_users_page("paged_user", page: 1)
+      second = Auth.search_users_page("paged_user", page: 2)
+
+      assert first.total == 25
+      assert length(first.users) == 20
+      assert length(second.users) == 5
+      assert second.total_pages == 2
+      refute first.capped
+
+      # No account on two pages and none missed.
+      ids = Enum.map(first.users ++ second.users, & &1.id)
+      assert length(Enum.uniq(ids)) == 25
+    end
+
+    test "stops at five pages, and says so" do
+      for i <- 1..6, do: create_user("user", username: "capped_user_#{i}")
+
+      # The cap is on pages, so `per_page` is the lever that exercises it
+      # without creating a hundred accounts.
+      result = Auth.search_users_page("capped_user", per_page: 1, page: 1)
+
+      assert result.total == 6
+      assert result.total_pages == 5
+
+      assert result.capped,
+             """
+             The Users tab would page through the whole membership. ADR 0057
+             keeps a member's profile public and linked from every byline
+             while refusing to enumerate the member list — and this is the
+             surface that would enumerate it, including people who have never
+             posted and so appear in no byline.
+             """
+    end
+
+    test "reports an honest total even when it caps the pages" do
+      for i <- 1..6, do: create_user("user", username: "honest_user_#{i}")
+
+      result = Auth.search_users_page("honest_user", per_page: 1)
+      assert result.total == 6
+    end
+
+    test "lists only active accounts, so a banned one is absent" do
+      create_user("user", username: "listed_person")
+      banned = create_user("user", username: "banned_person")
+      Repo.update!(Ecto.Changeset.change(banned, status: "banned"))
+
+      usernames = Auth.search_users_page("_person").users |> Enum.map(& &1.username)
+
+      assert "listed_person" in usernames
+      # A banned account has to stay indistinguishable from one that never
+      # existed — the same rule the profile page follows.
+      refute "banned_person" in usernames
+    end
+
+    test "respects :exclude_id" do
+      me = create_user("user", username: "excluded_me")
+      create_user("user", username: "excluded_them")
+
+      usernames =
+        Auth.search_users_page("excluded_", exclude_id: me.id).users
+        |> Enum.map(& &1.username)
+
+      refute "excluded_me" in usernames
+      assert "excluded_them" in usernames
+    end
+
+    test "sanitizes SQL wildcards" do
+      create_user("user", username: "wildcard_user")
+
+      assert Auth.search_users_page("%").total == 0
+    end
+  end
+
   describe "search_users/2" do
     test "finds users by partial username match" do
       create_user("user", username: "alice")

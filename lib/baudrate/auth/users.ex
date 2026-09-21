@@ -8,6 +8,10 @@ defmodule Baudrate.Auth.Users do
   alias Baudrate.Setup
   alias Baudrate.Setup.{Role, User}
   alias Baudrate.Auth.{SecondFactor, Invites}
+  alias Baudrate.Pagination
+
+  @user_search_per_page 20
+  @max_user_search_pages 5
 
   @doc """
   Gets a user by ID with role preloaded.
@@ -272,6 +276,69 @@ defmodule Baudrate.Auth.Users do
 
     query = if exclude_id, do: from(u in query, where: u.id != ^exclude_id), else: query
     Repo.all(query)
+  end
+
+  @doc """
+  The same search as `search_users/2`, paginated, for the Users tab on
+  `/search`.
+
+  `search_users/2` is kept as it is: its four other callers (the autocomplete
+  hook, the DM recipient picker, two admin pickers) want a short list, not a
+  page of one.
+
+  ## The cap
+
+  `total_pages` is capped at #{@max_user_search_pages} pages
+  (#{@max_user_search_pages * @user_search_per_page} matches) and the result
+  carries `capped: true` when there was more, so the page can ask the reader
+  to narrow the search. `total` stays honest.
+
+  The cap is the reason this is not simply `search_users/2` with an offset.
+  A member's profile is public and linked from every byline — that is
+  [ADR 0057](../../../doc/adr/0057-a-sitemap-invites-only-what-a-guest-sees.md)'s
+  decision, and so is the other half of it: the member list is never
+  *enumerated*, because nobody opted into a machine-readable list of everyone
+  here. Uncapped paging walks the whole membership at a few hundred accounts a
+  minute, including members who have never posted and so appear in no byline.
+  Nobody looking for a person needs page six.
+
+  Only `status == "active"` is listed, so pending and banned accounts are
+  absent — and a banned account must stay indistinguishable from one that
+  never existed.
+
+  ## Options
+
+    * `:page` — page number (default 1)
+    * `:per_page` — users per page (default #{@user_search_per_page})
+    * `:exclude_id` — exclude a specific user ID (e.g. the viewer)
+
+  Returns `%{users, total, page, per_page, total_pages, capped}`.
+  """
+  @spec search_users_page(String.t(), keyword()) :: map()
+  def search_users_page(term, opts \\ []) when is_binary(term) do
+    pagination = Pagination.paginate_opts(opts, @user_search_per_page)
+    exclude_id = Keyword.get(opts, :exclude_id)
+    sanitized = Repo.sanitize_like(term)
+
+    base_query =
+      from(u in User,
+        where: u.status == "active" and ilike(u.username, ^"%#{sanitized}%")
+      )
+
+    base_query =
+      if exclude_id, do: from(u in base_query, where: u.id != ^exclude_id), else: base_query
+
+    result =
+      Pagination.paginate_query(base_query, pagination,
+        result_key: :users,
+        order_by: [asc: dynamic([u], u.username)],
+        preloads: [:role]
+      )
+
+    capped_pages = min(result.total_pages, @max_user_search_pages)
+
+    %{result | total_pages: capped_pages}
+    |> Map.put(:capped, result.total_pages > capped_pages)
   end
 
   # --- User Management ---
