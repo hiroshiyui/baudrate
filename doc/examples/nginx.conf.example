@@ -160,8 +160,38 @@ server {
     # Phoenix `~p` may resolve to digest-stamped filenames (e.g.
     # favicon-abc123.svg), so patterns use [^/]* to match both
     # original and digested variants.
-    location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|robots[^/]*\.txt|service_worker[^/]*\.js|site[^/]*\.webmanifest) {
+    #
+    # `robots.txt` is deliberately NOT here: since v1.33.0 it is a route, not
+    # a file in priv/static (its `Sitemap:` directive needs an absolute URL,
+    # which only the application knows). Matching it here serves it from disk,
+    # and since the file no longer exists nginx answers its own 404 before the
+    # request can reach the application — so the instance advertises no
+    # sitemap and no `Disallow` at all. Every path in this list must be a real
+    # file under `BaudrateWeb.static_paths/0`; anything the application
+    # generates belongs in `location /`.
+    location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|service_worker[^/]*\.js) {
         root /path/to/baudrate/priv/static;
+        expires 1h;
+        add_header Cache-Control "public";
+        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        access_log off;
+    }
+
+    # --- Web app manifest (short cache, explicit type) ---
+    # Debian's /etc/nginx/mime.types has no `webmanifest` entry, so the shared
+    # static block above would serve it as the `default_type`,
+    # `application/octet-stream` — which stops browsers treating the site as
+    # installable. Phoenix gets this right by itself, but this path never
+    # reaches it.
+    #
+    # It needs its own `location` rather than a line in the block above: a
+    # `types { … }` inside a location *replaces* the inherited map for that
+    # whole location, which would turn every font, image and favicon served
+    # beside it into `application/octet-stream`.
+    location ~ ^/site[^/]*\.webmanifest$ {
+        root /path/to/baudrate/priv/static;
+        default_type application/manifest+json;
         expires 1h;
         add_header Cache-Control "public";
         add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;

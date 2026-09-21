@@ -21,10 +21,17 @@ defmodule Ops.NginxStaticPathsTest do
   something `BaudrateWeb.static_paths/0` actually serves as a file.** Anything
   the application generates belongs in `location /`.
 
-  It reads *every* block that serves from `{{ static_path }}`, not one named
-  block, because the fix for the manifest's MIME type moved a path into a
-  `location` of its own — and a gate that knows about one block would have
-  stopped covering it at exactly the moment it grew a second home.
+  It reads *every* block that serves from the application's static directory,
+  not one named block, because the fix for the manifest's MIME type moved a
+  path into a `location` of its own — and a gate that knows about one block
+  would have stopped covering it at exactly the moment it grew a second home.
+
+  It also reads *every* nginx config this repository ships, not just the one
+  the deploy renders. The first version watched only the Ansible template,
+  and `doc/examples/nginx.conf.example` — the file an operator copies when
+  they run their own nginx — kept both bugs for exactly as long as nothing
+  looked at it. A gate that covers one of the two places a rule is written
+  reports a rule that is half enforced.
 
   The converse is deliberately not checked. A static path with no nginx rule is
   proxied to Phoenix, which is slower but correct.
@@ -32,7 +39,10 @@ defmodule Ops.NginxStaticPathsTest do
 
   use ExUnit.Case, async: true
 
-  @template "ansible/roles/nginx/templates/baudrate.conf.j2"
+  @templates [
+    "ansible/roles/nginx/templates/baudrate.conf.j2",
+    "doc/examples/nginx.conf.example"
+  ]
 
   # `location [modifier] <pattern> {` — the modifier is optional (`~`, `~*`,
   # `^~`, `=`).
@@ -40,39 +50,45 @@ defmodule Ops.NginxStaticPathsTest do
 
   setup_all do
     blocks =
-      @template
-      |> File.read!()
-      |> locations()
-      |> Enum.filter(&serves_from_static_root?/1)
+      Enum.flat_map(@templates, fn template ->
+        template
+        |> File.read!()
+        |> locations()
+        |> Enum.filter(&serves_from_static_root?/1)
+        |> Enum.map(&Map.put(&1, :template, template))
+      end)
 
     {:ok, blocks: blocks}
   end
 
-  test "the template still has static locations to check", %{blocks: blocks} do
-    refute blocks == [], """
-    no `location` in #{@template} serves from `{{ static_path }}`.
+  test "every shipped nginx config still has static locations to check", %{blocks: blocks} do
+    for template <- @templates do
+      assert Enum.any?(blocks, &(&1.template == template)), """
+      no `location` in #{template} serves from the application's static
+      directory.
 
-    If static serving moved or was restructured, update this test — do not
-    delete it. It is the only thing standing between a path that stops being
-    a file and a production-only 404.
-    """
+      If static serving moved or was restructured, update this test — do not
+      delete it. It is the only thing standing between a path that stops
+      being a file and a production-only 404.
+      """
+    end
   end
 
   test "every path a static location claims is one the app serves as a file", %{blocks: blocks} do
     served = Enum.map(BaudrateWeb.static_paths(), &("/" <> &1))
 
-    for %{mod: mod, pattern: pattern} <- blocks,
+    for %{mod: mod, pattern: pattern, template: template} <- blocks,
         claim <- claims(mod, pattern) do
       assert covered?(mod, claim, served), """
-      the nginx block `location #{mod} #{pattern}` claims #{inspect(claim)},
-      but nothing in BaudrateWeb.static_paths/0 matches it:
+      #{template}: the block `location #{mod} #{pattern}` claims
+      #{inspect(claim)}, but nothing in BaudrateWeb.static_paths/0 matches it:
 
         #{Enum.join(served, "\n  ")}
 
       nginx serves this from disk, so if the file no longer exists it answers
       its own 404 and the request never reaches the router. If this path
-      became a route, take it out of #{@template}; if it is still a file, add
-      it to static_paths/0.
+      became a route, take it out of that file; if it is still a file, add it
+      to static_paths/0.
       """
     end
   end
@@ -109,8 +125,12 @@ defmodule Ops.NginxStaticPathsTest do
 
   defp count(line, char), do: line |> String.graphemes() |> Enum.count(&(&1 == char))
 
+  # The application's static directory, in either spelling: the Ansible
+  # template's `{{ static_path }}` or the example's literal `…/priv/static`.
+  # Deliberately not "any `root`" — the ACME webroot and nginx's own 502 page
+  # are served from disk as well, and neither is `static_paths/0`'s business.
   defp serves_from_static_root?(%{body: body}),
-    do: Regex.match?(~r/^\s*(root|alias)\s+\{\{\s*static_path\s*\}\}/m, body)
+    do: Regex.match?(~r|^\s*(root\|alias)\s+(\{\{\s*static_path\s*\}\}\|\S*priv/static)|m, body)
 
   # --- what a block claims ---
 
