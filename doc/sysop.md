@@ -2421,6 +2421,7 @@ fails is logged and the rest still run.
 | `notify_ended_sanctions` | Tells members their silence or suspension has ended. Enforcement already stopped on its own, so a missed run only delays the notice |
 | `purge_closed_report_evidence` | Clears the evidence copies of reports closed more than 90 days ago |
 | `announce_closed_polls` | Publishes a closed poll's final counts to the instances that received it, once per poll. A poll has no stored "closed" state — it closes by the clock — so this is the one job that treats closing as an event, and a missed run only delays the announcement rather than losing it |
+| `purge_stale_drafts` | Deletes unfinished articles nobody has touched for 90 days. Their uploaded images are released with them — once the draft row is gone the images are ordinary orphans again and the image sweep collects them on a later pass |
 | `retention` | Deletes timeline items older than 90 days that nobody liked, boosted or replied to, `announces` older than 180 days, and articles and comments 90 days after `deleted_at` — with their image files. Nothing a report points at is deleted. See [Retention](#retention) |
 | `health_alerts` | Runs the detailed health report and notifies every admin when the same checks have failed on two polls in a row, and once more when they recover ([Detailed Health Report](#detailed-health-report)). Unlike the rows above it remembers state between runs, so it sits outside the uniform step list |
 
