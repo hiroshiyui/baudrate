@@ -9,11 +9,21 @@ defmodule BaudrateWeb.TranslationCoverageTest do
   TODO cannot tell anyone *which* strings, and nobody reads a `.po` file for
   pleasure. So the count becomes a test, and the task stops existing.
 
-  **`en` is excluded, and that is not an oversight.** Its `msgid`s *are* the
-  source text; Gettext falls back to the `msgid` when a translation is empty,
-  so roughly 1,470 empty entries there are correct and filling them in would
-  be 1,470 lines of duplication. `zh_TW` and `ja_JP` have no such fallback: an
-  empty entry renders English to a reader who asked for neither.
+  **`en` is excluded from *that* check, and that is not an oversight.** Its
+  `msgid`s *are* the source text; Gettext falls back to the `msgid` when a
+  translation is empty, so roughly 1,470 empty entries there are correct and
+  filling them in would be 1,470 lines of duplication. `zh_TW` and `ja_JP`
+  have no such fallback: an empty entry renders English to a reader who asked
+  for neither.
+
+  **But `en` gets a check of its own**, because that exemption assumed its
+  entries stay empty and five of them did not. `mix gettext.extract --merge`
+  fuzzy-matches into `en` as readily as into any other locale, and Gettext
+  serves a fuzzy translation like any other — so an English reader saw
+  "Push" where the page said `Published`, "Remote actor" where it said
+  `Remote actor not found.`, and a notification that said someone
+  "liked your article" when they had liked a comment. Three of the five were
+  not even marked fuzzy: a past merge wrote them and nothing here looked.
 
   A string whose translation genuinely *is* the English — an example value in
   a placeholder, like `abcd-ef23` or `https://example.com/feed.xml` — is
@@ -53,6 +63,36 @@ defmodule BaudrateWeb.TranslationCoverageTest do
            If a string's translation really is the English — an example value
            in a placeholder — write it out and say why in a translator
            comment above the entry.
+           """
+  end
+
+  test "no en translation says something other than its own source text" do
+    path = "priv/gettext/en/LC_MESSAGES/default.po"
+
+    wrong =
+      for {msgid, plural, translations} <- entries(File.read!(path)),
+          msgid != "",
+          translation <- translations,
+          translation != "",
+          translation != msgid,
+          translation != plural do
+        "#{inspect(msgid)} renders as #{inspect(translation)}"
+      end
+
+    assert wrong == [],
+           """
+           These en entries render text that is not their own source string:
+
+           #{Enum.join(wrong, "\n")}
+
+           An `en` msgstr should be empty — Gettext then falls back to the
+           msgid, which *is* the English. A non-empty one that differs is the
+           fuzzy matcher's work: it attaches a translation from a similar
+           msgid, and Gettext serves it, so the English page shows a sentence
+           nobody wrote for it.
+
+           Blank the msgstr rather than correcting it by hand. A corrected
+           copy is a second place the English lives, and the two drift.
            """
   end
 
