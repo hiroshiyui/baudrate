@@ -245,12 +245,17 @@ defmodule Baudrate.Federation.Collections do
     # unauthenticated and each item is a full Article object addressed
     # `as:Public`, so `ap_enabled` is required as well as guest-readability —
     # the same predicate `publicly_servable?/1` applies to a permalink.
+    #
+    # `sort: :newest` is pinned rather than inherited: an `OrderedCollection`
+    # is reverse-chronological by contract, and a crawler walking these pages
+    # must not have them reshuffle because the site's own default moved.
     result =
       Content.search_articles(query,
         page: page,
         per_page: @items_per_page,
         user: nil,
-        federated_only: true
+        federated_only: true,
+        sort: :newest
       )
 
     items = Enum.map(result.articles, &ObjectBuilder.article_object/1)

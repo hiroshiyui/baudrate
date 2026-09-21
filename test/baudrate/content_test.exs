@@ -1715,7 +1715,7 @@ defmodule Baudrate.ContentTest do
         height: 100
       })
 
-      result = Content.search_articles("has:images", user: user)
+      result = Content.search_articles("board:op-has has:images", user: user)
       assert result.total == 1
       assert hd(result.articles).title == "With Image"
     end
@@ -1730,7 +1730,7 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      result = Content.search_articles("has:images", user: user)
+      result = Content.search_articles("board:op-no-img has:images", user: user)
       assert result.total == 0
     end
 
@@ -1763,13 +1763,13 @@ defmodule Baudrate.ContentTest do
       )
 
       # before: exclusive — articles before end of 2026-01-15
-      result = Content.search_articles("before:2026-01-15", user: user)
+      result = Content.search_articles("board:op-date before:2026-01-15", user: user)
       titles = Enum.map(result.articles, & &1.title)
       assert "Old Post" in titles
       refute "New Post" in titles
 
       # after: inclusive — articles on or after 2026-02-01
-      result2 = Content.search_articles("after:2026-02-01", user: user)
+      result2 = Content.search_articles("board:op-date after:2026-02-01", user: user)
       titles2 = Enum.map(result2.articles, & &1.title)
       assert "New Post" in titles2
       refute "Old Post" in titles2
@@ -1799,7 +1799,9 @@ defmodule Baudrate.ContentTest do
         set: [inserted_at: ~U[2026-03-01 12:00:00Z]]
       )
 
-      result = Content.search_articles("after:2026-01-01 before:2026-02-01", user: user)
+      result =
+        Content.search_articles("board:op-range after:2026-01-01 before:2026-02-01", user: user)
+
       titles = Enum.map(result.articles, & &1.title)
       assert "In Range" in titles
       refute "Out Range" in titles
@@ -1815,8 +1817,10 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      # Invalid date should be silently ignored, returning all articles
-      result = Content.search_articles("before:not-a-date", user: user)
+      # An unparsable date is dropped rather than raising. On its own it
+      # leaves the query with nothing to search within, so the board is what
+      # makes this a search at all.
+      result = Content.search_articles("board:op-bad-date before:not-a-date", user: user)
       assert result.total >= 1
     end
 

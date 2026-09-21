@@ -11,7 +11,15 @@ defmodule BaudrateWeb.NoContentRankingTest do
 
     * a `/popular`, `/trending`, `/hot` or `/recent` route appearing;
     * the home page growing a list of articles from across the boards;
-    * the board list being sorted by activity instead of the admin's order.
+    * the board list being sorted by activity instead of the admin's order;
+    * a search with nothing to search within answering with everything.
+
+  The last is `/recent` arriving through the search box rather than the
+  router, and it was reachable until Phase 4C: `/search?q=after:2026-01-01`
+  listed every article the viewer could see, newest first. ADR 0055 refused
+  `/unanswered` on the grounds that "a cross-board list of articles is a river
+  whatever orders it, and filtering by reply count is mostly filtering by
+  age"; filtering by date alone is the same shape with less disguise.
   """
 
   use BaudrateWeb.ConnCase
@@ -177,5 +185,59 @@ defmodule BaudrateWeb.NoContentRankingTest do
            "the board card rendered what looks like a post count. ADR 0054: " <>
              "a count is a scoreboard between boards, and it delivers a " <>
              "verdict on the quiet ones before a visitor has opened either."
+  end
+
+  describe "a search with no scope is a river" do
+    # Asserted against the context rather than the page: `Content.Search` also
+    # backs the unauthenticated `/ap/search`, so a check that lived in
+    # `SearchLive` would leave the same list reachable as JSON.
+    setup do
+      board = public_board("Searchable Board")
+      user = setup_user("user")
+
+      {:ok, _} =
+        Content.create_article(
+          %{
+            title: "Would Be Listed By A River",
+            body: "body",
+            slug: "river-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      %{board: board, user: user}
+    end
+
+    test "a date range alone lists nothing", %{user: user} do
+      for query <- [
+            "after:2020-01-01",
+            "before:2099-01-01",
+            "after:2020-01-01 before:2099-01-01",
+            "has:images"
+          ] do
+        assert %{articles: [], total: 0} = Content.search_articles(query, user: user),
+               """
+               `#{query}` returned articles. That is a cross-board list of
+               everything recent — /recent through the search box, which
+               ADR 0055 refused through the router.
+
+               A search needs a scope: words, or an author, a board or a tag.
+               Time is not a scope.
+               """
+
+        assert %{comments: [], total: 0} = Content.search_comments(query, user: user)
+      end
+    end
+
+    test "naming a board, an author, a tag or a word is still a search", %{
+      board: board,
+      user: user
+    } do
+      for query <- ["river", "board:#{board.slug}", "author:#{user.username}"] do
+        assert %{total: total} = Content.search_articles(query, user: user)
+        assert total > 0, "`#{query}` should be a search — the scope rule is too strict"
+      end
+    end
   end
 end

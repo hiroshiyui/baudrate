@@ -743,6 +743,42 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["first"] =~ "page=1"
     end
 
+    # An OrderedCollection is reverse-chronological by contract, and a crawler
+    # walking its pages must not have them reshuffle because the site's own
+    # default sort moved. `search_collection/2` pins `sort: :newest` rather
+    # than inheriting it.
+    test "is newest-first, not ranked by relevance like the site's own search", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board()
+
+      # The older article matches in its title, which outranks a body match on
+      # relevance — so if this collection inherited the default it would come
+      # back first.
+      in_title = setup_article(user, board)
+
+      Baudrate.Repo.update_all(
+        from(a in Baudrate.Content.Article, where: a.id == ^in_title.id),
+        set: [title: "Test Article", inserted_at: ~U[2026-01-01 00:00:00Z]]
+      )
+
+      in_body = setup_article(user, board)
+
+      Baudrate.Repo.update_all(
+        from(a in Baudrate.Content.Article, where: a.id == ^in_body.id),
+        set: [
+          title: "Something else entirely",
+          body: "a mention of Test Article inside the body",
+          inserted_at: ~U[2026-06-01 00:00:00Z]
+        ]
+      )
+
+      conn = conn |> json_conn() |> get("/ap/search?q=Test+Article&page=1")
+      ids = Enum.map(json_response(conn, 200)["orderedItems"], & &1["id"])
+
+      assert length(ids) == 2
+      assert hd(ids) == Baudrate.Repo.get!(Baudrate.Content.Article, in_body.id).ap_id
+    end
+
     test "returns 400 when q parameter is missing", %{conn: conn} do
       conn = conn |> json_conn() |> get("/ap/search")
       assert json_response(conn, 400)["error"] == "Missing q parameter"
