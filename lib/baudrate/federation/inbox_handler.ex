@@ -2391,7 +2391,15 @@ defmodule Baudrate.Federation.InboxHandler do
             # Emit the proxied path, never the remote URL: rendering an
             # attachment must not disclose the viewer's IP to the origin host.
             url = Baudrate.Media.Proxy.url(att["url"])
-            alt = Baudrate.Sanitizer.Native.strip_tags(att["name"] || "")
+
+            # Strips tags *and* bounds the length, which a bare `strip_tags`
+            # did not: a peer's attachment `name` is a remote-controlled string
+            # reaching a column, and `body_html` has no length validation of
+            # its own. An absent description stays absent here and is filled in
+            # at render by `BaudrateWeb.ImageAltFallback`, because the fallback
+            # is translated and a string chosen now would freeze this process's
+            # locale into the stored row (ADR 0061).
+            alt = Baudrate.Content.ImageAlt.from_remote(att["name"]) || ""
 
             ~s(<p><img src="#{escape_attr(url)}" alt="#{escape_attr(alt)}" loading="lazy" /></p>)
           end)

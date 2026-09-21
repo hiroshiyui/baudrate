@@ -131,7 +131,7 @@
         <div :if={@eua} id="register-eua" class="register-eua space-y-2">
           <p class="register-eua-label text-sm font-medium">{gettext("End User Agreement")}</p>
           <div class="register-eua-body bg-base-200 rounded-lg p-3 max-h-48 overflow-y-auto prose prose-sm max-w-none break-words">
-            {raw(Baudrate.Content.Markdown.to_html(@eua))}
+            {BaudrateWeb.SafeHTML.markdown(@eua)}
           </div>
           <%!-- The scroll box is easy to skim past and impossible to find again
           after registering, so the full page is one click away from both. --%>

@@ -266,7 +266,7 @@ defmodule BaudrateWeb.CommentComponents do
         >
           <div class="divider text-sm text-base-content/70 my-1"></div>
           <div class="prose prose-sm max-w-none text-base-content/70">
-            {raw(Baudrate.Content.Markdown.to_html(@comment.user.signature))}
+            {BaudrateWeb.SafeHTML.markdown(@comment.user.signature)}
           </div>
         </div>
 
@@ -756,19 +756,15 @@ defmodule BaudrateWeb.CommentComponents do
     """
   end
 
-  # Stored HTML when there is any (rewritten for the media proxy by
-  # `SafeHTML.body_html/1`), otherwise rendered from markdown. One definition,
-  # so the warned and unwarned branches cannot show different things.
+  # Stored HTML when there is any, otherwise rendered from markdown. One
+  # definition, so the warned and unwarned branches cannot show different
+  # things — and both halves go through `SafeHTML`, so the media-proxy rewrite
+  # and the accessible-name fallback reach a comment whichever column it is
+  # stored in.
   defp comment_body(%{body_html: html}) when is_binary(html) and html != "",
     do: BaudrateWeb.SafeHTML.body_html(html)
 
-  # `Markdown.to_html/1` ends with the Ammonia sanitizer and the media-proxy
-  # rewrite — step 3 and step 4 of its documented pipeline — so its output is
-  # already the allow-listed HTML `raw/1` requires. The same call sat inline in
-  # the template before it was extracted here; giving it a name is what made
-  # Sobelow see it.
-  # sobelow_skip ["XSS.Raw"]
-  defp comment_body(comment), do: raw(Baudrate.Content.Markdown.to_html(comment.body))
+  defp comment_body(comment), do: BaudrateWeb.SafeHTML.markdown(comment.body)
 
   defp upload_error_to_string(err),
     do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "8 MB", max_files: 4)

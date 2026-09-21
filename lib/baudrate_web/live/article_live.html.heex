@@ -104,14 +104,14 @@
       summary={@article.summary}
     >
       <div class="article-body prose max-w-none">
-        {raw(Baudrate.Content.Markdown.to_html(@article.body))}
+        {BaudrateWeb.SafeHTML.markdown(@article.body)}
       </div>
     </.content_warning>
     <div
       :if={!Baudrate.Content.ContentWarning.warned?(@article)}
       class="article-body prose max-w-none"
     >
-      {raw(Baudrate.Content.Markdown.to_html(@article.body))}
+      {BaudrateWeb.SafeHTML.markdown(@article.body)}
     </div>
 
     <.link_preview
@@ -282,7 +282,7 @@
     >
       <div class="divider text-sm text-base-content/70">{gettext("Signature")}</div>
       <div class="article-signature-body prose prose-sm max-w-none text-base-content/70">
-        {raw(Baudrate.Content.Markdown.to_html(@article.user.signature))}
+        {BaudrateWeb.SafeHTML.markdown(@article.user.signature)}
       </div>
     </div>
 

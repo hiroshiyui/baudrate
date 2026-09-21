@@ -6,7 +6,7 @@
   </header>
 
   <div :if={@body} id="policy-body" class="policy-body prose max-w-none break-words">
-    {raw(Baudrate.Content.Markdown.to_html(@body))}
+    {BaudrateWeb.SafeHTML.markdown(@body)}
   </div>
 
   <%!-- Each rule keeps a stable anchor, so a moderator or a member can link to
@@ -29,7 +29,7 @@
         :if={rule.body}
         class="policy-rule-body prose max-w-none break-words mt-2"
       >
-        {raw(Baudrate.Content.Markdown.to_html(rule.body))}
+        {BaudrateWeb.SafeHTML.markdown(rule.body)}
       </div>
     </li>
   </ol>

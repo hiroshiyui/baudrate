@@ -254,7 +254,7 @@
           <div :if={@signature_preview != ""} id="profile-signature-preview" class="space-y-1">
             <p class="profile-field-label text-sm text-base-content/70">{gettext("Preview:")}</p>
             <div class="profile-signature-preview-body prose prose-sm max-w-none bg-base-200 rounded-lg p-3 text-base-content/70">
-              {raw(@signature_preview)}
+              {BaudrateWeb.SafeHTML.body_html(@signature_preview)}
             </div>
           </div>
           <button
