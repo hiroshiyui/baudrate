@@ -261,15 +261,19 @@ at today.
 **Done when:**
 - ~~a guest's first page shows the site's purpose and the boards it has (P4-D1);~~ **done** (4A)
 - ~~search engines index public content without duplicates;~~ **done** (4B)
-- a new member is signed in and guided after registering;
-- a locked-out member has a documented way back in (D3).
+- ~~a new member is signed in and guided after registering;~~ **done** (4D)
+- ~~a locked-out member has a documented way back in (D3).~~ **done** (4D)
+
+Only **4E** is left, and it is the smallest of the six.
 
 ### Done
 
 | Stage | What | Released | Recorded in |
 |-------|------|----------|-------------|
-| 4A | Home and navigation: the boards-only home page, last activity on a board card, `site_description`, guest branding, footer feed links | empty state in v1.32.0; the rest unreleased | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md), [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) |
-| 4B | SEO and syndication feeds: `sitemap.xml`, a real `robots.txt`, canonical/description/`noindex`, 404 for a missing account, per-page and tag feeds | unreleased | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
+| 4A | Home and navigation: the boards-only home page, last activity on a board card, `site_description`, guest branding, footer feed links | empty state v1.32.0, rest v1.33.0 | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md), [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) |
+| 4B | SEO and syndication feeds: `sitemap.xml`, a real `robots.txt`, canonical/description/`noindex`, 404 for a missing account, per-page and tag feeds | v1.33.0 | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
+| 4C | Search: relevance or date sorting, a board and date filter, the same operators on the Comments tab, a paged Users tab capped at five pages | v1.33.0 | `doc/development.md` (Search), spec rows under [0054](adr/0054-attention-follows-the-board-not-a-ranking.md)/[0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)/[0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
+| 4D | Onboarding and account recovery: sign-in on registering, `/welcome`, private pages that bring you back, replaceable recovery codes, OpenPGP recovery contacts, admin-issued reset links | v1.33.0 | [0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md), `doc/sysop.md` (the operator's procedure) |
 | 4F | Privacy and language: the footer language switcher and a one-year `locale` cookie | v1.32.0 | `doc/development.md` (resolution order, cookie inventory) |
 
 **4A adds no new page.** `/recent` and `/popular` went with P4-D1;
@@ -280,8 +284,23 @@ exists and is untouched — the reader named the tag.
 
 ### Only recorded here
 
-Everything else about 4A and 4F is in those records, in `CHANGELOG.md` and in
-the moduledocs. These are the facts that are not.
+Everything else about the finished stages is in those records, in
+`CHANGELOG.md` and in the moduledocs. These are the facts that are not.
+
+- **Reading each stage's list against the code changed the stage, every
+  time — and four times the thing that mattered was not on the list.** 4F's
+  YouTube item had already shipped and its translation item counted the PO
+  header. 4B's four items were right, but what "Unlisted" *means* was not
+  among them. None of 4C's three items described the real work: relevance
+  ranking was written and thrown away on the next line, the Comments tab had
+  been ordered oldest-first for its whole life, and `?q=after:2026-01-01`
+  returned every article the viewer could see — `/recent` through the search
+  box, which [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)
+  had refused through the router. Half of 4D's six were worse than written,
+  and one was not implemented at all: there was no way to mint recovery codes
+  after account creation, so a member who spent all ten had lost the account
+  in a system with no email. **The list is a prompt to go and read, never a
+  specification.**
 
 - **Two of the six items were already done or mis-stated, and reading beat
   guessing.** "YouTube embeds load only after a click" had shipped as
@@ -317,168 +336,6 @@ the moduledocs. These are the facts that are not.
 - [ ] **Service worker on every page,** independent of push (`assets/js/push_manager_hook.js:28-34`), with an offline fallback page.
 - [ ] **Copy-link fallback** when `navigator.share` is missing (`assets/js/web_share_hook.js:15`).
 - [ ] **"Follow from your instance":** a visitor enters their instance and is sent to its remote-follow page for a user or board.
-
-### ~~4D — Onboarding and account recovery~~ — **done** (2026-09-21)
-
-Six items. Half were worse than the list said, and the decision that shaped
-the stage was the operator's, not one of them.
-
-- ~~**Signing in after registering (P4-D2).**~~ Done, all three modes.
-  Acknowledging the recovery codes is what signs you in, so nobody is carried
-  past the only copy of them they will ever see, and `/welcome` asks for a
-  display name and a picture once.
-- ~~**Approval mode.**~~ Done: `/welcome` explains what a pending account may
-  do, and `approve_user/1` sends an always-delivered notice. `pending_registration`
-  joined the always-delivered set too — staff could mute the approval queue its
-  own moduledoc says must not go unread.
-- ~~**Private pages** explain and bring you back.~~ Done, through a
-  `?return_to` parameter sanitised by `Helpers.local_path/2` on the way in and
-  again on the way out.
-- ~~**Regenerate recovery codes.**~~ Done — and the item understated the
-  problem. There was **no way to mint recovery codes after account creation at
-  all**: `/profile/recovery-codes` read a session key nothing in `lib/` ever
-  wrote, and `RecoveryCode`'s moduledoc claimed a TOTP reset re-issued them,
-  which it does not. With no email in the system, a member who spent all ten
-  had lost the account.
-- ~~**Admin-assisted reset** (needed an ADR).~~ Done, and the ADR is
-  [0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md).
-- ~~**Nudges.**~~ Done as a dismissible sitewide notice, shown only when an
-  account has no codes left *and* no verified contact. No count, no badge,
-  dismissal final.
-
-**The decision the list did not contain: what an admin verifies.** The
-operator's call (2026-09-21) is that recovery identity is proved **out of band
-by an OpenPGP signature** from an address the member registered here and an
-admin verified — the email facility is deliberately standalone, decoupled from
-Baudrate, so the trust network is one the instance does not own. Baudrate
-holds the anchor and never uses it: it sends no mail, verifies no signature,
-parses no PGP and fetches no key. The member registers the anchor from their
-own session and an admin can only *confirm* it, which is what stops a stolen
-session becoming a permanent takeover. `doc/sysop.md` carries the procedure,
-because no code enforces any of it.
-
-**Also decided** (2026-09-21): a reset needs a verified contact — so a member
-who arranged nothing has no way back, stated plainly rather than buried; the
-password is the default and clearing second factors is a separate tick with
-its own audit line; never an account at or above the issuer's role, with the
-server console as the deliberate escape hatch; and the address is encrypted at
-rest, which made it the first secret column not living in its owner's own row.
-
-**Found on the way.** The recovery-code password reset sent no
-`password_changed` notice — the flow most likely to be somebody else was the
-only silent one — and matched usernames case-sensitively while the throttle
-downcased, so `Alice` typing `alice` got a generic refusal *and* burned a
-throttle slot.
-
-### ~~4C — Search~~ — **done** (2026-09-21)
-
-Three items, and the one that mattered most was a hole rather than a feature.
-
-- ~~**Sort by relevance or date, and filter by board and date.**~~ Done —
-  and the relevance half was *already written*: `article_search_clauses/1`
-  built a `ts_rank` order clause and `search_articles/2` threw it away on the
-  next line, so the weighted tsvector every article has carried since February
-  had never been read. Relevance is now the default;
-  [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) exempts search
-  because "the query and the ordering are the reader's". `/ap/search` pins the
-  date order rather than inheriting it.
-- ~~**Page through users past the first 20.**~~ Done, capped at five pages.
-  Paging the member list is how you enumerate the membership — including the
-  people who have never posted and so appear in no byline — and
-  [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) had already
-  decided that profiles are public and linked from every byline but never
-  enumerated.
-- ~~**Search operators on the Comments tab.**~~ Done, all six, read against
-  the comment and its parent article. The parser moved to
-  `Content.SearchQuery`, which the new filter controls also write through —
-  they set `board:`/`after:`/`before:` in the query string rather than
-  carrying parameters of their own, so there is one description of a search
-  and not two that can disagree.
-
-**The item that was not on the list: `/search?q=after:2026-01-01` returned
-everything.** A query of nothing but a date range listed every article the
-viewer could see, newest first — which is
-[0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)'s own
-description of `/recent`, "a filter that removes almost nothing", reachable
-from the search box rather than the router. A search now has to name something
-to search within: words, an author, a board or a tag. Time is not a scope.
-`no_content_ranking_test.exs` gained it as a fourth shape.
-
-**Found on the way: the Comments tab had always been ordered oldest-first.**
-Its query carried `distinct: c.id`, which Ecto compiles to
-`DISTINCT ON (c0."id")`; PostgreSQL requires those expressions to lead the
-`ORDER BY`, so Ecto prepends them and the `desc: inserted_at` the code asked
-for had never had any effect. The board gate is an `exists` subquery now, which
-duplicates nothing and needs no `distinct`.
-
-### ~~4B — SEO and syndication feeds~~ — **done** (2026-09-21)
-
-Four items, and the one that needed deciding was not on the list.
-
-- ~~**`sitemap.xml`** for public boards and articles, paginated.~~ Done, plus
-  tag pages — [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)
-  refused a `/tags` index on the grounds that an inventory of tags is wanted by
-  a crawler, so this is where that forward reference lands.
-  [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) holds the
-  predicate and the four exclusions.
-- ~~**Canonical links and metadata.**~~ Done: a self-referencing canonical
-  keeping only `?page`, one `<meta name="description">` per page (the
-  `og:description` the page already computed), `noindex` on search and the
-  sign-in flow, and a `robots.txt` that is a route rather than a file.
-- ~~**Unknown users return 404.**~~ Done, and banned accounts with them —
-  the two must stay indistinguishable. `/@handle` now redirects 301.
-- ~~**Syndication feed links.**~~ Done: board, profile and tag pages each
-  carry and advertise their own pair, and tag feeds now exist.
-
-**The decision the list did not contain: what "Unlisted" means.** The composer
-offers Public and Unlisted; the code made it an ActivityPub addressing term
-only, so an unlisted article sat on its board, went out in the site feed, and
-was as indexable as any other. The operator's call (2026-09-21) is that the
-word keeps its promise: unlisted articles are out of the sitemap **and** carry
-`noindex, follow`. Leaving them out of the sitemap alone would have promised
-nothing — a sitemap is an invitation, not a gate. The syndication feeds are
-deliberately unchanged, because a feed is pulled by someone who asked.
-
-**Member profiles are not enumerated** (operator, 2026-09-21), which is the
-other decision worth finding later. `/users/:name` stays public and crawlable
-through every byline; it is the *machine-readable member list* nobody opted
-into that is refused.
-
-### ~~4F — Privacy and language~~ — **done** (2026-09-20)
-
-Three items, and reading them against the code changed what the stage was.
-
-- ~~**YouTube embeds** load only after a click.~~ **Already done** when this
-  was written: it shipped during the Phase 3 ADR audit as
-  [ADR 0045](adr/0045-the-video-player-loads-on-a-click.md). The line even
-  pointed at the click-to-load component itself. Struck, not re-implemented.
-- ~~**Language switcher** for guests, kept in a cookie.~~ Done, and for
-  everyone rather than guests only: a control that vanishes at sign-in reads
-  as a bug, and members had no way to change language mid-session either.
-  A `<details>` dropdown in the footer holding a plain form POST — no
-  JavaScript on either half, because a language control has to survive
-  scripting having gone wrong — writing a named one-year `locale` cookie. A member's click also moves that language to the head of
-  their `preferred_locales`, so the footer and `/profile` cannot disagree and
-  the choice follows them to another device. **Match my browser** is the way
-  back out. Order, cookie inventory and the reasoning: `doc/development.md`.
-- ~~**Translations:** fill the 5 empty strings.~~ The count was wrong when it
-  was written — it included the PO header. The four real ones were *example
-  values* (`abcd-ef23`, two `example.com` URLs, `trusted.example,
-  friend.example`), identical in every language, so they needed a decision
-  rather than a translator: each is now written out in full with a comment
-  saying why. **A number in a TODO cannot say which strings, and goes stale
-  the next time anyone runs `gettext.extract`**, so the chore became a gate:
-  `test/baudrate_web/translation_coverage_test.exs` fails when zh_TW or ja_JP
-  carries an empty `msgstr`. `en` is excluded, and the test says why.
-
-**Found and fixed on the way.** `SetLocale` read a member's language from
-`session[:preferred_locales]`, written at login and nowhere else, and a
-LiveView cannot write the session — so changing language on `/profile` reached
-the database and stopped. Every later full page load rendered its dead HTML,
-including `lang=` on `<html>`, in the language the member had just left, and
-kept doing so until they signed in again: a screen reader told the wrong
-language on every load. The switcher's controller is the session write that
-was missing, and `/profile` now posts to it when the *effective* locale moves.
 
 ### Decisions (made 2026-09-20)
 
