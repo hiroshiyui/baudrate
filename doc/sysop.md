@@ -494,6 +494,30 @@ and an OpenPGP public key — and records your verdict about it. Every
 cryptographic check below happens in your own mail client. Nothing in the
 software will stop you clicking "verify" without doing any of it.
 
+**You never need anything secret from the member — not a passphrase, not a
+private key, not a "proof" of either.** Signing and verifying use opposite
+halves of a keypair:
+
+| | Key used | Who holds it | Passphrase |
+|---|---|---|---|
+| The member **signs** their message | **private** | them, on their own machine | yes — typed into *their* mail client |
+| You **verify** it | **public** | on their Baudrate profile | none; it is public material |
+
+Your keyring for this work holds public keys and **no secret keys at all**.
+If a command you are about to run asks you for a passphrase, you are doing
+something other than verifying.
+
+Two ways this goes wrong, and both are plausible:
+
+- **You ask them for something secret**, reasoning that it would prove the key
+  is theirs. It would not: a signature already proves that, which is the whole
+  point.
+- **They send you their private key unprompted**, to prove it is really them.
+  A locked-out member under stress will do this. Refuse it, delete it, and
+  tell them to **revoke that key and register a new one** — they have just
+  handed their identity to whatever was watching that channel, and it is no
+  longer an anchor for anything.
+
 #### 2. Verifying a contact — the enrolment step
 
 A member adds an address and an armored public key at `/profile`; it appears as
@@ -512,6 +536,48 @@ A member adds an address and an armored public key at `/profile`; it appears as
 The order matters. The member registered that key from their own authenticated
 session, so confirming it binds an address to a key they had already proved
 they control. Verifying on the strength of the email alone binds nothing.
+
+**What a good verification looks like.** With only the profile key imported:
+
+```
+$ gpg --verify request.asc
+gpg: Signature made Sun 21 Sep 2026 10:35:37 CST
+gpg:                using EDDSA key 40A0132F06CE66771168189A00C673F4347924CD
+gpg: Good signature from "Rita Vrataski <rita@example.org>" [unknown]
+gpg: WARNING: This key is not certified with a trusted signature!
+gpg:          There is no indication that the signature belongs to the owner.
+```
+
+**That warning is expected, and it is not a failure.** It means you have never
+personally certified the key in the web of trust, which you have no reason to
+do. The two lines that matter are **`Good signature`** and the **key
+fingerprint**, and the fingerprint must be the one on the profile page. Read
+the fingerprint, not the name and address in quotes — those are whatever the
+key's owner typed when they made it, and anyone can type anything.
+
+**What a failure looks like**, when the signature was made by some other key:
+
+```
+gpg: Can't check signature: No public key
+```
+
+That is the procedure working. A message signed by a key that is not the one
+on the profile cannot be verified against it, which is exactly why the key
+comes from the profile and never from the message.
+
+**Two more refusals your client will hand you, and both mean stop:**
+
+```
+gpg: Note: This key has expired!
+gpg: WARNING: This key has been revoked!
+```
+
+A signature from an expired or revoked key is not an anchor. Baudrate stores
+the armored block and never parses it, so it does not know and cannot tell
+you — your client is the only thing that will. Refuse the request, and have
+the member register a replacement key from their profile while they still can.
+If they *cannot* sign in to replace it, they are in the position this whole
+chapter exists for and no longer have a way out of it: say so plainly.
 
 #### 3. Handling a recovery request
 
@@ -539,6 +605,8 @@ Check, in order:
   design, not an oversight, and the member can arrange one for next time if
   they still have a session.
 - **Anything unsigned, or signed by a different key.**
+- **A private key, or an offer of one.** You have no use for it and it must not
+  be in your possession. See §1.
 - **Any request to add or change a recovery contact.** That is the member's own
   act, from their own session. Someone who cannot sign in cannot move the
   anchor, and that is precisely the property the whole scheme rests on. It is

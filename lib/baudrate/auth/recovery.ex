@@ -321,6 +321,39 @@ defmodule Baudrate.Auth.Recovery do
   end
 
   @doc """
+  The most recent reset for an account whatever became of it — outstanding,
+  used, revoked or expired.
+
+  `live_reset/1` answers "is there one to revoke"; this answers "what happened
+  to the one I issued", which is the question an admin comes back with. Without
+  it the admin page fell silent the moment a link was redeemed, and a spent
+  link looked exactly like a link that was never issued.
+  """
+  @spec last_reset(User.t()) :: AccountReset.t() | nil
+  def last_reset(%User{} = user) do
+    Repo.one(
+      from(r in AccountReset,
+        where: r.user_id == ^user.id,
+        order_by: [desc: r.id],
+        limit: 1,
+        preload: [:issued_by]
+      )
+    )
+  end
+
+  @doc """
+  What state a reset is in, for display: `:outstanding`, `:used`, `:revoked`
+  or `:expired`.
+  """
+  @spec reset_state(AccountReset.t()) :: :outstanding | :used | :revoked | :expired
+  def reset_state(%AccountReset{used_at: used}) when not is_nil(used), do: :used
+  def reset_state(%AccountReset{revoked_at: revoked}) when not is_nil(revoked), do: :revoked
+
+  def reset_state(%AccountReset{expires_at: expires}) do
+    if DateTime.compare(expires, DateTime.utc_now()) == :gt, do: :outstanding, else: :expired
+  end
+
+  @doc """
   Redeems a reset token: sets the password and takes the account back.
 
   Single-use is claimed with one conditional `UPDATE`, so two simultaneous

@@ -680,18 +680,23 @@
       </button>
     </div>
 
+    <%!--
+      What became of the last link, not only whether one is outstanding. This
+      block used to render only while a link was live, so the moment one was
+      redeemed the page fell silent — and a spent link looked exactly like a
+      link that had never been issued, which is the question an admin comes
+      back with.
+    --%>
     <div
-      :if={@live_reset}
+      :if={@last_reset}
       id="admin-user-detail-recovery-live"
       class="admin-user-detail-recovery-live text-sm mt-3 flex flex-wrap items-center gap-2"
     >
       <span class="admin-user-detail-recovery-live-text">
-        {gettext("A reset link issued by %{admin} is outstanding until %{expires}.",
-          admin: (@live_reset.issued_by && @live_reset.issued_by.username) || gettext("an admin"),
-          expires: format_datetime(@live_reset.expires_at)
-        )}
+        {reset_summary(@last_reset)}
       </span>
       <button
+        :if={@live_reset}
         type="button"
         id="admin-user-detail-recovery-revoke"
         phx-click="revoke_reset"

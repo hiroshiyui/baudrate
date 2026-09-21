@@ -95,6 +95,7 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
     |> assign(:login_attempts, login_attempts(user, admin?))
     |> assign(:recovery_contacts, recovery_contacts(user, admin?))
     |> assign(:live_reset, Auth.live_account_reset(user))
+    |> assign(:last_reset, admin? && Auth.last_account_reset(user))
     |> assign(:can_reset?, admin? and Auth.can_issue_account_reset?(actor, user))
   end
 
@@ -102,6 +103,35 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
   # rests on, so a moderator never sees one.
   defp recovery_contacts(_user, false), do: []
   defp recovery_contacts(user, true), do: Auth.list_recovery_contacts(user)
+
+  # Each state reads as a sentence, because an admin scanning this page is
+  # asking "did they use it?" and a bare status word does not answer that.
+  defp reset_summary(reset) do
+    who = (reset.issued_by && reset.issued_by.username) || gettext("an admin")
+
+    case Auth.account_reset_state(reset) do
+      :outstanding ->
+        gettext("A reset link issued by %{admin} is outstanding until %{expires}.",
+          admin: who,
+          expires: format_datetime(reset.expires_at)
+        )
+
+      :used ->
+        gettext("A reset link issued by %{admin} was used on %{used}.",
+          admin: who,
+          used: format_datetime(reset.used_at)
+        )
+
+      :revoked ->
+        gettext("A reset link issued by %{admin} was revoked and never used.", admin: who)
+
+      :expired ->
+        gettext("A reset link issued by %{admin} expired unused on %{expires}.",
+          admin: who,
+          expires: format_datetime(reset.expires_at)
+        )
+    end
+  end
 
   defp verification_flash("verified"),
     do: gettext("Recovery contact verified. It can now be used to issue a reset link.")

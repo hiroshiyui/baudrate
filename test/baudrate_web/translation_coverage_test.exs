@@ -32,7 +32,7 @@ defmodule BaudrateWeb.TranslationCoverageTest do
           domain <- @domains,
           path = Path.join(["priv/gettext", locale, "LC_MESSAGES", "#{domain}.po"]),
           File.exists?(path),
-          {msgid, translations} <- entries(File.read!(path)),
+          {msgid, _plural, translations} <- entries(File.read!(path)),
           # The PO header is `msgid ""`; it carries metadata, not a message.
           msgid != "",
           Enum.any?(translations, &(&1 == "")) do
@@ -56,6 +56,56 @@ defmodule BaudrateWeb.TranslationCoverageTest do
            """
   end
 
+  test "no translation interpolates a binding its message does not provide" do
+    stray =
+      for locale <- @locales,
+          domain <- @domains,
+          path = Path.join(["priv/gettext", locale, "LC_MESSAGES", "#{domain}.po"]),
+          File.exists?(path),
+          {msgid, plural, translations} <- entries(File.read!(path)),
+          msgid != "",
+          translation <- translations,
+          translation != "",
+          # zh_TW and ja_JP have one plural form, so `msgstr[0]` carries the
+          # `%{count}` that lives in `msgid_plural` rather than in `msgid`.
+          # Both are the message's own bindings.
+          extra = bindings(translation) -- (bindings(msgid) ++ bindings(plural)),
+          extra != [] do
+        "#{locale}/#{domain}: #{inspect(msgid)} interpolates #{inspect(extra)}"
+      end
+
+    assert stray == [],
+           """
+           These translations reference a binding their message never passes:
+
+           #{Enum.join(stray, "\n")}
+
+           Gettext resolves bindings at render time, so this is not a build
+           error — it is a `MissingBindingsError` or a literal `%{...}` in
+           front of whoever was unlucky enough to read that string in that
+           language.
+
+           It is almost always the fuzzy matcher. `mix gettext.extract --merge`
+           attaches a translation from a *similar* msgid and reports it as
+           "N reworded", and similar strings are exactly the ones whose
+           bindings differ — three states of an account-recovery link were
+           each given the wording of a fourth, which both said the wrong thing
+           and named a `%{expires}` two of them do not have.
+
+           Write the translation by hand against the msgid in front of you.
+           """
+  end
+
+  # `%{name}` interpolations, sorted and deduplicated. `%%` is an escaped
+  # percent and never a binding.
+  defp bindings(text) do
+    ~r/(?<!%)%\{([a-zA-Z_][a-zA-Z0-9_]*)\}/
+    |> Regex.scan(text)
+    |> Enum.map(fn [_, name] -> name end)
+    |> Enum.uniq()
+    |> Enum.sort()
+  end
+
   # Blocks are separated by blank lines. Within a block, a msgid or msgstr can
   # span several quoted lines, which gettext concatenates.
   defp entries(source) do
@@ -63,8 +113,17 @@ defmodule BaudrateWeb.TranslationCoverageTest do
     |> String.split("\n\n")
     |> Enum.flat_map(fn block ->
       case capture(block, ~r/^msgid ((?:"(?:[^"\\]|\\.)*"\n?)+)/m) do
-        [] -> []
-        [msgid] -> [{msgid, capture(block, ~r/^msgstr(?:\[\d+\])? ((?:"(?:[^"\\]|\\.)*"\n?)+)/m)}]
+        [] ->
+          []
+
+        [msgid] ->
+          plural =
+            case capture(block, ~r/^msgid_plural ((?:"(?:[^"\\]|\\.)*"\n?)+)/m) do
+              [p] -> p
+              _ -> ""
+            end
+
+          [{msgid, plural, capture(block, ~r/^msgstr(?:\[\d+\])? ((?:"(?:[^"\\]|\\.)*"\n?)+)/m)}]
       end
     end)
   end

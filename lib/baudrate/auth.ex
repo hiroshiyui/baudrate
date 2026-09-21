@@ -122,6 +122,8 @@ defmodule Baudrate.Auth do
   defdelegate can_issue_account_reset?(admin, user), to: Recovery, as: :can_issue?
   defdelegate revoke_account_reset(admin, user), to: Recovery, as: :revoke
   defdelegate live_account_reset(user), to: Recovery, as: :live_reset
+  defdelegate last_account_reset(user), to: Recovery, as: :last_reset
+  defdelegate account_reset_state(reset), to: Recovery, as: :reset_state
 
   defdelegate redeem_account_reset(token, password, password_confirmation),
     to: Recovery,
