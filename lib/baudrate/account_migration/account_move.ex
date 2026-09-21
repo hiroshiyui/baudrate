@@ -30,7 +30,7 @@ defmodule Baudrate.AccountMigration.AccountMove do
   import Ecto.Changeset
 
   @statuses ~w(pending sent cancelled failed)
-  @cancel_reasons ~w(user password_changed totp_changed banned suspended signed_out_everywhere)
+  @cancel_reasons ~w(user password_changed totp_changed banned suspended signed_out_everywhere account_reset)
 
   schema "account_moves" do
     field :target_ap_id, :string

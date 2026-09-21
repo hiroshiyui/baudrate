@@ -44,7 +44,7 @@ defmodule Baudrate.Crypto.Rekey do
 
   require Logger
 
-  alias Baudrate.Auth.{RecoveryCode, TotpVault}
+  alias Baudrate.Auth.{RecoveryCode, RecoveryContact, RecoveryContactVault, TotpVault}
   alias Baudrate.Content.Board
   alias Baudrate.Crypto.{Keyring, Vault}
   alias Baudrate.Federation.KeyVault
@@ -195,6 +195,16 @@ defmodule Baudrate.Crypto.Rekey do
         vault: :totp
       },
       %{
+        name: "recovery_contacts.email_encrypted",
+        class: :auth,
+        purpose: :recovery_contact,
+        schema: RecoveryContact,
+        field: :email_encrypted,
+        owner_field: :user_id,
+        encode: :raw,
+        vault: :recovery_contact
+      },
+      %{
         name: "users.ap_private_key_encrypted",
         class: :signing,
         purpose: :federation,
@@ -291,8 +301,14 @@ defmodule Baudrate.Crypto.Rekey do
     end
   end
 
-  defp rekey_row(target, %{id: id, blob: blob}, current_id, dry_run, after_read) do
-    case decrypt_blob(target, id, blob) do
+  defp rekey_row(
+         target,
+         %{id: id, owner_id: owner_id, blob: blob},
+         current_id,
+         dry_run,
+         after_read
+       ) do
+    case decrypt_blob(target, owner_id, blob) do
       {:ok, plaintext} ->
         after_read.(target.name, id)
 
@@ -303,7 +319,7 @@ defmodule Baudrate.Crypto.Rekey do
 
           %{blank() | rekeyed: 1}
         else
-          write_row(target, id, blob, encrypt(target, id, plaintext), current_id)
+          write_row(target, id, blob, encrypt(target, owner_id, plaintext), current_id)
         end
 
       :error ->
@@ -394,10 +410,18 @@ defmodule Baudrate.Crypto.Rekey do
 
   # --- vault plumbing ---
 
-  defp blob_query(%{schema: schema, field: field}) do
+  # `id` identifies the row to rewrite; `owner_id` is what the vault bound the
+  # ciphertext to, and they are only the same thing when the secret lives in
+  # its owner's own row. A recovery contact is a row of its own belonging to a
+  # user, so it declares `owner_field: :user_id` — without the split, rotation
+  # would ask the vault to decrypt a member's address against the contact row's
+  # id and log every one of them as undecryptable.
+  defp blob_query(%{schema: schema, field: field} = target) do
+    owner_field = Map.get(target, :owner_field, :id)
+
     from(r in schema,
       where: not is_nil(field(r, ^field)),
-      select: %{id: r.id, blob: field(r, ^field)}
+      select: %{id: r.id, owner_id: field(r, ^owner_field), blob: field(r, ^field)}
     )
   end
 
@@ -430,12 +454,20 @@ defmodule Baudrate.Crypto.Rekey do
   end
 
   defp decrypt_blob(%{vault: :totp}, id, blob), do: TotpVault.decrypt(blob, %User{id: id})
+
+  defp decrypt_blob(%{vault: :recovery_contact}, id, blob),
+    do: RecoveryContactVault.decrypt(blob, %User{id: id})
+
   defp decrypt_blob(%{vault: :user_key}, id, blob), do: KeyVault.decrypt(blob, %User{id: id})
   defp decrypt_blob(%{vault: :board_key}, id, blob), do: KeyVault.decrypt(blob, %Board{id: id})
   defp decrypt_blob(%{vault: :site_key}, _id, blob), do: KeyVault.decrypt(blob, :site)
   defp decrypt_blob(%{vault: :vapid}, _id, blob), do: VapidVault.decrypt(blob)
 
   defp encrypt(%{vault: :totp}, id, plaintext), do: TotpVault.encrypt(plaintext, %User{id: id})
+
+  defp encrypt(%{vault: :recovery_contact}, id, plaintext),
+    do: RecoveryContactVault.encrypt(plaintext, %User{id: id})
+
   defp encrypt(%{vault: :user_key}, id, plaintext), do: KeyVault.encrypt(plaintext, %User{id: id})
 
   defp encrypt(%{vault: :board_key}, id, plaintext),

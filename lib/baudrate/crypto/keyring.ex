@@ -49,7 +49,7 @@ defmodule Baudrate.Crypto.Keyring do
   require Logger
 
   @type class :: :auth | :signing
-  @type purpose :: :totp | :recovery_code | :federation | :vapid
+  @type purpose :: :totp | :recovery_code | :recovery_contact | :federation | :vapid
   @type id :: String.t()
 
   @legacy_id "legacy"
@@ -67,6 +67,15 @@ defmodule Baudrate.Crypto.Keyring do
       class: :auth,
       legacy_salt: "recovery_code_hmac_key",
       legacy_aad: nil
+    },
+    # A member's recovery email address (ADR 0058). Newer than the separated
+    # keyring, so it has no legacy format to stay readable — but the salt is
+    # fixed here for the same reason as the others, since a deployment with no
+    # configured `:auth` keys still derives from `SECRET_KEY_BASE`.
+    recovery_contact: %{
+      class: :auth,
+      legacy_salt: "recovery_contact_encryption_key",
+      legacy_aad: "Baudrate.Auth.RecoveryContactVault"
     },
     federation: %{
       class: :signing,

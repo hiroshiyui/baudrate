@@ -54,6 +54,16 @@ defmodule Baudrate.Notification.Notification do
     * `data_export_ready` — the export can be downloaded (`data.expires_at`)
     * `data_export_downloaded` — the export was downloaded (`data.count`, `data.remaining`)
     * `data_export_cancelled` — an export request was cancelled (`data.reason`)
+    * `recovery_codes_regenerated` — a fresh set of recovery codes was issued
+      and every earlier code stopped working (`data.count`)
+    * `recovery_contact_added` / `recovery_contact_removed` — a recovery
+      contact was registered or taken off the account (`data.label`, ADR 0058)
+    * `recovery_contact_verified` — an admin confirmed a recovery contact
+      (`data.label`)
+    * `account_reset_used` — an admin-issued reset link was redeemed: the
+      password was replaced and every session signed out
+      (`data.second_factors_cleared`)
+    * `registration_approved` — a pending account was approved and may post
 
   ### Operational notices
 
@@ -64,6 +74,10 @@ defmodule Baudrate.Notification.Notification do
     * `health_alert` — one or more health checks have been failing for over an
       hour (`data.checks`, the failing check names)
     * `health_recovered` — every check passes again
+    * `pending_registration` — somebody registered and is waiting for approval
+      (`actor_user_id`). Always delivered for the same reason as the rest of
+      this group: an approval queue nobody is told about is an approval queue
+      nobody empties.
 
   ## Deduplication
 
@@ -113,6 +127,12 @@ defmodule Baudrate.Notification.Notification do
     data_export_ready
     data_export_downloaded
     data_export_cancelled
+    recovery_codes_regenerated
+    recovery_contact_added
+    recovery_contact_removed
+    recovery_contact_verified
+    account_reset_used
+    registration_approved
     sanction_applied
     sanction_lifted
     sanction_ended
@@ -140,6 +160,12 @@ defmodule Baudrate.Notification.Notification do
     data_export_ready
     data_export_downloaded
     data_export_cancelled
+    recovery_codes_regenerated
+    recovery_contact_added
+    recovery_contact_removed
+    recovery_contact_verified
+    account_reset_used
+    registration_approved
   )
 
   # Moderation notices about the recipient's own content or account. Like
@@ -152,7 +178,7 @@ defmodule Baudrate.Notification.Notification do
   # reason as the other two classes: the person who would switch these off is
   # exactly the person who has to act on them, and an alert that can be muted
   # by accident is not an alert.
-  @operational_notice_types ~w(health_alert health_recovered)
+  @operational_notice_types ~w(health_alert health_recovered pending_registration)
 
   @doc "Returns the list of valid notification type strings."
   def valid_types, do: @valid_types

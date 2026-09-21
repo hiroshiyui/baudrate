@@ -90,6 +90,33 @@ defmodule Baudrate.Auth.WebAuthn do
     end
   end
 
+  @doc """
+  Removes every security key on an account, sending one `security_key_removed`
+  notice per key.
+
+  Used by the admin-assisted reset when the issuing admin ticked "clear second
+  factors" (ADR 0058). Deliberately not reachable from any member-facing
+  surface: `/profile` removes keys one at a time behind step-up, so there is no
+  single click that leaves an account with one factor by accident.
+
+  Returns the number removed.
+  """
+  @spec delete_all_credentials(User.t()) :: non_neg_integer()
+  def delete_all_credentials(%User{} = user) do
+    user
+    |> list_webauthn_credentials()
+    |> Enum.reduce(0, fn credential, count ->
+      case Repo.delete(credential) do
+        {:ok, deleted} ->
+          notify(user, "security_key_removed", deleted)
+          count + 1
+
+        _ ->
+          count
+      end
+    end)
+  end
+
   # Account security notice (ADR 0022). The label is display-only context.
   defp notify(%User{id: user_id}, type, %WebAuthnCredential{label: label}) do
     Baudrate.Notification.Hooks.notify_account_security(user_id, type, %{
