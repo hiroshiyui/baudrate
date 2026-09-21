@@ -286,4 +286,116 @@ defmodule Baudrate.Federation.ObjectBuilderTest do
       refute Jason.encode!(object) =~ private.slug
     end
   end
+
+  describe "comment_object/1 — \"updated\" and attachment descriptions" do
+    defp create_comment(user, article, attrs \\ %{}) do
+      {:ok, comment} =
+        Content.create_comment(
+          Map.merge(
+            %{"body" => "a reply", "article_id" => article.id, "user_id" => user.id},
+            attrs
+          )
+        )
+
+      comment
+    end
+
+    test "a fresh comment carries no \"updated\"", %{user: user, board: board} do
+      article = create_article(user, board)
+      comment = create_comment(user, article)
+
+      object = ObjectBuilder.comment_object(comment)
+
+      # The ap_id stamping right after insert bumps updated_at by
+      # milliseconds; Mastodon shows "edited" whenever updated differs from
+      # published, so a brand new comment must not carry the field at all.
+      refute Map.has_key?(object, "updated")
+    end
+
+    test "an edited comment carries it", %{user: user, board: board} do
+      article = create_article(user, board)
+      comment = create_comment(user, article)
+
+      {:ok, edited} = Content.update_comment(comment, %{"body" => "a better reply"}, user)
+
+      {:ok, edited} =
+        edited
+        |> Ecto.Changeset.change(updated_at: DateTime.add(edited.inserted_at, 60, :second))
+        |> Repo.update()
+
+      object = ObjectBuilder.comment_object(edited)
+
+      assert object["updated"]
+      assert object["type"] == "Note"
+    end
+
+    test "an image attachment carries the uploader's description as `name`", %{
+      user: user,
+      board: board
+    } do
+      article = create_article(user, board)
+      comment = create_comment(user, article)
+
+      {:ok, image} =
+        Content.create_comment_image(%{
+          filename: "desc.webp",
+          storage_path: "/tmp/desc.webp",
+          width: 10,
+          height: 10,
+          user_id: user.id,
+          comment_id: comment.id,
+          alt: "a cat on a fence"
+        })
+
+      object = ObjectBuilder.comment_object(Repo.preload(comment, :images, force: true))
+
+      assert [attachment] = object["attachment"]
+      assert attachment["name"] == "a cat on a fence"
+      assert attachment["mediaType"] == "image/webp"
+      assert image.alt == "a cat on a fence"
+    end
+
+    test "an undescribed image carries no `name` at all", %{user: user, board: board} do
+      article = create_article(user, board)
+      comment = create_comment(user, article)
+
+      {:ok, _image} =
+        Content.create_comment_image(%{
+          filename: "nodesc.webp",
+          storage_path: "/tmp/nodesc.webp",
+          width: 10,
+          height: 10,
+          user_id: user.id,
+          comment_id: comment.id
+        })
+
+      object = ObjectBuilder.comment_object(Repo.preload(comment, :images, force: true))
+
+      assert [attachment] = object["attachment"]
+      # Not "": an empty name means "decorative", which is a different claim
+      # from "nobody described it".
+      refute Map.has_key?(attachment, "name")
+    end
+
+    test "an article image attachment carries it too", %{user: user, board: board} do
+      article = create_article(user, board)
+
+      {:ok, _image} =
+        Content.create_article_image(%{
+          filename: "art.webp",
+          storage_path: "/tmp/art.webp",
+          width: 10,
+          height: 10,
+          user_id: user.id,
+          article_id: article.id,
+          alt: "a diagram"
+        })
+
+      object = ObjectBuilder.article_object(Repo.preload(article, :article_images, force: true))
+
+      assert [attachment] = object["attachment"]
+      assert attachment["type"] == "Document"
+      assert attachment["name"] == "a diagram"
+    end
+  end
 end

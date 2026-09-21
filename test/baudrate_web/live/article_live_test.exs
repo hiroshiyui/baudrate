@@ -514,10 +514,15 @@ defmodule BaudrateWeb.ArticleLiveTest do
   end
 
   describe "draft autosave hooks" do
-    test "top-level comment form renders with DraftSaveHook", %{conn: conn, article: article} do
+    test "top-level comment form renders with DraftSaveHook", %{
+      conn: conn,
+      article: article,
+      user: user
+    } do
       {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
       assert html =~ ~s(phx-hook="DraftSaveHook")
-      assert html =~ "data-draft-key=\"draft:comment:#{article.id}\""
+      # Per account — see the note in `article_new_live_test.exs`.
+      assert html =~ "data-draft-key=\"draft:u#{user.id}:comment:#{article.id}\""
       assert html =~ ~s(data-draft-fields="comment[body]")
       assert html =~ "draft-indicator-comment"
     end
@@ -542,7 +547,9 @@ defmodule BaudrateWeb.ArticleLiveTest do
 
       html = render(lv)
       assert html =~ ~s(phx-hook="DraftSaveHook")
-      assert html =~ "data-draft-key=\"draft:comment:#{article.id}:reply:#{comment.id}\""
+
+      assert html =~
+               "data-draft-key=\"draft:u#{user.id}:comment:#{article.id}:reply:#{comment.id}\""
     end
   end
 
@@ -1401,6 +1408,186 @@ defmodule BaudrateWeb.ArticleLiveTest do
 
       # Process is still alive and rendering — no FunctionClauseError.
       assert render(lv) =~ "Test Article"
+    end
+  end
+
+  describe "editing a comment" do
+    setup %{user: user, article: article} do
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "what I said at first",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, comment: comment}
+    end
+
+    test "the author is offered the control", %{conn: conn, article: article, comment: comment} do
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+
+      assert html =~ "comment-edit-button"
+      assert html =~ ~s(phx-value-id="#{comment.id}")
+    end
+
+    test "nobody else is, not even an admin", %{article: article} do
+      for role <- ["user", "admin"] do
+        other = setup_user(role)
+        conn = log_in_user(build_conn(), other)
+        {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+
+        refute html =~ "comment-edit-button",
+               "#{role} was offered an edit control on somebody else's comment"
+      end
+    end
+
+    test "a guest is not", %{article: article} do
+      {:ok, _lv, html} = live(build_conn(), "/articles/#{article.slug}")
+      refute html =~ "comment-edit-button"
+    end
+
+    test "opening the form, saving, and seeing the result", %{
+      conn: conn,
+      article: article,
+      comment: comment
+    } do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      html =
+        lv
+        |> element(~s|button[phx-click="edit_comment"][phx-value-id="#{comment.id}"]|)
+        |> render_click()
+
+      assert html =~ "comment-edit-form-#{comment.id}"
+
+      html =
+        lv
+        |> form("#comment-edit-form-#{comment.id}", comment_edit: %{body: "what I meant"})
+        |> render_submit()
+
+      assert html =~ "what I meant"
+      refute html =~ "comment-edit-form-#{comment.id}"
+      assert Repo.get!(Content.Comment, comment.id).body == "what I meant"
+    end
+
+    test "the form renders its value back after a change, so typing is not erased", %{
+      conn: conn,
+      article: article,
+      comment: comment
+    } do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      lv
+      |> element(~s|button[phx-click="edit_comment"][phx-value-id="#{comment.id}"]|)
+      |> render_click()
+
+      # LiveView patches every input in a `phx-change` form back to the value
+      # the server rendered. A handler that does not assign the params back
+      # wipes what was typed the moment a sibling field changes.
+      html =
+        lv
+        |> form("#comment-edit-form-#{comment.id}", comment_edit: %{body: "half a thought"})
+        |> render_change()
+
+      assert html =~ "half a thought"
+    end
+
+    test "saving works without the form's hidden id, from the open editor alone", %{
+      conn: conn,
+      article: article,
+      comment: comment
+    } do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      lv
+      |> element(~s|button[phx-click="edit_comment"][phx-value-id="#{comment.id}"]|)
+      |> render_click()
+
+      # `@editing` holds an integer and `parse_id/1` takes only a binary, so
+      # this path was silently dead until it was read as the integer it is.
+      render_submit(lv, "save_comment_edit", %{"comment_edit" => %{"body" => "no hidden id"}})
+
+      assert Repo.get!(Content.Comment, comment.id).body == "no hidden id"
+    end
+
+    test "cancelling leaves the comment alone", %{conn: conn, article: article, comment: comment} do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      lv
+      |> element(~s|button[phx-click="edit_comment"][phx-value-id="#{comment.id}"]|)
+      |> render_click()
+
+      html = lv |> element(~s|button[phx-click="cancel_comment_edit"]|) |> render_click()
+
+      refute html =~ "comment-edit-form-#{comment.id}"
+      assert Repo.get!(Content.Comment, comment.id).body == "what I said at first"
+    end
+
+    test "a client-supplied id for a comment on another article is refused", %{
+      conn: conn,
+      user: user,
+      board: board,
+      article: article
+    } do
+      {:ok, %{article: elsewhere}} =
+        Content.create_article(
+          %{title: "Elsewhere", body: "Body", slug: "elsewhere-edit", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, other_comment} =
+        Content.create_comment(%{
+          "body" => "not on this page",
+          "article_id" => elsewhere.id,
+          "user_id" => user.id
+        })
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      render_click(lv, "edit_comment", %{"id" => to_string(other_comment.id)})
+
+      render_submit(lv, "save_comment_edit", %{
+        "comment_id" => to_string(other_comment.id),
+        "comment_edit" => %{"body" => "reached across"}
+      })
+
+      assert Repo.get!(Content.Comment, other_comment.id).body == "not on this page"
+    end
+
+    test "a guest sending the events by hand changes nothing", %{
+      article: article,
+      comment: comment
+    } do
+      # The page is `:optional_auth`, so a guest holds a live socket and can
+      # push any event name at it.
+      {:ok, lv, _html} = live(build_conn(), "/articles/#{article.slug}")
+
+      render_click(lv, "edit_comment", %{"id" => to_string(comment.id)})
+
+      render_submit(lv, "save_comment_edit", %{
+        "comment_id" => to_string(comment.id),
+        "comment_edit" => %{"body" => "a guest wrote this"}
+      })
+
+      render_blur(lv, "save_image_alt", %{"id" => "1", "value" => "a guest wrote this"})
+
+      assert Repo.get!(Content.Comment, comment.id).body == "what I said at first"
+    end
+
+    test "an edited comment shows the marker and links to its history", %{
+      conn: conn,
+      user: user,
+      article: article,
+      comment: comment
+    } do
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      refute html =~ "comment-edited-link"
+
+      {:ok, _} = Content.update_comment(comment, %{"body" => "revised"}, user)
+
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      assert html =~ "comment-edited-link"
+      assert html =~ "/comments/#{comment.id}/history"
     end
   end
 end

@@ -91,10 +91,13 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
     assert html =~ "Please select at least one board"
   end
 
-  test "renders form with DraftSaveHook and draft indicator", %{conn: conn} do
+  test "renders form with DraftSaveHook and draft indicator", %{conn: conn, user: user} do
     {:ok, _lv, html} = live(conn, "/articles/new")
     assert html =~ ~s(phx-hook="DraftSaveHook")
-    assert html =~ ~s(data-draft-key="draft:article:new")
+    # The key carries the account: localStorage is per origin, not per
+    # session, so an unscoped key restored one member's unsent post into the
+    # next member's composer on a shared browser.
+    assert html =~ "data-draft-key=\"draft:u#{user.id}:article:new\""
     assert html =~ ~s(data-draft-fields="article[title],article[body]")
     assert html =~ "draft-indicator-new"
   end

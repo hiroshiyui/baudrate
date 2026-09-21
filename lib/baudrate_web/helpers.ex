@@ -187,6 +187,39 @@ defmodule BaudrateWeb.Helpers do
   def article_datetime(%{inserted_at: inserted_at}), do: inserted_at
 
   @doc """
+  The accessible name for a gallery image's link.
+
+  Gallery images are always rendered inside an `<a>` that opens the full-size
+  file, so **the link carries the description and the `<img>` is `alt=""`**.
+  Putting text in both announced the same image twice — "Image 2 (opens in new
+  tab)", then "Image 2" — which is what every gallery did before descriptions
+  existed.
+
+  The description is the uploader's own when they wrote one
+  (`Baudrate.Content.ImageAlt`), and falls back to the image's position in the
+  gallery when they did not. A position is a poor description, but it is an
+  honest one: it says which of the four images this is and claims nothing
+  about what is in it.
+  """
+  @spec image_link_label(map(), list()) :: String.t()
+  def image_link_label(image, images) do
+    case Baudrate.Content.ImageAlt.describe(image) do
+      nil ->
+        gettext("Image %{number} (opens in new tab)", number: image_position(image, images))
+
+      description ->
+        gettext("%{description} (opens in new tab)", description: description)
+    end
+  end
+
+  defp image_position(image, images) do
+    case Enum.find_index(images, &(&1.id == image.id)) do
+      nil -> 1
+      index -> index + 1
+    end
+  end
+
+  @doc """
   Returns a human-friendly display name for a user or remote actor.
 
   Falls back to `username` when `display_name` is nil or empty.

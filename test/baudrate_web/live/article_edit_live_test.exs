@@ -101,10 +101,14 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
     assert html =~ "t be blank" or html =~ "required"
   end
 
-  test "renders form with DraftSaveHook and slug-based draft key", %{conn: conn, article: article} do
+  test "renders form with DraftSaveHook and a per-account, slug-based draft key", %{
+    conn: conn,
+    article: article,
+    user: user
+  } do
     {:ok, _lv, html} = live(conn, "/articles/#{article.slug}/edit")
     assert html =~ ~s(phx-hook="DraftSaveHook")
-    assert html =~ "data-draft-key=\"draft:article:edit:#{article.slug}\""
+    assert html =~ "data-draft-key=\"draft:u#{user.id}:article:edit:#{article.slug}\""
     assert html =~ ~s(data-draft-fields="article[title],article[body]")
     assert html =~ "draft-indicator-edit"
   end
@@ -119,6 +123,45 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
     {:ok, _lv, html} = live(conn, "/articles/#{article.slug}/edit")
     assert html =~ "Edit Article"
     assert html =~ "My Article"
+  end
+
+  describe "image descriptions" do
+    test "the uploader gets a description field", %{conn: conn, user: user, article: article} do
+      {:ok, _image} =
+        Baudrate.Content.create_article_image(%{
+          filename: "own.webp",
+          storage_path: "/tmp/own.webp",
+          width: 10,
+          height: 10,
+          user_id: user.id,
+          article_id: article.id
+        })
+
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}/edit")
+      assert html =~ "image-alt-input"
+    end
+
+    test "an admin editing somebody else's article does not", %{user: user, article: article} do
+      {:ok, _image} =
+        Baudrate.Content.create_article_image(%{
+          filename: "theirs.webp",
+          storage_path: "/tmp/theirs.webp",
+          width: 10,
+          height: 10,
+          user_id: user.id,
+          article_id: article.id
+        })
+
+      admin = setup_user("admin")
+      conn = log_in_user(Phoenix.ConnTest.build_conn(), admin)
+
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}/edit")
+
+      # Only the uploader may write the description, so nobody else is shown a
+      # field that would silently refuse.
+      assert html =~ "Edit Article"
+      refute html =~ "image-alt-input"
+    end
   end
 
   test "remove_image rejects image belonging to another article", %{

@@ -484,6 +484,7 @@ defmodule BaudrateWeb.Router do
       live "/boards/:slug", BoardLive
       live "/articles/:slug", ArticleLive
       live "/articles/:slug/history", ArticleHistoryLive
+      live "/comments/:id/history", CommentHistoryLive
       live "/tags/:tag", TagLive
     end
   end

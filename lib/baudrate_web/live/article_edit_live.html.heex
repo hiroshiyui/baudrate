@@ -23,7 +23,7 @@
     phx-submit="submit"
     id="article-edit-form"
     phx-hook="DraftSaveHook"
-    data-draft-key={"draft:article:edit:#{@article.slug}"}
+    data-draft-key={"draft:u#{@current_user.id}:article:edit:#{@article.slug}"}
     data-draft-fields="article[title],article[body]"
     data-draft-indicator="#draft-indicator-edit"
     data-draft-saved-text={gettext("Draft saved")}
@@ -62,23 +62,33 @@
         <div
           :for={img <- @article_images}
           id={"article-edit-image-#{img.id}"}
-          class="article-edit-image relative group aspect-square"
+          class="article-edit-image"
         >
-          <img
-            src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
-            class="w-full h-full object-cover rounded-lg border border-base-300"
-            loading="lazy"
-            alt={gettext("Uploaded image")}
-          />
-          <button
-            type="button"
-            phx-click="remove_image"
-            phx-value-id={img.id}
-            class="article-edit-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
-            aria-label={gettext("Remove image")}
-          >
-            <.icon name="hero-x-mark" class="size-4" />
-          </button>
+          <div class="relative group aspect-square">
+            <img
+              src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+              class="w-full h-full object-cover rounded-lg border border-base-300"
+              loading="lazy"
+              alt={img.alt || gettext("Uploaded image")}
+            />
+            <button
+              type="button"
+              phx-click="remove_image"
+              phx-value-id={img.id}
+              class="article-edit-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
+              aria-label={gettext("Remove image")}
+            >
+              <.icon name="hero-x-mark" class="size-4" />
+            </button>
+          </div>
+          <%!--
+            Only the uploader may describe an image, so only the uploader is
+            shown the field. An admin editing somebody else's article can
+            change the text but not re-caption their pictures, and a field
+            that looked editable and silently refused would be worse than no
+            field. A remote article's images have no local uploader at all.
+          --%>
+          <.image_alt_input :if={img.user_id == @current_user.id} image={img} />
         </div>
       </div>
 

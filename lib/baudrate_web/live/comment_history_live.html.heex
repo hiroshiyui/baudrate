@@ -1,0 +1,186 @@
+<div id="comment-history-page" class="comment-history-page mx-auto max-w-2xl">
+  <nav
+    id="comment-history-breadcrumb"
+    class="comment-history-breadcrumb mb-4"
+    aria-label={gettext("Breadcrumb")}
+  >
+    <.link
+      id="comment-history-back-link"
+      navigate={~p"/articles/#{@article.slug}" <> "#comment-#{@comment.id}"}
+      class="comment-history-back-link text-sm text-base-content/70 hover:text-base-content"
+    >
+      &larr; {gettext("Back to the comment")}
+    </.link>
+  </nav>
+
+  <h1 id="comment-history-heading" class="comment-history-heading text-2xl font-bold mb-1">
+    {gettext("Edit History")}
+  </h1>
+  <p
+    id="comment-history-context"
+    class="comment-history-context text-sm text-base-content/70 mb-6 break-words"
+  >
+    {gettext("A comment on “%{title}”", title: @article.title)}
+  </p>
+
+  <div
+    :if={length(@versions) == 1}
+    id="comment-history-empty"
+    class="comment-history-empty text-base-content/70 text-center py-8"
+  >
+    {gettext("This comment has not been edited.")}
+  </div>
+
+  <div
+    :if={length(@versions) > 1}
+    id="comment-versions"
+    class="comment-history-versions space-y-6"
+    data-focus-target
+  >
+    <div class="overflow-x-auto">
+      <table
+        id="comment-history-table"
+        class="comment-history-table table table-sm"
+        aria-label={gettext("Revision list")}
+      >
+        <thead>
+          <tr>
+            <th scope="col">{gettext("Version")}</th>
+            <th scope="col">{gettext("Editor")}</th>
+            <th scope="col">{gettext("Date")}</th>
+            <th scope="col">
+              <span class="comment-history-actions-label sr-only">{gettext("Actions")}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <%= for {version, index} <- Enum.with_index(@versions) do %>
+            <tr
+              id={"comment-history-version-#{version.id}"}
+              class={["comment-history-version-row", @selected_index == index && "bg-base-200"]}
+              aria-current={@selected_index == index && "true"}
+            >
+              <td>
+                <span :if={current?(version)} class="comment-history-current badge badge-sm">
+                  {gettext("Current")}
+                </span>
+                <span :if={!current?(version)}>{"##{length(@versions) - index}"}</span>
+              </td>
+              <td>
+                <span :if={version.editor}>
+                  <.link
+                    navigate={~p"/users/#{version.editor.username}"}
+                    class="comment-history-editor-link link link-hover"
+                  >
+                    {display_name(version.editor)}
+                  </.link>
+                </span>
+                <span :if={!version.editor} class="text-base-content/70">
+                  {gettext("Unknown")}
+                </span>
+              </td>
+              <td>
+                <time datetime={datetime_attr(version.inserted_at)}>
+                  {format_datetime(version.inserted_at)}
+                </time>
+              </td>
+              <td>
+                <button
+                  id={"comment-history-select-#{version.id}"}
+                  phx-click="select_version"
+                  phx-value-index={index}
+                  aria-label={
+                    if current?(version),
+                      do: gettext("View the current version"),
+                      else: gettext("View version #%{number}", number: length(@versions) - index)
+                  }
+                  class={[
+                    "comment-history-select btn btn-xs",
+                    if(@selected_index == index, do: "btn-primary", else: "btn-ghost")
+                  ]}
+                >
+                  {gettext("View")}
+                </button>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      :if={@selected_index != nil}
+      id="comment-version-diff"
+      class="comment-history-diff space-y-4"
+    >
+      <% selected = Enum.at(@versions, @selected_index) %>
+      <% previous = previous_version(@versions, @selected_index) %>
+
+      <h2
+        id="comment-history-diff-heading"
+        class="comment-history-diff-heading text-lg font-semibold"
+      >
+        <%= if current?(selected) do %>
+          {gettext("Current version")}
+        <% else %>
+          {gettext("Version #%{number}", number: length(@versions) - @selected_index)}
+        <% end %>
+        <span :if={selected.editor} class="font-normal text-sm text-base-content/70">
+          {gettext("by %{editor}", editor: display_name(selected.editor))}
+        </span>
+      </h2>
+
+      <%!--
+        The content warning is part of the record: removing one re-exposes
+        what it hid, which is the edit most worth being able to see.
+      --%>
+      <div
+        :if={previous && (previous.summary || selected.summary)}
+        id="comment-history-warning-diff"
+        class="comment-history-warning-diff"
+      >
+        <h3 class="text-sm font-semibold mb-1">{gettext("Content warning")}</h3>
+        <div class="bg-base-200 rounded-lg p-3 font-mono text-sm overflow-x-auto break-words">
+          <%= for {tag, text} <- compute_diff(previous.summary, selected.summary) do %>
+            <span :if={tag == :eq}>{text}</span>
+            <ins
+              :if={tag == :ins}
+              class="comment-history-diff-ins bg-success/30 text-success-content"
+            ><span class="comment-history-diff-ins-label sr-only">{gettext("Added:")} </span>{text}</ins>
+            <del
+              :if={tag == :del}
+              class="comment-history-diff-del bg-error/30 text-error-content"
+            ><span class="comment-history-diff-del-label sr-only">{gettext("Removed:")} </span>{text}</del>
+          <% end %>
+          <span
+            :if={is_nil(selected.summary) && previous.summary}
+            class="comment-history-warning-removed text-base-content/70"
+          >
+            {gettext("(the warning was removed)")}
+          </span>
+        </div>
+      </div>
+
+      <div id="comment-history-body-diff" class="comment-history-body-diff">
+        <h3 class="text-sm font-semibold mb-1">{gettext("Body")}</h3>
+        <div class="bg-base-200 rounded-lg p-3 font-mono text-sm overflow-x-auto whitespace-pre-wrap break-words max-h-96 overflow-y-auto">
+          <%= if previous do %>
+            <%= for {tag, text} <- compute_diff(previous.body, selected.body) do %>
+              <span :if={tag == :eq}>{text}</span>
+              <ins
+                :if={tag == :ins}
+                class="comment-history-diff-ins bg-success/30 text-success-content"
+              ><span class="comment-history-diff-ins-label sr-only">{gettext("Added:")} </span>{text}</ins>
+              <del
+                :if={tag == :del}
+                class="comment-history-diff-del bg-error/30 text-error-content"
+              ><span class="comment-history-diff-del-label sr-only">{gettext("Removed:")} </span>{text}</del>
+            <% end %>
+          <% else %>
+            {selected.body}
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

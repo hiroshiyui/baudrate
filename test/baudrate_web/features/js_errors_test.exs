@@ -143,8 +143,13 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
     article = create_article(user, board, %{body: "Body with #tag"})
     _other_article = create_article(other, board, %{})
 
-    {:ok, _} =
+    {:ok, comment} =
       Content.create_comment(%{body: "A comment", article_id: article.id, user_id: other.id})
+
+    # Edited once, so its history page has a revision to render and a
+    # `select_version` control to click (ADR 0060). An unedited comment's
+    # history is an empty state with no interactive element at all.
+    {:ok, _} = Content.update_comment(comment, %{"body" => "A comment, corrected"}, other)
 
     {:ok, conversation} = Messaging.find_or_create_conversation(user, other)
     {:ok, _} = Messaging.create_message(conversation, other, %{"body" => "Hello there"})
@@ -202,6 +207,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
         "/articles/#{article.slug}",
         "/articles/#{article.slug}/edit",
         "/articles/#{article.slug}/history",
+        "/comments/#{comment.id}/history",
         "/tags/tag",
         # /profile gained a recovery-contact form in Phase 4D, with a textarea
         # for an armored key — exactly the shape this crawl catches being

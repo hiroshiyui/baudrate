@@ -15,6 +15,7 @@ defmodule BaudrateWeb.ArticleLive do
   alias Baudrate.Content
   alias Baudrate.Content.ArticleImageStorage
   alias Baudrate.Content.Board
+  alias Baudrate.Content.Comment
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Federation
   alias Baudrate.Moderation
@@ -77,6 +78,9 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:can_comment, can_comment)
         |> assign(:comment_form, to_form(comment_changeset, as: :comment))
         |> assign(:replying_to, nil)
+        |> assign(:editing, nil)
+        |> assign(:comment_edit_form, nil)
+        |> assign(:revision_counts, %{})
         |> assign(:comments_live_status, "")
         |> assign(:article_images, article_images)
         |> assign(:revision_count, revision_count)
@@ -420,11 +424,71 @@ defmodule BaudrateWeb.ArticleLive do
   end
 
   @impl true
+  def handle_event("edit_comment", %{"id" => comment_id}, socket) do
+    with {:ok, id} <- parse_id(comment_id),
+         %Comment{} = comment <- find_loaded_comment(socket, id),
+         true <- Content.can_edit_comment?(socket.assigns.current_user, comment) do
+      form =
+        comment
+        |> Content.change_comment(%{})
+        |> to_form(as: :comment_edit)
+
+      {:noreply,
+       socket
+       # Opening an edit closes any open reply: both reuse the page's one
+       # composer slot, and two open forms is two places to type the same
+       # thought.
+       |> assign(:replying_to, nil)
+       |> assign(:editing, id)
+       |> assign(:comment_edit_form, form)}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_comment_edit", _params, socket) do
+    {:noreply, socket |> assign(:editing, nil) |> assign(:comment_edit_form, nil)}
+  end
+
+  @impl true
+  def handle_event("validate_comment_edit", %{"comment_edit" => params}, socket) do
+    # The params are assigned straight back, so what was typed survives the
+    # re-render this event triggers.
+    {:noreply, assign(socket, :comment_edit_form, to_form(params, as: :comment_edit))}
+  end
+
+  @impl true
+  def handle_event("save_comment_edit", _params, %{assigns: %{current_user: nil}} = socket),
+    do: {:noreply, socket}
+
+  def handle_event("save_comment_edit", %{"comment_edit" => params} = all, socket) do
+    user = socket.assigns.current_user
+
+    with {:ok, id} <- editing_comment_id(all, socket),
+         %Comment{} = comment <- find_loaded_comment(socket, id),
+         :ok <- edit_rate_limit(user) do
+      save_comment_edit(socket, comment, params, user)
+    else
+      {:error, :rate_limited} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You are editing too frequently. Please try again later.")
+         )}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
+    end
+  end
+
+  @impl true
   def handle_event("reply_to", %{"id" => comment_id}, socket) do
     case parse_id(comment_id) do
       {:ok, id} ->
         socket = clear_uploaded_comment_images(socket)
-        {:noreply, assign(socket, :replying_to, id)}
+        {:noreply, socket |> assign(:editing, nil) |> assign(:replying_to, id)}
 
       :error ->
         {:noreply, socket}
@@ -435,6 +499,23 @@ defmodule BaudrateWeb.ArticleLive do
   def handle_event("cancel_reply", _params, socket) do
     socket = clear_uploaded_comment_images(socket)
     {:noreply, assign(socket, :replying_to, nil)}
+  end
+
+  @impl true
+  # This page is `:optional_auth`, so every client-driven handler here has to
+  # survive a guest sending the event by hand.
+  def handle_event("save_image_alt", _params, %{assigns: %{current_user: nil}} = socket),
+    do: {:noreply, socket}
+
+  def handle_event("save_image_alt", %{"id" => image_id} = params, socket) do
+    case Content.update_comment_image_alt(
+           image_id,
+           socket.assigns.current_user.id,
+           params["value"]
+         ) do
+      {:ok, image} -> {:noreply, replace_image(socket, :uploaded_comment_images, image)}
+      {:error, _} -> {:noreply, socket}
+    end
   end
 
   @impl true
@@ -1045,6 +1126,59 @@ defmodule BaudrateWeb.ArticleLive do
 
   defp comment_author_name(_), do: nil
 
+  # The form's own hidden field, falling back to the open editor. `parse_id/1`
+  # takes only a binary, so the fallback has to be read as the integer it is
+  # rather than passed through it.
+  defp editing_comment_id(%{"comment_id" => id}, _socket) when is_binary(id), do: parse_id(id)
+
+  defp editing_comment_id(_params, socket) do
+    case socket.assigns[:editing] do
+      id when is_integer(id) and id > 0 -> {:ok, id}
+      _ -> :error
+    end
+  end
+
+  defp edit_rate_limit(%{role: %{name: "admin"}}), do: :ok
+  defp edit_rate_limit(user), do: RateLimits.check_update_comment(user.id)
+
+  defp save_comment_edit(socket, comment, params, user) do
+    attrs = Map.take(params, ~w(body summary sensitive))
+
+    case Content.update_comment(comment, attrs, user) do
+      {:ok, _comment} ->
+        {:noreply,
+         socket
+         |> assign(:editing, nil)
+         |> assign(:comment_edit_form, nil)
+         |> load_comments(socket.assigns.comment_page)
+         |> put_flash(:info, gettext("Comment updated."))}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply,
+         socket
+         |> assign(:comment_edit_form, to_form(changeset, as: :comment_edit))
+         |> put_flash(:error, gettext("Failed to update comment."))}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           refusal(socket, reason, gettext("Failed to update comment."))
+         )}
+    end
+  end
+
+  # Only a comment already on this page may be edited: the id comes from the
+  # client, and the tree is the list the viewer was actually served, so this
+  # is both the cross-article guard and the view gate in one step. The context
+  # re-checks authorship regardless.
+  defp find_loaded_comment(socket, id) do
+    (socket.assigns[:comment_roots] || [])
+    |> Enum.concat(Map.values(socket.assigns[:children_map] || %{}) |> List.flatten())
+    |> Enum.find(&(&1.id == id))
+  end
+
   defp load_comments(socket, page) do
     article = socket.assigns.article
     current_user = socket.assigns.current_user
@@ -1084,6 +1218,9 @@ defmodule BaudrateWeb.ArticleLive do
     assign(socket,
       comment_roots: roots,
       children_map: children_map,
+      # One query for the page, not one per comment: the marker is rendered
+      # for every node in the tree.
+      revision_counts: Content.count_comment_revisions_for(all_comment_ids),
       comment_page: comment_page,
       comment_total_pages: comment_total_pages,
       comment_liked_ids: comment_liked_ids,
@@ -1110,5 +1247,13 @@ defmodule BaudrateWeb.ArticleLive do
   # and until when; anything else keeps the caller's own message (ADR 0029).
   defp refusal(socket, reason, fallback) do
     BaudrateWeb.Helpers.refusal_message(reason, socket.assigns[:current_user], fallback)
+  end
+
+  # Swap the saved row back into the list the composer renders, so the
+  # thumbnail's own alt text matches what was just typed. The input itself is
+  # `phx-update="ignore"` and is not patched by this.
+  defp replace_image(socket, key, image) do
+    updated = Enum.map(socket.assigns[key], fn i -> if i.id == image.id, do: image, else: i end)
+    assign(socket, key, updated)
   end
 end

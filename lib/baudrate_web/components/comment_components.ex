@@ -27,6 +27,9 @@ defmodule BaudrateWeb.CommentComponents do
   attr :comment_forward_search_query, :string, default: ""
   attr :uploads, :any, default: nil
   attr :uploaded_comment_images, :list, default: []
+  attr :editing, :any, default: nil
+  attr :comment_edit_form, :any, default: nil
+  attr :revision_counts, :map, default: %{}
 
   def comment_node(assigns) do
     %{comment: comment, current_user: current_user} = assigns
@@ -38,6 +41,12 @@ defmodule BaudrateWeb.CommentComponents do
       |> assign(:deleted?, comment.deleted_at != nil)
       # `can_delete` is the moderation right; authors may delete their own.
       |> assign(:can_delete_this, assigns.can_delete or own?)
+      # Editing is the author's alone (ADR 0060) — narrower than deletion on
+      # purpose, and the server re-checks it in `Content.update_comment/3`.
+      |> assign(:can_edit_this, own? and comment.deleted_at == nil)
+      |> assign(:editing_this, assigns.editing == comment.id)
+      |> assign(:revision_count, Map.get(assigns.revision_counts, comment.id, 0))
+      |> assign(:remote_edited?, remote_edited?(comment))
 
     ~H"""
     <div
@@ -96,20 +105,112 @@ defmodule BaudrateWeb.CommentComponents do
             </time>
           </a>
 
+          <%!--
+            An edit rewrites what people have already replied to, so it is
+            never silent. A local comment links to the history; a remote one
+            has no history here, so it says only that the author changed it.
+          --%>
+          <.link
+            :if={@revision_count > 0}
+            id={"comment-edited-#{@comment.id}"}
+            navigate={~p"/comments/#{@comment.id}/history"}
+            class="comment-edited-link link link-hover italic"
+            title={gettext("See what changed")}
+          >
+            {gettext("edited")}
+          </.link>
+          <span
+            :if={@revision_count == 0 and @remote_edited?}
+            id={"comment-edited-#{@comment.id}"}
+            class="comment-edited italic"
+          >
+            {gettext("edited")}
+          </span>
+
+          <button
+            :if={@can_edit_this}
+            phx-click="edit_comment"
+            phx-value-id={@comment.id}
+            class="comment-edit-button btn btn-sm btn-ghost ml-auto"
+            aria-label={gettext("Edit comment")}
+          >
+            <.icon name="hero-pencil-square" class="size-3" />
+          </button>
           <button
             :if={@can_delete_this}
             phx-click="delete_comment"
             phx-value-id={@comment.id}
             data-confirm={gettext("Are you sure you want to delete this comment?")}
-            class="comment-delete-button btn btn-sm btn-ghost text-error ml-auto"
+            class={[
+              "comment-delete-button btn btn-sm btn-ghost text-error",
+              !@can_edit_this && "ml-auto"
+            ]}
             aria-label={gettext("Delete comment")}
           >
             <.icon name="hero-trash" class="size-3" />
           </button>
         </div>
 
+        <%!--
+          Inline edit form. It replaces the body rather than sitting under it,
+          so there is one copy of the text on the page and no question about
+          which one is live.
+
+          Every input renders `value={...}` from the form the change handler
+          assigns back: a `phx-change` re-render patches inputs to what the
+          server last rendered, and an input that does not render its own value
+          is wiped as soon as the member types in a sibling.
+        --%>
+        <div :if={@editing_this} class="comment-edit-form-wrap">
+          <.form
+            for={@comment_edit_form}
+            phx-change="validate_comment_edit"
+            phx-submit="save_comment_edit"
+            id={"comment-edit-form-#{@comment.id}"}
+            class="comment-edit-form space-y-2"
+          >
+            <input type="hidden" name="comment_id" value={@comment.id} />
+            <.input
+              field={@comment_edit_form[:body]}
+              value={@comment_edit_form[:body].value}
+              type="textarea"
+              label={gettext("Edit your comment")}
+              label_class="sr-only"
+              toolbar
+              rows="6"
+            />
+            <.input
+              field={@comment_edit_form[:summary]}
+              value={@comment_edit_form[:summary].value}
+              type="text"
+              label={gettext("Content warning (optional)")}
+              maxlength="512"
+              class="comment-edit-warning input input-sm"
+            />
+            <div class="comment-edit-form-controls flex flex-wrap items-center gap-2">
+              <button
+                type="submit"
+                class="comment-edit-save-button btn btn-sm btn-primary"
+                phx-disable-with={gettext("Saving...")}
+              >
+                {gettext("Save changes")}
+              </button>
+              <button
+                type="button"
+                phx-click="cancel_comment_edit"
+                class="comment-edit-cancel-button btn btn-sm btn-ghost"
+              >
+                {gettext("Cancel")}
+              </button>
+              <p class="comment-edit-notice text-xs text-base-content/70">
+                {gettext("Edits are kept in a history anyone reading this thread can see.")}
+              </p>
+            </div>
+          </.form>
+        </div>
+
         <.content_warning
-          :if={Baudrate.Content.ContentWarning.warned?(@comment)}
+          :if={!@editing_this and Baudrate.Content.ContentWarning.warned?(@comment)}
           id={"comment-#{@comment.id}-content-warning"}
           summary={@comment.summary}
         >
@@ -118,7 +219,7 @@ defmodule BaudrateWeb.CommentComponents do
           </div>
         </.content_warning>
         <div
-          :if={!Baudrate.Content.ContentWarning.warned?(@comment)}
+          :if={!@editing_this and !Baudrate.Content.ContentWarning.warned?(@comment)}
           class="comment-body prose prose-sm max-w-none"
         >
           {comment_body(@comment)}
@@ -145,23 +246,16 @@ defmodule BaudrateWeb.CommentComponents do
             target="_blank"
             rel="noopener"
             class="comment-image-link block overflow-hidden rounded-lg"
-            aria-label={
-              gettext("Image %{number} (opens in new tab)",
-                number: Enum.find_index(@comment.images, &(&1.id == img.id)) + 1
-              )
-            }
+            aria-label={image_link_label(img, @comment.images)}
           >
+            <%!-- alt="" — the link carries the description (see `image_link_label/2`). --%>
             <img
               src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
               width={img.width}
               height={img.height}
               loading="lazy"
               class="w-full h-auto object-cover rounded-lg border border-base-300 hover:scale-[1.02] transition-transform duration-200"
-              alt={
-                gettext("Image %{number}",
-                  number: Enum.find_index(@comment.images, &(&1.id == img.id)) + 1
-                )
-              }
+              alt=""
             />
           </a>
         </div>
@@ -350,7 +444,7 @@ defmodule BaudrateWeb.CommentComponents do
             phx-submit="submit_comment"
             id={"reply-form-#{@comment.id}"}
             phx-hook="DraftSaveHook"
-            data-draft-key={"draft:comment:#{@comment.article_id}:reply:#{@comment.id}"}
+            data-draft-key={"draft:u#{@current_user.id}:comment:#{@comment.article_id}:reply:#{@comment.id}"}
             data-draft-fields="comment[body]"
             class="comment-reply-form space-y-2"
           >
@@ -438,12 +532,31 @@ defmodule BaudrateWeb.CommentComponents do
             comment_forward_search_query={@comment_forward_search_query}
             uploads={@uploads}
             uploaded_comment_images={@uploaded_comment_images}
+            editing={@editing}
+            comment_edit_form={@comment_edit_form}
+            revision_counts={@revision_counts}
           />
         <% end %>
       </div>
     </div>
     """
   end
+
+  # A remote comment carries no revisions here — its history lives on the
+  # instance that minted it — so the only signal is that `updated_at` moved
+  # after an inbound `Update(Note)` rewrote it. Five seconds of slack for the
+  # post-insert `ap_id` stamping, the same threshold `ObjectBuilder` uses when
+  # deciding whether to publish `"updated"` outbound.
+  #
+  # The peer's own `object["updated"]` is deliberately not read: it is a
+  # remote-controlled timestamp, and this only has to say *whether* an edit
+  # happened, which our own column already knows.
+  defp remote_edited?(%{remote_actor_id: id, inserted_at: inserted, updated_at: updated})
+       when not is_nil(id) do
+    DateTime.diff(updated, inserted) > 5
+  end
+
+  defp remote_edited?(_), do: false
 
   @doc """
   Renders the image upload area for a comment or reply form.
@@ -479,23 +592,27 @@ defmodule BaudrateWeb.CommentComponents do
       >
         <div
           :for={img <- @uploaded_images}
-          class="comment-image-thumbnail relative group aspect-square"
+          id={"comment-image-thumbnail-#{img.id}"}
+          class="comment-image-thumbnail"
         >
-          <img
-            src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
-            class="w-full h-full object-cover rounded-lg border border-base-300"
-            loading="lazy"
-            alt={gettext("Uploaded image")}
-          />
-          <button
-            type="button"
-            phx-click="remove_comment_image"
-            phx-value-id={img.id}
-            class="comment-image-remove-button absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
-            aria-label={gettext("Remove image")}
-          >
-            <.icon name="hero-x-mark" class="size-4" />
-          </button>
+          <div class="relative group aspect-square">
+            <img
+              src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+              class="w-full h-full object-cover rounded-lg border border-base-300"
+              loading="lazy"
+              alt={img.alt || gettext("Uploaded image")}
+            />
+            <button
+              type="button"
+              phx-click="remove_comment_image"
+              phx-value-id={img.id}
+              class="comment-image-remove-button absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
+              aria-label={gettext("Remove image")}
+            >
+              <.icon name="hero-x-mark" class="size-4" />
+            </button>
+          </div>
+          <.image_alt_input image={img} />
         </div>
       </div>
 
@@ -571,22 +688,29 @@ defmodule BaudrateWeb.CommentComponents do
         :if={@uploaded_images != []}
         class="reply-image-thumbnails grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2"
       >
-        <div :for={img <- @uploaded_images} class="reply-image-thumbnail relative group aspect-square">
-          <img
-            src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
-            class="w-full h-full object-cover rounded-lg border border-base-300"
-            loading="lazy"
-            alt={gettext("Uploaded image")}
-          />
-          <button
-            type="button"
-            phx-click="remove_reply_image"
-            phx-value-id={img.id}
-            class="reply-image-remove-button absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
-            aria-label={gettext("Remove image")}
-          >
-            <.icon name="hero-x-mark" class="size-4" />
-          </button>
+        <div
+          :for={img <- @uploaded_images}
+          id={"reply-image-thumbnail-#{img.id}"}
+          class="reply-image-thumbnail"
+        >
+          <div class="relative group aspect-square">
+            <img
+              src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+              class="w-full h-full object-cover rounded-lg border border-base-300"
+              loading="lazy"
+              alt={img.alt || gettext("Uploaded image")}
+            />
+            <button
+              type="button"
+              phx-click="remove_reply_image"
+              phx-value-id={img.id}
+              class="reply-image-remove-button absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
+              aria-label={gettext("Remove image")}
+            >
+              <.icon name="hero-x-mark" class="size-4" />
+            </button>
+          </div>
+          <.image_alt_input image={img} event="save_reply_image_alt" />
         </div>
       </div>
 

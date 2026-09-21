@@ -42,7 +42,15 @@ defmodule BaudrateWeb.Crawlers do
   # (ADR 0058). A search engine that indexed one would publish it, and a
   # referrer header would leak it — so the page refuses indexing and, because
   # `noindex_path?/1` also drives `canonical_url/2`, never names itself either.
-  @noindex_prefixes ~w(/totp/ /account-reset/)
+  # `/comments/:id/history` (ADR 0060). A prefix rather than an `assign`,
+  # because `noindex_path?/1` is also what suppresses the canonical, and a page
+  # that says "do not index me" while naming a canonical URL contradicts
+  # itself. The article's own history page is deliberately **not** here: it is
+  # one page per article and has been indexable since it was written, so
+  # withdrawing it is a change to existing public behaviour rather than a
+  # decision about a new surface. A comment history is one page per *comment* —
+  # thin, numerous, and reachable from the comment it belongs to.
+  @noindex_prefixes ~w(/totp/ /account-reset/ /comments/)
 
   @doc """
   Returns true when this page must not be indexed.

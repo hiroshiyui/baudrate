@@ -183,6 +183,85 @@ defmodule Baudrate.Federation.PublisherTest do
       assert "#{actor_uri}/followers" in note["cc"]
     end
 
+    test "an Update names the comment's current id and carries \"updated\"" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "first go",
+          body_html: "<p>first go</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      {:ok, comment} =
+        comment
+        |> Ecto.Changeset.change(
+          ap_id: Baudrate.Federation.actor_uri(:comment, comment.id),
+          body: "second go",
+          body_html: "<p>second go</p>",
+          updated_at: DateTime.add(comment.inserted_at, 60, :second)
+        )
+        |> Repo.update()
+
+      {activity, actor_uri} = Publisher.build_update_comment(comment, article)
+
+      assert activity["type"] == "Update"
+      assert activity["object"]["type"] == "Note"
+      assert activity["object"]["id"] == comment.ap_id
+      assert activity["object"]["updated"]
+      assert activity["id"] =~ "#update-"
+      assert "#{actor_uri}/followers" in activity["cc"]
+    end
+
+    test "an Update is never re-sent under a legacy_ap_id (ADR 0060)" do
+      # `publish_comment_deleted/2` double-sends for a pre-ADR-0050 comment,
+      # because a Delete of an unknown object is a no-op. An Update is not: it
+      # invites the receiver to dereference the id, and a `#note-N` fragment
+      # resolves to the Person document — the failure 0050 exists to end.
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+      remote = create_remote_actor()
+      create_follower(Baudrate.Federation.actor_uri(:user, user.username), remote)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "old comment",
+          body_html: "<p>old comment</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      actor_uri = Baudrate.Federation.actor_uri(:user, user.username)
+
+      {:ok, comment} =
+        comment
+        |> Ecto.Changeset.change(
+          ap_id: Baudrate.Federation.actor_uri(:comment, comment.id),
+          legacy_ap_id: "#{actor_uri}#note-#{comment.id}"
+        )
+        |> Repo.update()
+
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+      Publisher.publish_comment_updated(comment, article)
+
+      ids =
+        Baudrate.Federation.DeliveryJob
+        |> Repo.all()
+        |> Enum.map(&(&1.activity_json |> Jason.decode!() |> get_in(["object", "id"])))
+        |> Enum.uniq()
+
+      assert ids == [comment.ap_id]
+      refute Enum.any?(ids, &String.contains?(&1, "#note-"))
+    end
+
     test "Note object includes url pointing to browsable comment" do
       user = create_user()
       board = create_board()
@@ -1415,6 +1494,24 @@ defmodule Baudrate.Federation.PublisherTest do
 
     test "the gate itself is real: an Update does not go out", %{article: article} do
       assert {:ok, 0} = Publisher.publish_article_updated(article)
+      assert inbox_urls() == []
+    end
+
+    # An edit is a publication, not a withdrawal: it carries the whole body,
+    # so a comment in a board that does not federate must not start
+    # federating because its author fixed a typo (ADR 0043, ADR 0060).
+    test "a comment Update is gated the same way", %{article: article, user: user} do
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "in a private board",
+          body_html: "<p>in a private board</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      assert {:ok, 0} = Publisher.publish_comment_updated(comment, article)
       assert inbox_urls() == []
     end
 

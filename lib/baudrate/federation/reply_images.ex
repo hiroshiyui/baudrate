@@ -67,6 +67,31 @@ defmodule Baudrate.Federation.ReplyImages do
   end
 
   @doc """
+  Sets a reply image's description (see `Baudrate.Content.ImageAlt`).
+
+  The reply-side twin of `Baudrate.Content.Images.update_article_image_alt/3`,
+  and scoped the same way: the id comes from the client, so it is parsed and
+  matched against the uploader.
+  """
+  @spec update_reply_image_alt(term(), integer(), String.t() | nil) ::
+          {:ok, %TimelineItemReplyImage{}} | {:error, Ecto.Changeset.t() | :not_found}
+  def update_reply_image_alt(image_id, user_id, alt) do
+    with {:ok, id} <- image_id(image_id),
+         %{} = image <- Repo.get_by(TimelineItemReplyImage, id: id, user_id: user_id) do
+      image |> TimelineItemReplyImage.changeset(%{alt: alt}) |> Repo.update()
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  # `phx-value-id` always arrives as a string, but this is a context function
+  # and an integer is the natural thing for any other caller to pass. Both are
+  # accepted; anything else is refused rather than raising.
+  defp image_id(id) when is_integer(id) and id > 0, do: {:ok, id}
+  defp image_id(id) when is_binary(id), do: BaudrateWeb.Helpers.parse_id(id)
+  defp image_id(_), do: :error
+
+  @doc """
   Fetches a reply image by ID.
   """
   def get_reply_image!(id), do: Repo.get!(TimelineItemReplyImage, id)

@@ -206,6 +206,46 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
+  Builds an `Update(Note)` activity for an edited comment.
+
+  Returns `{activity_map, actor_uri}`.
+
+  The same shape as `build_update_article/1`, and the same object as
+  `build_create_comment/2` — `ObjectBuilder.comment_object/1` is the one
+  definition, and it now carries `"updated"`, which is what tells a receiver
+  this is an edit rather than a repeat.
+
+  **The activity names the comment's current `ap_id` and nothing else.**
+  `build_delete_comment/2`'s sibling publisher sends a second copy under
+  `legacy_ap_id` for comments minted before ADR 0050, and an `Update` must not
+  do the same: a `Delete` of an object the receiver has never seen is a no-op,
+  where an `Update` invites it to dereference the id — and a `#note-N`
+  fragment resolves to the Person document, which is the precise failure 0050
+  exists to end. The cost is accepted and recorded in ADR 0060: an edit to a
+  pre-rewrite comment never reaches a peer that knows only the old URI.
+  """
+  def build_update_comment(comment, _article) do
+    comment = Repo.preload(comment, :user)
+    actor_uri = Federation.actor_uri(:user, comment.user.username)
+
+    object = ObjectBuilder.comment_object(comment)
+    {to, cc} = {object["to"], object["cc"]}
+
+    activity = %{
+      "@context" => Context.activity(),
+      "id" => "#{actor_uri}#update-#{Ecto.UUID.generate()}",
+      "type" => "Update",
+      "actor" => actor_uri,
+      "published" => DateTime.to_iso8601(comment.updated_at),
+      "to" => to,
+      "cc" => cc,
+      "object" => object
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
   Builds a `Delete(Note)` activity for a soft-deleted comment.
 
   Returns `{activity_map, actor_uri}`.
@@ -511,6 +551,29 @@ defmodule Baudrate.Federation.Publisher do
   def publish_comment_created(comment, article) do
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_create_comment(comment, article)
+
+    Delivery.enqueue_for_article(activity, actor_uri, article,
+      remote_authors: reply_authors(comment, article),
+      mentioned: mentioned_in_comment(comment, article)
+    )
+  end
+
+  @doc """
+  Publishes an `Update(Note)` activity for an edited comment (ADR 0060).
+
+  Gated like the `Create` it corrects: no `intent:` is passed, so it defaults
+  to `:publish` and the board federation gate applies (ADR 0043). An edit is a
+  publication, not a withdrawal — a comment in a board that does not federate
+  must not start federating because its author fixed a typo.
+
+  Addressed like the `Create` too, through `reply_authors/2` and
+  `mentioned_in_comment/2`: an edit can add a mention, and that actor has not
+  seen the comment at all, which is the same reason `publish_article_updated/1`
+  carries `mentioned:`.
+  """
+  def publish_comment_updated(comment, article) do
+    article = Repo.preload(article, [:boards, :user])
+    {activity, actor_uri} = build_update_comment(comment, article)
 
     Delivery.enqueue_for_article(activity, actor_uri, article,
       remote_authors: reply_authors(comment, article),
@@ -1548,6 +1611,15 @@ defmodule Baudrate.Federation.Publisher do
         "width" => img.width,
         "height" => img.height
       }
+      |> then(fn attachment ->
+        # The uploader's description, as the attachment `name` — the third of
+        # the three builders that emit one, alongside the two in
+        # `ObjectBuilder`. Omitted when there is none.
+        case Baudrate.Content.ImageAlt.describe(img) do
+          nil -> attachment
+          alt -> Map.put(attachment, "name", alt)
+        end
+      end)
     end)
   end
 end

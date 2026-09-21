@@ -17,6 +17,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_create_article/1`| `article_create:`  | 15 min  | 10    |
   | `check_update_article/1`| `article_update:`  | 5 min   | 20    |
   | `check_create_comment/1`| `comment_create:`  | 5 min   | 30    |
+  | `check_update_comment/1`| `comment_update:`  | 5 min   | 20    |
   | `check_delete_content/1`| `delete_content:`  | 5 min   | 20    |
   | `check_moderator_delete/1`| `moderator_delete:` | 5 min | 100   |
   | `check_mute_user/1`     | `mute_user:`       | 5 min   | 10    |
@@ -120,6 +121,19 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_create_comment(integer()) :: :ok | {:error, :rate_limited}
   def check_create_comment(user_id) do
     check("comment_create:#{user_id}", 300_000, 30, :create_comment)
+  end
+
+  @doc """
+  Comment edit: 20 per 5 minutes per user.
+
+  The same allowance as an article edit, and for the same reason: an edit is
+  cheap for the member and not cheap for us — it re-renders markdown through
+  two NIFs and enqueues an `Update` to every follower of the thread — so the
+  bound is on the fan-out, not on how often somebody may change their mind.
+  """
+  @spec check_update_comment(integer()) :: :ok | {:error, :rate_limited}
+  def check_update_comment(user_id) do
+    check("comment_update:#{user_id}", 300_000, 20, :update_comment)
   end
 
   @doc "Content deletion (articles or comments): 20 per 5 minutes per user."

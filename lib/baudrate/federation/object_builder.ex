@@ -137,6 +137,18 @@ defmodule Baudrate.Federation.ObjectBuilder do
 
     map = if mentioned == [], do: map, else: Map.put(map, "tag", Mentions.tags(mentioned))
 
+    # Same rule as `article_object/1`: only a genuine edit sets "updated".
+    # A comment is stamped with its `ap_id` just after insert, which bumps
+    # `updated_at` by a few milliseconds, and Mastodon shows "edited" whenever
+    # `updated` differs from `published` — so every new comment would arrive
+    # already marked as edited.
+    map =
+      if DateTime.diff(comment.updated_at, comment.inserted_at) > 5 do
+        Map.put(map, "updated", DateTime.to_iso8601(comment.updated_at))
+      else
+        map
+      end
+
     map
     |> put_content_warning(comment)
     |> maybe_embed_comment_images(comment.images)
@@ -228,6 +240,14 @@ defmodule Baudrate.Federation.ObjectBuilder do
   defp put_if_present(map, _key, value) when value in [nil, ""], do: map
   defp put_if_present(map, key, value), do: Map.put(map, key, value)
 
+  # An image's description travels as the attachment `name` — what every
+  # fediverse client renders as alt text, and what `AttachmentExtractor` reads
+  # back off an inbound attachment. Absent when nobody wrote one: an empty
+  # `name` would claim the image is decorative, which is a different statement
+  # from "undescribed" and a false one for a photograph somebody posted.
+  defp put_attachment_name(attachment, image),
+    do: put_if_present(attachment, "name", Content.ImageAlt.describe(image))
+
   defp maybe_embed_comment_images(map, images) when is_list(images) and images != [] do
     attachments =
       Enum.map(images, fn img ->
@@ -238,9 +258,13 @@ defmodule Baudrate.Federation.ObjectBuilder do
           "width" => img.width,
           "height" => img.height
         }
+        |> put_attachment_name(img)
       end)
 
-    Map.put(map, "attachment", attachments)
+    # Appended, not assigned: nothing else puts an `attachment` on a comment
+    # today, so `Map.put/3` was harmless — but it was the one builder here
+    # that would silently drop a sibling's work if one ever did.
+    Map.put(map, "attachment", Map.get(map, "attachment", []) ++ attachments)
   end
 
   defp maybe_embed_comment_images(map, _images), do: map
@@ -258,6 +282,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
           "width" => img.width,
           "height" => img.height
         }
+        |> put_attachment_name(img)
       end)
 
     existing = Map.get(map, "attachment", [])

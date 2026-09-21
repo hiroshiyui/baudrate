@@ -253,6 +253,7 @@ defmodule Baudrate.Federation do
   defdelegate create_reply_image(attrs), to: ReplyImages
   defdelegate delete_reply_image(image), to: ReplyImages
   defdelegate get_reply_image!(id), to: ReplyImages
+  defdelegate update_reply_image_alt(image_id, user_id, alt), to: ReplyImages
   defdelegate delete_orphan_reply_images(cutoff), to: ReplyImages
   defdelegate toggle_timeline_item_like(user, timeline_item_id), to: Timeline
   defdelegate timeline_item_likes_by_user(user_id, timeline_item_ids), to: Timeline

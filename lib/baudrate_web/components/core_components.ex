@@ -47,6 +47,12 @@ defmodule BaudrateWeb.CoreComponents do
   @doc "Returns the best profile URL for a remote actor. See `BaudrateWeb.Helpers.remote_actor_profile_url/1`."
   defdelegate remote_actor_profile_url(actor), to: BaudrateWeb.Helpers
 
+  @doc """
+  The accessible name for a gallery image's link.
+  See `BaudrateWeb.Helpers.image_link_label/2`.
+  """
+  defdelegate image_link_label(image, images), to: BaudrateWeb.Helpers
+
   @doc "Whether to render a like/boost toggle. See `BaudrateWeb.Helpers.interaction_toggle?/3`."
   defdelegate interaction_toggle?(user, author_id, active), to: BaudrateWeb.Helpers
 
@@ -593,6 +599,63 @@ defmodule BaudrateWeb.CoreComponents do
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
     <span class={[@name, @class]} aria-hidden="true" {@rest} />
+    """
+  end
+
+  @doc """
+  The description field under an uploaded image's thumbnail.
+
+  ## Why it is not a form field
+
+  An uploaded image is a row before the composer is ever submitted —
+  `auto_upload: true` plus a `progress:` callback insert it the moment the
+  upload finishes — so this input has a row to write to already, and it saves
+  itself against that row rather than riding along with the post.
+
+  That is also what keeps it safe. It carries **no `name`**, so it never joins
+  the form's params, and it sits in a `phx-update="ignore"` container, so the
+  `phx-change` re-render that fires on every keystroke in the title or body
+  cannot patch it back to what the server last rendered. An input inside a
+  `phx-change` form that does not render its own value is wiped as soon as the
+  member types in a sibling field, and this one deliberately renders its value
+  once and is then left alone.
+
+  Saved on blur *and* on a debounced keyup: blur alone loses a description
+  typed and then submitted with the keyboard, and keyup alone loses one that
+  was pasted.
+
+  ## Examples
+
+      <.image_alt_input image={img} />
+  """
+  attr :image, :map, required: true
+  attr :class, :string, default: nil
+
+  attr :event, :string,
+    default: "save_image_alt",
+    doc:
+      "the handler to call; the timeline hosts two kinds of upload on one page, " <>
+        "so its reply composer passes a name of its own"
+
+  def image_alt_input(assigns) do
+    ~H"""
+    <div id={"image-alt-wrap-#{@image.id}"} phx-update="ignore" class={["image-alt-wrap", @class]}>
+      <label for={"image-alt-#{@image.id}"} class="image-alt-label sr-only">
+        {gettext("Describe this image for people who cannot see it")}
+      </label>
+      <input
+        type="text"
+        id={"image-alt-#{@image.id}"}
+        class="image-alt-input input input-xs w-full mt-1"
+        placeholder={gettext("Describe this image")}
+        value={@image.alt}
+        maxlength={Baudrate.Content.ImageAlt.max_length()}
+        phx-blur={@event}
+        phx-keyup={@event}
+        phx-debounce="800"
+        phx-value-id={@image.id}
+      />
+    </div>
     """
   end
 

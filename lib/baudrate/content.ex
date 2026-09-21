@@ -93,6 +93,7 @@ defmodule Baudrate.Content do
   defdelegate can_pin_article?(user, article), to: Permissions
   defdelegate can_lock_article?(user, article), to: Permissions
   defdelegate can_delete_comment?(user, comment, article), to: Permissions
+  defdelegate can_edit_comment?(user, comment), to: Permissions
   defdelegate can_forward_article?(user, article), to: Permissions
   defdelegate can_forward_timeline_item?(user, timeline_item), to: Permissions
   defdelegate can_forward_comment?(user, comment), to: Permissions
@@ -148,7 +149,12 @@ defmodule Baudrate.Content do
   defdelegate get_comment(id), to: Comments
   defdelegate get_comment_by_ap_id(ap_id), to: Comments
   defdelegate soft_delete_comment(comment, opts \\ []), to: Comments
+  defdelegate update_comment(comment, attrs, editor), to: Comments
   defdelegate update_remote_comment(comment, attrs), to: Comments
+  defdelegate list_comment_revisions(comment_id), to: Comments
+  defdelegate get_comment_revision!(id), to: Comments
+  defdelegate count_comment_revisions(comment_id), to: Comments
+  defdelegate count_comment_revisions_for(comment_ids), to: Comments
   defdelegate count_comments_for_article(article), to: Comments
   defdelegate search_discussion_remote_actors(article_id, term, opts \\ []), to: Comments
 
@@ -252,6 +258,7 @@ defmodule Baudrate.Content do
   defdelegate associate_article_images(article_id, image_ids, user_id), to: Images
   defdelegate get_article_image!(id), to: Images
   defdelegate get_article_image(id), to: Images
+  defdelegate update_article_image_alt(image_id, user_id, alt), to: Images
   defdelegate count_article_images(article_id), to: Images
   defdelegate delete_orphan_article_images(cutoff), to: Images
 
@@ -262,6 +269,7 @@ defmodule Baudrate.Content do
   defdelegate list_orphan_comment_images(user_id), to: Images
   defdelegate delete_comment_image(image), to: Images
   defdelegate associate_comment_images(comment_id, image_ids, user_id), to: Images
+  defdelegate update_comment_image_alt(image_id, user_id, alt), to: Images
   defdelegate get_comment_image!(id), to: Images
   defdelegate count_comment_images(comment_id), to: Images
   defdelegate delete_orphan_comment_images(cutoff), to: Images

@@ -266,6 +266,25 @@ defmodule Baudrate.Content.Permissions do
   end
 
   @doc """
+  Returns true if the user can edit the comment — **the author, and nobody
+  else** (ADR 0060).
+
+  Deliberately narrower than `can_edit_article?/2`, which admits an admin. An
+  admin editing a comment rewrites attributed speech with nothing on the page
+  to distinguish it from the author's own words, and since the edit history is
+  public it would put words in that author's history too. Moderation's tool
+  for a comment that has to go is deletion, which admins and board moderators
+  already have; there is no version of "fix somebody else's comment" that a
+  reader could tell from impersonation.
+
+  A remote comment is never editable here: it belongs to the instance that
+  minted it, which sends its own `Update(Note)`.
+  """
+  @spec can_edit_comment?(map() | nil, %Comment{}) :: boolean()
+  def can_edit_comment?(%{id: uid}, %Comment{user_id: uid}) when not is_nil(uid), do: true
+  def can_edit_comment?(_, _), do: false
+
+  @doc """
   Returns true if the user can forward an article.
 
   Admins and authors can always forward. For other authenticated users,
@@ -402,6 +421,10 @@ defmodule Baudrate.Content.Permissions do
           :ok | {:error, :unauthorized}
   def authorize_delete_comment(actor, %Comment{} = comment, %Article{} = article),
     do: check(actor, &can_delete_comment?(&1, comment, article))
+
+  @spec authorize_edit_comment(actor(), %Comment{}) :: :ok | {:error, :unauthorized}
+  def authorize_edit_comment(actor, %Comment{} = comment),
+    do: check(actor, &can_edit_comment?(&1, comment))
 
   defp check(actor, predicate) do
     case reload(actor) do

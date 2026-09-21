@@ -14,13 +14,24 @@ defmodule Baudrate.Content.Comment do
   Comments may have up to 4 attached images (see `CommentImage`). Images are
   displayed as a gallery below the comment body and included as `attachment`
   entries in federated `Create(Note)` activities.
+
+  An author may edit their own comment; each edit snapshots the previous state
+  into `CommentRevision` and publishes an `Update(Note)` (ADR 0060). The body
+  is bounded at 64 KB on **both** changesets: inbound is already capped by
+  `Baudrate.Federation.Validator.validate_content_size/1`, but the local
+  composer had no bound at all, so a member could store a body no reader could
+  load and every edit would copy it again into a revision.
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Baudrate.Content.{Article, CommentImage, LinkPreview}
+  alias Baudrate.Content.{Article, CommentImage, CommentRevision, LinkPreview}
   alias Baudrate.Federation.RemoteActor
+
+  # Matches `Article`'s bound and the 64 KB content ceiling inbound federation
+  # is held to.
+  @max_body_length 65_536
 
   schema "comments" do
     field :body, :string
@@ -50,6 +61,7 @@ defmodule Baudrate.Content.Comment do
     has_many :likes, Baudrate.Content.CommentLike
     has_many :boosts, Baudrate.Content.CommentBoost
     has_many :images, CommentImage
+    has_many :revisions, CommentRevision
 
     timestamps(type: :utc_datetime)
   end
@@ -70,6 +82,7 @@ defmodule Baudrate.Content.Comment do
     )
     |> Baudrate.Content.ContentWarning.validate()
     |> validate_required([:body, :article_id, :user_id])
+    |> validate_length(:body, max: @max_body_length)
     # Local comments are public on the article page, so only public/unlisted
     # addressing is offered (D1 in doc/TODOs.md).
     |> validate_inclusion(:visibility, ~w(public unlisted))
@@ -96,6 +109,7 @@ defmodule Baudrate.Content.Comment do
     ])
     |> Baudrate.Content.ContentWarning.validate()
     |> validate_required([:body, :ap_id, :article_id, :remote_actor_id])
+    |> validate_length(:body, max: @max_body_length)
     |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
     # Backstop for the ingest-time scheme check: `url` is rendered as an href.
     |> validate_format(:url, ~r{\Ahttps://}, message: "must be an https URL")

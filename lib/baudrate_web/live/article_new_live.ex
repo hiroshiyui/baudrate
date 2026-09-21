@@ -148,6 +148,20 @@ defmodule BaudrateWeb.ArticleNewLive do
   end
 
   @impl true
+  def handle_event("save_image_alt", %{"id" => image_id} = params, socket) do
+    # The description saves itself against a row that already exists, so it
+    # never rides along with the post and cannot be lost by a failed submit.
+    case Content.update_article_image_alt(
+           image_id,
+           socket.assigns.current_user.id,
+           params["value"]
+         ) do
+      {:ok, image} -> {:noreply, replace_image(socket, :uploaded_images, image)}
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("remove_image", %{"id" => id}, socket) do
     uploaded_ids = Enum.map(socket.assigns.uploaded_images, & &1.id)
 
@@ -447,5 +461,13 @@ defmodule BaudrateWeb.ArticleNewLive do
       {:error, reason} -> interaction_refused_message(reason, user)
       :ok -> gettext("Your account is pending approval.")
     end
+  end
+
+  # Swap the saved row back into the list the composer renders, so the
+  # thumbnail's own alt text matches what was just typed. The input itself is
+  # `phx-update="ignore"` and is not patched by this.
+  defp replace_image(socket, key, image) do
+    updated = Enum.map(socket.assigns[key], fn i -> if i.id == image.id, do: image, else: i end)
+    assign(socket, key, updated)
   end
 end

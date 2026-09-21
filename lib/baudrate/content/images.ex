@@ -13,6 +13,7 @@ defmodule Baudrate.Content.Images do
   alias Baudrate.Content.ArticleImage
   alias Baudrate.Content.ArticleImageStorage
   alias Baudrate.Content.CommentImage
+  alias Baudrate.Content.ImageAlt
   alias Baudrate.DataPortability.Files
   alias Baudrate.Federation.HTTPClient
 
@@ -70,6 +71,48 @@ defmodule Baudrate.Content.Images do
     )
     |> Repo.update_all(set: [article_id: article_id, updated_at: now])
   end
+
+  @doc """
+  Sets an article image's description (ADR 0060's sibling; see
+  `Baudrate.Content.ImageAlt`).
+
+  Scoped to the uploading user, and the id arrives from the client — the
+  composer renders one input per already-inserted row, so this is a
+  fetch-by-client-id and gets `parse_id/1` plus a `user_id` match rather than a
+  bare `Repo.get`. Returns `{:error, :not_found}` for anything else, which is
+  the same answer for "no such image" and "not yours".
+
+  It goes through the changeset rather than `update_all` so the length bound
+  actually runs.
+  """
+  @spec update_article_image_alt(term(), integer(), String.t() | nil) ::
+          {:ok, %ArticleImage{}} | {:error, Ecto.Changeset.t() | :not_found}
+  def update_article_image_alt(image_id, user_id, alt),
+    do: set_alt(ArticleImage, &ArticleImage.changeset/2, image_id, user_id, alt)
+
+  @doc """
+  Sets a comment image's description. See `update_article_image_alt/3`.
+  """
+  @spec update_comment_image_alt(term(), integer(), String.t() | nil) ::
+          {:ok, %CommentImage{}} | {:error, Ecto.Changeset.t() | :not_found}
+  def update_comment_image_alt(image_id, user_id, alt),
+    do: set_alt(CommentImage, &CommentImage.changeset/2, image_id, user_id, alt)
+
+  defp set_alt(schema, changeset_fun, image_id, user_id, alt) do
+    with {:ok, id} <- image_id(image_id),
+         %{} = image <- Repo.get_by(schema, id: id, user_id: user_id) do
+      image |> changeset_fun.(%{alt: alt}) |> Repo.update()
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  # `phx-value-id` always arrives as a string, but this is a context function
+  # and an integer is the natural thing for any other caller to pass. Both are
+  # accepted; anything else is refused rather than raising.
+  defp image_id(id) when is_integer(id) and id > 0, do: {:ok, id}
+  defp image_id(id) when is_binary(id), do: BaudrateWeb.Helpers.parse_id(id)
+  defp image_id(_), do: :error
 
   @doc """
   Fetches an article image by ID.
@@ -242,7 +285,7 @@ defmodule Baudrate.Content.Images do
     |> Enum.each(fn att ->
       url = att["url"]
 
-      case fetch_and_store_one(article_id, url) do
+      case fetch_and_store_one(article_id, url, att["name"]) do
         {:ok, _image} ->
           :ok
 
@@ -258,7 +301,7 @@ defmodule Baudrate.Content.Images do
 
   def fetch_and_store_remote_images(_article_id, _), do: :ok
 
-  defp fetch_and_store_one(article_id, url) when is_binary(url) do
+  defp fetch_and_store_one(article_id, url, name) when is_binary(url) do
     with :ok <- HTTPClient.validate_url(url),
          {:ok, %{body: body}} <-
            HTTPClient.get_html(url, headers: [{"accept", "image/*"}], max_size: @max_image_size),
@@ -270,13 +313,18 @@ defmodule Baudrate.Content.Images do
         storage_path: result.storage_path,
         width: result.width,
         height: result.height,
-        article_id: article_id
+        article_id: article_id,
+        # The peer described the image; store what they wrote rather than
+        # rendering "Image 2" over the top of it. `from_remote/1` strips tags
+        # and bounds the length — it is a remote-controlled string reaching a
+        # column, with `ImageAlt.validate/1` as the changeset backstop.
+        alt: ImageAlt.from_remote(name)
       })
       |> Repo.insert()
     end
   end
 
-  defp fetch_and_store_one(_article_id, _url), do: {:error, :invalid_url}
+  defp fetch_and_store_one(_article_id, _url, _name), do: {:error, :invalid_url}
 
   defp validate_image_size(body) when byte_size(body) > @max_image_size,
     do: {:error, :image_too_large}

@@ -16,6 +16,7 @@ defmodule Baudrate.Federation.TimelineItemReplyImage do
   import Ecto.Changeset
 
   alias Baudrate.Federation.TimelineItemReply
+  alias Baudrate.Content.ImageAlt
 
   @max_images_per_reply 4
 
@@ -24,6 +25,9 @@ defmodule Baudrate.Federation.TimelineItemReplyImage do
     field :storage_path, :string
     field :width, :integer
     field :height, :integer
+    # The description the uploader wrote, federated as the attachment `name`
+    # (see `Baudrate.Content.ImageAlt`). nil means nobody wrote one.
+    field :alt, :string
 
     belongs_to :reply, TimelineItemReply
     belongs_to :user, Baudrate.Setup.User
@@ -34,7 +38,11 @@ defmodule Baudrate.Federation.TimelineItemReplyImage do
   @doc "Casts and validates fields for creating a timeline item reply image record."
   def changeset(image, attrs) do
     image
-    |> cast(attrs, [:filename, :storage_path, :width, :height, :reply_id, :user_id])
+    |> cast(
+      attrs,
+      [:filename, :storage_path, :width, :height, :reply_id, :user_id] ++ ImageAlt.fields()
+    )
+    |> ImageAlt.validate()
     |> validate_required([:filename, :storage_path, :width, :height, :user_id])
     |> foreign_key_constraint(:reply_id)
     |> foreign_key_constraint(:user_id)

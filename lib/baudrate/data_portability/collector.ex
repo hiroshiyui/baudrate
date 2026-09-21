@@ -47,6 +47,7 @@ defmodule Baudrate.DataPortability.Collector do
     CommentBoost,
     CommentImage,
     CommentLike,
+    CommentRevision,
     Filters,
     Poll,
     PollOption,
@@ -290,6 +291,19 @@ defmodule Baudrate.DataPortability.Collector do
   end
 
   defp comment(c, base_url) do
+    # Only the member's own edits, matching how `article/3` filters revisions:
+    # a moderator's edit of somebody else's content is that person's record,
+    # not this export's. Comments are author-only to edit (ADR 0060), so in
+    # practice every row here is theirs — the filter is the invariant, not an
+    # optimisation.
+    revisions =
+      Repo.all(
+        from(r in CommentRevision,
+          where: r.comment_id == ^c.id and r.editor_id == ^c.user_id,
+          order_by: [asc: r.inserted_at, asc: r.id]
+        )
+      )
+
     image_ids =
       Repo.all(
         from(i in CommentImage,
@@ -312,6 +326,15 @@ defmodule Baudrate.DataPortability.Collector do
           %Comment{ap_id: ap_id} -> ap_id
           _ -> article_uri(c.article, base_url)
         end,
+      "revisions" =>
+        Enum.map(revisions, fn r ->
+          %{
+            "body" => r.body,
+            "summary" => r.summary,
+            "sensitive" => r.sensitive,
+            "created_at" => iso(r.inserted_at)
+          }
+        end),
       "images" => Enum.map(image_ids, &"media/comment_images/#{&1}.webp")
     }
   end

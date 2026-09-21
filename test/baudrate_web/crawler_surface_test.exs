@@ -256,6 +256,32 @@ defmodule BaudrateWeb.CrawlerSurfaceTest do
 
       refute html =~ ~s(name="robots")
     end
+
+    # ADR 0060. A comment's edit history is public — anyone who may read the
+    # thread may read it — but it is one thin page per comment, so it is not
+    # something to invite a crawler into. `/articles/:slug/history` is
+    # deliberately *not* in this list: it is one page per article and has been
+    # indexable since it was written, and withdrawing that is a change to
+    # existing public behaviour rather than a decision about a new surface.
+    test "a comment's edit history carries noindex and no canonical", %{
+      conn: conn,
+      user: user,
+      article: article
+    } do
+      {:ok, comment} =
+        Baudrate.Content.create_comment(%{
+          "body" => "first draft",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, _} = Baudrate.Content.update_comment(comment, %{"body" => "second draft"}, user)
+
+      html = conn |> get("/comments/#{comment.id}/history") |> html_response(200)
+
+      assert html =~ ~s(<meta name="robots" content="noindex, follow">)
+      refute html =~ ~s(rel="canonical")
+    end
   end
 
   describe "canonical" do

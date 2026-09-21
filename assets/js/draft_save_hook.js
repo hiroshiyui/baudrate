@@ -18,8 +18,33 @@
  *   - Restore: on mounted(), populates fields if draft < 30 days old
  *   - Clear: on form submit, removes draft from localStorage
  *   - Empty drafts (all fields blank) are removed instead of saved
+ *
+ * ## The draft key is per account
+ *
+ * `data-draft-key` carries the author's user id. It used to be a constant
+ * string — `draft:article:new` for everyone — and localStorage is scoped to
+ * the origin, not to the session: on a shared computer the next person to
+ * open the composer had the previous person's unsent post restored into it,
+ * with no action on anyone's part and nothing on screen to explain where the
+ * text came from. Never build a draft key that does not include the user.
+ *
+ * ## Clearing waits to see whether the submit worked
+ *
+ * `submit` fires when the form is *sent*, not when the server accepts it, so
+ * clearing there throws the draft away on a submit the changeset then
+ * rejects. The text is still in the form at that instant, so nothing is
+ * visibly lost — until the reader closes the tab, at which point the draft
+ * the feature exists to keep is the one thing that is gone.
+ *
+ * So the clear is followed by a re-check: if the form is still on the page a
+ * moment later and still holds text, the submit did not take us anywhere and
+ * the draft is written back. A successful post either navigates away (the
+ * hook is destroyed) or re-renders the form empty (the re-check finds nothing
+ * to save and leaves it cleared). No server round-trip and no new contract
+ * between the hook and the LiveView.
  */
 const DEBOUNCE_MS = 1500
+const RESAVE_AFTER_SUBMIT_MS = 700
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 const INDICATOR_FADE_MS = 2000
 
@@ -30,7 +55,13 @@ const DraftSaveHook = {
     this._fieldNames = (this.el.dataset.draftFields || "").split(",").filter(Boolean)
 
     this._onInput = () => this._scheduleSave()
-    this._onSubmit = () => this._clearDraft()
+    this._onSubmit = () => {
+      this._clearDraft()
+      // Long enough for the server's reply to have re-rendered the form (or
+      // navigated away from it); short enough that a tab closed straight
+      // after a failed submit still has the draft back.
+      this._resubmitTimer = setTimeout(() => this._saveDraft(), RESAVE_AFTER_SUBMIT_MS)
+    }
 
     this.el.addEventListener("input", this._onInput)
     this.el.addEventListener("submit", this._onSubmit)
@@ -47,6 +78,9 @@ const DraftSaveHook = {
   destroyed() {
     if (this._debounceTimer) clearTimeout(this._debounceTimer)
     if (this._fadeTimer) clearTimeout(this._fadeTimer)
+    // A successful post navigates away, which lands here before the re-check
+    // runs — so the draft stays cleared, which is what we want.
+    if (this._resubmitTimer) clearTimeout(this._resubmitTimer)
     this.el.removeEventListener("input", this._onInput)
     this.el.removeEventListener("submit", this._onSubmit)
   },

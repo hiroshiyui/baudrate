@@ -32,7 +32,7 @@
     phx-submit="submit"
     id="article-new-form"
     phx-hook="DraftSaveHook"
-    data-draft-key="draft:article:new"
+    data-draft-key={"draft:u#{@current_user.id}:article:new"}
     data-draft-fields="article[title],article[body]"
     data-draft-indicator="#draft-indicator-new"
     data-draft-saved-text={gettext("Draft saved")}
@@ -97,23 +97,26 @@
         <div
           :for={img <- @uploaded_images}
           id={"article-new-image-#{img.id}"}
-          class="article-new-image relative group aspect-square"
+          class="article-new-image"
         >
-          <img
-            src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
-            class="w-full h-full object-cover rounded-lg border border-base-300"
-            loading="lazy"
-            alt={gettext("Uploaded image")}
-          />
-          <button
-            type="button"
-            phx-click="remove_image"
-            phx-value-id={img.id}
-            class="article-new-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
-            aria-label={gettext("Remove image")}
-          >
-            <.icon name="hero-x-mark" class="size-4" />
-          </button>
+          <div class="relative group aspect-square">
+            <img
+              src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+              class="w-full h-full object-cover rounded-lg border border-base-300"
+              loading="lazy"
+              alt={img.alt || gettext("Uploaded image")}
+            />
+            <button
+              type="button"
+              phx-click="remove_image"
+              phx-value-id={img.id}
+              class="article-new-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
+              aria-label={gettext("Remove image")}
+            >
+              <.icon name="hero-x-mark" class="size-4" />
+            </button>
+          </div>
+          <.image_alt_input image={img} />
         </div>
       </div>
 

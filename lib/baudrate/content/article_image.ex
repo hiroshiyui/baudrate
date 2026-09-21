@@ -16,6 +16,7 @@ defmodule Baudrate.Content.ArticleImage do
   import Ecto.Changeset
 
   alias Baudrate.Content.Article
+  alias Baudrate.Content.ImageAlt
 
   @max_images_per_article 4
 
@@ -24,6 +25,9 @@ defmodule Baudrate.Content.ArticleImage do
     field :storage_path, :string
     field :width, :integer
     field :height, :integer
+    # The description the uploader wrote, federated as the attachment `name`
+    # (see `Baudrate.Content.ImageAlt`). nil means nobody wrote one.
+    field :alt, :string
 
     belongs_to :article, Article
     belongs_to :user, Baudrate.Setup.User
@@ -34,7 +38,11 @@ defmodule Baudrate.Content.ArticleImage do
   @doc "Casts and validates fields for creating an article image record."
   def changeset(image, attrs) do
     image
-    |> cast(attrs, [:filename, :storage_path, :width, :height, :article_id, :user_id])
+    |> cast(
+      attrs,
+      [:filename, :storage_path, :width, :height, :article_id, :user_id] ++ ImageAlt.fields()
+    )
+    |> ImageAlt.validate()
     |> validate_required([:filename, :storage_path, :width, :height, :user_id])
     |> foreign_key_constraint(:article_id)
     |> foreign_key_constraint(:user_id)
@@ -43,7 +51,8 @@ defmodule Baudrate.Content.ArticleImage do
   @doc "Casts and validates fields for creating a remote article image (no local user)."
   def remote_changeset(image, attrs) do
     image
-    |> cast(attrs, [:filename, :storage_path, :width, :height, :article_id])
+    |> cast(attrs, [:filename, :storage_path, :width, :height, :article_id] ++ ImageAlt.fields())
+    |> ImageAlt.validate()
     |> validate_required([:filename, :storage_path, :width, :height, :article_id])
     |> foreign_key_constraint(:article_id)
   end

@@ -495,6 +495,35 @@ defmodule Baudrate.RetentionTest do
       refute exists?(Comment, comment.id)
     end
 
+    test "deletes a comment's revisions with the comment", %{user: user} do
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "what I said at first",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, _} = Content.update_comment(comment, %{"body" => "what I meant"}, user)
+      assert [revision] = Content.list_comment_revisions(comment.id)
+
+      soft_delete(Comment, comment.id, 91)
+
+      {_articles, comments, _files} = Retention.purge_soft_deleted()
+
+      assert comments >= 1
+      refute exists?(Comment, comment.id)
+
+      # ADR 0060 gives comments the same rule as articles: a revision holds a
+      # full snapshot of what the comment used to say, so one that outlived
+      # its comment would keep serving withdrawn content back — and a
+      # reference that did not cascade would raise instead, aborting the
+      # whole hourly pass.
+      refute exists?(Baudrate.Content.CommentRevision, revision.id)
+    end
+
     test "removes the image files of a comment purged on its own", %{user: user} do
       board = create_board()
       article = create_article(user, board)

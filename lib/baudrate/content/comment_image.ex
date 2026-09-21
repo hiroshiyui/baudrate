@@ -16,6 +16,7 @@ defmodule Baudrate.Content.CommentImage do
   import Ecto.Changeset
 
   alias Baudrate.Content.Comment
+  alias Baudrate.Content.ImageAlt
 
   @max_images_per_comment 4
 
@@ -24,6 +25,9 @@ defmodule Baudrate.Content.CommentImage do
     field :storage_path, :string
     field :width, :integer
     field :height, :integer
+    # The description the uploader wrote, federated as the attachment `name`
+    # (see `Baudrate.Content.ImageAlt`). nil means nobody wrote one.
+    field :alt, :string
 
     belongs_to :comment, Comment
     belongs_to :user, Baudrate.Setup.User
@@ -34,7 +38,11 @@ defmodule Baudrate.Content.CommentImage do
   @doc "Casts and validates fields for creating a comment image record."
   def changeset(image, attrs) do
     image
-    |> cast(attrs, [:filename, :storage_path, :width, :height, :comment_id, :user_id])
+    |> cast(
+      attrs,
+      [:filename, :storage_path, :width, :height, :comment_id, :user_id] ++ ImageAlt.fields()
+    )
+    |> ImageAlt.validate()
     |> validate_required([:filename, :storage_path, :width, :height, :user_id])
     |> foreign_key_constraint(:comment_id)
     |> foreign_key_constraint(:user_id)

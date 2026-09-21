@@ -13,6 +13,7 @@ defmodule Baudrate.Content.Comments do
   alias Baudrate.Content.{
     Article,
     Comment,
+    CommentRevision,
     Filters,
     Permissions
   }
@@ -127,6 +128,199 @@ defmodule Baudrate.Content.Comments do
   """
   def change_comment(comment \\ %Comment{}, attrs \\ %{}) do
     Comment.changeset(comment, attrs)
+  end
+
+  @doc """
+  Edits a local comment, snapshotting what it replaced and publishing an
+  `Update(Note)` (ADR 0060).
+
+  The author alone may edit — `Permissions.authorize_edit_comment/2`, checked
+  **here** rather than only in the LiveView. Comments already authorize
+  deletion at this boundary, and the one pre-existing comment update path
+  (`update_remote_comment/2`) authorizes nothing at all because its single
+  caller has already matched the signing actor; a local edit must not inherit
+  that.
+
+  Only `body` and the content warning are editable, taken by allow-list
+  (ADR 0049). `visibility` is deliberately not: a comment that has already
+  federated as public does not become unlisted by being relabelled here, so
+  offering the control would promise something it cannot do. `article_id`,
+  `parent_id` and `user_id` are not re-castable at all — an edit that could
+  move a comment into another thread is not an edit.
+
+  Returns `{:error, :unauthorized}` for anyone but the author,
+  `{:error, :not_found}` for a soft-deleted comment, and the sanction gate's
+  own refusals (ADR 0029) for an account that may not act.
+  """
+  @spec update_comment(%Comment{}, map(), map()) ::
+          {:ok, %Comment{}} | {:error, Ecto.Changeset.t() | term()}
+  def update_comment(%Comment{} = comment, attrs, editor) do
+    with :ok <- Permissions.authorize_edit_comment(editor, comment),
+         :ok <- Baudrate.Auth.ensure_can_interact(editor),
+         :ok <- ensure_editable(comment) do
+      do_update_comment(comment, attrs, editor)
+    end
+  end
+
+  # Editing a withdrawn comment would republish it: `soft_delete_changeset/2`
+  # overwrites the body with a placeholder, so the edit form would offer that
+  # placeholder for editing and the `Update` would resurrect the row on every
+  # peer that honoured the `Delete`.
+  defp ensure_editable(%Comment{deleted_at: nil}), do: :ok
+  defp ensure_editable(%Comment{}), do: {:error, :not_found}
+
+  defp do_update_comment(comment, attrs, editor) do
+    attrs =
+      attrs
+      |> Map.new(fn {k, v} -> {to_string(k), v} end)
+      |> Map.take(~w(body summary sensitive))
+
+    # `body_html` is re-rendered only when a body was actually supplied.
+    # Deriving it from `attrs["body"] || ""` would blank the rendered comment
+    # for a caller that edits the content warning alone — the changeset would
+    # still pass, because `validate_required(:body)` sees the existing value
+    # on the struct.
+    body = attrs["body"]
+
+    attrs =
+      case body do
+        nil -> attrs
+        body -> Map.put(attrs, "body_html", Baudrate.Content.Markdown.to_html(body))
+      end
+
+    # An edit can add a handle nobody here has resolved, so the same
+    # before-the-transaction warming applies as on create (ADR 0051): an HTTP
+    # call inside a transaction holds a DB connection for someone else's
+    # timeout.
+    warm_comment_mentions(%{
+      "article_id" => comment.article_id,
+      "body" => body,
+      "user_id" => comment.user_id
+    })
+
+    result =
+      Ecto.Multi.new()
+      |> Ecto.Multi.insert(:revision, fn _changes ->
+        CommentRevision.changeset(%CommentRevision{}, %{
+          body: comment.body,
+          summary: comment.summary,
+          sensitive: comment.sensitive,
+          comment_id: comment.id,
+          editor_id: editor.id
+        })
+      end)
+      |> Ecto.Multi.update(:comment, Comment.changeset(comment, attrs))
+      # The Update(Note) jobs commit with the edit (ADR 0034).
+      |> Ecto.Multi.run(:federation, fn _repo, %{comment: updated} ->
+        if updated.user_id do
+          updated = Repo.preload(updated, [:user, :images])
+          article = Repo.get!(Article, updated.article_id) |> Repo.preload([:boards, :user])
+          Baudrate.Federation.Publisher.publish_comment_updated(updated, article)
+        end
+
+        {:ok, :enqueued}
+      end)
+      |> Repo.transaction()
+
+    case result do
+      {:ok, %{comment: updated}} ->
+        ContentPubSub.broadcast_to_article(updated.article_id, :comment_updated, %{
+          comment_id: updated.id
+        })
+
+        maybe_update_comment_preview(comment, updated)
+
+        {:ok, updated}
+
+      {:error, :comment, changeset, _changes} ->
+        {:error, changeset}
+
+      {:error, :revision, changeset, _changes} ->
+        {:error, changeset}
+
+      other ->
+        other
+    end
+  end
+
+  # The article-side twin of this lives in `Articles`; both exist because a
+  # preview is fetched from the *first* URL in the body, so an edit that
+  # changes which URL that is has to drop the old card rather than leave a
+  # preview of a link the comment no longer contains.
+  defp maybe_update_comment_preview(old_comment, updated_comment) do
+    alias Baudrate.Content.LinkPreview.UrlExtractor
+
+    first_url = fn body ->
+      case body |> Baudrate.Content.Markdown.to_html() |> UrlExtractor.extract_first_url() do
+        {:ok, url} -> url
+        :none -> nil
+      end
+    end
+
+    old_url = first_url.(old_comment.body || "")
+    new_url = first_url.(updated_comment.body || "")
+
+    if old_url != new_url do
+      if old_comment.link_preview_id do
+        from(c in Comment, where: c.id == ^updated_comment.id)
+        |> Repo.update_all(set: [link_preview_id: nil])
+      end
+
+      if new_url do
+        PreviewWorker.schedule_preview_fetch(
+          :comment,
+          updated_comment.id,
+          Baudrate.Content.Markdown.to_html(updated_comment.body || ""),
+          updated_comment.user_id
+        )
+      end
+    end
+  end
+
+  # --- Comment Revisions ---
+
+  @doc """
+  Lists a comment's revisions, newest first, with each editor preloaded.
+
+  Ordered `desc: inserted_at, desc: id` — the id tiebreaker matters because
+  two edits inside the same second are ordinary, and without it the history
+  page could show them in either order between renders.
+  """
+  @spec list_comment_revisions(integer()) :: [%CommentRevision{}]
+  def list_comment_revisions(comment_id) do
+    from(r in CommentRevision,
+      where: r.comment_id == ^comment_id,
+      order_by: [desc: r.inserted_at, desc: r.id],
+      preload: :editor
+    )
+    |> Repo.all()
+  end
+
+  @doc "Counts a comment's revisions, for the 'edited' marker."
+  @spec count_comment_revisions(integer()) :: non_neg_integer()
+  def count_comment_revisions(comment_id) do
+    Repo.one(from(r in CommentRevision, where: r.comment_id == ^comment_id, select: count(r.id))) ||
+      0
+  end
+
+  @doc "Counts revisions for many comments at once, as a `%{comment_id => count}` map."
+  @spec count_comment_revisions_for(list(integer())) :: %{integer() => non_neg_integer()}
+  def count_comment_revisions_for([]), do: %{}
+
+  def count_comment_revisions_for(comment_ids) when is_list(comment_ids) do
+    from(r in CommentRevision,
+      where: r.comment_id in ^comment_ids,
+      group_by: r.comment_id,
+      select: {r.comment_id, count(r.id)}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  @doc "Fetches one revision, raising if it does not exist."
+  @spec get_comment_revision!(integer()) :: %CommentRevision{}
+  def get_comment_revision!(id) do
+    CommentRevision |> Repo.get!(id) |> Repo.preload(:editor)
   end
 
   @doc """
@@ -438,7 +632,18 @@ defmodule Baudrate.Content.Comments do
   end
 
   @doc """
-  Updates a remote comment's content.
+  Updates a remote comment's content, from an inbound `Update(Note)`.
+
+  This is **not** the local edit path and must never be reused as one — it
+  authorizes nothing and publishes nothing. It is safe only because its single
+  caller, `Baudrate.Federation.InboxHandler.handle_update_note/2`, has already
+  matched the comment's `remote_actor_id` against the verified signer. A local
+  edit goes through `update_comment/3`, which authorizes, snapshots a revision
+  and publishes.
+
+  No revision is written here. A revision records an act taken on this
+  instance; a remote author's edit history belongs to the instance that holds
+  it, and `handle_update_article/2` has always worked the same way.
   """
   def update_remote_comment(%Comment{} = comment, attrs) do
     comment
