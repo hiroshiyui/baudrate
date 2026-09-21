@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.33.1] — 2026-09-21
+
+Test-only. The application code is identical to 1.33.0; this exists so the
+released tag has a green CI run rather than one everybody has to be told to
+ignore.
+
+**Upgrading:** nothing to do, and nothing to gain if you are already on
+1.33.0.
+
+### Fixed
+
+- Two browser tests that 1.33.0's own CI caught after the tag was cut. One
+  still asserted that acknowledging your recovery codes lands you on `/login`,
+  which this release series replaced — acknowledging is what completes the
+  sign-in. The other timed out at ExUnit's 60-second default: that crawl types
+  into every `phx-change` field on every page it visits, and 1.33.0 added a
+  filter row to `/search` and a recovery-contact form to `/profile`.
+- The release checklist ran `mix test --partitions 4`, which excludes every
+  `:feature`-tagged test — so the documented "full test suite" had never once
+  run a browser test. It now runs `test/baudrate_web/features/` as well, which
+  is what would have caught both before the tag.
+
 ## [1.33.0] — 2026-09-21
 
 The rest of Phase 4: discovery from outside (4A, 4B), search worth using (4C),
