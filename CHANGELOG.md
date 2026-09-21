@@ -7,6 +7,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.34.0] — 2026-09-21
+
+Phase 4E, and with it Phase 4 is complete. Three features that were each
+already half-claimed by the UI, plus the proxy fixes found while checking
+them against a deployed site.
+
+The one worth an operator's attention is that **the app was never installable
+on an instance without Web Push.** The service worker was registered by the
+push settings section on `/profile`, and only when a VAPID key was configured,
+so an instance that had not set push up had no service worker anywhere — and
+nothing connected the two. It is now registered on every page, and serves an
+offline page when a navigation cannot reach the server.
+
+**What it caches is a decision, not an implementation detail.** The offline
+page and the fingerprinted CSS/JS, and nothing else. No article, comment,
+direct message or board page is written to a reader's disk, so there is no
+offline reading and no cache to purge when someone signs out on a shared
+machine ([ADR 0059](doc/adr/0059-the-service-worker-caches-the-shell-and-never-content.md),
+which also records why "add offline reading" is refused rather than deferred).
+
+**Upgrading:** no migrations and nothing to configure. **If you run your own
+nginx**, check two things — `curl -sI https://your.host/robots.txt` should be
+200 from Baudrate rather than a 404 from nginx, and
+`curl -s -o /dev/null -w '%{content_type}' https://your.host/site.webmanifest`
+should say `application/manifest+json`. `doc/examples/nginx.conf.example` has
+the corrected rules and `doc/troubleshooting.md` explains both symptoms.
+
+### Added
+
+- **An offline page.** A navigation that cannot reach the server now shows
+  Baudrate's own page, translated and themed, rather than the browser's error.
+  The service worker re-fetches it after each successful navigation, so the
+  cached copy follows the language the reader actually uses.
+- **The share button works on the desktop.** Where `navigator.share` does not
+  exist it copies the link and relabels itself to say so, instead of hiding
+  itself and leaving no way to share at all. It also carries the page's
+  canonical URL, so a share is the article's own address rather than whatever
+  tracking parameters the reader arrived with.
+- **Follow from your instance.** A fediverse visitor on a profile or a
+  federated board can enter their own handle and be handed a link to their own
+  server's follow page, discovered from its WebFinger subscribe template
+  rather than guessed — so it works with Mastodon, Akkoma, Misskey and
+  GoToSocial. The handle is always there to copy as well, and boards had no
+  follow control at all before this. A `<details>` and a plain form post, so
+  both halves work with scripting switched off.
+
+### Changed
+
+- The service worker is registered from `app.js` on every page rather than by
+  the push hook on `/profile`. Push availability and installability are
+  unrelated questions.
+- Its `fetch` handler now covers navigations and `/assets/` only. It used to
+  answer *every* request with a bare pass-through — added to satisfy Firefox's
+  installability check — which routed the whole site through the worker and
+  cached nothing.
+- It gained an `install`/`activate` lifecycle. Without one, an updated worker
+  waited for every tab of the site to close, which on a site people keep open
+  is indistinguishable from the update never shipping.
+- `priv/static/service_worker.js` is no longer tracked in git. It is an
+  esbuild bundle — the only build output that was — so the file browsers
+  actually run could drift from its source silently. `mix assets.build` and
+  `mix assets.deploy` produce it.
+
+### Fixed
+
+- **`/robots.txt` answered nginx's 404, not Baudrate's directives.** It became
+  a route in 1.33.0 and `priv/static/robots.txt` was deleted with it, but the
+  shipped nginx rules still matched it and served from disk — so the instance
+  advertised no sitemap and no `Disallow` for `/ap/`, `/api/` or `/exports/`
+  at all, and nothing in the application could tell. Found by curling the
+  deployed site, which is the only place it was visible.
+- **The web app manifest was served as `application/octet-stream`**, which
+  stops browsers treating the site as installable. Debian's nginx
+  `mime.types` has no `webmanifest` entry; it now has a `location` of its own
+  with an explicit `default_type`.
+- **`doc/examples/nginx.conf.example` carried both of the above** after the
+  Ansible template had been fixed, because the new gate read one of the two
+  files a rule is written in. It reads every nginx config the repository
+  ships now.
+- **The Ansible nginx role could leave a config nginx cannot start from.** It
+  templated and reloaded with nothing checking in between, so a bad render
+  failed the reload while nginx kept serving from memory — the only symptom
+  arriving at the next restart. It now runs `nginx -t`, restores the previous
+  file and fails the play without reloading.
+- **The clipboard hook gave no feedback when it could not copy.** It called
+  `navigator.clipboard.writeText` with no `.catch()` and no feature test, so
+  outside a secure context it threw inside the click listener and a denied
+  permission rejected a promise nothing caught.
+- A WebFinger lookup could reach a blocked domain. `refuse_blocked: true` was
+  missing from the client and covered only because the one caller re-checked
+  downstream; it is now applied where the fetch happens, which the new
+  remote-follow path depends on.
+
+### Security
+
+- The remote-follow lookup refuses any subscribe template that is not HTTPS on
+  the domain the visitor typed, and refuses a blocked domain outright. Without
+  the host check a hostile server could answer WebFinger with a link to
+  anywhere and have this site render it. Two rate limits apply — per visitor
+  IP, and per target domain so many visitors cannot combine against one
+  server — and the form carries a kind and a name rather than an actor URI, so
+  a submission cannot name a board whose page would never have offered it.
+
 ## [1.33.1] — 2026-09-21
 
 Test-only. The application code is identical to 1.33.0; this exists so the
