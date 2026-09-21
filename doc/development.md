@@ -3199,6 +3199,13 @@ because the crawler never fetches it. So `robots.txt` blocks only `/ap/`,
 `/api/` and `/exports/`; `/search`, `/login`, `/register` and `/password-reset`
 stay crawlable and say `noindex` themselves. `robots.txt` is a **route**, not a
 file in `priv/static`, because its `Sitemap:` directive needs an absolute URL.
+**A reverse proxy in front of the instance must not intercept it.** nginx
+serves a few paths from disk so the request never reaches Phoenix; a rule that
+still matches `robots.txt` finds no file and answers its own 404, so the
+instance advertises no sitemap and no `Disallow` at all, and nothing in the
+application can tell. The proxy may serve from disk only what
+`BaudrateWeb.static_paths/0` lists — `test/ops/nginx_static_paths_test.exs` is
+the gate, and it reads the shipped nginx template.
 
 **`BaudrateWeb.Crawlers` decides both directives.** `noindex?/1` answers from
 three things — a `noindex` assign (an unlisted article sets it), an error

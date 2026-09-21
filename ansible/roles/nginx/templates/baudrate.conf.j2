@@ -150,7 +150,16 @@ server {
     # Phoenix `~p` may resolve to digest-stamped filenames (e.g.
     # favicon-abc123.svg), so patterns use [^/]* to match both
     # original and digested variants.
-    location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|robots[^/]*\.txt|service_worker[^/]*\.js|site[^/]*\.webmanifest) {
+    #
+    # `robots.txt` is deliberately NOT here: since v1.33.0 it is a route, not
+    # a file in priv/static (ADR 0057 — its `Sitemap:` directive needs an
+    # absolute URL, which only the application knows). Matching it here served
+    # it from disk, and once the file was removed nginx answered its own 404
+    # before the request could reach Phoenix — so the instance advertised no
+    # sitemap and no `Disallow` at all. Every path in this list must be a real
+    # file under `BaudrateWeb.static_paths/0`; anything the application
+    # generates belongs in `location /`.
+    location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|service_worker[^/]*\.js|site[^/]*\.webmanifest) {
         root {{ static_path }};
         expires 1h;
         add_header Cache-Control "public";
