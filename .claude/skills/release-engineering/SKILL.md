@@ -18,6 +18,23 @@ When performing release engineering, always follow these steps:
    for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 & done; wait
    ```
 
+   **That run excludes every browser test**, because they are `:feature`-tagged
+   and excluded by default. Run them too, or the only thing standing between a
+   stale browser test and a tag is CI finding it afterwards — which is how
+   v1.33.0 shipped with a `registration_test.exs` still asserting the
+   sign-in-after-registering behaviour that P4-D2 had replaced, and a
+   `js_errors_test.exs` crawl that had quietly outgrown ExUnit's 60-second
+   default as Phases 4C and 4D added form fields to the pages it types into.
+   Running a few feature files by name is not the same thing: both failures
+   were in files that were never named.
+   ```bash
+   # Stale digest artifacts are served in preference to a fresh build, so
+   # clear them first or the browser loads months-old CSS/JS.
+   rm -f priv/static/assets/{css,js}/*.gz priv/static/cache_manifest.json
+   mix assets.build
+   mix test --include feature test/baudrate_web/features/
+   ```
+
 3. **Update the version** — bump the `version` field in `mix.exs` to match the new release version.
 
 4. **Update `CHANGELOG.md`** — add a new version entry at the top following the [Keep a Changelog](https://keepachangelog.com/) format. Group changes under `Added`, `Changed`, `Fixed`, `Removed`, or `Security` as appropriate. Include all notable changes since the previous release.

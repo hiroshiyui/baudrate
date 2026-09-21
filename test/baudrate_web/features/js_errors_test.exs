@@ -28,6 +28,13 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
 
   @moduletag :feature
 
+  # The crawl visits every listed page and types into every `phx-change` field
+  # on it, so its cost grows with the forms the site has. Phases 4C and 4D put
+  # a filter row on /search and a recovery-contact form — including an armored
+  # key textarea — on /profile, which pushed it past ExUnit's 60 s default in
+  # CI. `layout_test.exs` sets the same ceiling for the same reason.
+  @moduletag timeout: 600_000
+
   alias Baudrate.{Content, Federation, Messaging, Repo}
   alias Baudrate.Federation.RemoteActor
 

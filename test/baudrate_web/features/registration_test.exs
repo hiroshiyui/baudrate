@@ -21,7 +21,7 @@ defmodule BaudrateWeb.Features.RegistrationTest do
     |> assert_has(Query.css(".grid.grid-cols-2"))
   end
 
-  feature "acknowledging recovery codes redirects to login", %{session: session} do
+  feature "acknowledging recovery codes signs the new member in", %{session: session} do
     session
     |> visit("/register")
     |> fill_in(Query.css("#user_username"), with: "ackuser_#{System.unique_integer([:positive])}")
@@ -31,6 +31,9 @@ defmodule BaudrateWeb.Features.RegistrationTest do
     |> click(Query.button("Sign Up"))
     |> assert_has(Query.css("h1", text: "Recovery Codes"))
     |> click(Query.button("I have saved my recovery codes"))
-    |> assert_has(Query.css("h1", text: "Sign In"))
+    # P4-D2: acknowledging the codes is what completes the sign-in, so a new
+    # member never types the password they just chose a second time. They land
+    # on the one-time first-visit step, not on /login.
+    |> assert_has(Query.css("#welcome-page"))
   end
 end
