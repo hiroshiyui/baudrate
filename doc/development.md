@@ -103,6 +103,7 @@ lib/
 │   │   ├── polls.ex             # Poll creation, voting, counter management
 │   │   ├── read_tracking.ex     # Per-user article/board read state tracking
 │   │   ├── search.ex            # Full-text search across articles, comments, boards
+│   │   ├── search_query.ex      # The search box's query string: operators, and whether it names a scope
 │   │   ├── tags.ex              # Hashtag extraction, syncing, and querying
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
 │   │   ├── article_image.ex     # ArticleImage schema (gallery images on articles)
@@ -1062,7 +1063,8 @@ and never need to know about the internal split.
 | `Content.Bookmarks` | Article and comment bookmarks, toggle, paginated listing |
 | `Content.Images` | Article image creation, association, cleanup |
 | `Content.Tags` | Hashtag extraction from article bodies, tag syncing, tag-based browsing |
-| `Content.Search` | Full-text search across articles, comments, and boards (FTS + CJK ILIKE + operators) |
+| `Content.Search` | Full-text search across articles, comments, and boards (FTS + CJK ILIKE + operators, relevance/date sorting) |
+| `Content.SearchQuery` | The query string: parsing operators, writing one back, and whether it names a scope |
 | `Content.Feed` | Recent-content listings (home page, profiles) and per-user content statistics. Neither the syndication sense nor the timeline — the name is kept deliberately ([ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md), restated in [ADR 0041](adr/0041-rss-and-atom-are-syndication.md)) |
 | `Content.ReadTracking` | Per-user article/board read state, unread indicators |
 | `Content.Polls` | Poll creation, voting (local + remote), denormalized counter management, and the hourly sweep that announces a closed poll's final counts once |
@@ -1203,7 +1205,9 @@ strategy to support both English and CJK (Chinese, Japanese, Korean) text:
 
 The strategy is auto-detected per query: if the search string contains CJK
 Unicode characters (`\p{Han}`, `\p{Hiragana}`, `\p{Katakana}`, `\p{Hangul}`),
-the trigram ILIKE path is used; otherwise, the tsvector path is used.
+the trigram ILIKE path is used; otherwise, the tsvector path is used. Anything
+that is neither — Cyrillic, Arabic — goes down the `'english'` path, which is
+a known gap.
 
 Comments always use trigram ILIKE (no tsvector column) since comment bodies are
 short and a trigram GIN index is efficient for both CJK and English.
@@ -1218,44 +1222,141 @@ Key functions in `Content`:
   reachable as `Content.Filters.sanitize_like/1`, which delegates to it)
 
 User input is escaped via `sanitize_like/1` before interpolation into ILIKE
-patterns to prevent SQL wildcard injection.
+patterns to prevent SQL wildcard injection. The one place it is deliberately
+*not* applied is the relevance rank, where the raw term is a bound parameter
+to `ts_rank`/`word_similarity` and escaping it would be scored as part of the
+term.
 
-#### Advanced Search Operators (Articles Tab)
+#### A search needs a scope
 
-The Articles tab supports inline search operators mixed with free-text queries.
-Operators are `key:value` tokens parsed from the query string; remaining text
-becomes the free-text search term.
+`search_articles/2` and `search_comments/2` return an empty page when the
+query names nothing to search *within*: no free text, no `author:`, no
+`board:`, no `tag:`. A date range on its own is not a search — newest-first it
+returns everything the viewer can see, which is the cross-board river
+[ADR 0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) refused,
+arriving through the search box instead of the router. `has:` alone is
+refused for the same reason: it describes a property, not a subject.
 
-| Operator | Example | Semantics |
-|----------|---------|-----------|
-| `author:username` | `author:alice` | Filter by author (case-insensitive). Multiple = OR. |
-| `board:slug` | `board:general` | Filter by board slug. Multiple = OR. |
-| `tag:tagname` | `tag:elixir` | Filter by tag (lowercase). Multiple = AND (must have all). |
-| `has:images` | `has:images` | Articles with attached images. |
-| `before:YYYY-MM-DD` | `before:2026-01-15` | Articles before end of that day (exclusive). |
-| `after:YYYY-MM-DD` | `after:2026-01-01` | Articles on or after that day (inclusive). |
+`Content.SearchQuery.scoped?/1` is the predicate, and the check lives in the
+context rather than in `SearchLive` — `Content.Search` also backs the
+unauthenticated `/ap/search`, so a rule enforced at the page would leave the
+same list reachable as JSON. `SearchLive` renders `#search-no-scope`, which
+says what to add; "no results" would be a lie for a query that plainly matches
+things. `test/baudrate_web/no_content_ranking_test.exs` is the gate.
+
+#### Sorting
+
+`:sort` is `:relevance` (the default), `:newest` or `:oldest`, carried in the
+URL as `?sort=`. Relevance is the reader's own query ranked, which is why
+[ADR 0054](adr/0054-attention-follows-the-board-not-a-ranking.md) exempts
+search from the no-ranking rule — *"the query and the ordering are the
+reader's"*. It is not an engagement signal and must never become one.
+
+| Query | Relevance is |
+|-------|--------------|
+| English article | `ts_rank` over the weighted `search_vector` (title `A`, body `B`) |
+| CJK article | `word_similarity` against the title |
+| Comment | `word_similarity` against the body |
+
+With no free text there is nothing to rank, so `:relevance` falls back to
+newest-first. Two rules every order clause here keeps:
+
+- **A trailing `id` tiebreaker**, or OFFSET paging over tied ranks shows one
+  row twice and skips another. A behavioural test cannot prove its absence
+  (PostgreSQL returns a consistent order for a handful of tied rows anyway),
+  so `Content.Search.order_for/3` exists for the structural assertion in
+  `test/baudrate/content/search_test.exs`.
+- **No `distinct` in the query it orders.** Ecto compiles `distinct: c.id` to
+  `DISTINCT ON (c0."id")`, PostgreSQL requires those expressions to lead the
+  `ORDER BY`, and Ecto therefore prepends them — silently replacing the
+  requested order. Comment search was written that way and returned
+  oldest-first for its whole life while asking for newest-first; the board
+  gate is now an `exists` subquery, which duplicates nothing.
+
+`/ap/search` pins `sort: :newest` rather than inheriting the default: an
+`OrderedCollection` is reverse-chronological by contract, and a crawler
+walking its pages must not have them reshuffle when the site's default moves.
+
+#### Search operators
+
+Operators are `key:value` tokens mixed with free text; remaining text becomes
+the search term. `Baudrate.Content.SearchQuery` is the one definition —
+`parse/1`, `put/3` (set or replace one operator) and `scoped?/1` — because
+there are two ways into the syntax: a reader typing, and the filter controls
+writing.
+
+| Operator | On an article | On a comment |
+|----------|---------------|--------------|
+| `author:username` | the author (case-insensitive). Multiple = OR | the comment's **local** author; a remote commenter has no local username |
+| `board:slug` | a board the article is in. Multiple = OR | a board the parent article is in |
+| `tag:tagname` | a tag on the article (lowercase). Multiple = AND | a tag on the parent article |
+| `has:images` | the article has attached images | the comment has images of its own |
+| `before:YYYY-MM-DD` | before end of that day (exclusive) | the comment's own date |
+| `after:YYYY-MM-DD` | on or after that day (inclusive) | the comment's own date |
 
 Example query: `author:alice tag:elixir phoenix tutorial` parses as operators
 `{author: ["alice"], tag: ["elixir"]}` with free text `"phoenix tutorial"`.
+Dates overwrite (the last wins) and list operators accumulate. An invalid date
+is dropped silently, which also drops its token from the free text — so
+`before:2026-1-1` on its own leaves a query with no scope. Operator parsing
+uses string keys internally (never `String.to_atom/1` on user input).
+`board:` and `tag:` narrow and never widen: the board view gate still decides
+what is reachable at all. A collapsible help section is shown below the search
+bar on the Articles and Comments tabs, worded for whichever tab it is on.
 
-If all tokens are operators (no free text remains), text search is skipped and
-results are ordered by `inserted_at desc`. Invalid dates are silently ignored.
-Operator parsing uses string keys internally (never `String.to_atom/1` on user
-input). A collapsible help section is shown below the search bar on the Articles
-tab.
+#### The filter controls
 
-Key functions in `Content`:
+`#search-filters` (sort, board, written-on-or-after, written-on-or-before) sits
+**inside** `#search-form`, so the Search button is what applies it. One
+submission is one search is one rate-limit hit:
+`RateLimits.check_search_by_ip/1` is what bounds remote-actor probing
+([ADR 0051](adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md)),
+and a `phx-change` per control would spend that budget four times for one
+search. It also keeps the filters working with scripting switched off.
 
-- `parse_search_query/1` — extracts operator tokens from query string (private)
-- `apply_search_operators/2` — dispatches to per-operator filter functions (private)
+The controls **write operators into `q`** (`board:`, `after:`, `before:`)
+rather than carrying `?board=&from=&to=` parameters of their own, so the query
+string stays the single description of the search and no control can silently
+disagree with the box above it. Only `sort` has a parameter, because it is not
+a filter. A control the reader did not move leaves its operator untouched —
+writing unconditionally would quietly drop the second of two `board:`
+operators, which a single-choice control cannot show. Every control renders its
+value back from the URL, or LiveView's re-render would wipe it (see the
+form-reset gotcha in `CLAUDE.md`).
+
+The board `<select>` is filled by `Content.list_visible_boards/1`, a flat
+hierarchy-ordered list read from the board cache, so a board the viewer cannot
+open never appears — the control cannot become an existence signal for a
+private board's name.
+
+#### The Users tab
+
+`Auth.search_users_page/2` pages the member search; `Auth.search_users/2` is
+left alone for its four other callers (the autocomplete hook, the DM recipient
+picker, two admin pickers), which want a short list rather than a page.
+
+`total_pages` is capped at **5 pages (100 matches)**, with `capped: true` in
+the result driving `#search-users-capped`. `total` stays honest. The cap is
+[ADR 0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md)'s other half:
+a member's profile is public and linked from every byline, and the member list
+is never *enumerated*. Uncapped paging walks the whole membership at a few
+hundred accounts a minute, including members who have never posted and so
+appear in no byline. Only `status == "active"` is listed, so a banned account
+is absent and stays indistinguishable from one that never existed.
+
+The Boards and Users tabs search the **free text** only, not the raw query
+string: the operators describe articles, and once the filter controls write
+`board:` into `q` the raw string would have those tabs looking for a board
+*named* `board:general`.
 
 ### User Public Profiles
 
 Public profile pages are available at `/users/:username` for any active user.
 Profiles display the user's avatar, role badge, member-since date, article and
 comment counts, and a list of recent articles. Author names in board listings
-and article views are clickable links to the author's profile. Banned or
-nonexistent users are redirected away.
+and article views are clickable links to the author's profile. A banned or
+nonexistent user answers 404 — the two must stay indistinguishable
+([ADR 0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md)).
 
 ### Direct Messages
 
@@ -1991,7 +2092,7 @@ wrong.
 - `/ap/articles/:slug/replies` — `OrderedCollection` of comments as Note objects
 - `/ap/comments/:id` — a local comment as a `Note`, gated by its **article's** `publicly_servable?/1` plus three refusals of its own: soft-deleted, remote (its id belongs to another host), or a non-public `visibility`
 - `/ap/polls/:id` — a local poll as a standalone `Question`, the same object the Article embeds and with the same `id`, gated by its article
-- `/ap/search?q=...` — paginated full-text article search, over **federated** boards only (ADR 0043)
+- `/ap/search?q=...` — paginated full-text article search, over **federated** boards only (ADR 0043), pinned newest-first
 
 **Inbox endpoints** (HTTP Signature verified, per-domain rate-limited):
 - `/ap/inbox` — shared inbox

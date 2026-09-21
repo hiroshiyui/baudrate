@@ -41,7 +41,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
 | ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
 | ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (v1.31.0) |
-| 4 | Discovery and onboarding | ~~4A~~, ~~4B~~, 4C–4E, ~~4F~~ | Turns visitors into members, and keeps them able to sign in |
+| 4 | Discovery and onboarding | ~~4A~~, ~~4B~~, ~~4C~~, 4D–4E, ~~4F~~ | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
 | 6 | Member depth | 6A–6E | Retention |
 | 7 | Admin and content tools | 7A–7E | Running the site without a shell |
@@ -308,12 +308,6 @@ the moduledocs. These are the facts that are not.
   just left. Fixed by posting to `LocaleController`; the shape of the bug is
   why that copy is documented as a cache.
 
-### 4C — Search (S)
-
-- [ ] Sort by relevance or date, and filter by board and date.
-- [ ] Page through users past the first 20 (`web/live/search_live.ex:398`).
-- [ ] Search operators on the Comments tab.
-
 ### 4D — Onboarding and account recovery, D3 (M)
 
 - [ ] **Signing in after registering (P4-D2).** Open mode signs the new member in, instead of sending them to `/login` (`web/live/register_live.ex:88`). A first-visit step asks for a display name and avatar.
@@ -335,6 +329,47 @@ the moduledocs. These are the facts that are not.
 - [ ] **Service worker on every page,** independent of push (`assets/js/push_manager_hook.js:28-34`), with an offline fallback page.
 - [ ] **Copy-link fallback** when `navigator.share` is missing (`assets/js/web_share_hook.js:15`).
 - [ ] **"Follow from your instance":** a visitor enters their instance and is sent to its remote-follow page for a user or board.
+
+### ~~4C — Search~~ — **done** (2026-09-21)
+
+Three items, and the one that mattered most was a hole rather than a feature.
+
+- ~~**Sort by relevance or date, and filter by board and date.**~~ Done —
+  and the relevance half was *already written*: `article_search_clauses/1`
+  built a `ts_rank` order clause and `search_articles/2` threw it away on the
+  next line, so the weighted tsvector every article has carried since February
+  had never been read. Relevance is now the default;
+  [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) exempts search
+  because "the query and the ordering are the reader's". `/ap/search` pins the
+  date order rather than inheriting it.
+- ~~**Page through users past the first 20.**~~ Done, capped at five pages.
+  Paging the member list is how you enumerate the membership — including the
+  people who have never posted and so appear in no byline — and
+  [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) had already
+  decided that profiles are public and linked from every byline but never
+  enumerated.
+- ~~**Search operators on the Comments tab.**~~ Done, all six, read against
+  the comment and its parent article. The parser moved to
+  `Content.SearchQuery`, which the new filter controls also write through —
+  they set `board:`/`after:`/`before:` in the query string rather than
+  carrying parameters of their own, so there is one description of a search
+  and not two that can disagree.
+
+**The item that was not on the list: `/search?q=after:2026-01-01` returned
+everything.** A query of nothing but a date range listed every article the
+viewer could see, newest first — which is
+[0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)'s own
+description of `/recent`, "a filter that removes almost nothing", reachable
+from the search box rather than the router. A search now has to name something
+to search within: words, an author, a board or a tag. Time is not a scope.
+`no_content_ranking_test.exs` gained it as a fourth shape.
+
+**Found on the way: the Comments tab had always been ordered oldest-first.**
+Its query carried `distinct: c.id`, which Ecto compiles to
+`DISTINCT ON (c0."id")`; PostgreSQL requires those expressions to lead the
+`ORDER BY`, so Ecto prepends them and the `desc: inserted_at` the code asked
+for had never had any effect. The board gate is an `exists` subquery now, which
+duplicates nothing and needs no `distinct`.
 
 ### ~~4B — SEO and syndication feeds~~ — **done** (2026-09-21)
 

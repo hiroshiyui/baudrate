@@ -973,6 +973,15 @@ switched off is absent from these results, as it is from every other AP
 surface ([ADR 0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md)).
 The site's own search is unaffected by `ap_enabled`.
 
+**Ordering:** newest first, always. The site's own search defaults to
+relevance; this collection pins the date order rather than inheriting it,
+because an `OrderedCollection` is reverse-chronological by contract and pages
+a client is walking must not reshuffle underneath it.
+
+**Scope:** the query has to name something to search within — words, or an
+`author:`, `board:` or `tag:` operator. A query that is only a date range
+returns an empty collection rather than everything published in it.
+
 **Query parameters:**
 
 | Parameter | Required | Description |
