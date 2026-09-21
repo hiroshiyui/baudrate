@@ -333,6 +333,13 @@ the other exists only because the reader asked for it — so neither needs a
 consent prompt. Theme and text size are kept in the browser's `localStorage`
 and never reach the server.
 
+**One category of personal data needs naming explicitly:** a member may
+register an email address and an OpenPGP public key as a recovery contact
+([Account Recovery](#account-recovery-when-the-codes-are-gone-too)). The
+address is encrypted at rest, never federated, never public, and visible only
+to admins; the key is published material. Nothing is ever sent to that address
+by this software. A member who registers none gives you nothing to describe.
+
 The footer links the documents you have actually written, and nothing while
 all three are empty — a link to a page saying "not published yet" is worse
 than no link. The registration form keeps showing the terms inline and now
@@ -466,6 +473,132 @@ out accounts by submitting wrong passwords.
 Users reset passwords at `/password-reset` using **recovery codes** (10 issued
 at registration). There is no email-based recovery — users must save their
 recovery codes when displayed. Each code can only be used once.
+
+A member who still has a session can issue themselves a fresh set at
+`/profile`, behind step-up re-authentication. Doing so retires every earlier
+code at once. A member with no unused codes and no verified recovery contact
+sees a dismissible notice saying the account cannot currently be recovered.
+
+### Account Recovery (when the codes are gone too)
+
+This is the procedure for the member who has lost their password **and** their
+recovery codes. It is deliberately manual and deliberately out of band
+([ADR 0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md)).
+Read it before you need it — most of it happens in calm times.
+
+#### 1. What the instance does, and does not do
+
+Baudrate **sends no mail, verifies no signature and fetches no key.** It stores
+the anchor a member registered while signed in — one or more email addresses
+and an OpenPGP public key — and records your verdict about it. Every
+cryptographic check below happens in your own mail client. Nothing in the
+software will stop you clicking "verify" without doing any of it.
+
+#### 2. Verifying a contact — the enrolment step
+
+A member adds an address and an armored public key at `/profile`; it appears as
+**Not verified** on `/admin/users/:id`. To verify it:
+
+1. Take the public key **from the profile page**, not from any mail, and import
+   it into a scratch keyring. Do not fetch it from a keyserver: that is a
+   third-party request on a security path, and a second, weaker source of
+   truth.
+2. Ask the member to send you a signed message from the address they
+   registered.
+3. Check that the signature verifies **against the key from the profile page**,
+   and that the From address is one they registered.
+4. Only then click **Mark verified**.
+
+The order matters. The member registered that key from their own authenticated
+session, so confirming it binds an address to a key they had already proved
+they control. Verifying on the strength of the email alone binds nothing.
+
+#### 3. Handling a recovery request
+
+The request arrives as a signed message from a registered, verified address.
+Check, in order:
+
+1. The From address is one of the **verified** contacts on that account.
+2. The signature verifies against the **stored** key — not a key attached to
+   the message, not one from a keyserver.
+3. The signature covers the request text itself, not an attachment beside it.
+4. **Send a challenge.** Reply with a random nonce and ask them to sign it:
+
+   ```bash
+   openssl rand -hex 16
+   ```
+
+   An old signed message can be replayed by anyone who has seen one; a fresh
+   signature proves current control of the key. This costs one round trip and
+   is the single strongest check in the procedure. Do it for every request.
+
+#### 4. What to refuse, and refuse plainly
+
+- **A request from an address that is not registered and verified.** There is
+  no recovery for an account that arranged none. Say so directly — it is the
+  design, not an oversight, and the member can arrange one for next time if
+  they still have a session.
+- **Anything unsigned, or signed by a different key.**
+- **Any request to add or change a recovery contact.** That is the member's own
+  act, from their own session. Someone who cannot sign in cannot move the
+  anchor, and that is precisely the property the whole scheme rests on. It is
+  also exactly what an attacker will ask you for.
+- **An account at or above your own role level.** The instance refuses this;
+  see §7.
+- **Urgency.** Manufactured time pressure is the oldest tool there is, and
+  nothing here is so urgent it cannot wait for one round trip.
+
+#### 5. Issuing the link
+
+On `/admin/users/:id`, under **Account recovery**:
+
+- Decide the **"Also remove this account's TOTP and security keys"** tick
+  *separately*, and only if they asked for it and the signature proved it. A
+  password reset and the removal of somebody's second factors are two
+  decisions; the audit log records them as two lines.
+- Click **Issue reset link**. The link is shown **once**, works **once**, and
+  expires in **24 hours**.
+- Send it in reply to the signed message, encrypted to their key where you can.
+- If it expires, issue a fresh one rather than hunting for the old one. If
+  anything feels wrong afterwards, **Revoke it**.
+
+#### 6. Afterwards
+
+Redeeming the link sets a new password, signs out every session on the account,
+cancels any pending data export or account move, and issues a fresh set of
+recovery codes. The member gets an always-delivered notice.
+
+`/admin/moderation-log` records who issued the link, for whom, when, and — as
+its own entry — whether second factors were cleared. If they were, tell the
+member to re-enrol at once: until they do, the account has one factor.
+
+#### 7. When you are the one locked out
+
+Nobody can issue you a link. The instance refuses a reset for an account at or
+above the issuer's own role level, and on a single-admin instance that is you.
+The escape hatch is the **server console** on the host, which needs shell
+access and cannot be talked into anything:
+
+```bash
+# On the server, as the deploy user:
+/srv/baudrate/current/bin/baudrate remote
+```
+
+```elixir
+# Then, in the IEx session:
+user = Baudrate.Auth.get_user_by_username("admin")
+Baudrate.Auth.regenerate_recovery_codes(user)   # prints ten fresh codes
+```
+
+Keep your own recovery codes offline, and treat that as the backup this feature
+does not provide.
+
+#### 8. Privacy
+
+A recovery address is encrypted at rest and readable only on the admin page.
+Do not copy it anywhere else — not into a ticket, not into a chat. It is a new
+category of personal data this instance holds, so it belongs in your privacy
+policy; see [Policy Pages](#policy-pages).
 
 ### TOTP Two-Factor Authentication
 

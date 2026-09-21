@@ -406,6 +406,15 @@ and never need to know about the internal split.
 
 ### Authentication Flow
 
+**A private page says what it needs, and brings you back.** `:require_auth`
+used to redirect a guest to `/login` with no flash and no memory of where they
+were going. It now carries the refused path as a `?return_to` query parameter —
+the shape admin sudo already uses, because a LiveView cannot write the session
+— which `LoginLive` puts in a hidden field and `SessionController.create/2`
+sanitises through `BaudrateWeb.Helpers.local_path/2`, the one open-redirect
+guard. It is sanitised on the way in *and* on the way out: what a controller
+receives is whatever the browser posted, whatever page rendered it.
+
 ```
 ┌─────────┐     ┌─────────────┐     ┌──────────────────┐
 │  Login   │────▶│   Password  │────▶│ login_next_step/1│
@@ -703,6 +712,29 @@ shown) and an optional site-specific End User Agreement (admin-configurable via
 codes in `xxxx-xxxx` format, ~41 bits each, HMAC-SHA256 hashed) are issued at
 registration and displayed once for the user to save.
 
+**Acknowledging those codes is what signs the new member in** (P4-D2). All
+three modes sign in; approval mode signs in as `pending`, which can already
+browse and edit its profile. The codes come *before* the session on purpose —
+with no email in the system they are the only self-service way back, so nobody
+is carried past the only copy they will ever see. The sign-in is the same
+`phx-trigger-action` POST to `SessionController.create/2` that `LoginLive`
+uses, and the token is minted on the acknowledgement click rather than at
+registration, because it lives 60 seconds and writing down ten codes takes
+longer than that.
+
+A newly registered member then lands on **`/welcome`**, a one-time step asking
+for a display name and a picture and explaining what a pending account may do.
+Both saving and skipping stamp `users.onboarded_at`, so it is shown exactly
+once; a step that came back until it was filled in would be the manufactured
+urgency [ADR 0056](adr/0056-boring-but-friendly.md) refuses. Accounts that
+predate the column were backfilled by its migration.
+
+Approval sends an always-delivered `registration_approved` notice from
+`Users.approve_user/1` — from the context, never the admin LiveView, so no
+second approval path can skip it. `pending_registration` (to staff) is
+always-delivered too: an approval queue nobody is told about is an approval
+queue nobody empties.
+
 #### Invite Codes
 
 All authenticated users can generate invite codes at `/invites`. Non-admin users
@@ -728,10 +760,70 @@ pre-fills the invite code field on the registration form. A **copy button**
 
 Password reset is available at `/password-reset`. Users enter their username,
 a recovery code, and a new password. Each recovery code can only be used once.
-Recovery codes are the sole password recovery mechanism — there is no email in
-the system. Rate limited to 5 attempts per hour per IP.
+The username is matched case-insensitively, like every other lookup — a
+case-sensitive one disagreed with `check_login_throttle/1`, which downcases,
+so somebody who registered `Alice` and typed `alice` got a generic refusal
+*and* burned a throttle slot. Rate limited to 5 attempts per hour per IP, and
+it sends a `password_changed` notice like the signed-in path does.
 
 Signed-in users change their password at `/profile/password` (see Session Management).
+
+### Account Recovery
+
+**There is no email in this system**, so recovery codes are the only
+self-service way back into an account — and until Phase 4D there was no way to
+mint more of them. See
+[ADR 0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md) for
+why the answer is an out-of-band OpenPGP anchor rather than a mailer.
+
+**Recovery codes.** `SecondFactor.generate_recovery_codes/1` is the low-level
+mint (account creation); `regenerate_recovery_codes/1` is what a member calls
+from `/profile`, behind the same step-up unlock as security-key management
+(ADR 0022). It retires the whole batch and sends an always-delivered
+`recovery_codes_regenerated`. `/profile` shows the **count** of unused codes,
+never the codes; a fresh batch is rendered once, from assigns.
+
+**Recovery contacts.** `recovery_contacts` rows carry an encrypted address
+(`RecoveryContactVault`, `:auth` class, bound to the owner), an armored
+OpenPGP public key in the clear, and a `pending`/`verified` status. Two
+changesets keep the anchor honest:
+
+| Changeset | Whose | Casts |
+|-----------|-------|-------|
+| `RecoveryContact.changeset/3` | the member's | `email`, `pgp_public_key`, `label` — never a verification field |
+| `RecoveryContact.verification_changeset/3` | the admin's | only the status, `verified_at`, `verified_by_id` |
+
+Changing the address or the key **drops the row back to `pending`**. That is
+what stops a stolen session becoming a permanent takeover, and
+`account_recovery_test.exs` is the gate. There is deliberately no function
+anywhere that creates a contact on somebody else's account.
+
+**The reset link.** `Recovery.issue/4` refuses without `admin.manage_users`, for
+the issuer's own account, for an account at or above the issuer's role level
+(ADR 0029's rule) and without a **verified** contact. Only the SHA-256 of the
+32-byte token is stored; it is shown once, expires in 24 h, and is claimed with
+one conditional `UPDATE`. `Recovery.redeem/3` sets the password, revokes every
+session, cancels exports and moves with the `account_reset` reason, issues
+fresh codes, and clears TOTP and security keys only when the issuing admin
+ticked that box — which is its own audit line (`clear_second_factors`) beside
+`issue_account_reset`.
+
+`BaudrateWeb.AccountResetLive` at `/account-reset/:token` answers every failure
+identically and checks the token on submit rather than on mount, so it is no
+oracle; the path is `noindex` because the token is in it.
+
+**Baudrate parses no OpenPGP and depends on no library for it.** The stored key
+is shape-checked (armor header and footer, 16 KB) so a member notices a paste
+error while looking at the form — not validated. Every signature check happens
+in the admin's own mail client, and `doc/sysop.md` carries that procedure.
+
+**The notice.** `recovery_notice` renders sitewide when an account has no
+unused codes *and* no verified contact, driven by `:recovery_pending` from both
+auth hooks. The two existence queries behind it run only while
+`users.recovery_notice_dismissed_at` is `NULL`, so a member who dismissed it
+pays nothing per mount. Dismissal goes through
+`BaudrateWeb.RecoveryNoticeHook`, because a button rendered by the layout can
+fire on any page.
 
 ### User Display Name
 

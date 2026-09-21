@@ -27,7 +27,11 @@ knowingly.
 
 - **D1. Local post visibility:** keep Public and Unlisted; drop "Followers only" and "Direct" from local composers, because boards are public spaces whose audience is set by the board's view role, and direct messages are the private channel. Done (B4).
 - **D2. Scale target: one server.** Done (2B, [ADR 0033](adr/0033-baudrate-runs-on-one-node.md)).
-- **D3. Email: stay without it.** Recovery is covered by 4D instead.
+- **D3. Email: stay without it.** Done (4D). Recovery codes stay the only
+  self-service route, they can now be replaced, and past them recovery is
+  anchored on an OpenPGP key verified out of band —
+  [ADR 0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md)
+  records why that is better than adding a mailer, and what it costs.
 - **D4. Data export and move gate: keep "TOTP enabled for ≥ 7 days"** ([ADR 0023](adr/0023-data-export-threat-model.md), [ADR 0025](adr/0025-account-migration.md)), and improve the path for members in 6E. Accepting WebAuthn in step-up re-authentication stays a separate possible feature.
 
 ---
@@ -41,7 +45,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
 | ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
 | ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (v1.31.0) |
-| 4 | Discovery and onboarding | ~~4A~~, ~~4B~~, ~~4C~~, 4D–4E, ~~4F~~ | Turns visitors into members, and keeps them able to sign in |
+| 4 | Discovery and onboarding | ~~4A~~, ~~4B~~, ~~4C~~, ~~4D~~, 4E, ~~4F~~ | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
 | 6 | Member depth | 6A–6E | Retention |
 | 7 | Admin and content tools | 7A–7E | Running the site without a shell |
@@ -308,27 +312,63 @@ the moduledocs. These are the facts that are not.
   just left. Fixed by posting to `LocaleController`; the shape of the bug is
   why that copy is documented as a cache.
 
-### 4D — Onboarding and account recovery, D3 (M)
-
-- [ ] **Signing in after registering (P4-D2).** Open mode signs the new member in, instead of sending them to `/login` (`web/live/register_live.ex:88`). A first-visit step asks for a display name and avatar.
-- [ ] **Approval mode.** The pending page explains what happens next, and approval sends a notice (`core/auth/users.ex:140`).
-- [ ] **Private pages** explain that signing in is needed, and bring the user back after sign-in.
-- [ ] **Regenerate recovery codes** from `/profile`.
-  - Behind step-up re-authentication (ADR 0022).
-  - Old codes stop working.
-  - Sends an always-delivered security notice.
-- [ ] **Admin-assisted reset** (needs an ADR).
-  - A single-use link that expires in 24 h, handed over through another channel.
-  - Using it sets a new password, revokes sessions, and cancels exports and moves.
-  - Sends a security notice and writes an audit entry.
-  - The ADR decides what happens to TOTP and security keys, and covers the risk of an admin being talked into it.
-- [ ] **Nudges** to store recovery codes and add a second factor.
-
 ### 4E — Sharing and PWA (S)
 
 - [ ] **Service worker on every page,** independent of push (`assets/js/push_manager_hook.js:28-34`), with an offline fallback page.
 - [ ] **Copy-link fallback** when `navigator.share` is missing (`assets/js/web_share_hook.js:15`).
 - [ ] **"Follow from your instance":** a visitor enters their instance and is sent to its remote-follow page for a user or board.
+
+### ~~4D — Onboarding and account recovery~~ — **done** (2026-09-21)
+
+Six items. Half were worse than the list said, and the decision that shaped
+the stage was the operator's, not one of them.
+
+- ~~**Signing in after registering (P4-D2).**~~ Done, all three modes.
+  Acknowledging the recovery codes is what signs you in, so nobody is carried
+  past the only copy of them they will ever see, and `/welcome` asks for a
+  display name and a picture once.
+- ~~**Approval mode.**~~ Done: `/welcome` explains what a pending account may
+  do, and `approve_user/1` sends an always-delivered notice. `pending_registration`
+  joined the always-delivered set too — staff could mute the approval queue its
+  own moduledoc says must not go unread.
+- ~~**Private pages** explain and bring you back.~~ Done, through a
+  `?return_to` parameter sanitised by `Helpers.local_path/2` on the way in and
+  again on the way out.
+- ~~**Regenerate recovery codes.**~~ Done — and the item understated the
+  problem. There was **no way to mint recovery codes after account creation at
+  all**: `/profile/recovery-codes` read a session key nothing in `lib/` ever
+  wrote, and `RecoveryCode`'s moduledoc claimed a TOTP reset re-issued them,
+  which it does not. With no email in the system, a member who spent all ten
+  had lost the account.
+- ~~**Admin-assisted reset** (needed an ADR).~~ Done, and the ADR is
+  [0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md).
+- ~~**Nudges.**~~ Done as a dismissible sitewide notice, shown only when an
+  account has no codes left *and* no verified contact. No count, no badge,
+  dismissal final.
+
+**The decision the list did not contain: what an admin verifies.** The
+operator's call (2026-09-21) is that recovery identity is proved **out of band
+by an OpenPGP signature** from an address the member registered here and an
+admin verified — the email facility is deliberately standalone, decoupled from
+Baudrate, so the trust network is one the instance does not own. Baudrate
+holds the anchor and never uses it: it sends no mail, verifies no signature,
+parses no PGP and fetches no key. The member registers the anchor from their
+own session and an admin can only *confirm* it, which is what stops a stolen
+session becoming a permanent takeover. `doc/sysop.md` carries the procedure,
+because no code enforces any of it.
+
+**Also decided** (2026-09-21): a reset needs a verified contact — so a member
+who arranged nothing has no way back, stated plainly rather than buried; the
+password is the default and clearing second factors is a separate tick with
+its own audit line; never an account at or above the issuer's role, with the
+server console as the deliberate escape hatch; and the address is encrypted at
+rest, which made it the first secret column not living in its owner's own row.
+
+**Found on the way.** The recovery-code password reset sent no
+`password_changed` notice — the flow most likely to be somebody else was the
+only silent one — and matched usernames case-sensitively while the throttle
+downcased, so `Alice` typing `alice` got a generic refusal *and* burned a
+throttle slot.
 
 ### ~~4C — Search~~ — **done** (2026-09-21)
 
@@ -451,9 +491,22 @@ was missing, and `/profile` now posts to it when the *effective* locale moves.
   reasoning, what is deliberately unaffected, and the gate. Reversing any of
   it needs a superseding record, not a patch.
 
+Two more on 2026-09-21:
+
+- **P4-D2. Signing in after registering.** Settled as sketched: open and
+  invite modes sign in at once, approval mode signs in as pending. The
+  recovery codes keep their place in front of the session. Done in 4D.
+
+- **P4-D3. What an admin verifies before resetting an account.** An OpenPGP
+  signature from a pre-registered, admin-verified address, checked out of band
+  in the admin's own client. Promoted to
+  [ADR 0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md),
+  which holds the reasoning, the four rules that hold it up, and what it costs
+  a member who arranges nothing.
+
 ### Decisions needed
 
-- [ ] **P4-D2. Signing in after registering.** [Open mode: sign in at once. Approval mode: sign in as pending, which can read and edit the profile, as today after login. Invite mode: like open mode.]
+*None open.*
 
 ---
 

@@ -77,6 +77,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0055](0055-unanswered-is-a-river-and-tags-is-a-ranking.md) | `/unanswered` is a river, `/tags` is a ranking | Accepted |
 | [0056](0056-boring-but-friendly.md) | Boring but friendly | Accepted |
 | [0057](0057-a-sitemap-invites-only-what-a-guest-sees.md) | A sitemap is an invitation, and it invites only what a guest sees | Accepted |
+| [0058](0058-account-recovery-is-anchored-outside-the-instance.md) | Account recovery is anchored outside the instance | Accepted |
 
 ## Writing a new ADR
 
