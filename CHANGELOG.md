@@ -14,15 +14,24 @@ readable. Plus a description for every uploaded image — until now each one
 announced itself as "Image 2", which is a position rather than a description
 and tells a screen-reader user nothing about what is in the picture.
 
-**Three defects fixed on the way, all of which predate this work.** A local
+**Six defects fixed on the way, all of which predate this work.** A local
 comment body had **no length limit at all**, where articles cap at 64 KB and
 inbound federation is held to the same ceiling. The draft autosave key was
 **shared between accounts**: it was a constant string, and localStorage is
 scoped to the origin rather than the session, so on a shared browser one
-member's unsent post was restored into the next member's composer. And six
+member's unsent post was restored into the next member's composer. Six
 **English strings were rendering another string's text** — the one worth an
 operator's attention, because it was visible on every page that used them and
 nothing in the test suite could see it.
+
+The last three came out of the pre-release audit and are collected under
+**Accessibility** and **Security** below: an image with no description
+**announced itself as decorative**, so a screen reader passed over it in
+silence; a peer's image description reached the database **with no length
+bound**, alone among remote strings; and eleven render sites — the article
+body among them — **never went through the render passes at all**, which
+would have left that first fix working on comments and silently absent from
+articles.
 
 ### Added
 
