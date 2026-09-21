@@ -333,7 +333,7 @@ msgstr "データベースに接続できません。設定を確認してくだ
 #: lib/baudrate_web/live/article_new_live.html.heex:21
 #: lib/baudrate_web/live/home_live.ex:44
 #: lib/baudrate_web/live/home_live.html.heex:43
-#: lib/baudrate_web/live/search_live.html.heex:415
+#: lib/baudrate_web/live/search_live.html.heex:518
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr "掲示板"
@@ -630,6 +630,7 @@ msgstr "掲示板に戻る"
 #: lib/baudrate_web/live/admin/federation_live.html.heex:439
 #: lib/baudrate_web/live/article_edit_live.html.heex:157
 #: lib/baudrate_web/live/article_new_live.html.heex:269
+#: lib/baudrate_web/live/search_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Board"
 msgstr "掲示板"
@@ -755,8 +756,8 @@ msgstr "アカウントは管理者の承認待ちです。"
 msgid "Your account is pending approval."
 msgstr "アカウントは承認待ちです。"
 
-#: lib/baudrate_web/live/search_live.html.heex:510
-#: lib/baudrate_web/live/search_live.html.heex:573
+#: lib/baudrate_web/live/search_live.html.heex:633
+#: lib/baudrate_web/live/search_live.html.heex:696
 #: lib/baudrate_web/live/tag_live.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
@@ -1139,7 +1140,7 @@ msgstr "ステータス「%{status}」の通報はありません。"
 #: lib/baudrate_web/live/admin/users_live.html.heex:82
 #: lib/baudrate_web/live/board_follows_live.html.heex:232
 #: lib/baudrate_web/live/following_live.html.heex:115
-#: lib/baudrate_web/live/search_live.html.heex:164
+#: lib/baudrate_web/live/search_live.html.heex:267
 #, elixir-autogen, elixir-format
 msgid "Pending"
 msgstr "保留中"
@@ -1287,7 +1288,7 @@ msgstr "コメントを投稿しました。"
 
 #: lib/baudrate_web/live/article_live.html.heex:549
 #: lib/baudrate_web/live/article_live.html.heex:646
-#: lib/baudrate_web/live/search_live.html.heex:406
+#: lib/baudrate_web/live/search_live.html.heex:509
 #: lib/baudrate_web/live/timeline_live.html.heex:1497
 #: lib/baudrate_web/live/user_profile_live.html.heex:190
 #, elixir-autogen, elixir-format
@@ -1322,7 +1323,7 @@ msgstr "記事を編集"
 msgid "File type not accepted"
 msgstr "対応していないファイル形式です"
 
-#: lib/baudrate_web/live/search_live.html.heex:435
+#: lib/baudrate_web/live/search_live.html.heex:558
 #, elixir-autogen, elixir-format
 msgid "No articles found for \"%{query}\"."
 msgstr "「%{query}」に一致する記事が見つかりません。"
@@ -1370,7 +1371,7 @@ msgstr "変更を保存"
 #: lib/baudrate_web/components/layouts.ex:1048
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:26
 #: lib/baudrate_web/live/board_follows_live.html.heex:99
-#: lib/baudrate_web/live/search_live.ex:58
+#: lib/baudrate_web/live/search_live.ex:84
 #: lib/baudrate_web/live/search_live.html.heex:2
 #: lib/baudrate_web/live/search_live.html.heex:24
 #, elixir-autogen, elixir-format
@@ -1468,7 +1469,7 @@ msgid "Confirm Ban"
 msgstr "BANを確認"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:53
-#: lib/baudrate_web/live/search_live.html.heex:46
+#: lib/baudrate_web/live/search_live.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr "説明"
@@ -1757,7 +1758,7 @@ msgstr "登録には招待コードが必要です。"
 msgid "Approve User"
 msgstr "ユーザーを承認"
 
-#: lib/baudrate_web/live/search_live.html.heex:397
+#: lib/baudrate_web/live/search_live.html.heex:500
 #: lib/baudrate_web/live/timeline_live.html.heex:1489
 #: lib/baudrate_web/live/user_profile_live.html.heex:182
 #, elixir-autogen, elixir-format
@@ -1998,7 +1999,7 @@ msgstr "使用回数"
 #: lib/baudrate_web/live/bookmarks_live.html.heex:42
 #: lib/baudrate_web/live/bookmarks_live.html.heex:93
 #: lib/baudrate_web/live/bookmarks_live.html.heex:96
-#: lib/baudrate_web/live/search_live.html.heex:513
+#: lib/baudrate_web/live/search_live.html.heex:636
 #: lib/baudrate_web/live/tag_live.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "by"
@@ -2275,7 +2276,7 @@ msgstr "ユーザー"
 msgid "View / Post"
 msgstr "閲覧 / 投稿"
 
-#: lib/baudrate_web/live/search_live.html.heex:445
+#: lib/baudrate_web/live/search_live.html.heex:568
 #, elixir-autogen, elixir-format
 msgid "No comments found for \"%{query}\"."
 msgstr "「%{query}」に一致するコメントが見つかりません。"
@@ -2581,7 +2582,7 @@ msgstr "操作で絞り込み"
 msgid "Report status"
 msgstr "通報ステータス"
 
-#: lib/baudrate_web/live/search_live.html.heex:387
+#: lib/baudrate_web/live/search_live.html.heex:490
 #, elixir-autogen, elixir-format
 msgid "Search results"
 msgstr "検索結果"
@@ -3425,7 +3426,7 @@ msgstr "アカウントが新しすぎるため、招待コードを生成でき
 msgid "Too many actions. Please try again later."
 msgstr "操作が多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/live/search_live.ex:87
+#: lib/baudrate_web/live/search_live.ex:119
 #, elixir-autogen, elixir-format
 msgid "Too many searches. Please try again later."
 msgstr "検索が多すぎます。しばらくしてからもう一度お試しください。"
@@ -3488,40 +3489,40 @@ msgstr[0] "%{count} 件の未読メッセージ"
 msgid "Accepted"
 msgstr "承認済み"
 
-#: lib/baudrate_web/live/search_live.ex:194
+#: lib/baudrate_web/live/search_live.ex:253
 #, elixir-autogen, elixir-format
 msgid "Already following this actor."
 msgstr "既にこのアクターをフォローしています。"
 
-#: lib/baudrate_web/live/search_live.ex:197
+#: lib/baudrate_web/live/search_live.ex:256
 #, elixir-autogen, elixir-format
 msgid "Could not follow actor."
 msgstr "アクターをフォローできませんでした。"
 
 #: lib/baudrate_web/live/board_follows_live.ex:176
 #: lib/baudrate_web/live/following_live.ex:44
-#: lib/baudrate_web/live/search_live.ex:219
+#: lib/baudrate_web/live/search_live.ex:278
 #, elixir-autogen, elixir-format
 msgid "Could not unfollow actor."
 msgstr "アクターのフォローを解除できませんでした。"
 
 #: lib/baudrate_web/live/board_follows_live.html.heex:160
-#: lib/baudrate_web/live/search_live.html.heex:183
-#: lib/baudrate_web/live/search_live.html.heex:192
-#: lib/baudrate_web/live/search_live.html.heex:701
+#: lib/baudrate_web/live/search_live.html.heex:286
+#: lib/baudrate_web/live/search_live.html.heex:295
+#: lib/baudrate_web/live/search_live.html.heex:824
 #: lib/baudrate_web/live/user_profile_live.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "Follow"
 msgstr "フォロー"
 
-#: lib/baudrate_web/live/search_live.ex:186
-#: lib/baudrate_web/live/search_live.ex:252
+#: lib/baudrate_web/live/search_live.ex:245
+#: lib/baudrate_web/live/search_live.ex:311
 #: lib/baudrate_web/live/user_profile_live.ex:103
 #, elixir-autogen, elixir-format
 msgid "Follow rate limit exceeded. Please try again later."
 msgstr "フォローのレート制限を超えました。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/live/search_live.ex:179
+#: lib/baudrate_web/live/search_live.ex:238
 #, elixir-autogen, elixir-format
 msgid "Follow request sent."
 msgstr "フォローリクエストを送信しました。"
@@ -3534,7 +3535,7 @@ msgstr "フォローリクエストを送信しました。"
 msgid "Following"
 msgstr "フォロー中"
 
-#: lib/baudrate_web/live/search_live.html.heex:93
+#: lib/baudrate_web/live/search_live.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Looking up remote actor..."
 msgstr "リモートアクターを検索中…"
@@ -3545,13 +3546,13 @@ msgstr "リモートアクターを検索中…"
 msgid "Rejected"
 msgstr "拒否済み"
 
-#: lib/baudrate_web/live/search_live.html.heex:103
+#: lib/baudrate_web/live/search_live.html.heex:206
 #, elixir-autogen, elixir-format
 msgid "Remote actor"
 msgstr "リモートアクター"
 
-#: lib/baudrate_web/live/search_live.html.heex:153
-#: lib/baudrate_web/live/search_live.html.heex:682
+#: lib/baudrate_web/live/search_live.html.heex:256
+#: lib/baudrate_web/live/search_live.html.heex:805
 #, elixir-autogen, elixir-format
 msgid "Sign in to follow"
 msgstr "フォローするにはログイン"
@@ -3559,8 +3560,8 @@ msgstr "フォローするにはログイン"
 #: lib/baudrate_web/live/board_follows_live.html.heex:243
 #: lib/baudrate_web/live/following_live.html.heex:63
 #: lib/baudrate_web/live/following_live.html.heex:126
-#: lib/baudrate_web/live/search_live.html.heex:174
-#: lib/baudrate_web/live/search_live.html.heex:692
+#: lib/baudrate_web/live/search_live.html.heex:277
+#: lib/baudrate_web/live/search_live.html.heex:815
 #: lib/baudrate_web/live/user_profile_live.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Unfollow"
@@ -3568,25 +3569,25 @@ msgstr "フォロー解除"
 
 #: lib/baudrate_web/live/board_follows_live.html.heex:240
 #: lib/baudrate_web/live/following_live.html.heex:123
-#: lib/baudrate_web/live/search_live.html.heex:171
+#: lib/baudrate_web/live/search_live.html.heex:274
 #, elixir-autogen, elixir-format
 msgid "Unfollow this actor?"
 msgstr "このアクターのフォローを解除しますか？"
 
 #: lib/baudrate_web/live/following_live.ex:41
 #: lib/baudrate_web/live/following_live.ex:61
-#: lib/baudrate_web/live/search_live.ex:216
-#: lib/baudrate_web/live/search_live.ex:285
+#: lib/baudrate_web/live/search_live.ex:275
+#: lib/baudrate_web/live/search_live.ex:344
 #: lib/baudrate_web/live/user_profile_live.ex:164
 #, elixir-autogen, elixir-format
 msgid "Unfollowed successfully."
 msgstr "フォローを解除しました。"
 
-#: lib/baudrate_web/live/search_live.ex:168
-#: lib/baudrate_web/live/search_live.ex:206
-#: lib/baudrate_web/live/search_live.ex:228
-#: lib/baudrate_web/live/search_live.ex:272
-#: lib/baudrate_web/live/search_live.ex:297
+#: lib/baudrate_web/live/search_live.ex:227
+#: lib/baudrate_web/live/search_live.ex:265
+#: lib/baudrate_web/live/search_live.ex:287
+#: lib/baudrate_web/live/search_live.ex:331
+#: lib/baudrate_web/live/search_live.ex:356
 #, elixir-autogen, elixir-format
 msgid "You are not signed in."
 msgstr "ログインしていません。"
@@ -3601,15 +3602,15 @@ msgstr "まだ誰もフォローしていません。"
 #: lib/baudrate_web/live/article_live.html.heex:76
 #: lib/baudrate_web/live/article_live.html.heex:304
 #: lib/baudrate_web/live/board_live.html.heex:234
-#: lib/baudrate_web/live/search_live.html.heex:288
-#: lib/baudrate_web/live/search_live.html.heex:376
+#: lib/baudrate_web/live/search_live.html.heex:391
+#: lib/baudrate_web/live/search_live.html.heex:479
 #: lib/baudrate_web/live/timeline_live.html.heex:539
 #: lib/baudrate_web/live/timeline_live.html.heex:540
 #, elixir-autogen, elixir-format
 msgid "View original"
 msgstr "元の投稿を見る"
 
-#: lib/baudrate_web/live/search_live.ex:260
+#: lib/baudrate_web/live/search_live.ex:319
 #: lib/baudrate_web/live/user_profile_live.ex:142
 #, elixir-autogen, elixir-format
 msgid "Already following this user."
@@ -3621,13 +3622,13 @@ msgstr "すでにこのユーザーをフォローしています。"
 msgid "Article"
 msgstr "記事"
 
-#: lib/baudrate_web/live/search_live.ex:263
+#: lib/baudrate_web/live/search_live.ex:322
 #, elixir-autogen, elixir-format
 msgid "Could not follow user."
 msgstr "ユーザーをフォローできませんでした。"
 
 #: lib/baudrate_web/live/following_live.ex:64
-#: lib/baudrate_web/live/search_live.ex:288
+#: lib/baudrate_web/live/search_live.ex:347
 #: lib/baudrate_web/live/user_profile_live.ex:167
 #, elixir-autogen, elixir-format
 msgid "Could not unfollow user."
@@ -3638,21 +3639,21 @@ msgstr "フォローを解除できませんでした。"
 msgid "Follow %{username}"
 msgstr "%{username} をフォロー"
 
-#: lib/baudrate_web/live/search_live.ex:242
+#: lib/baudrate_web/live/search_live.ex:301
 #: lib/baudrate_web/live/user_profile_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Followed successfully."
 msgstr "フォローしました。"
 
 #: lib/baudrate_web/live/following_live.html.heex:51
-#: lib/baudrate_web/live/search_live.html.heex:671
+#: lib/baudrate_web/live/search_live.html.heex:794
 #: lib/baudrate_web/live/timeline_live.html.heex:883
 #: lib/baudrate_web/live/timeline_live.html.heex:1031
 #, elixir-autogen, elixir-format
 msgid "Local"
 msgstr "ローカル"
 
-#: lib/baudrate_web/live/search_live.html.heex:465
+#: lib/baudrate_web/live/search_live.html.heex:588
 #, elixir-autogen, elixir-format
 msgid "No users found for \"%{query}\"."
 msgstr "「%{query}」に一致するユーザーが見つかりません。"
@@ -3669,18 +3670,18 @@ msgid "Unfollow %{username}"
 msgstr "%{username} のフォロー解除"
 
 #: lib/baudrate_web/live/following_live.html.heex:60
-#: lib/baudrate_web/live/search_live.html.heex:689
+#: lib/baudrate_web/live/search_live.html.heex:812
 #: lib/baudrate_web/live/user_profile_live.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "Unfollow this user?"
 msgstr "このユーザーのフォローを解除しますか？"
 
-#: lib/baudrate_web/live/search_live.html.heex:424
+#: lib/baudrate_web/live/search_live.html.heex:527
 #, elixir-autogen, elixir-format
 msgid "Users"
 msgstr "ユーザー"
 
-#: lib/baudrate_web/live/search_live.ex:245
+#: lib/baudrate_web/live/search_live.ex:304
 #: lib/baudrate_web/live/user_profile_live.ex:117
 #, elixir-autogen, elixir-format
 msgid "You cannot follow yourself."
@@ -4272,52 +4273,52 @@ msgstr "板からの削除に失敗しました。"
 msgid "Remove from board"
 msgstr "板から削除"
 
-#: lib/baudrate_web/live/search_live.html.heex:455
+#: lib/baudrate_web/live/search_live.html.heex:578
 #, elixir-autogen, elixir-format
 msgid "No boards found for \"%{query}\"."
 msgstr "「%{query}」に一致する掲示板が見つかりません。"
 
-#: lib/baudrate_web/live/search_live.html.heex:72
+#: lib/baudrate_web/live/search_live.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "Articles after a date"
 msgstr "指定日より後の記事"
 
-#: lib/baudrate_web/live/search_live.html.heex:68
+#: lib/baudrate_web/live/search_live.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Articles before a date"
 msgstr "指定日より前の記事"
 
-#: lib/baudrate_web/live/search_live.html.heex:64
+#: lib/baudrate_web/live/search_live.html.heex:158
 #, elixir-autogen, elixir-format
 msgid "Articles with attached images"
 msgstr "画像付きの記事"
 
-#: lib/baudrate_web/live/search_live.html.heex:78
+#: lib/baudrate_web/live/search_live.html.heex:181
 #, elixir-autogen, elixir-format
 msgid "Example: %{example}"
 msgstr "例：%{example}"
 
-#: lib/baudrate_web/live/search_live.html.heex:52
+#: lib/baudrate_web/live/search_live.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Filter by article author"
 msgstr "投稿者で絞り込む"
 
-#: lib/baudrate_web/live/search_live.html.heex:56
+#: lib/baudrate_web/live/search_live.html.heex:142
 #, elixir-autogen, elixir-format
 msgid "Filter by board"
 msgstr "掲示板で絞り込む"
 
-#: lib/baudrate_web/live/search_live.html.heex:60
+#: lib/baudrate_web/live/search_live.html.heex:150
 #, elixir-autogen, elixir-format
 msgid "Filter by tag"
 msgstr "タグで絞り込む"
 
-#: lib/baudrate_web/live/search_live.html.heex:45
+#: lib/baudrate_web/live/search_live.html.heex:124
 #, elixir-autogen, elixir-format
 msgid "Operator"
 msgstr "オペレーター"
 
-#: lib/baudrate_web/live/search_live.html.heex:38
+#: lib/baudrate_web/live/search_live.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Search operators"
 msgstr "検索オペレーター"
@@ -5152,40 +5153,40 @@ msgstr "公開"
 msgid "Unlisted"
 msgstr "未収載"
 
-#: lib/baudrate_web/live/search_live.html.heex:209
+#: lib/baudrate_web/live/search_live.html.heex:312
 #, elixir-autogen, elixir-format
 msgid "Looking up remote post..."
 msgstr "リモート投稿を検索中…"
 
-#: lib/baudrate_web/live/search_live.html.heex:220
-#: lib/baudrate_web/live/search_live.html.heex:262
-#: lib/baudrate_web/live/search_live.html.heex:302
-#: lib/baudrate_web/live/search_live.html.heex:338
+#: lib/baudrate_web/live/search_live.html.heex:323
+#: lib/baudrate_web/live/search_live.html.heex:365
+#: lib/baudrate_web/live/search_live.html.heex:405
+#: lib/baudrate_web/live/search_live.html.heex:441
 #, elixir-autogen, elixir-format
 msgid "Remote post"
 msgstr "リモート投稿"
 
-#: lib/baudrate_web/live/search_live.html.heex:277
+#: lib/baudrate_web/live/search_live.html.heex:380
 #, elixir-autogen, elixir-format
 msgid "View article"
 msgstr "記事を表示"
 
-#: lib/baudrate_web/live/search_live.ex:305
+#: lib/baudrate_web/live/search_live.ex:364
 #, elixir-autogen, elixir-format
 msgid "Could not import remote post."
 msgstr "リモート投稿をインポートできませんでした。"
 
-#: lib/baudrate_web/live/search_live.html.heex:356
+#: lib/baudrate_web/live/search_live.html.heex:459
 #, elixir-autogen, elixir-format
 msgid "Import & interact"
 msgstr "インポートして操作"
 
-#: lib/baudrate_web/live/search_live.html.heex:353
+#: lib/baudrate_web/live/search_live.html.heex:456
 #, elixir-autogen, elixir-format
 msgid "Importing..."
 msgstr "インポート中..."
 
-#: lib/baudrate_web/live/search_live.html.heex:364
+#: lib/baudrate_web/live/search_live.html.heex:467
 #, elixir-autogen, elixir-format
 msgid "Sign in to interact"
 msgstr "ログインして操作"
@@ -5684,13 +5685,13 @@ msgstr "お探しのページは存在しないか、別の場所に移動しま
 msgid "The server ran into an unexpected problem. Our team has been notified; please try again in a few moments."
 msgstr "サーバーで予期しないエラーが発生しました。管理者に通知済みですので、しばらくしてから再度お試しください。"
 
-#: lib/baudrate_web/live/search_live.html.heex:482
+#: lib/baudrate_web/live/search_live.html.heex:605
 #, elixir-autogen, elixir-format
 msgid "%{count} result"
 msgid_plural "%{count} results"
 msgstr[0] "%{count} 件の結果"
 
-#: lib/baudrate_web/live/search_live.html.heex:476
+#: lib/baudrate_web/live/search_live.html.heex:599
 #, elixir-autogen, elixir-format
 msgid "Page %{page} of %{total_pages} — %{count} results total"
 msgstr "%{page} / %{total_pages} ページ — 合計 %{count} 件の結果"
@@ -5814,7 +5815,7 @@ msgid "Boost, %{count} boost"
 msgid_plural "Boost, %{count} boosts"
 msgstr[0] "ブースト、%{count} 件のブースト"
 
-#: lib/baudrate_web/live/search_live.html.heex:161
+#: lib/baudrate_web/live/search_live.html.heex:264
 #, elixir-autogen, elixir-format
 msgid "Cancel this follow request?"
 msgstr "このフォローリクエストを取り消しますか？"
@@ -5976,7 +5977,7 @@ msgstr "組織"
 msgid "Page"
 msgstr "ページ"
 
-#: lib/baudrate_web/live/search_live.html.heex:160
+#: lib/baudrate_web/live/search_live.html.heex:263
 #, elixir-autogen, elixir-format
 msgid "Pending — cancel follow request"
 msgstr "保留中 — フォローリクエストを取り消す"
@@ -8766,3 +8767,83 @@ msgstr "ユーザー Atom フィード"
 #, elixir-autogen, elixir-format
 msgid "User RSS Feed"
 msgstr "ユーザー RSS フィード"
+
+#: lib/baudrate_web/live/search_live.html.heex:545
+#, elixir-autogen, elixir-format
+msgid "A search needs something to search within. Add a word, or an author:, board: or tag: — a date range on its own would list everything."
+msgstr "検索には対象が必要です。キーワードか、author:・board:・tag: のいずれかを加えてください。日付の範囲だけでは、すべてが並んでしまいます。"
+
+#: lib/baudrate_web/live/search_live.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "All boards"
+msgstr "すべての掲示板"
+
+#: lib/baudrate_web/live/search_live.html.heex:173
+#, elixir-autogen, elixir-format
+msgid "Comments after a date"
+msgstr "指定日より後のコメント"
+
+#: lib/baudrate_web/live/search_live.html.heex:165
+#, elixir-autogen, elixir-format
+msgid "Comments before a date"
+msgstr "指定日より前のコメント"
+
+#: lib/baudrate_web/live/search_live.html.heex:157
+#, elixir-autogen, elixir-format
+msgid "Comments with attached images"
+msgstr "画像付きのコメント"
+
+#: lib/baudrate_web/live/search_live.html.heex:149
+#, elixir-autogen, elixir-format
+msgid "Filter by a tag on the article"
+msgstr "記事のタグで絞り込む"
+
+#: lib/baudrate_web/live/search_live.html.heex:133
+#, elixir-autogen, elixir-format
+msgid "Filter by comment author"
+msgstr "コメントの投稿者で絞り込む"
+
+#: lib/baudrate_web/live/search_live.html.heex:141
+#, elixir-autogen, elixir-format
+msgid "Filter by the board the article is in"
+msgstr "記事が属する掲示板で絞り込む"
+
+#: lib/baudrate_web/live/search_live.html.heex:842
+#, elixir-autogen, elixir-format
+msgid "More people match than are shown here. Try a more specific name."
+msgstr "該当する人はここに表示されているより多くいます。もっと具体的な名前でお試しください。"
+
+#: lib/baudrate_web/live/search_live.ex:506
+#, elixir-autogen, elixir-format
+msgid "Newest first"
+msgstr "新しい順"
+
+#: lib/baudrate_web/live/search_live.ex:507
+#, elixir-autogen, elixir-format
+msgid "Oldest first"
+msgstr "古い順"
+
+#: lib/baudrate_web/live/search_live.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "Refine this search"
+msgstr "この検索を絞り込む"
+
+#: lib/baudrate_web/live/search_live.ex:505
+#, elixir-autogen, elixir-format
+msgid "Relevance"
+msgstr "関連度"
+
+#: lib/baudrate_web/live/search_live.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "Sort by"
+msgstr "並び替え"
+
+#: lib/baudrate_web/live/search_live.html.heex:86
+#, elixir-autogen, elixir-format
+msgid "Written on or after"
+msgstr "投稿日（開始）"
+
+#: lib/baudrate_web/live/search_live.html.heex:98
+#, elixir-autogen, elixir-format
+msgid "Written on or before"
+msgstr "投稿日（終了）"

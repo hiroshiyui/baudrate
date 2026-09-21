@@ -333,7 +333,7 @@ msgstr ""
 #: lib/baudrate_web/live/article_new_live.html.heex:21
 #: lib/baudrate_web/live/home_live.ex:44
 #: lib/baudrate_web/live/home_live.html.heex:43
-#: lib/baudrate_web/live/search_live.html.heex:415
+#: lib/baudrate_web/live/search_live.html.heex:518
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr ""
@@ -630,6 +630,7 @@ msgstr ""
 #: lib/baudrate_web/live/admin/federation_live.html.heex:439
 #: lib/baudrate_web/live/article_edit_live.html.heex:157
 #: lib/baudrate_web/live/article_new_live.html.heex:269
+#: lib/baudrate_web/live/search_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Board"
 msgstr ""
@@ -755,8 +756,8 @@ msgstr ""
 msgid "Your account is pending approval."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:510
-#: lib/baudrate_web/live/search_live.html.heex:573
+#: lib/baudrate_web/live/search_live.html.heex:633
+#: lib/baudrate_web/live/search_live.html.heex:696
 #: lib/baudrate_web/live/tag_live.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
@@ -1139,7 +1140,7 @@ msgstr ""
 #: lib/baudrate_web/live/admin/users_live.html.heex:82
 #: lib/baudrate_web/live/board_follows_live.html.heex:232
 #: lib/baudrate_web/live/following_live.html.heex:115
-#: lib/baudrate_web/live/search_live.html.heex:164
+#: lib/baudrate_web/live/search_live.html.heex:267
 #, elixir-autogen, elixir-format
 msgid "Pending"
 msgstr ""
@@ -1288,7 +1289,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:549
 #: lib/baudrate_web/live/article_live.html.heex:646
-#: lib/baudrate_web/live/search_live.html.heex:406
+#: lib/baudrate_web/live/search_live.html.heex:509
 #: lib/baudrate_web/live/timeline_live.html.heex:1497
 #: lib/baudrate_web/live/user_profile_live.html.heex:190
 #, elixir-autogen, elixir-format
@@ -1323,7 +1324,7 @@ msgstr ""
 msgid "File type not accepted"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:435
+#: lib/baudrate_web/live/search_live.html.heex:558
 #, elixir-autogen, elixir-format
 msgid "No articles found for \"%{query}\"."
 msgstr ""
@@ -1371,7 +1372,7 @@ msgstr ""
 #: lib/baudrate_web/components/layouts.ex:1048
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:26
 #: lib/baudrate_web/live/board_follows_live.html.heex:99
-#: lib/baudrate_web/live/search_live.ex:58
+#: lib/baudrate_web/live/search_live.ex:84
 #: lib/baudrate_web/live/search_live.html.heex:2
 #: lib/baudrate_web/live/search_live.html.heex:24
 #, elixir-autogen, elixir-format
@@ -1469,7 +1470,7 @@ msgid "Confirm Ban"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:53
-#: lib/baudrate_web/live/search_live.html.heex:46
+#: lib/baudrate_web/live/search_live.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr ""
@@ -1758,7 +1759,7 @@ msgstr ""
 msgid "Approve User"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:397
+#: lib/baudrate_web/live/search_live.html.heex:500
 #: lib/baudrate_web/live/timeline_live.html.heex:1489
 #: lib/baudrate_web/live/user_profile_live.html.heex:182
 #, elixir-autogen, elixir-format
@@ -1999,7 +2000,7 @@ msgstr ""
 #: lib/baudrate_web/live/bookmarks_live.html.heex:42
 #: lib/baudrate_web/live/bookmarks_live.html.heex:93
 #: lib/baudrate_web/live/bookmarks_live.html.heex:96
-#: lib/baudrate_web/live/search_live.html.heex:513
+#: lib/baudrate_web/live/search_live.html.heex:636
 #: lib/baudrate_web/live/tag_live.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "by"
@@ -2276,7 +2277,7 @@ msgstr ""
 msgid "View / Post"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:445
+#: lib/baudrate_web/live/search_live.html.heex:568
 #, elixir-autogen, elixir-format
 msgid "No comments found for \"%{query}\"."
 msgstr ""
@@ -2582,7 +2583,7 @@ msgstr ""
 msgid "Report status"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:387
+#: lib/baudrate_web/live/search_live.html.heex:490
 #, elixir-autogen, elixir-format
 msgid "Search results"
 msgstr ""
@@ -3434,7 +3435,7 @@ msgstr ""
 msgid "Too many actions. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.ex:87
+#: lib/baudrate_web/live/search_live.ex:119
 #, elixir-autogen, elixir-format
 msgid "Too many searches. Please try again later."
 msgstr ""
@@ -3498,40 +3499,40 @@ msgstr[1] "%{count} unread messages"
 msgid "Accepted"
 msgstr "Accepted"
 
-#: lib/baudrate_web/live/search_live.ex:194
+#: lib/baudrate_web/live/search_live.ex:253
 #, elixir-autogen, elixir-format
 msgid "Already following this actor."
 msgstr "Already following this actor."
 
-#: lib/baudrate_web/live/search_live.ex:197
+#: lib/baudrate_web/live/search_live.ex:256
 #, elixir-autogen, elixir-format
 msgid "Could not follow actor."
 msgstr "Could not follow actor."
 
 #: lib/baudrate_web/live/board_follows_live.ex:176
 #: lib/baudrate_web/live/following_live.ex:44
-#: lib/baudrate_web/live/search_live.ex:219
+#: lib/baudrate_web/live/search_live.ex:278
 #, elixir-autogen, elixir-format
 msgid "Could not unfollow actor."
 msgstr "Could not unfollow actor."
 
 #: lib/baudrate_web/live/board_follows_live.html.heex:160
-#: lib/baudrate_web/live/search_live.html.heex:183
-#: lib/baudrate_web/live/search_live.html.heex:192
-#: lib/baudrate_web/live/search_live.html.heex:701
+#: lib/baudrate_web/live/search_live.html.heex:286
+#: lib/baudrate_web/live/search_live.html.heex:295
+#: lib/baudrate_web/live/search_live.html.heex:824
 #: lib/baudrate_web/live/user_profile_live.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "Follow"
 msgstr "Follow"
 
-#: lib/baudrate_web/live/search_live.ex:186
-#: lib/baudrate_web/live/search_live.ex:252
+#: lib/baudrate_web/live/search_live.ex:245
+#: lib/baudrate_web/live/search_live.ex:311
 #: lib/baudrate_web/live/user_profile_live.ex:103
 #, elixir-autogen, elixir-format
 msgid "Follow rate limit exceeded. Please try again later."
 msgstr "Follow rate limit exceeded. Please try again later."
 
-#: lib/baudrate_web/live/search_live.ex:179
+#: lib/baudrate_web/live/search_live.ex:238
 #, elixir-autogen, elixir-format
 msgid "Follow request sent."
 msgstr "Follow request sent."
@@ -3544,7 +3545,7 @@ msgstr "Follow request sent."
 msgid "Following"
 msgstr "Following"
 
-#: lib/baudrate_web/live/search_live.html.heex:93
+#: lib/baudrate_web/live/search_live.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Looking up remote actor..."
 msgstr "Looking up remote actor..."
@@ -3555,13 +3556,13 @@ msgstr "Looking up remote actor..."
 msgid "Rejected"
 msgstr "Rejected"
 
-#: lib/baudrate_web/live/search_live.html.heex:103
+#: lib/baudrate_web/live/search_live.html.heex:206
 #, elixir-autogen, elixir-format
 msgid "Remote actor"
 msgstr "Remote actor"
 
-#: lib/baudrate_web/live/search_live.html.heex:153
-#: lib/baudrate_web/live/search_live.html.heex:682
+#: lib/baudrate_web/live/search_live.html.heex:256
+#: lib/baudrate_web/live/search_live.html.heex:805
 #, elixir-autogen, elixir-format
 msgid "Sign in to follow"
 msgstr "Sign in to follow"
@@ -3569,8 +3570,8 @@ msgstr "Sign in to follow"
 #: lib/baudrate_web/live/board_follows_live.html.heex:243
 #: lib/baudrate_web/live/following_live.html.heex:63
 #: lib/baudrate_web/live/following_live.html.heex:126
-#: lib/baudrate_web/live/search_live.html.heex:174
-#: lib/baudrate_web/live/search_live.html.heex:692
+#: lib/baudrate_web/live/search_live.html.heex:277
+#: lib/baudrate_web/live/search_live.html.heex:815
 #: lib/baudrate_web/live/user_profile_live.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Unfollow"
@@ -3578,25 +3579,25 @@ msgstr "Unfollow"
 
 #: lib/baudrate_web/live/board_follows_live.html.heex:240
 #: lib/baudrate_web/live/following_live.html.heex:123
-#: lib/baudrate_web/live/search_live.html.heex:171
+#: lib/baudrate_web/live/search_live.html.heex:274
 #, elixir-autogen, elixir-format
 msgid "Unfollow this actor?"
 msgstr "Unfollow this actor?"
 
 #: lib/baudrate_web/live/following_live.ex:41
 #: lib/baudrate_web/live/following_live.ex:61
-#: lib/baudrate_web/live/search_live.ex:216
-#: lib/baudrate_web/live/search_live.ex:285
+#: lib/baudrate_web/live/search_live.ex:275
+#: lib/baudrate_web/live/search_live.ex:344
 #: lib/baudrate_web/live/user_profile_live.ex:164
 #, elixir-autogen, elixir-format
 msgid "Unfollowed successfully."
 msgstr "Unfollowed successfully."
 
-#: lib/baudrate_web/live/search_live.ex:168
-#: lib/baudrate_web/live/search_live.ex:206
-#: lib/baudrate_web/live/search_live.ex:228
-#: lib/baudrate_web/live/search_live.ex:272
-#: lib/baudrate_web/live/search_live.ex:297
+#: lib/baudrate_web/live/search_live.ex:227
+#: lib/baudrate_web/live/search_live.ex:265
+#: lib/baudrate_web/live/search_live.ex:287
+#: lib/baudrate_web/live/search_live.ex:331
+#: lib/baudrate_web/live/search_live.ex:356
 #, elixir-autogen, elixir-format
 msgid "You are not signed in."
 msgstr "You are not signed in."
@@ -3611,15 +3612,15 @@ msgstr "You haven't followed anyone yet."
 #: lib/baudrate_web/live/article_live.html.heex:76
 #: lib/baudrate_web/live/article_live.html.heex:304
 #: lib/baudrate_web/live/board_live.html.heex:234
-#: lib/baudrate_web/live/search_live.html.heex:288
-#: lib/baudrate_web/live/search_live.html.heex:376
+#: lib/baudrate_web/live/search_live.html.heex:391
+#: lib/baudrate_web/live/search_live.html.heex:479
 #: lib/baudrate_web/live/timeline_live.html.heex:539
 #: lib/baudrate_web/live/timeline_live.html.heex:540
 #, elixir-autogen, elixir-format
 msgid "View original"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.ex:260
+#: lib/baudrate_web/live/search_live.ex:319
 #: lib/baudrate_web/live/user_profile_live.ex:142
 #, elixir-autogen, elixir-format
 msgid "Already following this user."
@@ -3631,13 +3632,13 @@ msgstr "Already following this user."
 msgid "Article"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.ex:263
+#: lib/baudrate_web/live/search_live.ex:322
 #, elixir-autogen, elixir-format
 msgid "Could not follow user."
 msgstr "Could not follow user."
 
 #: lib/baudrate_web/live/following_live.ex:64
-#: lib/baudrate_web/live/search_live.ex:288
+#: lib/baudrate_web/live/search_live.ex:347
 #: lib/baudrate_web/live/user_profile_live.ex:167
 #, elixir-autogen, elixir-format
 msgid "Could not unfollow user."
@@ -3648,21 +3649,21 @@ msgstr "Could not unfollow user."
 msgid "Follow %{username}"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.ex:242
+#: lib/baudrate_web/live/search_live.ex:301
 #: lib/baudrate_web/live/user_profile_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Followed successfully."
 msgstr "Followed successfully."
 
 #: lib/baudrate_web/live/following_live.html.heex:51
-#: lib/baudrate_web/live/search_live.html.heex:671
+#: lib/baudrate_web/live/search_live.html.heex:794
 #: lib/baudrate_web/live/timeline_live.html.heex:883
 #: lib/baudrate_web/live/timeline_live.html.heex:1031
 #, elixir-autogen, elixir-format
 msgid "Local"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:465
+#: lib/baudrate_web/live/search_live.html.heex:588
 #, elixir-autogen, elixir-format
 msgid "No users found for \"%{query}\"."
 msgstr ""
@@ -3679,18 +3680,18 @@ msgid "Unfollow %{username}"
 msgstr ""
 
 #: lib/baudrate_web/live/following_live.html.heex:60
-#: lib/baudrate_web/live/search_live.html.heex:689
+#: lib/baudrate_web/live/search_live.html.heex:812
 #: lib/baudrate_web/live/user_profile_live.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "Unfollow this user?"
 msgstr "Unfollow this user?"
 
-#: lib/baudrate_web/live/search_live.html.heex:424
+#: lib/baudrate_web/live/search_live.html.heex:527
 #, elixir-autogen, elixir-format
 msgid "Users"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.ex:245
+#: lib/baudrate_web/live/search_live.ex:304
 #: lib/baudrate_web/live/user_profile_live.ex:117
 #, elixir-autogen, elixir-format
 msgid "You cannot follow yourself."
@@ -4284,52 +4285,52 @@ msgstr ""
 msgid "Remove from board"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:455
+#: lib/baudrate_web/live/search_live.html.heex:578
 #, elixir-autogen, elixir-format
 msgid "No boards found for \"%{query}\"."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:72
+#: lib/baudrate_web/live/search_live.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "Articles after a date"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:68
+#: lib/baudrate_web/live/search_live.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Articles before a date"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:64
+#: lib/baudrate_web/live/search_live.html.heex:158
 #, elixir-autogen, elixir-format
 msgid "Articles with attached images"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:78
+#: lib/baudrate_web/live/search_live.html.heex:181
 #, elixir-autogen, elixir-format
 msgid "Example: %{example}"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:52
+#: lib/baudrate_web/live/search_live.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Filter by article author"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:56
+#: lib/baudrate_web/live/search_live.html.heex:142
 #, elixir-autogen, elixir-format
 msgid "Filter by board"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:60
+#: lib/baudrate_web/live/search_live.html.heex:150
 #, elixir-autogen, elixir-format
 msgid "Filter by tag"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:45
+#: lib/baudrate_web/live/search_live.html.heex:124
 #, elixir-autogen, elixir-format
 msgid "Operator"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:38
+#: lib/baudrate_web/live/search_live.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Search operators"
 msgstr ""
@@ -5166,40 +5167,40 @@ msgstr ""
 msgid "Unlisted"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:209
+#: lib/baudrate_web/live/search_live.html.heex:312
 #, elixir-autogen, elixir-format
 msgid "Looking up remote post..."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:220
-#: lib/baudrate_web/live/search_live.html.heex:262
-#: lib/baudrate_web/live/search_live.html.heex:302
-#: lib/baudrate_web/live/search_live.html.heex:338
+#: lib/baudrate_web/live/search_live.html.heex:323
+#: lib/baudrate_web/live/search_live.html.heex:365
+#: lib/baudrate_web/live/search_live.html.heex:405
+#: lib/baudrate_web/live/search_live.html.heex:441
 #, elixir-autogen, elixir-format
 msgid "Remote post"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:277
+#: lib/baudrate_web/live/search_live.html.heex:380
 #, elixir-autogen, elixir-format
 msgid "View article"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.ex:305
+#: lib/baudrate_web/live/search_live.ex:364
 #, elixir-autogen, elixir-format
 msgid "Could not import remote post."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:356
+#: lib/baudrate_web/live/search_live.html.heex:459
 #, elixir-autogen, elixir-format
 msgid "Import & interact"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:353
+#: lib/baudrate_web/live/search_live.html.heex:456
 #, elixir-autogen, elixir-format
 msgid "Importing..."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:364
+#: lib/baudrate_web/live/search_live.html.heex:467
 #, elixir-autogen, elixir-format
 msgid "Sign in to interact"
 msgstr ""
@@ -5686,14 +5687,14 @@ msgstr ""
 msgid "The server ran into an unexpected problem. Our team has been notified; please try again in a few moments."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:482
+#: lib/baudrate_web/live/search_live.html.heex:605
 #, elixir-autogen, elixir-format
 msgid "%{count} result"
 msgid_plural "%{count} results"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/live/search_live.html.heex:476
+#: lib/baudrate_web/live/search_live.html.heex:599
 #, elixir-autogen, elixir-format
 msgid "Page %{page} of %{total_pages} — %{count} results total"
 msgstr ""
@@ -5821,7 +5822,7 @@ msgid_plural "Boost, %{count} boosts"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/live/search_live.html.heex:161
+#: lib/baudrate_web/live/search_live.html.heex:264
 #, elixir-autogen, elixir-format
 msgid "Cancel this follow request?"
 msgstr ""
@@ -5987,7 +5988,7 @@ msgstr ""
 msgid "Page"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:160
+#: lib/baudrate_web/live/search_live.html.heex:263
 #, elixir-autogen, elixir-format
 msgid "Pending — cancel follow request"
 msgstr ""
@@ -8785,4 +8786,84 @@ msgstr ""
 #: lib/baudrate_web/components/layouts/root.html.heex:63
 #, elixir-autogen, elixir-format, fuzzy
 msgid "User RSS Feed"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:545
+#, elixir-autogen, elixir-format
+msgid "A search needs something to search within. Add a word, or an author:, board: or tag: — a date range on its own would list everything."
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "All boards"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:173
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Comments after a date"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:165
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Comments before a date"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:157
+#, elixir-autogen, elixir-format
+msgid "Comments with attached images"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:149
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Filter by a tag on the article"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:133
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Filter by comment author"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:141
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Filter by the board the article is in"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:842
+#, elixir-autogen, elixir-format
+msgid "More people match than are shown here. Try a more specific name."
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.ex:506
+#, elixir-autogen, elixir-format
+msgid "Newest first"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.ex:507
+#, elixir-autogen, elixir-format
+msgid "Oldest first"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "Refine this search"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.ex:505
+#, elixir-autogen, elixir-format
+msgid "Relevance"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "Sort by"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:86
+#, elixir-autogen, elixir-format
+msgid "Written on or after"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:98
+#, elixir-autogen, elixir-format
+msgid "Written on or before"
 msgstr ""
