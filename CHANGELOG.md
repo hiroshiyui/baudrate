@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
-## [Unreleased]
+## [1.35.0] — 2026-09-22
 
 Phase 6A's first half: a comment can be edited, and what it used to say stays
 readable. Plus a description for every uploaded image — until now each one
@@ -87,6 +87,83 @@ nothing in the test suite could see it.
   withdrawing a comment a way of publishing what it used to say.
 - An image description supplied by a remote instance is tag-stripped and
   length-bounded at ingest, with a changeset backstop.
+- **The inline-attachment path was the exception, and no longer is.** Images
+  on an inbound comment or DM go into the stored HTML rather than into rows,
+  and that path used a bare tag-strip with no length limit — where every other
+  remote string reaching a column is truncated. `body_html` has no length
+  validation of its own, so up to four attachment names could carry
+  attacker-chosen text as far as the 256 KB payload cap allows. It now goes
+  through `ImageAlt.from_remote/1`, as the article-image path already did.
+
+### Accessibility
+
+- **An undescribed image inside a post is now announced instead of skipped.**
+  `alt=""` is not a blank: in HTML it is a positive claim that the image is
+  decorative, and a screen reader honours it by passing over the picture
+  without a word. Images on an inbound comment or DM are appended to the
+  stored HTML as inline `<img>` tags, and they carried `alt=""` whenever the
+  sending instance supplied no description — so the reader was not even told
+  a picture was there. `BaudrateWeb.ImageAltFallback` fills it in at render
+  time, which covers every comment already stored and lets the fallback be
+  translated; a string chosen at ingest would have frozen whichever locale
+  that request ran in into the row for good.
+- **Every rendered page gets the fix, not just the ones that were checked.**
+  Eleven render sites — the article body among them — turned a Markdown column
+  into HTML with a bare `raw/1` rather than going through
+  `BaudrateWeb.SafeHTML`. Nothing hotlinked, because the Markdown renderer
+  carries the media-proxy rewrite itself, but it cannot carry a *translated*
+  fallback, so the fix above would have reached comments and direct messages
+  and stopped there. All eleven now go through `SafeHTML`, and the build now
+  holds an allow-list of every remaining `raw/1` call with a reason for each,
+  because the eleventh was split across two files and no search for a single
+  spelling would have found it.
+- **A sixth composer cannot ship without a description field.** All five that
+  accept image uploads render one today, and nothing but review stopped the
+  next one from forgetting — a failure that leaves every test green and is
+  noticed only by the people who cannot see the picture. It is now a build
+  gate, with avatars the one named exemption, since an avatar's accessible
+  name is the account's display name.
+
+### Records
+
+- **[ADR 0061](doc/adr/0061-an-image-description-is-not-a-form-field.md) — an
+  image description is not a form field.** The image row exists before the
+  composer is submitted, because uploads are `auto_upload: true`, so the
+  control writes to that row directly: no `name` attribute, inside a
+  `phx-update="ignore"` container. As a form field it would be patched back to
+  the server's value on every re-render, which is the trap that has erased a
+  typed password, a recovery code, a bio and a poll's options in this codebase
+  already. The record also settles why an empty description is `nil` and never
+  `""` — `alt=""` means *decorative, announce nothing*, which for a photograph
+  somebody chose to post is false and, once stored, indistinguishable from a
+  deliberate choice.
+- It also records the shape the fix had to take, which was not obvious until
+  it was attempted: remote images arrive by **two different routes and only
+  one of them is a row.** An image on a remote article is fetched and stored
+  as an `article_images` row with `alt`; an image on a remote comment or DM is
+  appended to `body_html` as inline HTML. The second route cannot use the
+  gallery's `Image N` fallback and cannot choose any fallback at ingest, which
+  is what pushed the repair to render time — and from there to the discovery
+  that the article body was not going through the render passes at all.
+
+### Tests
+
+- The image-description control now has a gate for the two properties that
+  make it work at all: it carries no `name`, and it sits in an ignored
+  container. Both were load-bearing, documented, and untested.
+- The **third** of the three attachment builders — the one for timeline item
+  replies — had no test of its own; a description now proves it travels, and
+  an undescribed image proves the field is absent rather than empty.
+
+### Documentation
+
+- Eleven modules were missing from `doc/development.md`'s project tree,
+  including `sitemap.ex`, `crawlers.ex`, `http_caching.ex` and
+  `not_found_error.ex` — the machinery behind ADR 0057, absent since v1.32.0 —
+  as well as `content_warning.ex` from v1.31.0 and this release's three.
+- The rate-limit table listed article updates but not comment updates, and the
+  PubSub table listed `:comment_created` and `:comment_deleted` but not
+  `:comment_updated`.
 
 ## [1.34.0] — 2026-09-21
 
