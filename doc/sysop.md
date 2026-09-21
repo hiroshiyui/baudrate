@@ -1572,11 +1572,10 @@ Safari, Firefox).
 
 - The site must be served over **HTTPS** (required for service workers and PWA)
 - VAPID keys must be generated in Admin Settings for push notifications to
-  work. **They no longer gate installability.** Until v1.34.0 the service
-  worker was registered only by the push settings section on `/profile`, and
-  only when a VAPID key was configured, so an instance that never set up push
-  could not be installed at all and nothing said so. It is now registered on
-  every page.
+  work. **They no longer gate installability.** The service worker used to be
+  registered only by the push settings section on `/profile`, and only when a
+  VAPID key was configured, so an instance that never set up push could not be
+  installed at all and nothing said so. It is now registered on every page.
 - A reverse proxy serving `/site.webmanifest` from disk must be told its type.
   Debian's `/etc/nginx/mime.types` has no `webmanifest` entry, so nginx falls
   back to `default_type` and answers `application/octet-stream`; the shipped

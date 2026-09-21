@@ -7,12 +7,15 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.31.1, deployed 2026-09-20).** The review named five
+**Current state (v1.33.1, deployed 2026-09-21).** The review named five
 gaps: broken promises (the UI or docs saying something happens when it does
 not), moderation reach, operability, federation reach, and discovery and
-onboarding. The first four are closed — Phase 0 in v1.18.2, Phase 1 in
-v1.21.0, Phase 2 with the alerting item that followed v1.28.2, and Phase 3 in
-v1.31.0. **Phase 4 is next.**
+onboarding. **All five are now closed** — Phase 0 in v1.18.2, Phase 1 in
+v1.21.0, Phase 2 with the alerting item that followed v1.28.2, Phase 3 in
+v1.31.0, and Phase 4 across v1.32.0–v1.33.0 plus 4E, which is on `current`
+and not yet released. **Phase 5 is next**, and its
+premise is the one the roadmap already states: growth from Phase 4 attracts
+spam.
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -45,7 +48,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
 | ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
 | ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (v1.31.0) |
-| 4 | Discovery and onboarding | ~~4A~~, ~~4B~~, ~~4C~~, ~~4D~~, 4E, ~~4F~~ | Turns visitors into members, and keeps them able to sign in |
+| ~~4~~ | ~~Discovery and onboarding~~ | 4A–4F | **Complete** (v1.32.0 – v1.33.0; 4E unreleased) |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
 | 6 | Member depth | 6A–6E | Retention |
 | 7 | Admin and content tools | 7A–7E | Running the site without a shell |
@@ -249,22 +252,17 @@ Everything else about Phase 3 is in those records, in `CHANGELOG.md`,
 
 ---
 
-## Phase 4 — Discovery and onboarding (scope)
+## Phase 4 — Discovery and onboarding — **complete**
 
-**The aim all of this serves:** a boring but friendly environment for online
-discussion ([ADR 0056](adr/0056-boring-but-friendly.md)). Discovery here means
-helping someone find the board they want, never deciding what they should look
-at today.
+**The aim it served:** a boring but friendly environment for online discussion
+([ADR 0056](adr/0056-boring-but-friendly.md)). Discovery here means helping
+someone find the board they want, never deciding what they should look at
+today.
 
-**Goal.** A first-time visitor understands what the site is and finds something to read; a new member gets to a first post without a dead end, and can always get back into the account.
-
-**Done when:**
-- ~~a guest's first page shows the site's purpose and the boards it has (P4-D1);~~ **done** (4A)
-- ~~search engines index public content without duplicates;~~ **done** (4B)
-- ~~a new member is signed in and guided after registering;~~ **done** (4D)
-- ~~a locked-out member has a documented way back in (D3).~~ **done** (4D)
-
-**Phase 4 is complete.**
+All four goals are met: a guest's first page shows the site's purpose and its
+boards; search engines index public content without duplicates; a new member
+is signed in and guided after registering; and a locked-out member has a
+documented way back in.
 
 ### Done
 
@@ -274,44 +272,57 @@ at today.
 | 4B | SEO and syndication feeds: `sitemap.xml`, a real `robots.txt`, canonical/description/`noindex`, 404 for a missing account, per-page and tag feeds | v1.33.0 | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
 | 4C | Search: relevance or date sorting, a board and date filter, the same operators on the Comments tab, a paged Users tab capped at five pages | v1.33.0 | `doc/development.md` (Search), spec rows under [0054](adr/0054-attention-follows-the-board-not-a-ranking.md)/[0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)/[0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
 | 4D | Onboarding and account recovery: sign-in on registering, `/welcome`, private pages that bring you back, replaceable recovery codes, OpenPGP recovery contacts, admin-issued reset links | v1.33.0 | [0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md), `doc/sysop.md` (the operator's procedure) |
-| 4E | Sharing and PWA: the service worker on every page with an offline fallback, a copy-link share fallback, follow-from-your-instance | v1.34.0 | [0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md), `doc/development.md` (the service worker; Follow from your instance) |
+| 4E | Sharing and PWA: the service worker on every page with an offline fallback, a copy-link share fallback, follow-from-your-instance | unreleased | [0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md), `doc/development.md` (the service worker; Follow from your instance) |
 | 4F | Privacy and language: the footer language switcher and a one-year `locale` cookie | v1.32.0 | `doc/development.md` (resolution order, cookie inventory) |
 
-**4A adds no new page.** `/recent` and `/popular` went with P4-D1;
-`/unanswered` and a `/tags` index went with
-[0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md). All four are
-in `@ranking_paths`, so mounting one fails the build. `/tags/:tag` already
-exists and is untouched — the reader named the tag.
+Three decisions were taken and all three are now records, which hold the
+reasoning and what is deliberately unaffected: **P4-D1** — the site ranks
+nothing and rivers nothing ([0054](adr/0054-attention-follows-the-board-not-a-ranking.md),
+narrowed by [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md),
+premised on [0056](adr/0056-boring-but-friendly.md)); **P4-D2** — registering
+signs you in, with the recovery codes still in front of the session;
+**P4-D3** — an admin verifies an OpenPGP signature from a pre-registered
+address before resetting an account ([0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md)).
+Reversing any of it needs a superseding record, not a patch.
 
 ### Only recorded here
 
-Everything else about the finished stages is in those records, in
-`CHANGELOG.md` and in the moduledocs. These are the facts that are not.
+Everything else lives in those records, in `CHANGELOG.md` and in the
+moduledocs — including two lessons that started here and have since moved to
+where the code is: why changing language on `/profile` used to render dead
+HTML (`CLAUDE.md`, the locale gotcha) and why a board's last-activity time
+shares the unread badge's filters (`Content.Boards.last_activity_by_board/1`).
+These are the facts that are still nowhere else.
 
-- **Reading each stage's list against the code changed the stage, every
-  time — and four times the thing that mattered was not on the list.** 4F's
-  YouTube item had already shipped and its translation item counted the PO
-  header. 4B's four items were right, but what "Unlisted" *means* was not
-  among them. None of 4C's three items described the real work: relevance
-  ranking was written and thrown away on the next line, the Comments tab had
-  been ordered oldest-first for its whole life, and `?q=after:2026-01-01`
-  returned every article the viewer could see — `/recent` through the search
-  box, which [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)
-  had refused through the router. Half of 4D's six were worse than written,
-  and one was not implemented at all: there was no way to mint recovery codes
-  after account creation, so a member who spent all ten had lost the account
-  in a system with no email. **The list is a prompt to go and read, never a
-  specification.**
+- **Reading a stage's list against the code changed the stage, every time.**
+  Not once in six. 4F's YouTube item had already shipped and its translation
+  item counted the PO header. 4B's items were right, but what "Unlisted"
+  *means* was not among them. None of 4C's three described the real work:
+  relevance ranking was written and thrown away on the next line, the Comments
+  tab had been ordered oldest-first for its whole life, and
+  `?q=after:2026-01-01` returned every article the viewer could see —
+  `/recent` through the search box, which
+  [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) had refused
+  through the router. Half of 4D's six were worse than written and one was not
+  implemented at all: no way existed to mint recovery codes after account
+  creation, so a member who spent all ten had lost the account, in a system
+  with no email. 4E's three were all understated — registration was gated on a
+  **VAPID key**, so an instance that never configured push could not be
+  installed at all; the share button's "fallback" was two bugs, the second in
+  the clipboard hook it would reuse; and the WebFinger lookup behind
+  follow-from-your-instance was missing `refuse_blocked: true`, covered only
+  by a downstream re-check that flow does not have.
+  **The list is a prompt to go and read, never a specification.**
 
-- **Two of the six items were already done or mis-stated, and reading beat
-  guessing.** "YouTube embeds load only after a click" had shipped as
-  [0045](adr/0045-the-video-player-loads-on-a-click.md) during the Phase 3
-  audit, and the TODO line pointed at the click-to-load component itself.
-  "Fill the 5 empty strings" counted the PO header; the four real ones were
-  example values identical in every language. Neither needed building.
+- **A fix drifts to wherever the rule is written twice.** 4E found
+  `doc/examples/nginx.conf.example` still carrying both bugs the Ansible
+  template had lost hours earlier, because the new gate watched one of the two
+  files. A gate over one of two copies reports a rule that is half enforced.
+
 - **A number in a TODO goes stale the next time anyone runs
   `gettext.extract`,** so the translation chore became a gate
   (`translation_coverage_test.exs`) rather than a recurring line here.
+
 - **"An empty state when there are no boards" was the wrong question.** No
   boards cannot happen — setup seeds SysOp and `delete_board/1` refuses to
   remove it. **No board this *viewer* may see** can: nothing stops an admin
@@ -319,72 +330,12 @@ Everything else about the finished stages is in those records, in
   who was then told to "browse the boards below" with nothing below. The empty
   state never distinguishes "none exist" from "none for you", because that
   difference is what `min_role_to_view` is keeping.
-- **A board's last-activity time shares the unread badge's filters
-  deliberately.** An article nobody can open must not make a board look busy:
-  the timestamp would be an existence signal a remote instance could drive.
-  Keeping them in step also stops the dot and the time contradicting each
-  other. Per-viewer blocks are not applied, for the same reason the badge
-  does not apply them.
-- **Changing language on `/profile` used to reach the database and stop.**
-  `SetLocale` reads a member's language from a session copy written at login,
-  and a LiveView cannot write the session, so every later full page load
-  rendered its dead HTML — and `lang=` on `<html>` — in the language they had
-  just left. Fixed by posting to `LocaleController`; the shape of the bug is
-  why that copy is documented as a cache.
 
-### What 4E's three lines turned out to be
-
-Same pattern as every stage before it, recorded once more because it kept
-holding:
-
-- **"Service worker on every page" understated it.** Registration was gated on
-  a **VAPID key being configured**, not merely on the page — so an instance
-  that never set up Web Push had no service worker anywhere and could not be
-  installed at all, and nothing in the admin UI connected the two. The `fetch`
-  handler it already had was a bare pass-through added for Firefox's
-  installability check: it routed the whole site through the worker and cached
-  nothing. And there was no `install`/`activate` at all, so an update waited
-  for every tab to close.
-- **"Copy-link fallback" was two bugs, not one.** The share button hid itself
-  on desktop, and `CopyToClipboardHook` — the thing to reuse — had no
-  `.catch()` and no feature test, so outside a secure context it threw a
-  synchronous `TypeError` inside a click listener and gave no feedback at all.
-- **"Follow from your instance" had a gap one module away.**
-  `Discovery.webfinger_lookup/3` never passed `refuse_blocked: true`, and got
-  away with it only because `ActorResolver.resolve/2` re-checks downstream.
-  A flow that *stops* at the WebFinger document has no such backstop.
-- **The ops fix from the morning had already drifted.**
-  `doc/examples/nginx.conf.example` still carried both bugs the Ansible
-  template had just lost, because the gate watched one of the two places the
-  rule is written.
-
-### Decisions (made 2026-09-20)
-
-- **P4-D1. The site does not rank content, and there is no river of posts
-  across boards.** The question was what "popular" should mean; the answer is
-  that it means nothing here. Promoted to
-  [ADR 0054](adr/0054-attention-follows-the-board-not-a-ranking.md), narrowed
-  by [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md), and
-  premised on [0056](adr/0056-boring-but-friendly.md). Those hold the
-  reasoning, what is deliberately unaffected, and the gate. Reversing any of
-  it needs a superseding record, not a patch.
-
-Two more on 2026-09-21:
-
-- **P4-D2. Signing in after registering.** Settled as sketched: open and
-  invite modes sign in at once, approval mode signs in as pending. The
-  recovery codes keep their place in front of the session. Done in 4D.
-
-- **P4-D3. What an admin verifies before resetting an account.** An OpenPGP
-  signature from a pre-registered, admin-verified address, checked out of band
-  in the admin's own client. Promoted to
-  [ADR 0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md),
-  which holds the reasoning, the four rules that hold it up, and what it costs
-  a member who arranges nothing.
-
-### Decisions needed
-
-*None open.*
+- **4A added no new page.** `/recent` and `/popular` went with P4-D1;
+  `/unanswered` and a `/tags` index with
+  [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md). All four
+  are in `@ranking_paths`, so mounting one fails the build. `/tags/:tag`
+  already existed and is untouched — the reader named the tag.
 
 ---
 
