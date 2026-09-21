@@ -13,7 +13,20 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
 
   Global moderators see the record above. **IP addresses and login attempts
   are admin-only**: they are personal data, and judging behaviour does not
-  require them.
+  require them. So are recovery contacts, and for the same reason plus one
+  more: they are the anchor a reset rests on.
+
+  ## Account recovery (ADR 0058)
+
+  Two actions, deliberately separate. **Verifying a contact** confirms that a
+  signed message from that address checked out against the key the member
+  registered — the check happens in the admin's own mail client, and
+  `doc/sysop.md` is the procedure. **Issuing a reset** hands over a link,
+  shown once, and only against a contact that is already verified.
+
+  Neither creates an anchor: there is no control here that puts an address or
+  a key on somebody else's account. An admin confirms what a member
+  registered, and the member registered it from their own signed-in session.
   """
 
   use BaudrateWeb, :live_view
@@ -46,6 +59,10 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
          socket
          |> assign(:wide_layout, true)
          |> assign(:sanction_form, nil)
+         # Shown once, straight after issuing. Never read back from anywhere:
+         # only the hash of the token is stored.
+         |> assign(:issued_reset_token, nil)
+         |> assign(:clear_second_factors, false)
          |> assign(:page_title, gettext("User: %{username}", username: user.username))
          |> load(user)}
     end
@@ -76,7 +93,42 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
     |> assign(:comments, Content.list_recent_comments_by_user(user.id, 10, viewer: actor))
     |> assign(:invitees, Auth.list_invitees(user.id))
     |> assign(:login_attempts, login_attempts(user, admin?))
+    |> assign(:recovery_contacts, recovery_contacts(user, admin?))
+    |> assign(:live_reset, Auth.live_account_reset(user))
+    |> assign(:can_reset?, admin? and Auth.can_issue_account_reset?(actor, user))
   end
+
+  # Admin-only. A recovery contact is personal data and the anchor a reset
+  # rests on, so a moderator never sees one.
+  defp recovery_contacts(_user, false), do: []
+  defp recovery_contacts(user, true), do: Auth.list_recovery_contacts(user)
+
+  defp verification_flash("verified"),
+    do: gettext("Recovery contact verified. It can now be used to issue a reset link.")
+
+  defp verification_flash("pending"),
+    do: gettext("Recovery contact set back to unverified.")
+
+  # Each refusal says which rule refused, because an admin acting on a
+  # recovery request needs to know whether to look for a different contact or
+  # to stop entirely.
+  defp reset_refusal(:no_verified_contact),
+    do:
+      gettext(
+        "This account has no verified recovery contact, so there is no proof of identity to act on."
+      )
+
+  defp reset_refusal(:role_too_high),
+    do:
+      gettext(
+        "You cannot reset an account at or above your own role. Recovering one needs the server console."
+      )
+
+  defp reset_refusal(:self_action),
+    do: gettext("Use your own recovery codes rather than issuing yourself a link.")
+
+  defp reset_refusal(:unauthorized), do: gettext("You are not allowed to do that.")
+  defp reset_refusal(_other), do: gettext("Could not issue a reset link.")
 
   # Admin-only, and not fetched at all otherwise: the cheapest way to keep
   # personal data off a page is not to put it in the socket.
@@ -84,6 +136,78 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
 
   defp login_attempts(user, true) do
     Auth.paginate_login_attempts(username: user.username, per_page: 10).attempts
+  end
+
+  @impl true
+  def handle_event("verify_contact", %{"id" => id, "status" => status}, socket)
+      when status in ["verified", "pending"] do
+    with {:ok, contact_id} <- parse_id(id),
+         {:ok, _contact} <-
+           Auth.set_recovery_contact_verification(socket.assigns.current_user, contact_id, status) do
+      {:noreply,
+       socket
+       |> load(Auth.get_user(socket.assigns.user.id))
+       |> put_flash(:info, verification_flash(status))}
+    else
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, gettext("You are not allowed to do that."))}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Could not update that contact."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_clear_second_factors", _params, socket) do
+    {:noreply, assign(socket, :clear_second_factors, !socket.assigns.clear_second_factors)}
+  end
+
+  @impl true
+  def handle_event("issue_reset", %{"contact_id" => id}, socket) do
+    actor = socket.assigns.current_user
+    user = socket.assigns.user
+
+    with {:ok, contact_id} <- parse_id(id),
+         {:ok, token, _reset} <-
+           Auth.issue_account_reset(actor, user, contact_id,
+             clear_second_factors: socket.assigns.clear_second_factors
+           ) do
+      {:noreply,
+       socket
+       |> assign(:issued_reset_token, token)
+       |> assign(:clear_second_factors, false)
+       |> load(Auth.get_user(user.id))
+       |> put_flash(
+         :info,
+         gettext("Link issued. Copy it now — it is not shown again, and it works once.")
+       )}
+    else
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, reset_refusal(reason))}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Could not issue a reset link."))}
+    end
+  end
+
+  @impl true
+  def handle_event("revoke_reset", _params, socket) do
+    case Auth.revoke_account_reset(socket.assigns.current_user, socket.assigns.user) do
+      {:ok, _count} ->
+        {:noreply,
+         socket
+         |> assign(:issued_reset_token, nil)
+         |> load(Auth.get_user(socket.assigns.user.id))
+         |> put_flash(:info, gettext("Reset link revoked."))}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, reset_refusal(reason))}
+    end
+  end
+
+  @impl true
+  def handle_event("dismiss_reset_token", _params, socket) do
+    {:noreply, assign(socket, :issued_reset_token, nil)}
   end
 
   @impl true

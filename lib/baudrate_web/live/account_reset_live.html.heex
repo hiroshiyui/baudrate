@@ -1,0 +1,88 @@
+<section
+  id="account-reset-page"
+  aria-labelledby="account-reset-heading"
+  class="account-reset-page mx-auto max-w-sm mt-10"
+>
+  <h1 id="account-reset-heading" class="account-reset-heading text-2xl font-bold text-center mb-2">
+    {gettext("Account Recovery")}
+  </h1>
+
+  <%!-- Fresh codes, shown once. Nothing can read them back. --%>
+  <div :if={@codes} id="account-reset-codes" class="account-reset-codes">
+    <div id="account-reset-codes-warning" class="alert alert-warning mb-4" role="status">
+      <.icon name="hero-exclamation-triangle" class="size-6 shrink-0" />
+      <span>{gettext("You will not be able to see these codes again!")}</span>
+    </div>
+
+    <ol class="account-reset-codes-list grid grid-cols-2 gap-1.5 font-mono text-sm mb-6">
+      <li
+        :for={code <- @codes}
+        id={"account-reset-code-#{code}"}
+        class="account-reset-code bg-base-300 rounded px-3 py-1.5 text-center"
+      >
+        {code}
+      </li>
+    </ol>
+
+    <.link
+      id="account-reset-signin"
+      navigate={~p"/login"}
+      class="account-reset-signin btn btn-primary w-full"
+    >
+      {gettext("Sign in")}
+    </.link>
+  </div>
+
+  <div :if={!@codes}>
+    <p id="account-reset-intro" class="account-reset-intro text-center text-base-content/70 mb-6">
+      {gettext("Choose a new password. Every session on this account will be signed out.")}
+    </p>
+
+    <.form
+      for={@form}
+      id="account-reset-form"
+      phx-change="validate"
+      phx-submit="submit"
+      class="account-reset-form space-y-4"
+    >
+      <div>
+        <label for="account-reset-password" class="label label-text">
+          {gettext("New password")}
+        </label>
+        <input
+          type="password"
+          id="account-reset-password"
+          name="reset[password]"
+          value={@form[:password].value}
+          autocomplete="new-password"
+          class="account-reset-password input input-bordered w-full"
+          aria-describedby="account-reset-strength"
+        />
+        <.password_requirements id="account-reset-strength" strength={@password_strength} />
+      </div>
+
+      <div>
+        <label for="account-reset-password-confirmation" class="label label-text">
+          {gettext("Confirm new password")}
+        </label>
+        <input
+          type="password"
+          id="account-reset-password-confirmation"
+          name="reset[password_confirmation]"
+          value={@form[:password_confirmation].value}
+          autocomplete="new-password"
+          class="account-reset-password-confirmation input input-bordered w-full"
+        />
+      </div>
+
+      <button
+        type="submit"
+        id="account-reset-submit"
+        class="account-reset-submit btn btn-primary w-full"
+        phx-disable-with={gettext("Setting password...")}
+      >
+        {gettext("Set password")}
+      </button>
+    </.form>
+  </div>
+</section>

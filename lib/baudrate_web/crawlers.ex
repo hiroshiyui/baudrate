@@ -37,8 +37,12 @@ defmodule BaudrateWeb.Crawlers do
   page it landed on.
   """
 
-  @noindex_paths ~w(/search /login /register /password-reset)
-  @noindex_prefixes ~w(/totp/)
+  @noindex_paths ~w(/search /login /register /password-reset /welcome)
+  # `/account-reset/` carries a single-use recovery token in the path itself
+  # (ADR 0058). A search engine that indexed one would publish it, and a
+  # referrer header would leak it — so the page refuses indexing and, because
+  # `noindex_path?/1` also drives `canonical_url/2`, never names itself either.
+  @noindex_prefixes ~w(/totp/ /account-reset/)
 
   @doc """
   Returns true when this page must not be indexed.

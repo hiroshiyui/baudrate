@@ -517,4 +517,188 @@
       </table>
     </div>
   </section>
+
+  <%!--
+    Account recovery (ADR 0058). Admin-only, because a recovery contact is
+    personal data and it is the anchor a reset rests on. Every cryptographic
+    check happens in the admin's own mail client; `doc/sysop.md` is the
+    procedure, and nothing here verifies a signature.
+  --%>
+  <section
+    :if={@admin?}
+    id="admin-user-detail-recovery"
+    class="admin-user-detail-recovery"
+    aria-labelledby="admin-user-detail-recovery-heading"
+  >
+    <h2
+      id="admin-user-detail-recovery-heading"
+      class="admin-user-detail-recovery-heading text-lg font-semibold mb-2"
+    >
+      {gettext("Account recovery")}
+    </h2>
+
+    <p
+      id="admin-user-detail-recovery-note"
+      class="admin-user-detail-recovery-note text-sm text-base-content/70 mb-3"
+    >
+      {gettext(
+        "Verify a contact only after checking a signed message from that address against the key below, in your own mail client. Send a fresh challenge to sign — an old signed message can be replayed."
+      )}
+    </p>
+
+    <p
+      :if={@recovery_contacts == []}
+      id="admin-user-detail-recovery-empty"
+      class="admin-user-detail-recovery-empty text-sm text-base-content/70 italic"
+    >
+      {gettext("This account has registered no recovery contact, so it cannot be reset.")}
+    </p>
+
+    <ul
+      :if={@recovery_contacts != []}
+      id="admin-user-detail-recovery-contacts"
+      class="admin-user-detail-recovery-contacts space-y-3"
+    >
+      <li
+        :for={contact <- @recovery_contacts}
+        id={"admin-user-detail-recovery-contact-#{contact.id}"}
+        class="admin-user-detail-recovery-contact bg-base-200 rounded p-3 space-y-2 min-w-0"
+      >
+        <div class="flex flex-wrap items-center gap-2 min-w-0">
+          <span class="admin-user-detail-recovery-email font-mono text-sm break-all min-w-0 flex-1">
+            {contact.email || gettext("(unreadable)")}
+          </span>
+          <span
+            :if={contact.label && contact.label != ""}
+            class="admin-user-detail-recovery-label badge badge-ghost badge-sm"
+          >
+            {contact.label}
+          </span>
+          <span class={[
+            "admin-user-detail-recovery-status badge badge-sm",
+            contact.status == "verified" && "badge-success",
+            contact.status == "pending" && "badge-warning"
+          ]}>
+            {if contact.status == "verified",
+              do: gettext("Verified"),
+              else: gettext("Not verified")}
+          </span>
+        </div>
+
+        <details class="admin-user-detail-recovery-key collapse collapse-arrow bg-base-100">
+          <summary class="admin-user-detail-recovery-key-summary collapse-title text-sm font-medium">
+            {gettext("OpenPGP public key")}
+          </summary>
+          <div class="collapse-content">
+            <pre class="admin-user-detail-recovery-key-block text-xs whitespace-pre-wrap break-all">{contact.pgp_public_key}</pre>
+          </div>
+        </details>
+
+        <div class="admin-user-detail-recovery-actions flex flex-wrap gap-2">
+          <button
+            :if={contact.status == "pending"}
+            type="button"
+            id={"admin-user-detail-recovery-verify-#{contact.id}"}
+            phx-click="verify_contact"
+            phx-value-id={contact.id}
+            phx-value-status="verified"
+            class="admin-user-detail-recovery-verify btn btn-sm btn-outline"
+          >
+            {gettext("Mark verified")}
+          </button>
+          <button
+            :if={contact.status == "verified"}
+            type="button"
+            id={"admin-user-detail-recovery-unverify-#{contact.id}"}
+            phx-click="verify_contact"
+            phx-value-id={contact.id}
+            phx-value-status="pending"
+            class="admin-user-detail-recovery-unverify btn btn-sm btn-ghost"
+          >
+            {gettext("Withdraw verification")}
+          </button>
+          <button
+            :if={contact.status == "verified" && @can_reset?}
+            type="button"
+            id={"admin-user-detail-recovery-issue-#{contact.id}"}
+            phx-click="issue_reset"
+            phx-value-contact_id={contact.id}
+            data-confirm={
+              gettext(
+                "Issue a reset link for this account? Only do this after verifying a signature."
+              )
+            }
+            class="admin-user-detail-recovery-issue btn btn-sm btn-primary"
+          >
+            {gettext("Issue reset link")}
+          </button>
+        </div>
+      </li>
+    </ul>
+
+    <%!--
+      Its own decision, its own audit line: "I lost my phone, take my 2FA off"
+      is the ask, and it must not ride along with the password reset.
+    --%>
+    <label
+      :if={@can_reset?}
+      for="admin-user-detail-recovery-clear-2fa"
+      class="admin-user-detail-recovery-clear-2fa label cursor-pointer justify-start gap-2 mt-3"
+    >
+      <input
+        type="checkbox"
+        id="admin-user-detail-recovery-clear-2fa"
+        phx-click="toggle_clear_second_factors"
+        checked={@clear_second_factors}
+        class="checkbox checkbox-sm"
+      />
+      <span class="label-text">
+        {gettext("Also remove this account's TOTP and security keys")}
+      </span>
+    </label>
+
+    <%!-- Shown once. Only the hash of the token is stored. --%>
+    <div
+      :if={@issued_reset_token}
+      id="admin-user-detail-recovery-token"
+      class="admin-user-detail-recovery-token alert alert-warning flex-col items-start gap-2 mt-3"
+      role="status"
+    >
+      <p class="admin-user-detail-recovery-token-warning font-semibold">
+        {gettext("Send this link through the channel you verified. It is not shown again.")}
+      </p>
+      <code class="admin-user-detail-recovery-token-value text-xs break-all w-full">
+        {url(~p"/account-reset/#{@issued_reset_token}")}
+      </code>
+      <button
+        type="button"
+        id="admin-user-detail-recovery-token-done"
+        phx-click="dismiss_reset_token"
+        class="admin-user-detail-recovery-token-done btn btn-sm"
+      >
+        {gettext("I have copied it")}
+      </button>
+    </div>
+
+    <div
+      :if={@live_reset}
+      id="admin-user-detail-recovery-live"
+      class="admin-user-detail-recovery-live text-sm mt-3 flex flex-wrap items-center gap-2"
+    >
+      <span class="admin-user-detail-recovery-live-text">
+        {gettext("A reset link issued by %{admin} is outstanding until %{expires}.",
+          admin: (@live_reset.issued_by && @live_reset.issued_by.username) || gettext("an admin"),
+          expires: format_datetime(@live_reset.expires_at)
+        )}
+      </span>
+      <button
+        type="button"
+        id="admin-user-detail-recovery-revoke"
+        phx-click="revoke_reset"
+        class="admin-user-detail-recovery-revoke btn btn-xs btn-ghost text-error"
+      >
+        {gettext("Revoke it")}
+      </button>
+    </div>
+  </section>
 </div>

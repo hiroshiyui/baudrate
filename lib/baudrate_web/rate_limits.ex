@@ -38,6 +38,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_admin_sudo/1`          | `admin_sudo:`      | 15 min  | 5     |
   | `check_reauth/1`              | `reauth:`          | 15 min  | 5     |
   | `check_inbound_flag/1`        | `inbound_flag:`    | 1 hour  | 10    |
+  | `check_account_reset_by_ip/1` | `account_reset:ip:` | 1 hour | 10   |
   """
 
   require Logger
@@ -71,6 +72,19 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_reauth(integer()) :: :ok | {:error, :rate_limited}
   def check_reauth(user_id) do
     check("reauth:#{user_id}", 900_000, 5, :reauth)
+  end
+
+  @doc """
+  Redeeming an admin-issued account reset link: 10 attempts per hour per IP.
+
+  The token is 32 random bytes, so there is nothing here to brute force. This
+  bounds the *password* attempts against one link instead — a redemption that
+  fails on a weak password spends the link, so a loop of them is noise rather
+  than an attack, and it should still be noise somebody has to work at.
+  """
+  @spec check_account_reset_by_ip(String.t()) :: :ok | {:error, :rate_limited}
+  def check_account_reset_by_ip(ip) do
+    check("account_reset:ip:#{ip}", 3_600_000, 10, :account_reset_ip)
   end
 
   @doc "Article creation: 10 per 15 minutes per user."

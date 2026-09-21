@@ -283,6 +283,7 @@ defmodule BaudrateWeb.Router do
       live "/login", LoginLive
       live "/register", RegisterLive
       live "/password-reset", PasswordResetLive
+      live "/account-reset/:token", AccountResetLive
     end
 
     live "/setup", SetupLive
@@ -363,6 +364,7 @@ defmodule BaudrateWeb.Router do
       live "/boards/:slug/follows", BoardFollowsLive
       live "/boards/:slug/articles/new", ArticleNewLive
       live "/articles/new", ArticleNewLive
+      live "/welcome", WelcomeLive
       live "/articles/:slug/edit", ArticleEditLive
       live "/profile", ProfileLive
       live "/profile/totp-reset", TotpResetLive
