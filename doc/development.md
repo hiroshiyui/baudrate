@@ -1009,12 +1009,30 @@ system:
 Gallery layout adapts by image count: 1 = full width, 2 = side-by-side,
 3-4 = 2×2 grid. Clicking opens the full-size image in a new tab.
 
+**Descriptions.** Every uploaded image can carry one, on articles, comments
+and timeline replies alike; `Baudrate.Content.ImageAlt` owns the rule for all
+three tables. It federates as the attachment `name`, which is what fediverse
+clients render as alt text, and a `name` a peer sends us is stored and shown
+the same way. Because the row exists before the composer is submitted (uploads
+are `auto_upload: true` with a `progress:` callback), the field saves itself
+against that row rather than travelling with the form — it carries no `name`
+attribute and sits in a `phx-update="ignore"` container, so the `phx-change`
+re-render that fires on every keystroke in the title or body cannot patch it
+back and erase what was typed.
+
+A gallery image is always inside a link, so **the link carries the
+description** (`BaudrateWeb.Helpers.image_link_label/2`) and the `<img>` is
+`alt=""`. Text in both announced the same image twice. An undescribed image
+falls back to its position — "Image 2" — which is a poor description but an
+honest one; an empty `alt` would claim the image is decorative.
+
 Key modules:
 - `Content.ArticleImage` — schema (`article_images` table)
 - `Content.ArticleImageStorage` — image processing and storage
+- `Content.ImageAlt` — the description rule shared by all three image tables
 - `Content.Images` — CRUD functions (`create_article_image/1`, `list_article_images/1`,
   `associate_article_images/3`, `delete_article_image/1`, `delete_orphan_article_images/1`,
-  `fetch_and_store_remote_images/2`)
+  `update_article_image_alt/3`, `fetch_and_store_remote_images/2`)
 - `Federation.AttachmentExtractor` — extracts image attachment metadata from AP objects
 
 **Remote article images:** When a remote article is imported (via federation inbox
@@ -1193,6 +1211,19 @@ implemented via `deleted_at` timestamps on both articles and comments — and
 90 days later, with its revisions, images and the image files on disk
 ([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)). Anything a
 report points at is exempt, whatever its age.
+**An author may edit their own comment, and every edit is kept**
+([ADR 0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md)).
+`Content.update_comment/3` snapshots the pre-edit body and content warning
+into `comment_revisions`, updates the comment and publishes an `Update(Note)`
+in one transaction, and `/comments/:id/history` renders the result to anyone
+who may read the parent article — including guests, as
+`/articles/:slug/history` already does. The author alone may edit: not admins,
+not board moderators, because editing somebody else's words under their name
+is indistinguishable from their own and deletion is the moderation tool that
+already exists. The history page refuses a soft-deleted comment (its revisions
+still hold what was withdrawn) and a remote one (its history lives on the
+instance that minted it), both with a 404.
+
 Articles also record `deleted_by_id` (the local author or moderator who deleted
 it, via `Content.soft_delete_article(article, deleted_by: user_id)`). Remote
 deletions and rows deleted before the column existed stay `nil`, meaning

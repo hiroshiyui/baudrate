@@ -583,7 +583,7 @@ requester, signed or not, including one whose signature belongs to an admin.
 | `url` | URI | Web UI URL for the article |
 | `replies` | URI | Replies collection endpoint |
 | `tag` | array | `Hashtag` objects extracted from the body, and a `Mention` object (`href` = the actor's URI, `name` = `@user@domain`) for each remote handle this instance could resolve. Optional, omitted if empty. Mentions appear only when the article may federate at all — an article whose boards are all private or AP-disabled carries none, and its mentioned actors are not in `cc` either (ADR 0043, ADR 0051) |
-| `attachment` | array | Images (`Document`, `image/webp`, with `width`/`height`), an attached poll (a `Question` with `oneOf` for single-choice or `anyOf` for multiple-choice, `votersCount`, per-option `replies.totalItems`, and `endTime` when the poll closes), and a fetched link preview (`Document`, `text/html`). Omitted when the article has none |
+| `attachment` | array | Images (`Document`, `image/webp`, with `width`/`height`, and `name` when the uploader described the image), an attached poll (a `Question` with `oneOf` for single-choice or `anyOf` for multiple-choice, `votersCount`, per-option `replies.totalItems`, and `endTime` when the poll closes), and a fetched link preview (`Document`, `text/html`). Omitted when the article has none |
 | `baudrate:pinned` | boolean | Whether the article is pinned in its board |
 | `baudrate:locked` | boolean | Whether the article is locked from new comments |
 | `baudrate:commentCount` | integer | Number of comments |
@@ -660,9 +660,20 @@ names that comment's own URI, so it threads back into the conversation on the
 instance it started from.
 
 `attachment` carries the comment's images (`Image`, `image/webp`, with
-`width`/`height`) and is omitted when there are none. `tag` carries a
-`Mention` object per resolved remote handle, subject to the owning article's
-federation gate.
+`width`/`height`, and `name` when the uploader wrote a description — what most
+clients render as alt text) and is omitted when there are none. A description
+that was never written is **absent**, not empty: an empty `name` claims the
+image is decorative. `tag` carries a `Mention` object per resolved remote
+handle, subject to the owning article's federation gate.
+
+`updated` appears once the comment has genuinely been edited, mirroring the
+`Article` rule — a difference of five seconds or less from `published` is the
+post-insert `ap_id` stamping, not an edit, and Mastodon shows "edited" whenever
+the two differ. An edit is published as `Update(Note)` naming the comment's
+**current** `ap_id`; it is never re-sent under a pre-ADR-0050 `legacy_ap_id`
+the way a `Delete` is, because an `Update` invites the receiver to dereference
+the id and a fragment URI resolves to the wrong object
+([ADR 0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md)).
 
 ---
 

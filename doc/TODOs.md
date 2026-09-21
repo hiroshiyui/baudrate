@@ -7,14 +7,19 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.33.1, deployed 2026-09-21).** The review named five
+**Current state (v1.34.0, deployed 2026-09-21).** The review named five
 gaps: broken promises (the UI or docs saying something happens when it does
 not), moderation reach, operability, federation reach, and discovery and
 onboarding. **All five are now closed** — Phase 0 in v1.18.2, Phase 1 in
 v1.21.0, Phase 2 with the alerting item that followed v1.28.2, Phase 3 in
-v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5 is next**, and its
-premise is the one the roadmap already states: growth from Phase 4 attracts
-spam.
+v1.31.0, and Phase 4 across v1.32.0–v1.34.0.
+
+**Phase 5 was deferred, deliberately** (2026-09-21): the roadmap puts
+anti-spam next, on the premise that growth from Phase 4 attracts spam, and the
+operator chose to take Phase 6 first. Nothing about Phase 5 changed and
+nothing depends on it; it is next again whenever the premise starts to bite.
+6A shipped as its first half — comment editing with a public history and
+image descriptions — with server-side drafts as its second.
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -390,9 +395,21 @@ These are the facts that are still nowhere else.
 
 ### 6A — Comments and composer (M)
 
-- [ ] **Edit your own comments,** with revision history like articles, federated as `Update(Note)` (P6-D1).
-- [ ] **Alt text** on article, comment and reply images, federated as the attachment `name`. Today alt text is always "Image N".
-- [ ] **Drafts on the server,** with a drafts list, next to the local autosave.
+Editing and image descriptions are done and unreleased
+([ADR 0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md)). What is
+left:
+
+- [ ] **Drafts on the server,** with a drafts list, next to the local
+  autosave (articles only — a comment draft is the right size for the
+  localStorage one, which stays).
+  - The local hook's two defects were fixed alongside 6A's first half: its key
+    is now per account (it was a constant, so on a shared browser one member's
+    unsent post restored into the next member's composer), and a submit the
+    server rejects no longer throws the draft away.
+  - `/articles/:slug/history` still cannot show what the **most recent** edit
+    changed, because a revision holds the state *before* a change.
+    `CommentHistoryLive` renders the live text as a version to close that;
+    the article page was left alone.
 
 ### 6B — Reading and notifications (M)
 
@@ -436,7 +453,7 @@ These are the facts that are still nowhere else.
 
 ### Decisions needed
 
-- [ ] **P6-D1. Editing comments.** [No time limit; every edit is kept in history, and moderators see all revisions.]
+- [x] **P6-D1. Editing comments.** Decided 2026-09-21: no time limit, every edit kept, **the history is public** (not just moderators — the reader who was replied to is who needs it), and **the author alone may edit** — an admin edit would rewrite attributed speech. [ADR 0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md).
 - [ ] **P6-D2. What account deletion removes.** [Profile, DMs and keys are deleted. Articles and comments are anonymized ("deleted user") by default, or deleted if the member chooses.]
 
 ---

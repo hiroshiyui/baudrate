@@ -79,6 +79,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0057](0057-a-sitemap-invites-only-what-a-guest-sees.md) | A sitemap is an invitation, and it invites only what a guest sees | Accepted |
 | [0058](0058-account-recovery-is-anchored-outside-the-instance.md) | Account recovery is anchored outside the instance | Accepted |
 | [0059](0059-the-service-worker-caches-the-shell-and-never-content.md) | The service worker caches the shell and never content | Accepted |
+| [0060](0060-an-edit-is-kept-and-the-history-is-public.md) | An edit is kept, and the history is public | Accepted |
 
 ## Writing a new ADR
 

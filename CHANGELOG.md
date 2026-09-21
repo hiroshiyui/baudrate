@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [Unreleased]
+
+Phase 6A's first half: a comment can be edited, and what it used to say stays
+readable. Plus a description for every uploaded image — until now each one
+announced itself as "Image 2", which is a position rather than a description
+and tells a screen-reader user nothing about what is in the picture.
+
+**Three defects fixed on the way, all of which predate this work.** A local
+comment body had **no length limit at all**, where articles cap at 64 KB and
+inbound federation is held to the same ceiling. The draft autosave key was
+**shared between accounts**: it was a constant string, and localStorage is
+scoped to the origin rather than the session, so on a shared browser one
+member's unsent post was restored into the next member's composer. And six
+**English strings were rendering another string's text** — the one worth an
+operator's attention, because it was visible on every page that used them and
+nothing in the test suite could see it.
+
+### Added
+
+- **Edit your own comment**, with a revision per edit kept for ever and a
+  public history at `/comments/:id/history` showing a diff between versions
+  ([ADR 0060](doc/adr/0060-an-edit-is-kept-and-the-history-is-public.md)).
+  There is no grace window: a reply can arrive inside one, and then what it
+  answered could be un-said underneath it. **The author alone may edit** — not
+  admins, deliberately narrower than article editing, because editing somebody
+  else's words under their name is indistinguishable from their own and
+  deletion is already the moderation tool. An "edited" marker on the comment
+  links to the history.
+- Edits federate as `Update(Note)`, carrying `updated` so peers show the
+  comment as edited rather than as a new reply. Published under the comment's
+  current `ap_id` only — never re-sent under a pre-ADR-0050 `legacy_ap_id`, as
+  a `Delete` is, because an `Update` invites the receiver to dereference the
+  id and a fragment URI resolves to the wrong object.
+- **A description for every uploaded image**, on article, comment and timeline
+  reply composers, federated as the attachment `name` — what Mastodon and
+  other clients render as alt text. A description a peer sent us is now stored
+  and shown too; it was already being fetched and then discarded.
+- Comment revisions are included in a member's data export, alongside article
+  revisions (ADR 0023).
+
+### Changed
+
+- Article revisions now snapshot the **content warning** as well as the title
+  and body. Removing a warning re-exposes what it hid, which makes it the edit
+  most worth recording, and it previously left no trace. Rows written before
+  this keep no value: it is unknown, not known to have been absent.
+- A gallery image's description is announced **once**, by the link that wraps
+  it, with the image itself marked decorative. Both carried text before, so a
+  screen reader read "Image 2 (opens in new tab)" and then "Image 2".
+- The draft autosave no longer discards a draft when the server rejects the
+  submit; it writes it back if the form is still on the page.
+
+### Fixed
+
+- **A local comment body is bounded at 64 KB**, on both the local and the
+  remote changeset, matching articles and the ceiling inbound federation
+  already enforced.
+- **The draft autosave key is per account.** On a shared browser, one member's
+  unsent article or comment could be restored into another member's composer.
+- **Six English strings were showing somebody else's sentence.** `Published`
+  rendered as "Push", `Remote actor not found.` as "Remote actor", a
+  notification about a liked comment said "liked your article", and "N earlier
+  messages loaded" said "N unread messages". `mix gettext.extract --merge`
+  fuzzy-matches into the `en` catalogue like any other locale and Gettext
+  serves the result, but the translation-coverage check exempted `en` on the
+  assumption its entries stay empty. Three of the six were not even flagged as
+  fuzzy. The catalogue now falls back to the source text, and the check covers
+  `en` too.
+
+### Security
+
+- `Content.update_comment/3` authorizes at the context boundary rather than in
+  the LiveView, and casts only `body`, `summary` and `sensitive` — an edit
+  cannot move a comment to another article or thread, or change its
+  visibility or `ap_id`.
+- A comment's edit history answers 404 for a **soft-deleted** comment. Its
+  revisions still hold every earlier draft, so serving them would make
+  withdrawing a comment a way of publishing what it used to say.
+- An image description supplied by a remote instance is tag-stripped and
+  length-bounded at ingest, with a changeset backstop.
+
 ## [1.34.0] — 2026-09-21
 
 Phase 4E, and with it Phase 4 is complete. Three features that were each
