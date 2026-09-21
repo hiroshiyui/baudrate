@@ -80,6 +80,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0058](0058-account-recovery-is-anchored-outside-the-instance.md) | Account recovery is anchored outside the instance | Accepted |
 | [0059](0059-the-service-worker-caches-the-shell-and-never-content.md) | The service worker caches the shell and never content | Accepted |
 | [0060](0060-an-edit-is-kept-and-the-history-is-public.md) | An edit is kept, and the history is public | Accepted |
+| [0061](0061-an-image-description-is-not-a-form-field.md) | An image description is not a form field | Accepted |
 
 ## Writing a new ADR
 
