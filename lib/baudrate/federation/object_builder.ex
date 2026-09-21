@@ -81,15 +81,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
       "baudrate:likeCount" => Content.count_article_likes(article)
     }
 
-    # Only include "updated" if the article was genuinely edited (not just
-    # post-insert housekeeping like ap_id stamping or body_html rendering).
-    # Mastodon shows "edited" whenever updated != published.
-    map =
-      if DateTime.diff(article.updated_at, article.inserted_at) > 5 do
-        Map.put(map, "updated", DateTime.to_iso8601(article.updated_at))
-      else
-        map
-      end
+    map = put_updated(map, article, Content.article_edited?(article))
 
     map = if tags == [], do: map, else: Map.put(map, "tag", tags)
 
@@ -137,17 +129,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
 
     map = if mentioned == [], do: map, else: Map.put(map, "tag", Mentions.tags(mentioned))
 
-    # Same rule as `article_object/1`: only a genuine edit sets "updated".
-    # A comment is stamped with its `ap_id` just after insert, which bumps
-    # `updated_at` by a few milliseconds, and Mastodon shows "edited" whenever
-    # `updated` differs from `published` — so every new comment would arrive
-    # already marked as edited.
-    map =
-      if DateTime.diff(comment.updated_at, comment.inserted_at) > 5 do
-        Map.put(map, "updated", DateTime.to_iso8601(comment.updated_at))
-      else
-        map
-      end
+    map = put_updated(map, comment, Content.comment_edited?(comment))
 
     map
     |> put_content_warning(comment)
@@ -245,6 +227,26 @@ defmodule Baudrate.Federation.ObjectBuilder do
   # back off an inbound attachment. Absent when nobody wrote one: an empty
   # `name` would claim the image is decorative, which is a different statement
   # from "undescribed" and a false one for a photograph somebody posted.
+  # Mastodon shows "edited" whenever `updated` differs from `published`, so
+  # this field has to mean an edit and nothing else.
+  #
+  # It used to be derived from `updated_at` being more than five seconds past
+  # `inserted_at`. That was a proxy for the fact, and the proxy broke: the
+  # v1.31.0 `ap_id` backfill rewrote rows with an ordinary changeset months
+  # after they were written, so every comment it touched began federating as
+  # edited on the day of the backfill — while the site's own history page,
+  # which counts revisions, correctly said it had never been edited. Two
+  # surfaces disagreeing about the same comment is the bug; picking whichever
+  # is easier to compute is how it happened.
+  #
+  # So the *fact* comes from the revision table and only the *timestamp* comes
+  # from `updated_at`, which is the right value once an edit is known to have
+  # happened. Any future housekeeping write is then harmless here.
+  defp put_updated(map, _record, false), do: map
+
+  defp put_updated(map, record, true),
+    do: Map.put(map, "updated", DateTime.to_iso8601(record.updated_at))
+
   defp put_attachment_name(attachment, image),
     do: put_if_present(attachment, "name", Content.ImageAlt.describe(image))
 

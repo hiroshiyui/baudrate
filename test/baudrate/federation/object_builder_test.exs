@@ -174,10 +174,31 @@ defmodule Baudrate.Federation.ObjectBuilderTest do
       # post-insert housekeeping (ap_id stamping) must not trip it.
       refute Map.has_key?(ObjectBuilder.article_object(article), "updated")
 
-      later = DateTime.utc_now() |> DateTime.add(3600, :second) |> DateTime.truncate(:second)
-      {:ok, edited} = article |> Ecto.Changeset.change(%{updated_at: later}) |> Repo.update()
+      {:ok, edited} = Content.update_article(article, %{"body" => "a second thought"}, user)
 
-      assert ObjectBuilder.article_object(edited)["updated"] == DateTime.to_iso8601(later)
+      assert ObjectBuilder.article_object(edited)["updated"] ==
+               DateTime.to_iso8601(edited.updated_at)
+    end
+
+    test "a bumped updated_at is not an edit, which is how a backfill broke this", %{
+      user: user,
+      board: board
+    } do
+      article = create_article(user, board)
+
+      # The exact production shape: the v1.31.0 `ap_id` backfill rewrote rows
+      # with an ordinary changeset months after they were written, so
+      # `updated_at` moved without anybody editing anything. Deriving the
+      # field from that timestamp made every touched row federate as edited.
+      months_later = DateTime.utc_now() |> DateTime.add(90 * 86_400, :second)
+
+      {:ok, touched} =
+        article
+        |> Ecto.Changeset.change(%{})
+        |> Ecto.Changeset.force_change(:updated_at, DateTime.truncate(months_later, :second))
+        |> Repo.update()
+
+      refute Map.has_key?(ObjectBuilder.article_object(touched), "updated")
     end
 
     test "emits Hashtag tags only when the body has hashtags", %{user: user, board: board} do
@@ -310,6 +331,28 @@ defmodule Baudrate.Federation.ObjectBuilderTest do
       # milliseconds; Mastodon shows "edited" whenever updated differs from
       # published, so a brand new comment must not carry the field at all.
       refute Map.has_key?(object, "updated")
+    end
+
+    test "a bumped updated_at is not an edit, which is how a backfill broke this", %{
+      user: user,
+      board: board
+    } do
+      article = create_article(user, board)
+      comment = create_comment(user, article)
+
+      # Comment 8 on the live instance: published in March, `updated_at`
+      # moved to September by the `ap_id` backfill, zero revisions — and the
+      # site's own history page said "has not been edited" while the federated
+      # object said it had. Two surfaces disagreeing about one comment.
+      months_later = DateTime.utc_now() |> DateTime.add(90 * 86_400, :second)
+
+      {:ok, touched} =
+        comment
+        |> Ecto.Changeset.change(%{})
+        |> Ecto.Changeset.force_change(:updated_at, DateTime.truncate(months_later, :second))
+        |> Repo.update()
+
+      refute Map.has_key?(ObjectBuilder.comment_object(touched), "updated")
     end
 
     test "an edited comment carries it", %{user: user, board: board} do

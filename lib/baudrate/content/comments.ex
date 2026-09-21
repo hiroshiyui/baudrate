@@ -296,6 +296,25 @@ defmodule Baudrate.Content.Comments do
     |> Repo.all()
   end
 
+  @doc """
+  Whether a comment has ever been edited — the fact, not a proxy for it.
+
+  `updated_at` answers "when did this row last change", which is a different
+  question: any housekeeping write moves it. The v1.31.0 `ap_id` backfill did
+  exactly that months after the fact, so a comment nobody had touched since
+  March reported an edit in September, and the federated object said "edited"
+  while the site's own history page said it had not been. A revision row is
+  written by `update_comment/3` and by nothing else, so this cannot drift.
+  """
+  @spec comment_edited?(%Comment{} | integer()) :: boolean()
+  def comment_edited?(%Comment{id: id}), do: comment_edited?(id)
+
+  def comment_edited?(comment_id) when is_integer(comment_id) do
+    Repo.exists?(from(r in CommentRevision, where: r.comment_id == ^comment_id))
+  end
+
+  def comment_edited?(_), do: false
+
   @doc "Counts a comment's revisions, for the 'edited' marker."
   @spec count_comment_revisions(integer()) :: non_neg_integer()
   def count_comment_revisions(comment_id) do

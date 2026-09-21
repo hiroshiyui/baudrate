@@ -842,6 +842,23 @@ defmodule Baudrate.Content.Articles do
   end
 
   @doc """
+  Whether an article has ever been edited.
+
+  The article-side twin of `Comments.comment_edited?/1`, and it exists for the
+  same reason: `updated_at` records when the row last changed, which a
+  backfill or any other housekeeping write also moves. A revision is written
+  only by an actual edit.
+  """
+  @spec article_edited?(%Article{} | integer()) :: boolean()
+  def article_edited?(%Article{id: id}), do: article_edited?(id)
+
+  def article_edited?(article_id) when is_integer(article_id) do
+    Repo.exists?(from(r in ArticleRevision, where: r.article_id == ^article_id))
+  end
+
+  def article_edited?(_), do: false
+
+  @doc """
   Lists all revisions for an article, newest first, with editor preloaded.
   """
   def list_article_revisions(article_id) do

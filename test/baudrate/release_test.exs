@@ -91,6 +91,32 @@ defmodule Baudrate.ReleaseTest do
       assert poll.legacy_ap_id == ctx.legacy_poll
     end
 
+    test "stamping an id does not move updated_at, because it is not an edit", ctx do
+      # This is the defect the backfill shipped: it rewrote rows with an
+      # ordinary changeset, so `updated_at` jumped to the day of the run on
+      # every comment it touched — and months later, when the federated Note
+      # gained an `updated` field, all of them began telling peers they had
+      # been edited that day. A repair pass is the one write that most wants
+      # to be invisible to "when did this last change".
+      # Age the row first. `utc_datetime` is second-resolution, so a comment
+      # created moments ago would show the same timestamp before and after
+      # whatever the backfill does — the test would pass on a broken build.
+      long_ago =
+        DateTime.utc_now() |> DateTime.add(-90 * 86_400, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(from(c in Comment, where: c.id == ^ctx.comment.id),
+        set: [inserted_at: long_ago, updated_at: long_ago]
+      )
+
+      Release.backfill_ap_ids()
+
+      after_run = Repo.get!(Comment, ctx.comment.id)
+
+      assert after_run.updated_at == long_ago
+      # ...and it still did the work it was there to do.
+      assert after_run.ap_id == Baudrate.Federation.actor_uri(:comment, after_run.id)
+    end
+
     test "re-running changes nothing, so an interrupted run resumes", ctx do
       Release.backfill_ap_ids()
       after_first = Repo.get!(Comment, ctx.comment.id)

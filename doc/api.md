@@ -576,7 +576,7 @@ requester, signed or not, including one whose signature belongs to an admin.
 | `summary` | string | The **content warning**, when the author set one. Omitted otherwise. It is not a body excerpt — it carried one until v1.31.0, and since Mastodon maps `summary` to `spoiler_text` for every object type, that made every article arrive there hidden behind its own opening paragraph (ADR 0052) |
 | `sensitive` | boolean | Present and `true` only alongside a content warning |
 | `published` | ISO 8601 | Creation timestamp |
-| `updated` | ISO 8601 | Last modification timestamp (optional — omitted unless the article was edited more than 5 s after it was created, so peers do not mark a freshly posted article as edited) |
+| `updated` | ISO 8601 | When the article was last edited (optional — present only when a revision exists, so housekeeping writes never make peers mark an article as edited) |
 | `to` | array | Always `["https://www.w3.org/ns/activitystreams#Public"]` |
 | `cc` | array of URIs | Actor URIs of the article's **federated** boards only (`min_role_to_view == "guest"` and `ap_enabled == true`); private and AP-disabled boards are filtered out, so this can be empty. Plus the actor URI of each resolved remote mention, subject to the same gate |
 | `audience` | array of URIs | Same as `cc`, filtered the same way |
@@ -667,9 +667,13 @@ image is decorative. `tag` carries a `Mention` object per resolved remote
 handle, subject to the owning article's federation gate.
 
 `updated` appears once the comment has genuinely been edited, mirroring the
-`Article` rule — a difference of five seconds or less from `published` is the
-post-insert `ap_id` stamping, not an edit, and Mastodon shows "edited" whenever
-the two differ. An edit is published as `Update(Note)` naming the comment's
+`Article` rule. Mastodon shows "edited" whenever it differs from `published`,
+so the field is derived from **whether a revision row exists**, not from
+`updated_at`. That timestamp answers "when did this row last change", which
+housekeeping also moves: the v1.31.0 `ap_id` backfill rewrote rows months
+after they were written, and while the field was derived from it every comment
+that backfill touched told peers it had been edited on the day of the run —
+disagreeing with this instance's own history page, which counts revisions. An edit is published as `Update(Note)` naming the comment's
 **current** `ap_id`; it is never re-sent under a pre-ADR-0050 `legacy_ap_id`
 the way a `Delete` is, because an `Update` invites the receiver to dereference
 the id and a fragment URI resolves to the wrong object

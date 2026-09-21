@@ -275,6 +275,12 @@ defmodule Baudrate.Release do
       row ->
         row
         |> Ecto.Changeset.change(changes)
+        # Stamping an id is housekeeping, not an edit, so it must not move
+        # `updated_at`. It did, and months later the rows it touched began
+        # federating as edited on the day of the backfill — `updated_at` is
+        # read by anything asking "when did this last change", and a repair
+        # pass is the one write that most wants to be invisible to that.
+        |> Ecto.Changeset.force_change(:updated_at, row.updated_at)
         |> Repo.update()
         |> case do
           {:ok, _} ->

@@ -50,6 +50,23 @@ crosses devices. Losing a draft now takes both failures at once.
 
 ### Fixed
 
+- **Comments that were never edited told the fediverse they had been.** Found
+  by checking the live site right after v1.35.0 deployed. The federated
+  `updated` field was derived from `updated_at` being more than five seconds
+  past `inserted_at` — a proxy for "was this edited", and the proxy broke:
+  the v1.31.0 `ap_id` backfill rewrote rows with an ordinary changeset months
+  after they were written, so every comment it touched began telling peers it
+  had been edited on the day of that backfill. Mastodon shows an "edited"
+  badge whenever `updated` differs from `published`, and this instance's own
+  history page — which counts revisions — correctly said the same comments had
+  never been edited. Two surfaces disagreeing about one comment.
+
+  The field now asks the revision table, which is the fact rather than a
+  proxy for it, so no future housekeeping write can recreate this. The
+  backfill also no longer moves `updated_at`: a repair pass is the one write
+  that most wants to be invisible to "when did this last change". No data
+  repair was needed — once the field stops reading that timestamp, the
+  already-bumped rows simply stop claiming an edit.
 - **An image held by a draft is no longer swept as an orphan.** An upload
   belongs to no article until the post is submitted — which is exactly the
   state a draft preserves — so without this a post drafted overnight would be

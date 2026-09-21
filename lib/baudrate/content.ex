@@ -117,6 +117,7 @@ defmodule Baudrate.Content do
   defdelegate update_remote_article(article, attrs), to: Articles
   defdelegate create_article_revision(article, editor), to: Articles
   defdelegate list_article_revisions(article_id), to: Articles
+  defdelegate article_edited?(article), to: Articles
   defdelegate get_article_revision!(id), to: Articles
   defdelegate count_article_revisions(article_id), to: Articles
   defdelegate toggle_pin_article(article, actor), to: Articles
@@ -170,6 +171,7 @@ defmodule Baudrate.Content do
   defdelegate list_comment_revisions(comment_id), to: Comments
   defdelegate get_comment_revision!(id), to: Comments
   defdelegate count_comment_revisions(comment_id), to: Comments
+  defdelegate comment_edited?(comment), to: Comments
   defdelegate count_comment_revisions_for(comment_ids), to: Comments
   defdelegate count_comments_for_article(article), to: Comments
   defdelegate search_discussion_remote_actors(article_id, term, opts \\ []), to: Comments

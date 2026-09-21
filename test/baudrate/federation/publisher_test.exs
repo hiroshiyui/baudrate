@@ -200,13 +200,15 @@ defmodule Baudrate.Federation.PublisherTest do
 
       {:ok, comment} =
         comment
-        |> Ecto.Changeset.change(
-          ap_id: Baudrate.Federation.actor_uri(:comment, comment.id),
-          body: "second go",
-          body_html: "<p>second go</p>",
-          updated_at: DateTime.add(comment.inserted_at, 60, :second)
-        )
+        |> Ecto.Changeset.change(ap_id: Baudrate.Federation.actor_uri(:comment, comment.id))
         |> Repo.update()
+
+      # A real edit, not a bumped timestamp. `updated` is derived from a
+      # revision existing, because `updated_at` also moves for housekeeping —
+      # the `ap_id` backfill moved it on every comment it touched, and while
+      # the field read that timestamp those comments all told peers they had
+      # been edited on the day of the backfill.
+      {:ok, comment} = Content.update_comment(comment, %{"body" => "second go"}, user)
 
       {activity, actor_uri} = Publisher.build_update_comment(comment, article)
 
