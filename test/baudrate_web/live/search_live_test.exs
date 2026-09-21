@@ -237,10 +237,17 @@ defmodule BaudrateWeb.SearchLiveTest do
     assert html =~ "tag:tagname"
   end
 
-  test "operator help not visible on other tabs", %{conn: conn} do
+  test "operator help visible on comments tab, worded for comments", %{conn: conn} do
     {:ok, _lv, html} = live(conn, "/search?q=test&tab=comments")
-    refute html =~ "Search operators"
+    assert html =~ "Search operators"
+    assert html =~ "author:username"
+    # The same operators mean different things here, and the help says so.
+    assert html =~ "Filter by comment author"
+    assert html =~ "Comments with attached images"
+    refute html =~ "Filter by article author"
+  end
 
+  test "operator help not visible on the tabs without operators", %{conn: conn} do
     {:ok, _lv, html} = live(conn, "/search?q=test&tab=boards")
     refute html =~ "Search operators"
 
@@ -339,6 +346,160 @@ defmodule BaudrateWeb.SearchLiveTest do
       {:ok, _lv, html} = live(conn, "/search?q=Focus")
       assert html =~ ~s(id="search-results-articles")
       assert html =~ ~s(data-focus-target)
+    end
+  end
+
+  describe "sort and the filter controls" do
+    test "the controls render what the query already says", %{conn: conn, board: board} do
+      {:ok, _lv, html} =
+        live(
+          conn,
+          "/search?q=elixir+board:#{board.slug}+after:2026-01-01+before:2026-06-01&sort=oldest"
+        )
+
+      # Every control renders its value back from the URL, or LiveView's own
+      # re-render would wipe what the reader set.
+      assert html =~ ~s(id="search-filter-board-#{board.slug}")
+      assert html =~ ~s(value="2026-01-01")
+      assert html =~ ~s(value="2026-06-01")
+      assert html =~ ~r/id="search-sort-oldest"[^>]*selected/
+    end
+
+    test "the controls are absent from the tabs they do not apply to", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/search?q=elixir&tab=boards")
+      refute html =~ ~s(id="search-filters")
+
+      {:ok, _lv, html} = live(conn, "/search?q=elixir&tab=articles")
+      assert html =~ ~s(id="search-filters")
+    end
+
+    test "submitting folds the controls into the query string", %{conn: conn, board: board} do
+      {:ok, lv, _html} = live(conn, "/search")
+
+      lv
+      |> form("#search-form", %{
+        "q" => "elixir",
+        "sort" => "oldest",
+        "filter_board" => board.slug,
+        "filter_from" => "2026-01-01",
+        "filter_to" => "2026-06-01"
+      })
+      |> render_submit()
+
+      {path, query} = assert_patch(lv) |> String.split("?") |> List.to_tuple()
+      params = URI.decode_query(query)
+
+      assert path == "/search"
+      assert params["sort"] == "oldest"
+      # One query string describes the search; the controls have no parameters
+      # of their own.
+      assert params["q"] =~ "elixir"
+      assert params["q"] =~ "board:#{board.slug}"
+      assert params["q"] =~ "after:2026-01-01"
+      assert params["q"] =~ "before:2026-06-01"
+      refute Map.has_key?(params, "filter_board")
+    end
+
+    test "a control left alone does not rewrite what the reader typed", %{conn: conn} do
+      # Two `board:` operators is more than a single-choice control can show,
+      # so the control must not write at all unless the reader moved it —
+      # otherwise picking Search would quietly drop the second board.
+      other =
+        %Board{}
+        |> Board.changeset(%{name: "Other", slug: "other-search", min_role_to_view: "guest"})
+        |> Repo.insert!()
+
+      query = "board:public-search board:#{other.slug} elixir"
+      {:ok, lv, _html} = live(conn, "/search?q=#{URI.encode_www_form(query)}")
+
+      lv
+      |> form("#search-form", %{
+        "q" => query,
+        "sort" => "relevance",
+        "filter_board" => "public-search",
+        "filter_from" => "",
+        "filter_to" => ""
+      })
+      |> render_submit()
+
+      params = assert_patch(lv) |> URI.parse() |> Map.get(:query) |> URI.decode_query()
+
+      assert params["q"] =~ "board:public-search"
+      assert params["q"] =~ "board:#{other.slug}"
+    end
+
+    test "sort survives paging and a change of tab", %{conn: conn, user: user, board: board} do
+      for n <- 1..25 do
+        {:ok, _} =
+          Content.create_article(
+            %{
+              title: "Paged kestrel #{n}",
+              body: "body",
+              slug: "paged-kestrel-#{n}",
+              user_id: user.id
+            },
+            [board.id]
+          )
+      end
+
+      {:ok, _lv, html} = live(conn, "/search?q=kestrel&sort=oldest")
+
+      assert html =~ "sort=oldest"
+      assert html =~ ~r/href="\/search\?[^"]*page=2[^"]*"/
+      # Changing tab keeps the sort, so going back to Articles is not a reset.
+      [comments_tab] = Regex.run(~r/<a[^>]*id="tab-comments"[^>]*>/, html)
+      assert comments_tab =~ "sort=oldest"
+    end
+
+    test "an unknown sort is the default rather than a crash", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/search?q=elixir&sort=engagement")
+      assert html =~ ~r/id="search-sort-relevance"[^>]*selected/
+    end
+  end
+
+  describe "a search needs a scope" do
+    test "a date range alone explains itself instead of listing everything", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Would Be Listed", body: "body", slug: "scope-river", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, _lv, html} = live(conn, "/search?q=after:2020-01-01")
+
+      assert html =~ ~s(id="search-no-scope")
+      refute html =~ "Would Be Listed"
+      # The ordinary "no results" message would be a lie here: the query
+      # matches plenty.
+      refute html =~ ~s(id="search-empty-articles")
+    end
+
+    test "it applies to the comments tab too", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/search?q=after:2020-01-01&tab=comments")
+      assert html =~ ~s(id="search-no-scope")
+      refute html =~ ~s(id="search-empty-comments")
+    end
+
+    test "naming a board is a scope", %{conn: conn, user: user, board: board} do
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Scoped Article", body: "body", slug: "scoped-ok", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, _lv, html} = live(conn, "/search?q=board:#{board.slug}")
+
+      refute html =~ ~s(id="search-no-scope")
+      assert html =~ "Scoped Article"
+    end
+
+    test "an empty query is still the blank page, not a refusal", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/search")
+      refute html =~ ~s(id="search-no-scope")
     end
   end
 end

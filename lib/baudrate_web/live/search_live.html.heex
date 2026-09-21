@@ -27,10 +27,89 @@
         <.icon name="hero-magnifying-glass" class="size-5" />
       </button>
     </div>
+    <%!--
+      The filters sit inside the form on purpose, so the Search button applies
+      them: one submission is one search is one rate-limit hit. They write
+      `board:`, `after:` and `before:` into the query string rather than
+      carrying parameters of their own, so the box above is always the whole
+      description of what is being searched.
+    --%>
+    <fieldset
+      :if={@tab in ["articles", "comments"]}
+      id="search-filters"
+      class="search-filters mt-3 grid gap-3 sm:grid-cols-2"
+    >
+      <legend class="search-filters-legend sr-only">{gettext("Refine this search")}</legend>
+      <div class="search-filter min-w-0">
+        <label for="search-sort" class="search-filter-label label label-text py-1">
+          {gettext("Sort by")}
+        </label>
+        <select
+          id="search-sort"
+          name="sort"
+          class="search-sort select select-bordered select-sm w-full"
+        >
+          <option
+            :for={sort <- sort_options()}
+            id={"search-sort-#{sort}"}
+            class="search-sort-option"
+            value={sort}
+            selected={@sort == sort}
+          >
+            {sort_label(sort)}
+          </option>
+        </select>
+      </div>
+      <div class="search-filter min-w-0">
+        <label for="search-filter-board" class="search-filter-label label label-text py-1">
+          {gettext("Board")}
+        </label>
+        <select
+          id="search-filter-board"
+          name="filter_board"
+          class="search-filter-board select select-bordered select-sm w-full"
+        >
+          <option value="" selected={is_nil(@filter_board)}>{gettext("All boards")}</option>
+          <option
+            :for={{label, slug} <- @filter_board_options}
+            id={"search-filter-board-#{slug}"}
+            class="search-filter-board-option"
+            value={slug}
+            selected={@filter_board == slug}
+          >
+            {label}
+          </option>
+        </select>
+      </div>
+      <div class="search-filter min-w-0">
+        <label for="search-filter-from" class="search-filter-label label label-text py-1">
+          {gettext("Written on or after")}
+        </label>
+        <input
+          type="date"
+          id="search-filter-from"
+          name="filter_from"
+          value={@filter_from}
+          class="search-filter-from input input-bordered input-sm w-full"
+        />
+      </div>
+      <div class="search-filter min-w-0">
+        <label for="search-filter-to" class="search-filter-label label label-text py-1">
+          {gettext("Written on or before")}
+        </label>
+        <input
+          type="date"
+          id="search-filter-to"
+          name="filter_to"
+          value={@filter_to}
+          class="search-filter-to input input-bordered input-sm w-full"
+        />
+      </div>
+    </fieldset>
   </form>
 
   <details
-    :if={@tab == "articles"}
+    :if={@tab in ["articles", "comments"]}
     id="search-operators"
     class="search-operators collapse collapse-arrow bg-base-200 mb-4"
   >
@@ -49,27 +128,51 @@
           <tbody>
             <tr>
               <td><code>author:username</code></td>
-              <td>{gettext("Filter by article author")}</td>
+              <td>
+                {if @tab == "comments",
+                  do: gettext("Filter by comment author"),
+                  else: gettext("Filter by article author")}
+              </td>
             </tr>
             <tr>
               <td><code>board:slug</code></td>
-              <td>{gettext("Filter by board")}</td>
+              <td>
+                {if @tab == "comments",
+                  do: gettext("Filter by the board the article is in"),
+                  else: gettext("Filter by board")}
+              </td>
             </tr>
             <tr>
               <td><code>tag:tagname</code></td>
-              <td>{gettext("Filter by tag")}</td>
+              <td>
+                {if @tab == "comments",
+                  do: gettext("Filter by a tag on the article"),
+                  else: gettext("Filter by tag")}
+              </td>
             </tr>
             <tr>
               <td><code>has:images</code></td>
-              <td>{gettext("Articles with attached images")}</td>
+              <td>
+                {if @tab == "comments",
+                  do: gettext("Comments with attached images"),
+                  else: gettext("Articles with attached images")}
+              </td>
             </tr>
             <tr>
               <td><code>before:YYYY-MM-DD</code></td>
-              <td>{gettext("Articles before a date")}</td>
+              <td>
+                {if @tab == "comments",
+                  do: gettext("Comments before a date"),
+                  else: gettext("Articles before a date")}
+              </td>
             </tr>
             <tr>
               <td><code>after:YYYY-MM-DD</code></td>
-              <td>{gettext("Articles after a date")}</td>
+              <td>
+                {if @tab == "comments",
+                  do: gettext("Comments after a date"),
+                  else: gettext("Articles after a date")}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -389,7 +492,7 @@
   >
     <.link
       id="tab-articles"
-      patch={~p"/search?#{%{q: @query, tab: "articles"}}"}
+      patch={~p"/search?#{%{q: @query, tab: "articles", sort: @sort}}"}
       role="tab"
       aria-selected={to_string(@tab == "articles")}
       class={"search-tab tab #{if @tab == "articles", do: "tab-active"}"}
@@ -398,7 +501,7 @@
     </.link>
     <.link
       id="tab-comments"
-      patch={~p"/search?#{%{q: @query, tab: "comments"}}"}
+      patch={~p"/search?#{%{q: @query, tab: "comments", sort: @sort}}"}
       role="tab"
       aria-selected={to_string(@tab == "comments")}
       class={"search-tab tab #{if @tab == "comments", do: "tab-active"}"}
@@ -407,7 +510,7 @@
     </.link>
     <.link
       id="tab-boards"
-      patch={~p"/search?#{%{q: @query, tab: "boards"}}"}
+      patch={~p"/search?#{%{q: @query, tab: "boards", sort: @sort}}"}
       role="tab"
       aria-selected={to_string(@tab == "boards")}
       class={"search-tab tab #{if @tab == "boards", do: "tab-active"}"}
@@ -416,7 +519,7 @@
     </.link>
     <.link
       id="tab-users"
-      patch={~p"/search?#{%{q: @query, tab: "users"}}"}
+      patch={~p"/search?#{%{q: @query, tab: "users", sort: @sort}}"}
       role="tab"
       aria-selected={to_string(@tab == "users")}
       class={"search-tab tab #{if @tab == "users", do: "tab-active"}"}
@@ -425,8 +528,28 @@
     </.link>
   </div>
 
+  <%!--
+    A query that names nothing to search within is refused rather than
+    answered with everything the viewer can see — see ADR 0055 and
+    `Baudrate.Content.SearchQuery`. The message has to say what to add, or it
+    reads as "no results" for a query that plainly matches things.
+  --%>
   <div
-    :if={@query != "" && @tab == "articles" && @articles == []}
+    :if={@no_scope}
+    id="search-no-scope"
+    role="status"
+    class="search-no-scope alert alert-info"
+  >
+    <.icon name="hero-information-circle" class="size-5 shrink-0" />
+    <span class="search-no-scope-text">
+      {gettext(
+        "A search needs something to search within. Add a word, or an author:, board: or tag: — a date range on its own would list everything."
+      )}
+    </span>
+  </div>
+
+  <div
+    :if={@query != "" && !@no_scope && @tab == "articles" && @articles == []}
     id="search-empty-articles"
     role="tabpanel"
     aria-labelledby="tab-articles"
@@ -436,7 +559,7 @@
   </div>
 
   <div
-    :if={@query != "" && @tab == "comments" && @comments == []}
+    :if={@query != "" && !@no_scope && @tab == "comments" && @comments == []}
     id="search-empty-comments"
     role="tabpanel"
     aria-labelledby="tab-comments"
@@ -706,11 +829,24 @@
     </div>
   </div>
 
+  <%!--
+    The member list is paged but not walkable: ADR 0057 keeps profiles public
+    and linked from every byline while refusing to enumerate them.
+  --%>
+  <div
+    :if={@users_capped}
+    id="search-users-capped"
+    role="status"
+    class="search-users-capped text-base-content/70 text-center text-sm py-4"
+  >
+    {gettext("More people match than are shown here. Try a more specific name.")}
+  </div>
+
   <.pagination
     :if={@total_pages > 1}
     page={@page}
     total_pages={@total_pages}
     path={~p"/search"}
-    params={%{"q" => @query, "tab" => @tab}}
+    params={%{"q" => @query, "tab" => @tab, "sort" => to_string(@sort)}}
   />
 </section>

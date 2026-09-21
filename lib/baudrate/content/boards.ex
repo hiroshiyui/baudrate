@@ -156,6 +156,32 @@ defmodule Baudrate.Content.Boards do
   end
 
   @doc """
+  Returns every board visible to the given user, flattened into hierarchy
+  order: each board immediately followed by its descendants.
+
+  `list_visible_top_boards/1` answers "what does the home page list"; this
+  answers "which boards may this viewer name", which is what the board filter
+  on `/search` needs. A sub-board is not reachable from the top-level list, and
+  a reader who wants to search inside one should not have to find its parent
+  first.
+
+  Reads the board cache like its siblings, so rendering the filter costs no
+  query. Boards hidden from the viewer are absent, so the control cannot
+  become an existence signal for a private board's name.
+  """
+  def list_visible_boards(user) do
+    level = if user, do: Setup.role_level(user.role.name), else: 0
+
+    list_top_boards()
+    |> Enum.flat_map(&flatten_board/1)
+    |> Enum.filter(&(Setup.role_level(&1.min_role_to_view) <= level))
+  end
+
+  defp flatten_board(%Board{} = board) do
+    [board | Enum.flat_map(list_sub_boards(board), &flatten_board/1)]
+  end
+
+  @doc """
   Returns child boards visible to the given user, ordered by position.
   """
   def list_visible_sub_boards(%Board{} = board, user) do

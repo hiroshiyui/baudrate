@@ -98,4 +98,29 @@ defmodule BaudrateWeb.SearchLiveLocalUsersTest do
       assert html =~ "Sign in to follow"
     end
   end
+
+  describe "paging people" do
+    test "pages past the first twenty", %{conn: conn} do
+      for _ <- 1..25, do: setup_user("user")
+
+      {:ok, _lv, html} = live(conn, "/search?q=test_user&tab=users")
+
+      assert html =~ ~s(id="search-results-users")
+      # The pager used to be absent here: the tab hard-coded total_pages: 1.
+      assert html =~ ~s(class="pagination-nav)
+
+      {:ok, _lv, page_two} = live(conn, "/search?q=test_user&tab=users&page=2")
+      assert page_two =~ ~s(id="search-results-users")
+    end
+
+    test "a query that is only operators lists nobody", %{conn: conn} do
+      _other = setup_user("user")
+
+      # The operators describe articles. Searching people for the literal
+      # string "board:general" would be a puzzling empty page; searching them
+      # for nothing at all is the right answer.
+      {:ok, _lv, html} = live(conn, "/search?q=board:general&tab=users")
+      refute html =~ ~s(id="search-results-users")
+    end
+  end
 end

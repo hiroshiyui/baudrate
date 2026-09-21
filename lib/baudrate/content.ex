@@ -57,6 +57,7 @@ defmodule Baudrate.Content do
 
   defdelegate list_top_boards(), to: Boards
   defdelegate list_visible_top_boards(user), to: Boards
+  defdelegate list_visible_boards(user), to: Boards
   defdelegate list_sub_boards(board), to: Boards
   defdelegate list_visible_sub_boards(board, user), to: Boards
   defdelegate board_ancestors(board), to: Boards

@@ -8,6 +8,21 @@ defmodule BaudrateWeb.SearchLive do
 
   Supports dual-strategy search: tsvector for English, trigram ILIKE for CJK.
 
+  Sort, and the board and date filters, live in the URL too — but only the
+  sort has a parameter of its own. **The filter controls write operators into
+  `q`** (`board:`, `after:`, `before:`) rather than carrying parallel
+  `?board=&from=&to=` parameters, so the query string stays the one description
+  of what is being searched and the controls cannot silently disagree with the
+  box above them. `Baudrate.Content.SearchQuery` is both the parser and the
+  writer.
+
+  They also live inside `#search-form`, so its own button is what applies
+  them: one submission is one search is one rate-limit hit.
+  `RateLimits.check_search_by_ip/1` is what bounds remote-actor probing
+  (ADR 0051), and a `phx-change` on each control would spend that budget four
+  times over for a single search. It keeps the filters working with scripting
+  switched off, as well.
+
   When the query matches `@user@domain` or an `https://` actor URL,
   performs a remote actor lookup via WebFinger/ActivityPub and displays
   a follow/unfollow card alongside local search results.
@@ -20,6 +35,7 @@ defmodule BaudrateWeb.SearchLive do
 
   alias Baudrate.Auth
   alias Baudrate.Content
+  alias Baudrate.Content.SearchQuery
   alias Baudrate.Federation
   alias BaudrateWeb.RateLimits
 
@@ -33,6 +49,9 @@ defmodule BaudrateWeb.SearchLive do
       translate_actor_type: 1
     ]
 
+  @sorts Content.Search.sorts()
+  @default_sort hd(@sorts)
+
   @impl true
   def mount(_params, _session, socket) do
     peer_ip = if connected?(socket), do: extract_peer_ip(socket), else: "unknown"
@@ -41,6 +60,13 @@ defmodule BaudrateWeb.SearchLive do
      socket
      |> assign(:query, "")
      |> assign(:tab, "articles")
+     |> assign(:sort, @default_sort)
+     |> assign(:filter_board, nil)
+     |> assign(:filter_from, "")
+     |> assign(:filter_to, "")
+     |> assign(:filter_board_options, filter_board_options(socket.assigns[:current_user]))
+     |> assign(:no_scope, false)
+     |> assign(:users_capped, false)
      |> assign(:articles, [])
      |> assign(:comments, [])
      |> assign(:boards, [])
@@ -68,6 +94,8 @@ defmodule BaudrateWeb.SearchLive do
         else: "articles"
 
     page = parse_page(params["page"])
+    sort = parse_sort(params["sort"])
+    {text, operators} = SearchQuery.parse(query)
 
     socket =
       socket
@@ -76,6 +104,10 @@ defmodule BaudrateWeb.SearchLive do
       |> assign(:follow_state, nil)
       |> assign(:remote_object, nil)
       |> assign(:remote_object_loading, false)
+      |> assign(:sort, sort)
+      |> assign(:filter_board, SearchQuery.first(operators, "board"))
+      |> assign(:filter_from, SearchQuery.date_value(operators, "after"))
+      |> assign(:filter_to, SearchQuery.date_value(operators, "before"))
 
     if query != "" do
       case check_search_rate(socket) do
@@ -91,24 +123,40 @@ defmodule BaudrateWeb.SearchLive do
             socket
             |> assign(:query, query)
             |> assign(:tab, tab)
+            |> assign(
+              :no_scope,
+              tab in ["articles", "comments"] and not SearchQuery.scoped?(query)
+            )
 
           socket =
             case tab do
               "articles" ->
                 result =
-                  Content.search_articles(query, page: page, user: socket.assigns.current_user)
+                  Content.search_articles(query,
+                    page: page,
+                    sort: sort,
+                    user: socket.assigns.current_user
+                  )
 
                 assign_search_results(socket, "articles", result)
 
               "comments" ->
                 result =
-                  Content.search_comments(query, page: page, user: socket.assigns.current_user)
+                  Content.search_comments(query,
+                    page: page,
+                    sort: sort,
+                    user: socket.assigns.current_user
+                  )
 
                 assign_search_results(socket, "comments", result)
 
+              # Boards and users are searched by the free text alone. The
+              # operators describe articles, and once the filter controls write
+              # `board:` into the query, the raw string would have this tab
+              # looking for a board *named* "board:general".
               "boards" ->
                 result =
-                  Content.search_visible_boards(query,
+                  Content.search_visible_boards(text,
                     page: page,
                     user: socket.assigns.current_user
                   )
@@ -116,7 +164,7 @@ defmodule BaudrateWeb.SearchLive do
                 assign_search_results(socket, "boards", result)
 
               "users" ->
-                search_local_users(socket, query)
+                search_local_users(socket, text, page)
             end
 
           # Trigger async remote actor lookup if query looks like a fediverse handle or URL
@@ -144,6 +192,8 @@ defmodule BaudrateWeb.SearchLive do
        assign(socket,
          query: query,
          tab: tab,
+         no_scope: false,
+         users_capped: false,
          articles: [],
          comments: [],
          boards: [],
@@ -157,8 +207,17 @@ defmodule BaudrateWeb.SearchLive do
   end
 
   @impl true
-  def handle_event("search", %{"q" => query}, socket) do
-    {:noreply, push_patch(socket, to: ~p"/search?#{%{q: query, tab: socket.assigns.tab}}")}
+  def handle_event("search", params, socket) do
+    query =
+      (params["q"] || "")
+      |> keep_or_put("board", params["filter_board"], socket.assigns.filter_board)
+      |> keep_or_put("after", params["filter_from"], socket.assigns.filter_from)
+      |> keep_or_put("before", params["filter_to"], socket.assigns.filter_to)
+
+    sort = parse_sort(params["sort"])
+
+    {:noreply,
+     push_patch(socket, to: ~p"/search?#{%{q: query, tab: socket.assigns.tab, sort: sort}}")}
   end
 
   @impl true
@@ -384,29 +443,79 @@ defmodule BaudrateWeb.SearchLive do
     end
   end
 
-  defp search_local_users(socket, query) do
+  defp search_local_users(socket, "", _page) do
+    socket
+    |> assign(:local_users, [])
+    |> assign(:local_user_follow_states, %{})
+    |> assign(:articles, [])
+    |> assign(:comments, [])
+    |> assign(:boards, [])
+    |> assign(:total, 0)
+    |> assign(:page, 1)
+    |> assign(:total_pages, 1)
+    |> assign(:users_capped, false)
+  end
+
+  defp search_local_users(socket, query, page) do
     current_user = socket.assigns.current_user
     exclude_id = if current_user, do: current_user.id, else: nil
 
-    users = Auth.search_users(query, limit: 20, exclude_id: exclude_id)
+    result = Auth.search_users_page(query, page: page, exclude_id: exclude_id)
 
     follow_states =
       if current_user do
-        user_ids = Enum.map(users, & &1.id)
+        user_ids = Enum.map(result.users, & &1.id)
         Federation.batch_local_follow_states(current_user.id, user_ids)
       else
         %{}
       end
 
     socket
-    |> assign(:local_users, users)
+    |> assign(:local_users, result.users)
     |> assign(:local_user_follow_states, follow_states)
     |> assign(:articles, [])
     |> assign(:comments, [])
     |> assign(:boards, [])
-    |> assign(:total, length(users))
-    |> assign(:page, 1)
-    |> assign(:total_pages, 1)
+    |> assign(:total, result.total)
+    |> assign(:page, result.page)
+    |> assign(:total_pages, result.total_pages)
+    |> assign(:users_capped, result.capped)
+  end
+
+  # Never `String.to_atom/1` on a query parameter: the three sorts are matched
+  # by name and anything else is the default.
+  # A control that was not touched leaves its operator exactly as the reader
+  # typed it. Writing unconditionally would quietly drop the second of two
+  # `board:` operators, since a single-choice control can only show the first.
+  defp keep_or_put(query, _key, submitted, current)
+       when submitted in [nil, ""] and current in [nil, ""],
+       do: query
+
+  defp keep_or_put(query, _key, submitted, current) when submitted == current, do: query
+  defp keep_or_put(query, key, submitted, _current), do: SearchQuery.put(query, key, submitted)
+
+  defp parse_sort(value) do
+    Enum.find(@sorts, @default_sort, &(to_string(&1) == value))
+  end
+
+  @doc false
+  def sort_options, do: @sorts
+
+  @doc false
+  def sort_label(:relevance), do: gettext("Relevance")
+  def sort_label(:newest), do: gettext("Newest first")
+  def sort_label(:oldest), do: gettext("Oldest first")
+
+  defp filter_board_options(user) do
+    boards = Content.list_visible_boards(user)
+    names = Map.new(boards, &{&1.id, &1.name})
+
+    Enum.map(boards, fn board ->
+      case board.parent_id && Map.get(names, board.parent_id) do
+        nil -> {board.name, board.slug}
+        parent -> {parent <> " › " <> board.name, board.slug}
+      end
+    end)
   end
 
   defp assign_search_results(socket, "articles", result) do
