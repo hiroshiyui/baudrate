@@ -12,8 +12,7 @@ gaps: broken promises (the UI or docs saying something happens when it does
 not), moderation reach, operability, federation reach, and discovery and
 onboarding. **All five are now closed** — Phase 0 in v1.18.2, Phase 1 in
 v1.21.0, Phase 2 with the alerting item that followed v1.28.2, Phase 3 in
-v1.31.0, and Phase 4 across v1.32.0–v1.33.0 plus 4E, which is on `current`
-and not yet released. **Phase 5 is next**, and its
+v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5 is next**, and its
 premise is the one the roadmap already states: growth from Phase 4 attracts
 spam.
 
@@ -48,7 +47,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
 | ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
 | ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (v1.31.0) |
-| ~~4~~ | ~~Discovery and onboarding~~ | 4A–4F | **Complete** (v1.32.0 – v1.33.0; 4E unreleased) |
+| ~~4~~ | ~~Discovery and onboarding~~ | 4A–4F | **Complete** (v1.32.0 – v1.34.0) |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
 | 6 | Member depth | 6A–6E | Retention |
 | 7 | Admin and content tools | 7A–7E | Running the site without a shell |
@@ -272,7 +271,7 @@ documented way back in.
 | 4B | SEO and syndication feeds: `sitemap.xml`, a real `robots.txt`, canonical/description/`noindex`, 404 for a missing account, per-page and tag feeds | v1.33.0 | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
 | 4C | Search: relevance or date sorting, a board and date filter, the same operators on the Comments tab, a paged Users tab capped at five pages | v1.33.0 | `doc/development.md` (Search), spec rows under [0054](adr/0054-attention-follows-the-board-not-a-ranking.md)/[0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)/[0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
 | 4D | Onboarding and account recovery: sign-in on registering, `/welcome`, private pages that bring you back, replaceable recovery codes, OpenPGP recovery contacts, admin-issued reset links | v1.33.0 | [0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md), `doc/sysop.md` (the operator's procedure) |
-| 4E | Sharing and PWA: the service worker on every page with an offline fallback, a copy-link share fallback, follow-from-your-instance | unreleased | [0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md), `doc/development.md` (the service worker; Follow from your instance) |
+| 4E | Sharing and PWA: the service worker on every page with an offline fallback, a copy-link share fallback, follow-from-your-instance | v1.34.0 | [0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md), `doc/development.md` (the service worker; Follow from your instance) |
 | 4F | Privacy and language: the footer language switcher and a one-year `locale` cookie | v1.32.0 | `doc/development.md` (resolution order, cookie inventory) |
 
 Three decisions were taken and all three are now records, which hold the

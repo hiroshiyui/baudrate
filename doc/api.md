@@ -11,9 +11,19 @@ sitemap documents under `/sitemap.xml` and `/sitemap/*`
 Push subscription endpoints `POST/DELETE /api/push-subscriptions`, the PWA Web
 Share Target at `POST /share`, the Mastodon-style `GET /@:handle` redirect, the
 signed media proxy `GET /media/:sig/:encoded`, the footer language switcher's
-`POST /locale`, and the health probe `GET /health`) are intended for browser,
-PWA, crawler or sysop use rather than federation; they are wired up in
-`lib/baudrate_web/router.ex` and not documented as part of the AP surface.
+`POST /locale`, the service worker's offline page `GET /offline`
+([ADR 0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md)),
+the remote-follow handoff `POST /remote-follow`, and the health probe
+`GET /health`) are intended for browser, PWA, crawler or sysop use rather than
+federation; they are wired up in `lib/baudrate_web/router.ex` and not
+documented as part of the AP surface.
+
+`POST /remote-follow` is the one of those that reaches **outward**: it resolves
+the visitor's own instance's WebFinger document and reads its
+`http://ostatus.org/schema/1.0/subscribe` template, so a fediverse reader can
+follow a local user or federated board from the account they already have. It
+refuses a blocked domain, and refuses any template that is not HTTPS on the
+domain the visitor typed.
 
 **Base URL:** `https://<your-instance>`
 
@@ -170,6 +180,13 @@ GET /.well-known/webfinger?resource=acct:alice@example.com
 | 400 | Missing `resource` parameter or invalid format |
 | 404 | User/board not found, or the board is not federated — private (`min_role_to_view != "guest"`) **or** `ap_enabled == false` |
 
+**`links` carries `self` and nothing else.** In particular Baudrate does not
+advertise an OStatus `subscribe` template, so another site's "follow from your
+instance" button cannot use a Baudrate account as the *follower's* home
+instance. It consumes that template (see `POST /remote-follow` above) without
+publishing one — the two halves are independent, and only the consuming half
+is built.
+
 **Board WebFinger example:**
 
 ```
@@ -250,7 +267,7 @@ GET /nodeinfo/2.1
   "version": "2.1",
   "software": {
     "name": "baudrate",
-    "version": "1.28.2",
+    "version": "1.34.0",
     "repository": "https://github.com/hiroshiyui/baudrate"
   },
   "protocols": ["activitypub"],

@@ -316,6 +316,65 @@ Once HSTS is active, browsers will refuse to connect over HTTP for the
 configured duration. Make sure HTTPS is fully working before enabling HSTS
 preloading.
 
+### `/robots.txt` answers 404, or the site will not install as an app
+
+Both symptoms come from the same cause: a proxy serving from disk a path the
+application generates.
+
+**`/robots.txt` 404s** — with an nginx page rather than Baudrate's. It has been
+a **route** since v1.33.0, not a file in `priv/static`, because its `Sitemap:`
+directive needs an absolute URL that only the application knows. A rule like
+
+```nginx
+location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|robots[^/]*\.txt|…) {
+    root /path/to/baudrate/priv/static;
+}
+```
+
+still matches it, finds no file, and answers before the router is consulted —
+so the instance advertises no sitemap and no `Disallow` for `/ap/`, `/api/` or
+`/exports/` at all, and nothing in the application can tell. **Remove
+`robots[^/]*\.txt` from that rule.** Anything the application generates
+belongs in `location /`; a proxy may serve from disk only what
+`BaudrateWeb.static_paths/0` lists.
+
+**The install prompt never appears** — check the manifest's content type:
+
+```bash
+curl -s -o /dev/null -w '%{content_type}\n' https://your.host/site.webmanifest
+# want: application/manifest+json     not: application/octet-stream
+```
+
+Debian's `/etc/nginx/mime.types` has no `webmanifest` entry, so nginx falls
+back to `default_type`. Give it a `location` of its own with
+`default_type application/manifest+json` — **not** a `types { … }` block
+inside the shared static rule, which *replaces* the inherited map for that
+whole location and would turn every font, image and favicon beside it into
+`application/octet-stream`.
+
+`doc/examples/nginx.conf.example` and the Ansible template both have the
+correct form; `test/ops/nginx_static_paths_test.exs` keeps them in step.
+
+### The browser keeps showing an old version of the site
+
+A service worker is registered on every page since v1.34.0
+([ADR 0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md)).
+It caches the offline page and the fingerprinted files under `/assets/` and
+nothing else, so it cannot serve stale *content* — but a worker from an older
+release can persist, because a browser only checks for a new one on
+navigation.
+
+In DevTools → Application → Service Workers, "Update on reload" plus a hard
+reload replaces it. For a reader who cannot do that, the worker calls
+`skipWaiting()` and `clients.claim()`, so the next navigation after the new
+one downloads takes over without every tab being closed.
+
+**If you see a new worker at a new URL after each deploy**, something has
+changed `app.js` to register `~p"/service_worker.js"` instead of the bare
+string. That resolves to the digest-stamped filename, so each release installs
+a *separate* worker and the old ones never go away. Registration must stay a
+literal path.
+
 ---
 
 ## Federation
