@@ -108,6 +108,7 @@ lib/
 │   │   ├── read_tracking.ex     # Per-user article/board read state tracking
 │   │   ├── search.ex            # Full-text search across articles, comments, boards
 │   │   ├── search_query.ex      # The search box's query string: operators, and whether it names a scope
+│   │   ├── sitemap.ex           # Which articles, boards and tags a sitemap may invite a crawler to (ADR 0057)
 │   │   ├── tags.ex              # Hashtag extraction, syncing, and querying
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
 │   │   ├── article_image.ex     # ArticleImage schema (gallery images on articles)
@@ -128,6 +129,9 @@ lib/
 │   │   ├── comment_like.ex      # CommentLike schema (local + remote likes on comments)
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
 │   │   ├── comment_image.ex     # CommentImage schema (image attachments on comments)
+│   │   ├── comment_revision.ex  # CommentRevision schema (what an edit replaced, ADR 0060)
+│   │   ├── content_warning.ex   # The summary/sensitive rules all four warned schemas share (ADR 0052)
+│   │   ├── image_alt.ex         # An image's description: one rule for three tables, federated as the attachment `name`
 │   │   ├── interactions.ex      # Shared like/boost/bookmark interaction helpers
 │   │   ├── title_deriver.ex     # Title derivation for federation-imported articles
 │   │   ├── link_preview.ex      # LinkPreview schema: cached OG/Twitter Card metadata, deduplicated by URL hash
@@ -293,8 +297,11 @@ lib/
 │   │   ├── handle_redirect_controller.ex  # Redirects /@username to /users/:username (Mastodon compat)
 │   │   ├── push_subscription_controller.ex  # POST/DELETE /api/push-subscriptions (Web Push)
 │   │   ├── remote_follow_controller.ex  # POST /remote-follow — hands a visitor to their own instance
+│   │   ├── remote_follow_html.ex  # The one page that flow renders, naming no server on failure
 │   │   ├── session_controller.ex  # POST endpoints for session mutations
-│   │   └── share_target_controller.ex  # PWA Web Share Target POST handler
+│   │   ├── share_target_controller.ex  # PWA Web Share Target POST handler
+│   │   ├── sitemap_controller.ex  # /robots.txt and the sitemap documents, as routes not files (ADR 0057)
+│   │   └── sitemap_xml.ex       # Sitemap XML rendering
 │   ├── live/
 │   │   ├── admin/
 │   │   │   ├── boards_live.ex          # Admin board CRUD + moderator management
@@ -315,6 +322,7 @@ lib/
 │   │   ├── article_edit_live.ex  # Article editing form
 │   │   ├── article_helpers.ex   # Pure helper logic extracted from ArticleLive
 │   │   ├── article_history_live.ex # Article edit history with inline diffs
+│   │   ├── comment_history_live.ex # A comment's edit history, public like the article's (ADR 0060)
 │   │   ├── article_live.ex      # Single article view with paginated comments
 │   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
@@ -375,11 +383,14 @@ lib/
 │   │   ├── set_locale.ex        # Locale: cookie choice → account → Accept-Language
 │   │   ├── set_theme.ex         # Inject admin-configured DaisyUI theme assigns
 │   │   └── verify_http_signature.ex  # HTTP Signature verification for AP inboxes
+│   ├── crawlers.ex              # What a crawler is told: robots directives, noindex, canonical (ADR 0057)
 │   ├── endpoint.ex              # HTTP entry point, session config
 │   ├── gettext.ex               # Gettext i18n configuration
 │   ├── health_detail.ex         # Loopback-only listener serving Baudrate.Health (HEALTH_DETAIL_PORT)
 │   ├── helpers.ex               # Shared translation helpers (translate_role/1, translate_status/1, etc.)
+│   ├── http_caching.ex          # Cache-control for actor documents, and when `public` is unsafe
 │   ├── locale.ex                # Locale resolution order, the known-locale allow-list, the cookie's facts
+│   ├── not_found_error.ex       # 404 for a missing subject — never a redirect (ADR 0057)
 │   ├── linked_data.ex          # JSON-LD + Dublin Core metadata builders (SIOC/FOAF/DC)
 │   ├── open_graph.ex            # Open Graph + Twitter Card meta tag builders
 │   ├── rate_limiter.ex          # Rate limiter behaviour (Sandbox / Hammer backends)
@@ -2785,6 +2796,7 @@ these responses loads a subresource.
 | Article creation | 10 / 15 min | per user |
 | Article update | 20 / 5 min | per user |
 | Comment creation | 30 / 5 min | per user |
+| Comment update | 20 / 5 min | per user |
 | Content deletion | 20 / 5 min | per user |
 | User muting | 10 / 5 min | per user |
 | Search (authenticated) | 15 / min | per user |
@@ -2881,7 +2893,7 @@ encapsulates topic naming and broadcast logic.
 | Topic | Format | Events |
 |-------|--------|--------|
 | Board | `"board:<board_id>"` | `:article_created`, `:article_deleted`, `:article_updated`, `:article_pinned`, `:article_unpinned`, `:article_locked`, `:article_unlocked` |
-| Article | `"article:<article_id>"` | `:comment_created`, `:comment_deleted`, `:article_deleted`, `:article_updated` |
+| Article | `"article:<article_id>"` | `:comment_created`, `:comment_updated`, `:comment_deleted`, `:article_deleted`, `:article_updated` |
 | DM User | `"dm:user:<user_id>"` | `:dm_received`, `:dm_message_created` |
 | DM Conversation | `"dm:conversation:<conversation_id>"` | `:dm_message_created`, `:dm_message_deleted` |
 
