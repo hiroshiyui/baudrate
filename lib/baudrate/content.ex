@@ -39,6 +39,7 @@ defmodule Baudrate.Content do
     Bookmarks,
     Boosts,
     Comments,
+    Drafts,
     Feed,
     Images,
     Likes,
@@ -143,6 +144,21 @@ defmodule Baudrate.Content do
     do: Articles.create_remote_article(attrs, board_ids, [])
 
   # --- Comments ---
+
+  # --- Article drafts ---
+  #
+  # Unfinished articles, kept beside the composer's localStorage autosave
+  # rather than instead of it. Every read is scoped to the owner.
+
+  defdelegate list_drafts(user_id), to: Drafts, as: :list
+  defdelegate get_draft(user_id, draft_id), to: Drafts, as: :get
+  defdelegate latest_draft(user_id), to: Drafts, as: :latest
+  defdelegate save_draft(user_id, attrs, draft_id \\ nil), to: Drafts, as: :save
+  defdelegate delete_draft(user_id, draft_id), to: Drafts, as: :delete
+  defdelegate count_drafts(user_id), to: Drafts, as: :count
+  defdelegate draft_quota_remaining(user_id), to: Drafts, as: :quota_remaining
+  defdelegate purge_stale_drafts(), to: Drafts, as: :purge_stale
+  defdelegate max_drafts(), to: Drafts
 
   defdelegate create_comment(attrs, opts \\ []), to: Comments
   defdelegate create_remote_comment(attrs), to: Comments

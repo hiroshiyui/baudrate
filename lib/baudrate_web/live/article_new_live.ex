@@ -27,11 +27,18 @@ defmodule BaudrateWeb.ArticleNewLive do
 
   use BaudrateWeb, :live_view
 
+  require Logger
+
   alias Baudrate.Auth
   alias Baudrate.Content
   alias Baudrate.Content.ArticleImageStorage
   alias BaudrateWeb.{PollComposer, RateLimits}
   import BaudrateWeb.Helpers, only: [parse_id: 1, interaction_refused_message: 2]
+
+  # Long enough that ordinary typing produces one write every couple of
+  # seconds rather than one per keystroke; short enough that a tab closed
+  # mid-sentence has lost at most that.
+  @autosave_after_ms 2_000
 
   @impl true
   def mount(params, _session, socket) do
@@ -56,7 +63,15 @@ defmodule BaudrateWeb.ArticleNewLive do
       from_share = share_title != "" or share_text != "" or share_url != ""
       body = compose_share_body(share_text, share_url)
 
-      initial = if from_share, do: %{"title" => share_title, "body" => body}, else: %{}
+      draft = restorable_draft(user, params, from_share, fixed_board)
+
+      initial =
+        cond do
+          from_share -> %{"title" => share_title, "body" => body}
+          draft -> draft_form_params(draft)
+          true -> %{}
+        end
+
       changeset = Content.change_article(%Baudrate.Content.Article{}, initial)
 
       {:ok,
@@ -64,16 +79,22 @@ defmodule BaudrateWeb.ArticleNewLive do
        |> assign(:form, to_form(changeset, as: :article))
        |> assign(:fixed_board, fixed_board)
        |> assign(:board_slug, params["slug"])
-       |> assign(:selected_boards, [])
+       |> assign(:selected_boards, draft_boards(draft, user, fixed_board))
        |> assign(:board_search_query, "")
        |> assign(:board_search_results, [])
        |> assign(:from_share, from_share)
-       |> assign(:uploaded_images, [])
+       |> assign(:uploaded_images, draft_images(draft, user))
        |> assign(:page_title, gettext("Create Article"))
-       |> assign(:poll_enabled, false)
-       |> assign(:poll_options, ["", ""])
-       |> assign(:poll_mode, "single")
-       |> assign(:poll_expires, "")
+       |> assign(:poll_enabled, (draft && draft.poll_enabled) || false)
+       |> assign(:poll_options, draft_poll_options(draft))
+       |> assign(:poll_mode, (draft && draft.poll_mode) || "single")
+       |> assign(:poll_expires, (draft && draft.poll_expires) || "")
+       |> assign(:draft_id, draft && draft.id)
+       |> assign(:draft_restored, draft != nil)
+       |> assign(:draft_quota_reached, false)
+       |> assign(:max_drafts_allowed, Content.max_drafts())
+       |> assign(:draft_timer, nil)
+       |> assign(:draft_params, nil)
        |> allow_upload(:article_images,
          accept: ~w(.jpg .jpeg .png .webp .gif),
          max_entries: 4,
@@ -144,7 +165,8 @@ defmodule BaudrateWeb.ArticleNewLive do
     {:noreply,
      socket
      |> assign(:form, to_form(changeset, as: :article))
-     |> PollComposer.assign_poll_params(all_params)}
+     |> PollComposer.assign_poll_params(all_params)
+     |> schedule_draft_autosave(all_params)}
   end
 
   @impl true
@@ -228,6 +250,18 @@ defmodule BaudrateWeb.ArticleNewLive do
     do_create(socket, params, [], all_params)
   end
 
+  @impl true
+  def handle_info(:autosave_draft, socket) do
+    {:noreply, socket |> assign(:draft_timer, nil) |> autosave_draft()}
+  end
+
+  # Every authenticated LiveView needs this: the DM and notification count
+  # hooks forward their PubSub messages into whatever view is mounted, and a
+  # view with only guarded clauses crashes for any signed-in member who
+  # receives one while writing.
+  @impl true
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
   defp do_create(socket, params, board_ids, all_params) do
     parsed_ids =
       board_ids
@@ -307,8 +341,12 @@ defmodule BaudrateWeb.ArticleNewLive do
 
     case Content.create_article(attrs, board_ids, [image_ids: image_ids] ++ poll_opts) do
       {:ok, %{article: article}} ->
+        # The draft has become the article, so it goes — and the pending
+        # autosave goes with it, or it would fire after the redirect and
+        # write the post back as a draft nobody asked to keep.
         {:noreply,
          socket
+         |> discard_draft(user)
          |> put_flash(:info, gettext("Article created successfully."))
          |> redirect(to: ~p"/articles/#{article.slug}")}
 
@@ -469,5 +507,168 @@ defmodule BaudrateWeb.ArticleNewLive do
   defp replace_image(socket, key, image) do
     updated = Enum.map(socket.assigns[key], fn i -> if i.id == image.id, do: image, else: i end)
     assign(socket, key, updated)
+  end
+
+  # --- Drafts ---
+  #
+  # The server-side half of the composer's autosave. The localStorage hook is
+  # untouched and still runs: it is the half that works with no connection,
+  # and this is the half that follows a member to another device.
+
+  # A draft is restored in two cases and refused in three, and each refusal is
+  # a case where putting text in front of somebody would be wrong rather than
+  # merely unhelpful:
+  #
+  #   * `?draft=N` — an explicit resume from /drafts. Scoped to the owner, so
+  #     another member's id restores nothing.
+  #   * a bare /articles/new — the most recent draft, which is what makes the
+  #     phone-to-laptop case work with no action.
+  #   * **not** when the composer was opened from the PWA share target: the
+  #     member is posting the thing they just shared, and an old draft would
+  #     overwrite it.
+  #   * **not** when opened from a board ("post in #board"), where an
+  #     unrelated draft addressed to other boards is a non-sequitur.
+  defp restorable_draft(_user, _params, true, _fixed_board), do: nil
+
+  defp restorable_draft(user, %{"draft" => id}, _from_share, _fixed_board) do
+    case parse_id(id) do
+      {:ok, draft_id} -> Content.get_draft(user.id, draft_id)
+      :error -> nil
+    end
+  end
+
+  defp restorable_draft(_user, _params, _from_share, %Baudrate.Content.Board{}), do: nil
+  defp restorable_draft(user, _params, _from_share, nil), do: Content.latest_draft(user.id)
+
+  defp draft_form_params(draft) do
+    %{
+      "title" => draft.title || "",
+      "body" => draft.body || "",
+      "summary" => draft.summary || "",
+      "sensitive" => draft.sensitive,
+      "visibility" => draft.visibility || "public",
+      "forwardable" => draft.forwardable
+    }
+  end
+
+  # Re-checked at resume rather than trusted from the row: a board can be
+  # deleted, or the member's right to post in it withdrawn, between saving a
+  # draft and coming back to it. A board that fails either test is dropped
+  # silently — the alternative is a composer that refuses to submit and does
+  # not say which of the chips is the problem.
+  defp draft_boards(nil, _user, _fixed_board), do: []
+  defp draft_boards(_draft, _user, %Baudrate.Content.Board{}), do: []
+
+  defp draft_boards(draft, user, nil) do
+    draft.board_ids
+    |> Enum.map(&Content.get_board/1)
+    |> Enum.filter(&(&1 && Content.can_post_in_board?(&1, user)))
+  end
+
+  # Only images that are still the member's own and still unattached. The
+  # orphan sweep spares them while the draft holds them, but an image that was
+  # attached to some other post in the meantime is no longer this draft's.
+  defp draft_images(nil, _user), do: []
+
+  defp draft_images(draft, user) do
+    held = MapSet.new(draft.image_ids)
+
+    user.id
+    |> Content.list_orphan_article_images()
+    |> Enum.filter(&MapSet.member?(held, &1.id))
+  end
+
+  defp draft_poll_options(%{poll_options: [_, _ | _] = options}), do: options
+  defp draft_poll_options(_), do: ["", ""]
+
+  defp schedule_draft_autosave(socket, all_params) do
+    if timer = socket.assigns[:draft_timer], do: Process.cancel_timer(timer)
+
+    socket
+    |> assign(:draft_timer, Process.send_after(self(), :autosave_draft, @autosave_after_ms))
+    |> assign(:draft_params, all_params)
+  end
+
+  defp cancel_draft_autosave(socket) do
+    if timer = socket.assigns[:draft_timer], do: Process.cancel_timer(timer)
+    socket |> assign(:draft_timer, nil) |> assign(:draft_params, nil)
+  end
+
+  defp discard_draft(socket, user) do
+    if id = socket.assigns[:draft_id], do: Content.delete_draft(user.id, id)
+    socket |> cancel_draft_autosave() |> assign(:draft_id, nil)
+  end
+
+  defp autosave_draft(%{assigns: %{draft_params: nil}} = socket), do: socket
+
+  defp autosave_draft(socket) do
+    user = socket.assigns.current_user
+    all_params = socket.assigns.draft_params
+    article = all_params["article"] || %{}
+
+    if blank_draft?(article) do
+      socket
+    else
+      case RateLimits.check_draft_save(user.id) do
+        {:error, :rate_limited} -> socket
+        :ok -> write_draft(socket, user, article, all_params)
+      end
+    end
+  end
+
+  # An empty composer is not a draft. Without this, opening /articles/new and
+  # touching one field would leave a row behind, and the member's drafts list
+  # would fill with blanks they never wrote.
+  defp blank_draft?(article) do
+    String.trim(article["title"] || "") == "" and String.trim(article["body"] || "") == ""
+  end
+
+  defp write_draft(socket, user, article, all_params) do
+    attrs =
+      article
+      |> Map.take(~w(title body summary sensitive visibility forwardable))
+      # An empty select value would fail `validate_inclusion` and make the
+      # save fail silently, which is the one way this feature must not break:
+      # the member is told nothing and believes their work is safe.
+      |> Enum.reject(fn {k, v} -> k == "visibility" and v in [nil, ""] end)
+      |> Map.new()
+      |> Map.put("board_ids", Enum.map(socket.assigns.selected_boards, & &1.id))
+      |> Map.put("image_ids", Enum.map(socket.assigns.uploaded_images, & &1.id))
+      |> Map.put("poll_enabled", socket.assigns.poll_enabled)
+      |> Map.put("poll_options", poll_option_values(all_params))
+      |> Map.put("poll_mode", socket.assigns.poll_mode)
+      |> Map.put("poll_expires", socket.assigns.poll_expires)
+
+    case Content.save_draft(user.id, attrs, socket.assigns.draft_id) do
+      {:ok, draft} ->
+        socket |> assign(:draft_id, draft.id) |> assign(:draft_quota_reached, false)
+
+      {:error, :quota_exceeded} ->
+        # Said once, in the composer, rather than swallowed: the member's work
+        # is still safe in localStorage, but they need to know the server half
+        # has stopped and why.
+        assign(socket, :draft_quota_reached, true)
+
+      {:error, changeset} ->
+        # Never silent. A draft that stops saving with nothing said is worse
+        # than one that was never offered.
+        Logger.warning(
+          "drafts.save_failed: user_id=#{user.id} errors=#{inspect(changeset.errors)}"
+        )
+
+        socket
+    end
+  end
+
+  defp poll_option_values(all_params) do
+    all_params
+    |> Map.get("poll_options", %{})
+    |> Enum.sort_by(fn {k, _} ->
+      case Integer.parse(k) do
+        {n, ""} -> n
+        _ -> 0
+      end
+    end)
+    |> Enum.map(fn {_, v} -> v end)
   end
 end

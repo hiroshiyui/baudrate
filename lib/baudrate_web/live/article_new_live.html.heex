@@ -26,6 +26,37 @@
     {gettext("Create Article")}
   </h1>
 
+  <div
+    :if={@draft_restored}
+    id="article-new-draft-restored"
+    class="article-new-draft-restored alert alert-info mb-4"
+    role="status"
+  >
+    <span>
+      {gettext("Picked up where you left off. This draft is saved to your account.")}
+    </span>
+    <.link navigate={~p"/drafts"} class="article-new-drafts-link link">
+      {gettext("All drafts")}
+    </.link>
+  </div>
+
+  <div
+    :if={@draft_quota_reached}
+    id="article-new-draft-limit"
+    class="article-new-draft-limit alert alert-warning mb-4"
+    role="status"
+  >
+    <span>
+      {gettext(
+        "You are keeping %{limit} drafts, which is the most your account can hold, so this one is not being saved to your account. It is still saved in this browser. Delete one to make room.",
+        limit: @max_drafts_allowed
+      )}
+    </span>
+    <.link navigate={~p"/drafts"} class="article-new-drafts-link link">
+      {gettext("All drafts")}
+    </.link>
+  </div>
+
   <.form
     for={@form}
     phx-change="validate"

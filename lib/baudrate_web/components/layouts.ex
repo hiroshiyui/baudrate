@@ -148,6 +148,9 @@ defmodule BaudrateWeb.Layouts do
                 <.link navigate="/following" class="nav-user-link">{gettext("Following")}</.link>
               </li>
               <li :if={@current_user}>
+                <.link navigate="/drafts" class="nav-user-link">{gettext("Drafts")}</.link>
+              </li>
+              <li :if={@current_user}>
                 <.link navigate="/invites" class="nav-user-link">{gettext("My Invites")}</.link>
               </li>
               <li :if={@current_user}>
@@ -385,6 +388,9 @@ defmodule BaudrateWeb.Layouts do
               </li>
               <li>
                 <.link navigate="/following" class="nav-user-link">{gettext("Following")}</.link>
+              </li>
+              <li>
+                <.link navigate="/drafts" class="nav-user-link">{gettext("Drafts")}</.link>
               </li>
               <li>
                 <.link navigate="/invites" class="nav-user-link">{gettext("My Invites")}</.link>

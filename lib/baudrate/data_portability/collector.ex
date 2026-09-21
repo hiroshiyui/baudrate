@@ -94,7 +94,8 @@ defmodule Baudrate.DataPortability.Collector do
       "interactions.json" => interactions(user, base_url),
       "relationships.json" => relationships(user, base_url),
       "messages.json" => messages(user, base_url),
-      "invites.json" => invites(user)
+      "invites.json" => invites(user),
+      "drafts.json" => Enum.map(own_drafts(user), &draft/1)
     }
 
     media =
@@ -217,6 +218,39 @@ defmodule Baudrate.DataPortability.Collector do
     |> where_viewable(user)
     |> Repo.all()
     |> Repo.preload(boards: from(b in Board, order_by: b.id))
+  end
+
+  # Unfinished articles. They are the member's own writing and nobody else's —
+  # an export that left them out would omit work the member may have spent
+  # longer on than anything published.
+  defp own_drafts(user) do
+    Baudrate.Content.list_drafts(user.id)
+  end
+
+  # An explicit allow-list, like every other collector: never `Map.from_struct`
+  # and never the schema, so a column added later is absent from the archive
+  # until somebody decides it belongs there (ADR 0023).
+  #
+  # `board_ids` and `image_ids` are deliberately left out. They are row ids
+  # that mean nothing outside this instance, and the images they name are
+  # uploads that were never published — the archive carries the media attached
+  # to articles, comments and replies, which is what the member actually put
+  # in front of anyone.
+  defp draft(d) do
+    %{
+      "title" => d.title,
+      "body" => d.body,
+      "summary" => d.summary,
+      "sensitive" => d.sensitive,
+      "visibility" => d.visibility,
+      "forwardable" => d.forwardable,
+      "poll_enabled" => d.poll_enabled,
+      "poll_options" => d.poll_options,
+      "poll_mode" => d.poll_mode,
+      "poll_expires" => d.poll_expires,
+      "created_at" => iso(d.inserted_at),
+      "updated_at" => iso(d.updated_at)
+    }
   end
 
   defp article(a, user, base_url) do

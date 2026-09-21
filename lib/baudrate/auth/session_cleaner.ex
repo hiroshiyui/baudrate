@@ -101,6 +101,7 @@ defmodule Baudrate.Auth.SessionCleaner do
       notify_ended_sanctions: &notify_ended_sanctions/0,
       purge_closed_report_evidence: &Baudrate.Moderation.purge_closed_report_evidence/0,
       announce_closed_polls: &Baudrate.Content.sweep_closed_polls/0,
+      purge_stale_drafts: &purge_stale_drafts/0,
       retention: &retention/0
     ]
     |> Enum.each(fn {name, step} -> run_step(name, step) end)
@@ -202,6 +203,19 @@ defmodule Baudrate.Auth.SessionCleaner do
   defp retention do
     counts = Baudrate.Retention.run()
     counts.timeline_items + counts.announces + counts.articles + counts.comments
+  end
+
+  # A draft nobody has touched in 90 days. Its images are released with it:
+  # once the row is gone they are ordinary orphans again and the image sweep
+  # collects them on a later pass, so there are no files to unlink here.
+  defp purge_stale_drafts do
+    count = Baudrate.Content.purge_stale_drafts()
+
+    if count > 0 do
+      Logger.info("session_cleaner.drafts_purged: count=#{count}")
+    end
+
+    count
   end
 
   defp cleanup_old_notifications do

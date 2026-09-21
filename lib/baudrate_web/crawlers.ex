@@ -37,7 +37,7 @@ defmodule BaudrateWeb.Crawlers do
   page it landed on.
   """
 
-  @noindex_paths ~w(/search /login /register /password-reset /welcome /offline)
+  @noindex_paths ~w(/search /login /register /password-reset /welcome /offline /drafts)
   # `/account-reset/` carries a single-use recovery token in the path itself
   # (ADR 0058). A search engine that indexed one would publish it, and a
   # referrer header would leak it — so the page refuses indexing and, because

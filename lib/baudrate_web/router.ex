@@ -391,6 +391,7 @@ defmodule BaudrateWeb.Router do
       live "/profile/move", AccountMigrationLive
       live "/profile/recovery-codes", RecoveryCodesLive
       live "/admin/verify", AdminTotpVerifyLive
+      live "/drafts", DraftsLive
       live "/invites", UserInvitesLive
       live "/messages", ConversationsLive
       live "/messages/new", ConversationLive

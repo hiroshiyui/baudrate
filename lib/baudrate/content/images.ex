@@ -148,22 +148,38 @@ defmodule Baudrate.Content.Images do
 
   Paths are rebuilt from `filename`, never read from `storage_path` — see
   `image_paths/1`.
+
+  **An image a saved draft is holding is not an orphan.** An upload belongs to
+  no article until the post is submitted, which is exactly the state a draft
+  preserves, so without this a post drafted overnight is resumed with its
+  pictures already unlinked from disk. The draft's own purge is what
+  eventually releases them: once the row is gone the images are ordinary
+  orphans again and a later pass collects them.
   """
   def delete_orphan_article_images(cutoff) do
     paths =
-      from(ai in ArticleImage,
-        where: is_nil(ai.article_id) and ai.inserted_at < ^cutoff,
-        select: ai.filename
-      )
+      orphan_article_images(cutoff)
+      |> select([ai], ai.filename)
       |> Repo.all()
       |> image_paths()
 
-    from(ai in ArticleImage,
-      where: is_nil(ai.article_id) and ai.inserted_at < ^cutoff
-    )
-    |> Repo.delete_all()
+    orphan_article_images(cutoff) |> Repo.delete_all()
 
     paths
+  end
+
+  # One definition for both halves: the select and the delete must not be able
+  # to disagree about what an orphan is, or the files of images that were
+  # spared would be unlinked while their rows stayed.
+  defp orphan_article_images(cutoff) do
+    from(ai in ArticleImage,
+      where: is_nil(ai.article_id) and ai.inserted_at < ^cutoff,
+      where:
+        fragment(
+          "NOT EXISTS (SELECT 1 FROM article_drafts d WHERE ? = ANY(d.image_ids))",
+          ai.id
+        )
+    )
   end
 
   # --- Comment Images ---

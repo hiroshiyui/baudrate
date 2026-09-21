@@ -22,6 +22,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_moderator_delete/1`| `moderator_delete:` | 5 min | 100   |
   | `check_mute_user/1`     | `mute_user:`       | 5 min   | 10    |
   | `check_search/1`        | `search:`          | 1 min   | 15    |
+  | `check_draft_save/1`    | `draft_save:`      | 1 min   | 60    |
   | `check_search_by_ip/1`  | `search:ip:`       | 1 min   | 10    |
   | `check_avatar_change/1` | `avatar_change:`   | 1 hour  | 5     |
   | `check_dm_send/1`       | `dm_send:`         | 1 min   | 20    |
@@ -198,6 +199,22 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_preview(integer()) :: :ok | {:error, :rate_limited}
   def check_preview(user_id) do
     check("preview:#{user_id}", 60_000, 60, :preview)
+  end
+
+  @doc """
+  Saving an article draft: 60 per minute per user.
+
+  The composer debounces its autosave server-side, so ordinary typing produces
+  roughly one save every two seconds and never approaches this. It is here for
+  the case the debounce is defeated — a stuck client, or a reconnect loop
+  re-sending `validate` — because each save is a write, and a member holding
+  the composer open should not be able to turn a keyboard into a write loop.
+  Modelled on `check_preview/1`, which bounds the other thing a keystroke can
+  make the server do.
+  """
+  @spec check_draft_save(integer()) :: :ok | {:error, :rate_limited}
+  def check_draft_save(user_id) do
+    check("draft_save:#{user_id}", 60_000, 60, :draft_save)
   end
 
   @doc "Search (guest): 10 per minute per IP address."

@@ -1,0 +1,78 @@
+<div id="drafts-page" class="drafts-page space-y-6">
+  <div class="flex items-center justify-between gap-4">
+    <h1 id="drafts-heading" class="drafts-heading text-2xl font-bold">{gettext("Drafts")}</h1>
+    <.link id="drafts-new-article" navigate={~p"/articles/new"} class="btn btn-primary btn-sm">
+      {gettext("New Article")}
+    </.link>
+  </div>
+
+  <p id="drafts-explainer" class="drafts-explainer text-sm text-base-content/70">
+    {gettext(
+      "An unfinished article is saved here as you write, so you can pick it up on another device. Drafts are private to you, and one untouched for %{days} days is removed.",
+      days: Baudrate.Content.Drafts.stale_after_days()
+    )}
+  </p>
+
+  <div
+    :if={@drafts == []}
+    id="drafts-empty"
+    class="drafts-empty text-base-content/70 text-center py-8"
+  >
+    {gettext("You have no drafts. Anything you start writing will appear here.")}
+  </div>
+
+  <ul :if={@drafts != []} id="drafts-list" class="drafts-list space-y-3 list-none pl-0">
+    <li
+      :for={draft <- @drafts}
+      id={"draft-#{draft.id}"}
+      class="draft-item card bg-base-100 border border-base-300"
+    >
+      <div class="card-body p-4 gap-2">
+        <h2 class="draft-item-heading font-semibold break-words">
+          {BaudrateWeb.DraftsLive.draft_heading(draft)}
+        </h2>
+
+        <p class="draft-item-meta text-sm text-base-content/70">
+          {gettext("Last saved %{at}", at: format_datetime(draft.updated_at))}
+          <span :if={draft.board_ids != []} class="draft-item-boards">
+            &middot; {ngettext(
+              "%{count} board selected",
+              "%{count} boards selected",
+              length(draft.board_ids)
+            )}
+          </span>
+          <span :if={draft.image_ids != []} class="draft-item-images">
+            &middot; {ngettext(
+              "%{count} image",
+              "%{count} images",
+              length(draft.image_ids)
+            )}
+          </span>
+        </p>
+
+        <div class="draft-item-actions flex gap-2 justify-end">
+          <.link
+            id={"draft-resume-#{draft.id}"}
+            navigate={~p"/articles/new?draft=#{draft.id}"}
+            class="draft-resume btn btn-sm btn-primary"
+          >
+            {gettext("Resume")}
+          </.link>
+          <button
+            id={"draft-delete-#{draft.id}"}
+            phx-click="delete"
+            phx-value-id={draft.id}
+            data-confirm={gettext("Delete this draft? This cannot be undone.")}
+            class="draft-delete btn btn-sm btn-ghost"
+          >
+            {gettext("Delete")}
+          </button>
+        </div>
+      </div>
+    </li>
+  </ul>
+
+  <p id="drafts-quota" class="drafts-quota text-sm text-base-content/70">
+    {gettext("%{count} of %{limit} drafts kept", count: @draft_count, limit: @max_drafts)}
+  </p>
+</div>
