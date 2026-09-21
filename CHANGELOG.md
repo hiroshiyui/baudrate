@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
-## [Unreleased]
+## [1.36.0] — 2026-09-22
 
 Phase 6A's second half, and with it 6A is complete: an unfinished article is
 now saved to your account as you write, so a post begun on a phone can be
@@ -20,6 +20,13 @@ the server — and it makes the feature worse in the case that actually
 happens. The hook is the only half that works when the connection is gone,
 which is exactly when a tab gets lost; the server row is the only half that
 crosses devices. Losing a draft now takes both failures at once.
+
+**The one worth an operator's attention is a fix, not the feature.** Checking
+the live site right after v1.35.0 deployed turned up comments that had never
+been edited telling the fediverse they had been — 47 of them here, every one
+the v1.31.0 `ap_id` backfill had touched. It is cosmetic, peers showed an
+"edited" badge and nothing else, and it is corrected below. Nothing needs
+doing to the database.
 
 ### Added
 
