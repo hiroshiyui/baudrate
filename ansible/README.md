@@ -215,7 +215,18 @@ ansible-playbook playbooks/setup-server.yml --tags postgresql
 
 # Only nginx (e.g., to update config)
 ansible-playbook playbooks/setup-server.yml --tags nginx
+```
 
+The nginx role runs `nginx -t` after writing the site config and, if the
+render is invalid, restores the previous file and fails the play without
+reloading. `template`'s own `validate:` cannot do this — it checks the
+rendered temporary file, and the template is a bare `server { … }` block,
+which is only valid once nginx.conf includes it. Left unchecked the failure
+is silent in the worst way: the reload refuses the broken config, nginx keeps
+serving the one it has, and nothing looks wrong until the next restart finds
+no working config to start from.
+
+```bash
 # Multiple tags
 ansible-playbook playbooks/setup-server.yml --tags "common,postgresql"
 ```

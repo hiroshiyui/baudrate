@@ -72,7 +72,78 @@
     src: baudrate.conf.j2
     dest: /etc/nginx/sites-available/baudrate
     mode: "0644"
+    backup: true
+  register: baudrate_site_config
   notify: Reload nginx
+
+# --- Validation, and why it is three tasks rather than `validate:` ---
+# `template`'s own `validate:` cannot be used here. It runs the command
+# against the *rendered temporary file*, and this template renders a bare
+# `server { … }` block: `nginx -t -c <file>` reads its argument as a whole
+# main configuration, where a top-level `server` directive is a syntax error.
+# The fragment is only valid once it is included from nginx.conf, so the check
+# has to run after it is in place.
+#
+# That means a bad render reaches the disk, and putting it back is part of the
+# check rather than an afterthought. Without this the failure is silent in the
+# worst way: `systemctl reload` refuses a broken config, nginx keeps serving
+# the one it already has, and the site looks fine — until the next restart or
+# reboot, which finds no working config to start from. That gap is hours or
+# months wide and nothing in between reports it.
+#
+# `failed_when: false` so the restore below can run; the explicit `fail` is
+# what stops the play, and stopping it is also what keeps the queued
+# `Reload nginx` handler from ever firing.
+#
+# `backup: true` leaves timestamped copies in sites-available/. They are
+# inert — nginx includes sites-enabled/, which holds only the symlink — and
+# they are written only when the render actually changes.
+#
+# The pre-SSL template above deliberately has no equivalent. At that point
+# `sites-enabled/baudrate` does not exist yet, so `nginx -t` would not read
+# the file it had just written — a check that passes whatever it contains is
+# worse than none, because it reads as coverage. That path runs only on a new
+# server, where the `flush_handlers` below it fails loudly with an operator
+# watching.
+- name: Validate the nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  register: nginx_config_check
+  changed_when: false
+  failed_when: false
+  # Read-only, so it runs under --check as well, where it validates whatever
+  # is currently on the server. `rc` is defaulted below all the same: a
+  # conditional that raises on an undefined key would turn this safety net
+  # into a new way for the play to break.
+  check_mode: false
+
+- name: Restore the previous nginx config if the new one is invalid
+  when:
+    - nginx_config_check.rc | default(0) != 0
+    - baudrate_site_config.backup_file is defined
+  ansible.builtin.copy:
+    src: "{{ baudrate_site_config.backup_file }}"
+    dest: /etc/nginx/sites-available/baudrate
+    remote_src: true
+    mode: "0644"
+
+- name: Fail if the nginx configuration is invalid
+  when: nginx_config_check.rc | default(0) != 0
+  ansible.builtin.fail:
+    msg: |
+      The rendered nginx configuration is invalid. nginx was NOT reloaded and
+      is still serving its previous configuration.
+
+      {% if baudrate_site_config.backup_file is defined %}
+      The previous config has been restored to
+      /etc/nginx/sites-available/baudrate from
+      {{ baudrate_site_config.backup_file }}.
+      {% else %}
+      There was no previous config to restore, so
+      /etc/nginx/sites-available/baudrate still holds the invalid render.
+      {% endif %}
+
+      {{ nginx_config_check.stderr | default(nginx_config_check.stdout) }}
 
 - name: Enable certbot auto-renewal timer
   ansible.builtin.systemd:
