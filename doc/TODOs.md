@@ -348,7 +348,7 @@ and stopped by what it says.
 | 5A | A self-hosted proof-of-work challenge on registration in every mode; banning an account with the accounts it invited, each one ticked | v1.37.0 | [0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md), `registration_challenge_test.exs`, `invite_chain_ban_test.exs` |
 | 5B | Limits on new accounts, decided from the clock and a count: one link and one image a post, ten posts an hour in one bucket, DMs only where not unsolicited, nothing added to the signature | v1.38.0 | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md), `trust_test.exs` |
 | 5C | First posts held for review, as submissions of their own; approval is publication, once | v1.39.0 | [0065](adr/0065-what-waits-for-review-is-not-content-yet.md), `held_post_test.exs`, `submit_path_test.exs` |
-| 5D | Word, text and domain filters — never regular expressions — on posts, their edits and inbound content | v1.39.0 | [0065](adr/0065-what-waits-for-review-is-not-content-yet.md), `content_filter_test.exs` |
+| 5D | Word, text and domain filters — never regular expressions — on posts, their edits and inbound content | v1.39.0 | [0065](adr/0065-what-waits-for-review-is-not-content-yet.md), [0066](adr/0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md), `content_filter_test.exs` |
 | 5E | IP and CIDR bans on registration and sign-in, checked where every sign-in ends | v1.37.0 | [0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md), `ip_ban_test.exs` |
 
 Three decisions were taken and all three are now records, which hold the
@@ -368,14 +368,10 @@ Reversing any of it needs a superseding record, not a patch.
 Everything else is in those records, in `CHANGELOG.md` and the guides —
 including what each stage's plan got wrong, which every one of the three
 records lists, and the five gaps the security audit found in 5C and 5D's own
-code before v1.39.0 (`CHANGELOG.md`). These are the facts that are still
-nowhere else.
+code before v1.39.0 (`CHANGELOG.md`; the four in screening are
+[0066](adr/0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md)).
+This is the one fact that is still nowhere else.
 
-- **ADR 0065's body lists fewer routes and fields than the code screens.**
-  The audit widened the screening after the record was accepted; its Status
-  line says so and points at `doc/development.md`, which with `doc/api.md`
-  and four rows of `doc/baudrate-spec.md` has the full set. The next record
-  that touches filters should restate it.
 - **The plan's shape changed at every stage, as Phase 4's did** — per-kind
   rate limits in LiveViews became one bucket at the context boundary, a
   "Held" tab on two queues became one page scoped per reviewer, and filter

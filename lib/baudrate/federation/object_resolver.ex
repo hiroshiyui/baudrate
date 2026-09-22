@@ -209,7 +209,7 @@ defmodule Baudrate.Federation.ObjectResolver do
   # through the inbox, so it is screened here: a filter that would have
   # dropped the post had its author's server delivered it refuses the
   # import, and one that would have reported it reports the imported article
-  # (ADR 0065).
+  # (ADR 0066).
   defp materialize(object, remote_actor) do
     verdict = ContentFilters.screen_remote(object, remote_actor)
 

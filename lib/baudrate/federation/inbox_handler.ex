@@ -395,7 +395,7 @@ defmodule Baudrate.Federation.InboxHandler do
         # on the Update looking like a message let a peer post a clean public
         # reply and then edit filtered text into it with a privately
         # addressed Update. A message's own edits are never applied here at
-        # all, so the one object this spares is a message we hold.
+        # all, so the one object this spares is a message we hold (ADR 0066).
         "Note" ->
           if Messaging.get_message_by_ap_id(object["id"] || ""),
             do: :ok,

@@ -1,12 +1,8 @@
 # 0065 — What waits for review is not content yet
 
-- **Status:** Accepted; validated against the code on 2026-09-22 by the
-  security audit before v1.39.0, which found every decision held and the
-  screening wider than decisions 8 and 13 list — remote `source.content`,
-  attachment and poll option names, a post's own poll options and image
-  descriptions, and posts imported by URL from `/search` are screened too,
-  and a published image's description passes the sanction gate.
-  `doc/development.md` (Content filters) has the full set.
+- **Status:** Accepted, except decisions 8 (what a filter reads) and 13 (the
+  routes remote content is screened on), amended by
+  [0066](0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md)
 - **Date:** 2026-09-22
 - **Deciders:** Baudrate maintainers
 - **Related:** a held post passes every gate a published one must — the

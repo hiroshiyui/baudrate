@@ -1177,7 +1177,7 @@ for clock skew lives.)
 board, a locked or deleted article, a block, a suspended actor — is dropped with
 a log line, not a 4xx, so remote instances do not retry.
 
-**Content filters.** An admin's filters (ADR 0065) screen the content of every
+**Content filters.** An admin's filters (ADR 0065, ADR 0066) screen the content of every
 `Create` and `Update` of a `Note` that is not a direct message, an `Article`,
 `Page` or `Question`, and every object an `Announce` brings in — embedded,
 fetched or carried by a group. A filter set to refuse drops the activity like

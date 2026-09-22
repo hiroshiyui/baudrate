@@ -1910,7 +1910,9 @@ withdrawn they are ordinary orphans again.
 
 #### Content filters
 
-[ADR 0065](adr/0065-what-waits-for-review-is-not-content-yet.md).
+[ADR 0065](adr/0065-what-waits-for-review-is-not-content-yet.md), amended by
+[ADR 0066](adr/0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md)
+for what is read and where.
 `Moderation.ContentFilters` (not `Content.Filters`, which is the
 hidden-content query filters) manages admin-written filters at
 **`/admin/filters`** and screens posts against them. The enabled filters are

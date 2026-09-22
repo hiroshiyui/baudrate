@@ -151,7 +151,7 @@ defmodule Baudrate.Content.Images do
 
   Once the image belongs to a published post, or to one waiting for review,
   the description is published text: the sanction gate (ADR 0029) and the
-  content filters (ADR 0065) apply, and their refusals are returned.
+  content filters (ADR 0066) apply, and their refusals are returned.
 
   It goes through the changeset rather than `update_all` so the length bound
   actually runs.
@@ -191,7 +191,7 @@ defmodule Baudrate.Content.Images do
   # image belongs to a published article or comment — or to a post waiting
   # for review — changing it is changing published text, so it passes the
   # sanction gate (ADR 0029) and the content filters as an edit, judged by
-  # what it adds (ADR 0065). Before, a silenced member could rewrite the
+  # what it adds (ADR 0066). Before, a silenced member could rewrite the
   # descriptions on their published posts, and nothing screened them.
   defp guard_alt(image, user_id, alt) do
     {parent, kind} = alt_parent(image)
@@ -238,7 +238,7 @@ defmodule Baudrate.Content.Images do
 
   @doc """
   The descriptions of the member's own uploads among `image_ids`, which are
-  published with the article and so are screened with it (ADR 0065).
+  published with the article and so are screened with it (ADR 0066).
   """
   @spec article_image_alts([integer()], integer() | nil) :: [String.t()]
   def article_image_alts(image_ids, user_id), do: alts(ArticleImage, image_ids, user_id)

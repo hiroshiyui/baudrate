@@ -284,8 +284,8 @@ defmodule Baudrate.Moderation.ContentFilters do
   `source.content` (which the inbox falls back to when `content` is empty, so
   reading only one of them let the other carry the text past every filter),
   the names of its attachments (stored as image descriptions) and of a
-  poll's options. Mode `:remote` — a block drops it and a hold flags it,
-  since nothing arriving over federation can be held.
+  poll's options (ADR 0066). Mode `:remote` — a block drops it and a hold
+  flags it, since nothing arriving over federation can be held.
   """
   @spec screen_remote(map(), map()) :: verdict()
   def screen_remote(object, remote_actor) when is_map(object) do

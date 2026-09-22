@@ -9,6 +9,19 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Documentation
+
+- [ADR 0066](doc/adr/0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md)
+  records what the security audit before v1.39.0 changed in screening, and
+  amends decisions 8 and 13 of
+  [ADR 0065](doc/adr/0065-what-waits-for-review-is-not-content-yet.md), which
+  named less than the code screens: a filter reads everything a post stores
+  and shows, an exemption follows what the handler writes rather than what
+  the incoming object claims, and a post imported by its URL is screened like
+  one delivered. Two more regression cases hold the fields the audit had left
+  untested — a remote poll's `anyOf` options and a comment upload's
+  description.
+
 ## [1.39.0] — 2026-09-22
 
 Phase 5's third release, which completes it: posts can wait for a moderator,
