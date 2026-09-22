@@ -344,4 +344,31 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
     assert has_element?(lv, "#article-new-poll-mode-multiple[checked]")
     assert has_element?(lv, ~s(#poll-expires option[value="1d"][selected]))
   end
+
+  describe "a new account" do
+    # ADR 0064. The composer is where a new member meets the link limit, so the
+    # refusal has to say what the limit is and keep what they wrote.
+    setup do
+      Repo.insert!(%Setting{key: "new_account_days", value: "3"})
+      Repo.insert!(%Setting{key: "new_account_posts", value: "3"})
+      :ok
+    end
+
+    test "is told the link limit and when it lifts, and keeps the text", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, lv, _html} = live(conn, "/articles/new")
+      body = "See [one](https://one.example/) and [two](https://two.example/)."
+
+      html =
+        lv
+        |> form("#article-new-form", article: %{title: "Two links", body: body})
+        |> render_submit(%{"board_ids" => ["#{board.id}"]})
+
+      assert html =~ "New accounts can put at most 1 link in a post."
+      assert html =~ "you have written 3 more posts"
+      assert has_element?(lv, "#article-new-form textarea", "two.example")
+    end
+  end
 end

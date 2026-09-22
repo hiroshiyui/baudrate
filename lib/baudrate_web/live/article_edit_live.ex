@@ -161,6 +161,9 @@ defmodule BaudrateWeb.ArticleEditLive do
     end
   end
 
+  # An upload here is attached to the published article as it lands, so the
+  # context decides whether it may be before the file is even processed
+  # (`Content.authorize_article_image/2`), and checks again as it attaches.
   defp handle_progress(:article_images, entry, socket) do
     max = Baudrate.Content.ArticleImage.max_images_per_article()
     total = length(socket.assigns.article_images)
@@ -169,30 +172,44 @@ defmodule BaudrateWeb.ArticleEditLive do
       article = socket.assigns.article
       user = socket.assigns.current_user
 
-      case consume_uploaded_entry(socket, entry, fn %{path: path} ->
-             case ArticleImageStorage.process_upload(path) do
-               {:ok, file_info} ->
-                 attrs = Map.merge(file_info, %{user_id: user.id, article_id: article.id})
-
-                 case Content.create_article_image(attrs) do
-                   {:ok, image} -> {:ok, image}
-                   {:error, _} -> {:ok, :error}
-                 end
-
-               {:error, _} ->
-                 {:ok, :error}
-             end
-           end) do
-        :error ->
-          {:noreply, socket}
-
-        image ->
-          {:noreply, assign(socket, :article_images, socket.assigns.article_images ++ [image])}
+      case Content.authorize_article_image(article, user) do
+        :ok -> attach_upload(socket, entry, article, user)
+        {:error, reason} -> {:noreply, refuse_upload(socket, entry, reason)}
       end
     else
       {:noreply, socket}
     end
   end
+
+  defp attach_upload(socket, entry, article, user) do
+    result =
+      consume_uploaded_entry(socket, entry, fn %{path: path} ->
+        case ArticleImageStorage.process_upload(path) do
+          {:ok, file_info} -> {:ok, Content.add_article_image(article, file_info, user)}
+          {:error, _} -> {:ok, {:error, :processing_failed}}
+        end
+      end)
+
+    case result do
+      {:ok, image} ->
+        {:noreply, assign(socket, :article_images, socket.assigns.article_images ++ [image])}
+
+      {:error, reason} when is_atom(reason) ->
+        {:noreply, put_flash(socket, :error, image_refusal(socket, reason))}
+
+      {:error, _changeset} ->
+        {:noreply, socket}
+    end
+  end
+
+  defp refuse_upload(socket, entry, reason) do
+    socket
+    |> cancel_upload(:article_images, entry.ref)
+    |> put_flash(:error, image_refusal(socket, reason))
+  end
+
+  defp image_refusal(socket, reason),
+    do: refusal(socket, reason, gettext("The image could not be added."))
 
   defp upload_error_to_string(err),
     do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "8 MB", max_files: 4)

@@ -1,6 +1,7 @@
 defmodule BaudrateWeb.ConversationLiveTest do
   use BaudrateWeb.ConnCase, async: false
 
+  import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
 
   alias Baudrate.Messaging
@@ -302,6 +303,67 @@ defmodule BaudrateWeb.ConversationLiveTest do
 
       assert [%{remote_actor_id: id}] = Baudrate.Moderation.list_reports(status: "open")
       assert id == actor.id
+    end
+  end
+
+  describe "a new account" do
+    # ADR 0064: a new account messages only people who follow it, who wrote
+    # to it first, or staff — and is told so, never shown a bare refusal.
+    setup do
+      Baudrate.Repo.insert!(%Setting{key: "new_account_days", value: "3"})
+      Baudrate.Repo.insert!(%Setting{key: "new_account_posts", value: "3"})
+      :ok
+    end
+
+    test "cannot open a conversation with a stranger, and is told why", %{
+      conn: conn,
+      user: user,
+      other: other
+    } do
+      conn = log_in_user(conn, user)
+
+      assert {:error, {:redirect, %{to: "/messages", flash: %{"error" => message}}}} =
+               live(conn, "/messages/new?to=#{other.username}")
+
+      assert message =~ "New accounts can send direct messages only to people who follow them"
+    end
+
+    test "can answer someone who wrote first", %{conn: conn, user: user} do
+      staff = setup_user("moderator")
+      {:ok, conv} = Messaging.find_or_create_conversation(staff, user)
+      {:ok, _} = Messaging.create_message(conv, staff, %{body: "Welcome aboard."})
+
+      conn = log_in_user(conn, user)
+      {:ok, view, _html} = live(conn, "/messages/#{conv.id}")
+
+      view
+      |> form("#conversation-compose-form", message: %{body: "Thank you!"})
+      |> render_submit()
+
+      assert render(view) =~ "Thank you!"
+    end
+
+    test "a refused send says why", %{conn: conn, user: user, other: other} do
+      # The conversation was started before the limits were switched on.
+      assert {2, _} =
+               Baudrate.Repo.delete_all(
+                 from(s in Setting, where: s.key in ~w(new_account_days new_account_posts))
+               )
+
+      {:ok, conv} = Messaging.find_or_create_conversation(user, other)
+      {:ok, _} = Messaging.create_message(conv, user, %{body: "Old message"})
+      Baudrate.Repo.insert!(%Setting{key: "new_account_days", value: "3"})
+      Baudrate.Repo.insert!(%Setting{key: "new_account_posts", value: "3"})
+
+      conn = log_in_user(conn, user)
+      {:ok, view, _html} = live(conn, "/messages/#{conv.id}")
+
+      html =
+        view
+        |> form("#conversation-compose-form", message: %{body: "Hello again"})
+        |> render_submit()
+
+      assert html =~ "New accounts can send direct messages only"
     end
   end
 end

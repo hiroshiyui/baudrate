@@ -10,10 +10,12 @@ defmodule Baudrate.Content.Images do
 
   import Ecto.Query
   alias Baudrate.Repo
+  alias Baudrate.Content.Article
   alias Baudrate.Content.ArticleImage
   alias Baudrate.Content.ArticleImageStorage
   alias Baudrate.Content.CommentImage
   alias Baudrate.Content.ImageAlt
+  alias Baudrate.Content.Permissions
   alias Baudrate.DataPortability.Files
   alias Baudrate.Federation.HTTPClient
 
@@ -24,6 +26,68 @@ defmodule Baudrate.Content.Images do
     %ArticleImage{}
     |> ArticleImage.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Whether `user` may attach another image to the published `article` from its
+  edit page.
+
+  A composer upload is an orphan until the post is submitted, and is checked
+  then, with the post. An upload on the edit page is different: it is attached
+  to the article as it lands, so it is on the published page before anything
+  is submitted, and nothing downstream gets a second look. So it is checked
+  here — the uploader must be able to edit the article, the account must be
+  allowed to act at all (ADR 0029), and a new account may not take the article
+  past its image limit (ADR 0064). Before this, the edit page was a way round
+  both gates.
+
+  Returns `:ok`, `{:error, :unauthorized}`, `{:error, :too_many_images}`, or
+  either gate's refusal.
+  """
+  @spec authorize_article_image(%Article{}, map()) :: :ok | {:error, atom()}
+  def authorize_article_image(%Article{} = article, user) do
+    existing = count_article_images(article.id)
+
+    cond do
+      not Permissions.can_edit_article?(user, article) ->
+        {:error, :unauthorized}
+
+      existing >= ArticleImage.max_images_per_article() ->
+        {:error, :too_many_images}
+
+      true ->
+        with :ok <- Baudrate.Auth.ensure_can_interact(user) do
+          Baudrate.Auth.check_post(user, article.body, existing + 1,
+            previous: {article.body, existing}
+          )
+        end
+    end
+  end
+
+  @doc """
+  Attaches a processed upload to the published `article`, as `user`, after
+  `authorize_article_image/2` agrees. `file_info` is what
+  `ArticleImageStorage.process_upload/1` returned.
+
+  On a refusal the stored files are removed, since nothing else will ever
+  reference them.
+  """
+  @spec add_article_image(%Article{}, map(), map()) ::
+          {:ok, %ArticleImage{}} | {:error, atom() | Ecto.Changeset.t()}
+  def add_article_image(%Article{} = article, file_info, user) do
+    with :ok <- authorize_article_image(article, user) do
+      file_info
+      |> Map.merge(%{user_id: user.id, article_id: article.id})
+      |> create_article_image()
+    end
+    |> case do
+      {:ok, image} ->
+        {:ok, image}
+
+      {:error, _} = error ->
+        ArticleImageStorage.delete_image(file_info)
+        error
+    end
   end
 
   @doc """

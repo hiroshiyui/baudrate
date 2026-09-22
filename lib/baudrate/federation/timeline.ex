@@ -365,9 +365,10 @@ defmodule Baudrate.Federation.Timeline do
   or non-followed item is refused here at the context boundary rather than
   federating a `Create(Note)` to an unrelated remote inbox.
 
-  Returns `{:ok, %TimelineItemReply{}}`, `{:error, :not_found}`,
-  `{:error, :account_moved}` (ADR 0025), `{:error, :blocked}` (the user has
-  blocked the item's author), or `{:error, changeset}`.
+  Returns `{:ok, %TimelineItemReply{}}`, `{:error, :not_found}`, the sanction
+  gate's refusals (ADR 0029), `{:error, :blocked}` (the user has blocked the
+  item's author), a new account's refusals from `Baudrate.Auth.Trust`
+  (ADR 0064), or `{:error, changeset}`.
   """
   def create_timeline_item_reply(timeline_item, user, body, opts \\ []) do
     # A moved, silenced or suspended account cannot reply (ADR 0029).
@@ -377,7 +378,19 @@ defmodule Baudrate.Federation.Timeline do
       not timeline_item_accessible?(user, timeline_item) -> {:error, :not_found}
       gate != :ok -> gate
       Baudrate.Auth.blocked_with_author?(user.id, timeline_item) -> {:error, :blocked}
-      true -> do_create_timeline_item_reply(timeline_item, user, body, opts)
+      true -> check_new_account_limits(timeline_item, user, body, opts)
+    end
+  end
+
+  # A reply leaves the site as surely as an article does, so a new account's
+  # link and image limits apply to it too (ADR 0064), and it takes a place in
+  # the same hourly bucket. Checked last, so a refused reply spends nothing.
+  defp check_new_account_limits(timeline_item, user, body, opts) do
+    image_count = opts |> Keyword.get(:image_ids, []) |> Enum.uniq() |> length()
+
+    case Baudrate.Auth.check_post(user, body, image_count) do
+      :ok -> do_create_timeline_item_reply(timeline_item, user, body, opts)
+      error -> error
     end
   end
 

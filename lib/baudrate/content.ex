@@ -270,6 +270,8 @@ defmodule Baudrate.Content do
   # --- Article Images ---
 
   defdelegate create_article_image(attrs), to: Images
+  defdelegate authorize_article_image(article, user), to: Images
+  defdelegate add_article_image(article, file_info, user), to: Images
   defdelegate list_article_images(article_id), to: Images
   defdelegate list_orphan_article_images(user_id), to: Images
   defdelegate delete_article_image(image), to: Images

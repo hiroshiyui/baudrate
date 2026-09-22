@@ -75,25 +75,27 @@ defmodule BaudrateWeb.ConversationLive do
   end
 
   defp mount_new_conversation(socket, user, recipient) do
-    if Messaging.can_send_dm?(user, recipient) do
-      socket =
-        socket
-        |> assign(:mode, :new_conversation)
-        |> assign(:conversation, nil)
-        |> assign(:messages, [])
-        |> assign(:has_older_messages, false)
-        |> assign(:other_participant, recipient)
-        |> assign(:new_conversation, true)
-        |> assign(:page_title, gettext("New Message"))
-        |> assign(:message_form, to_form(%{"body" => ""}, as: :message))
-        |> assign(:history_announcement, "")
+    case Messaging.dm_permission(user, recipient) do
+      :ok ->
+        socket =
+          socket
+          |> assign(:mode, :new_conversation)
+          |> assign(:conversation, nil)
+          |> assign(:messages, [])
+          |> assign(:has_older_messages, false)
+          |> assign(:other_participant, recipient)
+          |> assign(:new_conversation, true)
+          |> assign(:page_title, gettext("New Message"))
+          |> assign(:message_form, to_form(%{"body" => ""}, as: :message))
+          |> assign(:history_announcement, "")
 
-      {:ok, socket}
-    else
-      {:ok,
-       socket
-       |> put_flash(:error, gettext("You cannot send messages to this user."))
-       |> redirect(to: ~p"/messages")}
+        {:ok, socket}
+
+      {:error, reason} ->
+        {:ok,
+         socket
+         |> put_flash(:error, send_refusal(reason, user))
+         |> redirect(to: ~p"/messages")}
     end
   end
 
@@ -135,9 +137,8 @@ defmodule BaudrateWeb.ConversationLive do
                |> assign(:message_form, to_form(%{"body" => ""}, as: :message))
                |> assign(:history_announcement, "")}
 
-            {:error, :not_allowed} ->
-              {:noreply,
-               put_flash(socket, :error, gettext("You cannot send messages to this user."))}
+            {:error, reason} when is_atom(reason) ->
+              {:noreply, put_flash(socket, :error, send_refusal(reason, user))}
 
             {:error, _changeset} ->
               {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
@@ -383,6 +384,16 @@ defmodule BaudrateWeb.ConversationLive do
     last = List.last(messages)
     if conversation && last, do: Messaging.mark_conversation_read(conversation, user, last)
   end
+
+  # A new account is told what its limit is and when it lifts (ADR 0064);
+  # anything else keeps the neutral refusal, which never says who blocked whom.
+  defp send_refusal(reason, user),
+    do:
+      BaudrateWeb.Helpers.refusal_message(
+        reason,
+        user,
+        gettext("You cannot send messages to this user.")
+      )
 
   defp error_message(:not_found), do: gettext("Conversation not found.")
   defp error_message(:recipient_not_found), do: gettext("User not found.")

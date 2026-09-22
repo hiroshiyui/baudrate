@@ -562,16 +562,116 @@ defmodule BaudrateWeb.Helpers do
     :terms_not_accepted
   ]
 
+  # Everything the limits on new accounts can refuse with (ADR 0064).
+  @new_account_refusals [
+    :new_account_dm,
+    :new_account_images,
+    :new_account_links,
+    :new_account_rate_limited
+  ]
+
   @doc """
   Flash text for a refused action: the gate's own explanation when the gate
-  refused it (ADR 0029), and `fallback` for anything else.
+  refused it (ADR 0029) or a new account's limit did (ADR 0064), and
+  `fallback` for anything else.
 
   Call it from the `{:error, reason}` catch-all of an interaction handler.
   A member told only "that did not work" has no way to find out that they are
-  silenced, or until when.
+  silenced, or until when — and a new member refused with a shrug reads the
+  site as broken.
   """
   def refusal_message(reason, user, fallback) do
-    if reason in @gate_refusals, do: interaction_refused_message(reason, user), else: fallback
+    cond do
+      reason in @gate_refusals -> interaction_refused_message(reason, user)
+      reason in @new_account_refusals -> new_account_message(reason, user)
+      true -> fallback
+    end
+  end
+
+  @doc """
+  Flash text for something an account may not do until it has earned trust
+  (ADR 0064): what the limit is, and — for the member in front of us — what is
+  left before it lifts. Pass the current user; without one the message still
+  names the limit, only not when it ends.
+  """
+  def new_account_message(reason, user \\ nil) do
+    [new_account_limit(reason), new_account_lifts(user)]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.join(" ")
+  end
+
+  defp new_account_limit(:new_account_links) do
+    count = Baudrate.Auth.Trust.limits().links
+
+    ngettext(
+      "New accounts can put at most %{count} link in a post.",
+      "New accounts can put at most %{count} links in a post.",
+      count
+    )
+  end
+
+  defp new_account_limit(:new_account_images) do
+    count = Baudrate.Auth.Trust.limits().images
+
+    ngettext(
+      "New accounts can put at most %{count} image in a post.",
+      "New accounts can put at most %{count} images in a post.",
+      count
+    )
+  end
+
+  defp new_account_limit(:new_account_rate_limited) do
+    count = Baudrate.Auth.Trust.limits().posts_per_hour
+
+    ngettext(
+      "New accounts can post at most %{count} time an hour. Please try again later.",
+      "New accounts can post at most %{count} times an hour. Please try again later.",
+      count
+    )
+  end
+
+  defp new_account_limit(:new_account_dm),
+    do:
+      gettext(
+        "New accounts can send direct messages only to people who follow them, people who have written to them first, and staff."
+      )
+
+  # What is left for this member: a date, a number of posts, or both. Said in
+  # full sentences rather than assembled from parts, because the parts do not
+  # translate as parts.
+  defp new_account_lifts(nil), do: nil
+
+  defp new_account_lifts(user) do
+    standing = Baudrate.Auth.trust_standing(user)
+    remaining = max(standing.posts_required - standing.post_count, 0)
+
+    cond do
+      standing.trusted ->
+        nil
+
+      standing.old_enough_at && remaining > 0 ->
+        ngettext(
+          "This lifts once %{date} has passed and you have written %{count} more post.",
+          "This lifts once %{date} has passed and you have written %{count} more posts.",
+          remaining,
+          date: format_datetime(standing.old_enough_at)
+        )
+
+      standing.old_enough_at ->
+        gettext("This lifts once %{date} has passed.",
+          date: format_datetime(standing.old_enough_at)
+        )
+
+      remaining > 0 ->
+        ngettext(
+          "This lifts once you have written %{count} more post.",
+          "This lifts once you have written %{count} more posts.",
+          remaining
+        )
+
+      true ->
+        nil
+    end
   end
 
   @doc """

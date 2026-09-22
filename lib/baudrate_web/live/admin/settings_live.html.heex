@@ -84,6 +84,31 @@
           )}
         </p>
         <.input
+          field={@form[:new_account_days]}
+          type="number"
+          min="0"
+          max={Baudrate.Auth.Trust.max_thresholds().days}
+          label={gettext("Days before a new account is trusted")}
+        />
+        <.input
+          field={@form[:new_account_posts]}
+          type="number"
+          min="0"
+          max={Baudrate.Auth.Trust.max_thresholds().posts}
+          label={gettext("Posts before a new account is trusted")}
+        />
+        <p
+          id="settings-new-account-help"
+          class="settings-new-account-help text-sm text-base-content/70 -mt-2"
+        >
+          {gettext(
+            "Until an account is this many days old and has this many articles and comments that have not been removed, it may put at most %{links} link and %{images} image in a post, post at most %{posts} times an hour, and send direct messages only to people who follow it, people who wrote to it first, and staff. Admins, moderators and bots are never limited. 0 and 0 turn the limits off.",
+            links: Baudrate.Auth.Trust.limits().links,
+            images: Baudrate.Auth.Trust.limits().images,
+            posts: Baudrate.Auth.Trust.limits().posts_per_hour
+          )}
+        </p>
+        <.input
           field={@form[:ap_federation_enabled]}
           type="select"
           label={gettext("Federation")}

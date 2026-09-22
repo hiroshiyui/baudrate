@@ -104,6 +104,25 @@ defmodule BaudrateWeb.RateLimitsTest do
     end
   end
 
+  describe "check_new_account_post/1" do
+    test "one bucket for every kind of post, an hour wide, ten deep" do
+      test_pid = self()
+
+      Sandbox.set_fun(fn bucket, scale, limit ->
+        send(test_pid, {:checked, bucket, scale, limit})
+        {:allow, 1}
+      end)
+
+      assert :ok = RateLimits.check_new_account_post(7)
+      assert_received {:checked, "new_account_post:7", 3_600_000, 10}
+    end
+
+    test "denies requests over the limit" do
+      Sandbox.set_fun(fn _b, _s, _l -> {:deny, 10} end)
+      assert {:error, :rate_limited} = RateLimits.check_new_account_post(1)
+    end
+  end
+
   describe "check_delete_content/1" do
     test "allows requests under the limit" do
       Sandbox.set_fun(fn _b, _s, _l -> {:allow, 1} end)

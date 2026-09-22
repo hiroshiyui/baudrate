@@ -38,20 +38,31 @@ defmodule Baudrate.Content.Comments do
       the comment after insertion. Only orphan images owned by the comment
       author are associated.
 
-  Returns `{:error, :account_moved}` for a moved account (ADR 0025) and
-  `{:error, :blocked}` when a block stands between the commenter and the
-  author of the article or of the parent comment.
+  Returns the sanction gate's refusals for an account that may not act
+  (ADR 0029), `{:error, :blocked}` when a block stands between the commenter
+  and the author of the article or of the parent comment, and
+  `Baudrate.Auth.Trust`'s refusals for a new account over its limits
+  (ADR 0064).
   """
   @spec create_comment(map(), keyword()) ::
           {:ok, %Comment{}} | {:error, Ecto.Changeset.t() | term()}
   def create_comment(attrs, opts \\ []) do
     attrs = attrs |> Map.new(fn {k, v} -> {to_string(k), v} end)
 
-    # A moved, silenced or suspended account cannot comment (ADR 0029).
+    # A moved, silenced or suspended account cannot comment (ADR 0029), and a
+    # new one is held to the limits on new accounts (ADR 0064).
     with :ok <- Baudrate.Auth.ensure_can_interact(attrs["user_id"]),
-         :ok <- ensure_not_blocked(attrs) do
+         :ok <- ensure_not_blocked(attrs),
+         :ok <- check_new_account_limits(attrs, opts) do
       do_create_comment(attrs, opts)
     end
+  end
+
+  # Association only ever takes the commenter's own orphan uploads, so the
+  # deduplicated ids asked for are an upper bound on what will be attached.
+  defp check_new_account_limits(attrs, opts) do
+    image_count = opts |> Keyword.get(:image_ids, []) |> Enum.uniq() |> length()
+    Baudrate.Auth.check_post(attrs["user_id"], attrs["body"], image_count)
   end
 
   # A block between the commenter and the author of the article, or of the
@@ -149,17 +160,29 @@ defmodule Baudrate.Content.Comments do
   move a comment into another thread is not an edit.
 
   Returns `{:error, :unauthorized}` for anyone but the author,
-  `{:error, :not_found}` for a soft-deleted comment, and the sanction gate's
-  own refusals (ADR 0029) for an account that may not act.
+  `{:error, :not_found}` for a soft-deleted comment, the sanction gate's own
+  refusals (ADR 0029) for an account that may not act, and
+  `Baudrate.Auth.Trust`'s for a new account adding a link or an image past its
+  limit (ADR 0064).
   """
   @spec update_comment(%Comment{}, map(), map()) ::
           {:ok, %Comment{}} | {:error, Ecto.Changeset.t() | term()}
   def update_comment(%Comment{} = comment, attrs, editor) do
     with :ok <- Permissions.authorize_edit_comment(editor, comment),
          :ok <- Baudrate.Auth.ensure_can_interact(editor),
-         :ok <- ensure_editable(comment) do
+         :ok <- ensure_editable(comment),
+         :ok <- check_edit_limits(comment, attrs, editor) do
       do_update_comment(comment, attrs, editor)
     end
+  end
+
+  # An edit may not add a link or an image past a new account's limit
+  # (ADR 0064). Images are not editable, so only the body can add one.
+  defp check_edit_limits(comment, attrs, editor) do
+    images = Baudrate.Content.Images.count_comment_images(comment.id)
+    body = attrs[:body] || attrs["body"] || comment.body
+
+    Baudrate.Auth.check_post(editor, body, images, previous: {comment.body, images})
   end
 
   # Editing a withdrawn comment would republish it: `soft_delete_changeset/2`

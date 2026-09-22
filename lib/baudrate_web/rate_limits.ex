@@ -17,6 +17,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_create_article/1`| `article_create:`  | 15 min  | 10    |
   | `check_update_article/1`| `article_update:`  | 5 min   | 20    |
   | `check_create_comment/1`| `comment_create:`  | 5 min   | 30    |
+  | `check_new_account_post/1` | `new_account_post:` | 1 hour | 10  |
   | `check_update_comment/1`| `comment_update:`  | 5 min   | 20    |
   | `check_delete_content/1`| `delete_content:`  | 5 min   | 20    |
   | `check_moderator_delete/1`| `moderator_delete:` | 5 min | 100   |
@@ -122,6 +123,27 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_create_comment(integer()) :: :ok | {:error, :rate_limited}
   def check_create_comment(user_id) do
     check("comment_create:#{user_id}", 300_000, 30, :create_comment)
+  end
+
+  @doc """
+  Posting by an account that has not yet earned trust (ADR 0064): 10 an hour,
+  articles, comments and timeline replies together.
+
+  On top of the per-kind limits, not instead of them, and called from
+  `Baudrate.Auth.Trust.check_post/4` at the context boundary rather than from
+  a LiveView — one bucket across every kind of post, so a new account gains
+  nothing by switching from articles to comments, and a new way to post
+  cannot forget it. A new member's first hour is an introduction and a few
+  replies; ten is clear of that and a long way short of a spam run.
+  """
+  @spec check_new_account_post(integer()) :: :ok | {:error, :rate_limited}
+  def check_new_account_post(user_id) do
+    check(
+      "new_account_post:#{user_id}",
+      3_600_000,
+      Baudrate.Auth.Trust.limits().posts_per_hour,
+      :new_account_post
+    )
   end
 
   @doc """

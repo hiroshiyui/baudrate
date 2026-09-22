@@ -276,18 +276,20 @@ defmodule Baudrate.MessagingTest do
       sender = create_user("user")
       recipient = create_user("user", dm_access: "followers")
 
-      # follower_exists?/2 matches the recipient (actor) and sender (follower) URIs.
-      ra = create_remote_actor()
-
-      Repo.insert!(%Baudrate.Federation.Follower{
-        actor_uri: Baudrate.Federation.actor_uri(:user, recipient.username),
-        follower_uri: Baudrate.Federation.actor_uri(:user, sender.username),
-        remote_actor_id: ra.id,
-        activity_id: "https://remote.example/activities/#{System.unique_integer([:positive])}",
-        accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
-      })
+      # A member here follows through `user_follows`. Until v1.38.0 this
+      # asked the `followers` table, which holds only remote followers, so no
+      # local follower could ever get through.
+      {:ok, _follow} = Baudrate.Federation.create_local_follow(sender, recipient)
 
       assert Messaging.can_send_dm?(sender, recipient)
+    end
+
+    test "dm_access=followers is about the sender following, not the other way round" do
+      sender = create_user("user")
+      recipient = create_user("user", dm_access: "followers")
+      {:ok, _follow} = Baudrate.Federation.create_local_follow(recipient, sender)
+
+      refute Messaging.can_send_dm?(sender, recipient)
     end
   end
 

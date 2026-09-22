@@ -8,6 +8,7 @@ defmodule Baudrate.Auth do
   - `Invites` (Invitation system)
   - `Moderation` (Banning, blocking, and muting)
   - `Sanctions` (Warnings, silences and suspensions, and the interaction gate)
+  - `Trust` (The limits on new accounts, and when an account outgrows them)
   - `Users` (Registration, search, and retrieval)
   - `Profiles` (User preferences and profile updates)
   """
@@ -21,6 +22,7 @@ defmodule Baudrate.Auth do
     Sanctions,
     SecondFactor,
     Sessions,
+    Trust,
     Users,
     WebAuthn
   }
@@ -202,6 +204,16 @@ defmodule Baudrate.Auth do
   defdelegate reject_pending_user(actor, target, reason \\ nil),
     to: Sanctions,
     as: :reject_pending
+
+  # --- Limits on new accounts (ADR 0064) ---
+  #
+  # `check_post/4` sits beside `ensure_can_interact/1` at every context
+  # function that creates or edits a post, and is the whole of the rule: a
+  # trusted account passes on one query, an untrusted one has its links,
+  # images and hourly count checked.
+  defdelegate check_post(user, body, image_count, opts \\ []), to: Trust
+  defdelegate trusted?(user), to: Trust
+  defdelegate trust_standing(user), to: Trust, as: :standing
 
   # --- Profiles & Preferences ---
   defdelegate update_preferred_locales(user, locales), to: Profiles

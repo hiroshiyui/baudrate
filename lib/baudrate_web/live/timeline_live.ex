@@ -766,9 +766,14 @@ defmodule BaudrateWeb.TimelineLive do
          )
          |> put_flash(:error, format_poll_errors(changeset))}
 
+      # Refused by a gate (ADR 0029, ADR 0064): say why, and keep what was
+      # written — a new member told about the link limit has to be able to
+      # take a link out rather than type the post again.
       {:error, :account, reason, _} ->
         {:noreply,
-         put_flash(socket, :error, refusal(socket, reason, gettext("Failed to create article.")))}
+         socket
+         |> assign(:form, to_form(Content.change_article(%Article{}, params), as: :article))
+         |> put_flash(:error, refusal(socket, reason, gettext("Failed to create article.")))}
 
       {:error, _, _, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to create article."))}

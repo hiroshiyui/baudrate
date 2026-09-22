@@ -59,6 +59,12 @@ config :baudrate, federation_async: false
 # challenge should have to answer one.
 config :baudrate, registration_challenge_bits: 0
 
+# The limits on new accounts (P5-D2, ADR 0064) are off unless a test turns them
+# on with the `new_account_days` / `new_account_posts` settings: nearly every
+# test posts from an account created a moment earlier, and only the tests
+# about the limits should have to earn trust first.
+config :baudrate, new_account_days: 0, new_account_posts: 0
+
 # Run web push delivery synchronously in tests
 config :baudrate, web_push_async: false
 

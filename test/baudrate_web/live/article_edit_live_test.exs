@@ -1,6 +1,7 @@
 defmodule BaudrateWeb.ArticleEditLiveTest do
   use BaudrateWeb.ConnCase
 
+  import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
 
   alias Baudrate.Repo
@@ -214,6 +215,56 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
 
       assert has_element?(lv, "#article-images-section input[type=file].sr-only")
       refute has_element?(lv, "#article-images-section input[type=file].hidden")
+    end
+  end
+
+  describe "adding an image from the edit page" do
+    # An upload here is attached to the published article as it lands, so it
+    # is checked where it attaches (ADR 0064) — before this it skipped every
+    # gate, ADR 0029's included.
+    setup %{article: article} do
+      # A successful upload writes a real file under the build's uploads
+      # directory; take it away again.
+      on_exit(fn ->
+        for image <- Repo.all(from(i in ArticleImage, where: i.article_id == ^article.id)) do
+          Baudrate.Content.ArticleImageStorage.delete_image(image)
+        end
+      end)
+    end
+
+    defp png do
+      Image.new!(32, 32, color: :white) |> Image.write!(:memory, suffix: ".png")
+    end
+
+    defp upload(lv, name) do
+      lv
+      |> file_input("#article-edit-form", :article_images, [
+        %{name: name, content: png(), type: "image/png"}
+      ])
+      |> render_upload(name)
+    end
+
+    test "attaches the upload to the article", %{conn: conn, article: article} do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}/edit")
+
+      upload(lv, "one.png")
+
+      assert [_] = Content.list_article_images(article.id)
+    end
+
+    test "a new account is refused a second image, and told why", %{
+      conn: conn,
+      article: article
+    } do
+      Repo.insert!(%Setting{key: "new_account_days", value: "3"})
+      Repo.insert!(%Setting{key: "new_account_posts", value: "3"})
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}/edit")
+
+      upload(lv, "one.png")
+      html = upload(lv, "two.png")
+
+      assert [_] = Content.list_article_images(article.id)
+      assert html =~ "New accounts can put at most 1 image in a post."
     end
   end
 end

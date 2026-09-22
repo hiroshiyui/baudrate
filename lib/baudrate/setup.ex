@@ -603,6 +603,8 @@ defmodule Baudrate.Setup do
       site_description: :string,
       registration_mode: :string,
       registration_challenge_bits: :integer,
+      new_account_days: :integer,
+      new_account_posts: :integer,
       timezone: :string,
       ap_federation_enabled: :string,
       ap_federation_mode: :string,
@@ -618,6 +620,8 @@ defmodule Baudrate.Setup do
       site_description: get_setting("site_description") || "",
       registration_mode: registration_mode(),
       registration_challenge_bits: Baudrate.Auth.Challenge.bits(),
+      new_account_days: Baudrate.Auth.Trust.thresholds().days,
+      new_account_posts: Baudrate.Auth.Trust.thresholds().posts,
       timezone: get_setting("timezone") || "Etc/UTC",
       ap_federation_enabled: get_setting("ap_federation_enabled") || "true",
       ap_federation_mode: get_setting("ap_federation_mode") || "blocklist",
@@ -642,6 +646,16 @@ defmodule Baudrate.Setup do
     |> Ecto.Changeset.validate_number(:registration_challenge_bits,
       greater_than_or_equal_to: 0,
       less_than_or_equal_to: Baudrate.Auth.Challenge.max_bits()
+    )
+    # How long, and how many posts, before an account outgrows the limits on
+    # new accounts (ADR 0064). 0 and 0 trusts everyone.
+    |> Ecto.Changeset.validate_number(:new_account_days,
+      greater_than_or_equal_to: 0,
+      less_than_or_equal_to: Baudrate.Auth.Trust.max_thresholds().days
+    )
+    |> Ecto.Changeset.validate_number(:new_account_posts,
+      greater_than_or_equal_to: 0,
+      less_than_or_equal_to: Baudrate.Auth.Trust.max_thresholds().posts
     )
     |> Ecto.Changeset.validate_inclusion(:ap_federation_enabled, ["true", "false"])
     |> Ecto.Changeset.validate_inclusion(:ap_federation_mode, @valid_federation_modes)
@@ -683,6 +697,8 @@ defmodule Baudrate.Setup do
           Integer.to_string(changes.registration_challenge_bits || 0)
         )
 
+        set_setting("new_account_days", Integer.to_string(changes.new_account_days || 0))
+        set_setting("new_account_posts", Integer.to_string(changes.new_account_posts || 0))
         set_setting("timezone", changes.timezone || "Etc/UTC")
         set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")
         set_setting("ap_federation_mode", changes.ap_federation_mode || "blocklist")

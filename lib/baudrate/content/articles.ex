@@ -141,18 +141,30 @@ defmodule Baudrate.Content.Articles do
   def create_article(attrs, board_ids, opts \\ []) when is_list(board_ids) do
     author_id = attrs[:user_id] || attrs["user_id"]
 
-    # A moved, silenced or suspended account cannot write (ADR 0029). A comment
+    # A moved, silenced or suspended account cannot write (ADR 0029), and a
+    # new one is held to the limits on new accounts (ADR 0064). A comment
     # forwarded into a board by someone else keeps its author and is not new
     # writing by that author. The error uses the Multi shape every caller
     # already handles.
     if Keyword.get(opts, :forwarded_comment, false) do
       do_create_article(attrs, board_ids, opts)
     else
-      case Baudrate.Auth.ensure_can_interact(author_id) do
-        :ok -> do_create_article(attrs, board_ids, opts)
+      with :ok <- Baudrate.Auth.ensure_can_interact(author_id),
+           :ok <- check_new_account_limits(author_id, attrs, opts) do
+        do_create_article(attrs, board_ids, opts)
+      else
         {:error, reason} -> {:error, :account, reason, %{}}
       end
     end
+  end
+
+  # One link and one image for an account that has not earned trust yet. Bots
+  # are exempt inside the check itself, which is why they are not skipped here.
+  # The attached count is the ids asked for, deduplicated: association only
+  # ever takes the caller's own orphan uploads, so this is an upper bound.
+  defp check_new_account_limits(author_id, attrs, opts) do
+    image_count = opts |> Keyword.get(:image_ids, []) |> Enum.uniq() |> length()
+    Baudrate.Auth.check_post(author_id, attrs[:body] || attrs["body"], image_count)
   end
 
   defp do_create_article(attrs, board_ids, opts) do
@@ -269,11 +281,23 @@ defmodule Baudrate.Content.Articles do
 
   def update_article(%Article{} = article, attrs, editor) do
     # A restricted account cannot edit (ADR 0029); staff editing its articles
-    # are not restricted by it.
-    case Baudrate.Auth.ensure_can_interact(editor) do
-      :ok -> do_update_article(article, attrs, editor)
-      error -> error
+    # are not restricted by it. Nor can a new account edit a link or an image
+    # into a post that creation would have refused (ADR 0064) — posting clean
+    # and editing dirty is the second way in.
+    with :ok <- Baudrate.Auth.ensure_can_interact(editor),
+         :ok <- check_edit_limits(article, attrs, editor) do
+      do_update_article(article, attrs, editor)
     end
+  end
+
+  # An update from federation has no local editor and no limits to apply.
+  defp check_edit_limits(_article, _attrs, nil), do: :ok
+
+  defp check_edit_limits(article, attrs, editor) do
+    images = Images.count_article_images(article.id)
+    body = attrs[:body] || attrs["body"] || article.body
+
+    Baudrate.Auth.check_post(editor, body, images, previous: {article.body, images})
   end
 
   defp do_update_article(article, attrs, editor) do

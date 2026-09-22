@@ -14,10 +14,19 @@ defmodule Baudrate.Messaging do
   Users can set `dm_access` to control who can message them:
 
     * `"anyone"` — any authenticated user can send a DM
-    * `"followers"` — only AP followers can send DMs
+    * `"followers"` — only accounts that follow them, here or on another
+      instance, can send DMs
     * `"nobody"` — DMs are disabled entirely
 
   Bidirectional blocks (via `Auth.blocked?/2`) are always enforced.
+
+  ## New accounts
+
+  An account that has not yet earned trust (`Baudrate.Auth.Trust`, ADR 0064)
+  may message only people who follow it, people who have written to it first,
+  and staff — whatever the recipient's `dm_access` says. Unsolicited messages
+  are what a spam account sends; a reply to someone who wrote first is not
+  one, and a new member who cannot reach a moderator has nowhere to turn.
 
   ## Federation
 
@@ -44,19 +53,41 @@ defmodule Baudrate.Messaging do
   # --- Access Control ---
 
   @doc """
-  Returns `true` if `sender` is allowed to send a DM to `recipient`.
-
-  Checks:
-    1. Cannot message yourself
-    2. Sender must be active and unrestricted — not moved, silenced or
-       suspended (ADR 0029)
-    3. Bidirectional block check
-    4. Recipient's `dm_access` setting
+  Returns `true` if `sender` is allowed to send a DM to `recipient`: the
+  boolean form of `dm_permission/2`, for templates that hide a control.
   """
   @spec can_send_dm?(User.t(), User.t()) :: boolean()
-  def can_send_dm?(%User{id: id}, %User{id: id}), do: false
+  def can_send_dm?(sender, recipient), do: dm_permission(sender, recipient) == :ok
 
-  def can_send_dm?(%User{} = sender, %User{} = recipient) do
+  @doc """
+  Whether `sender` may send a DM to local `recipient`, and if not, why.
+
+  Returns `{:error, :not_allowed}` when:
+    1. the sender is messaging themselves,
+    2. the sender is not active, or is moved, silenced or suspended (ADR 0029),
+    3. a block stands between them, either way,
+    4. the recipient's `dm_access` does not admit the sender, or the
+       recipient is not active.
+
+  Returns `{:error, :new_account_dm}` when all of that passes but the sender
+  has not earned trust yet and the recipient neither follows them, nor has
+  written to them, nor is staff (ADR 0064). It comes second so a member is
+  only ever told about the limit when the limit is the reason.
+  """
+  @spec dm_permission(User.t(), User.t()) :: :ok | {:error, :not_allowed | :new_account_dm}
+  def dm_permission(%User{id: id}, %User{id: id}), do: {:error, :not_allowed}
+
+  def dm_permission(%User{} = sender, %User{} = recipient) do
+    cond do
+      not permitted?(sender, recipient) -> {:error, :not_allowed}
+      not new_account_may_reach?(sender, recipient) -> {:error, :new_account_dm}
+      true -> :ok
+    end
+  end
+
+  def dm_permission(_, _), do: {:error, :not_allowed}
+
+  defp permitted?(sender, recipient) do
     sender.status == "active" &&
       Auth.can_interact?(sender) &&
       recipient.status == "active" &&
@@ -65,15 +96,45 @@ defmodule Baudrate.Messaging do
       dm_access_allows?(recipient, sender)
   end
 
-  def can_send_dm?(_, _), do: false
-
   defp dm_access_allows?(%User{dm_access: "anyone"}, _sender), do: true
   defp dm_access_allows?(%User{dm_access: "nobody"}, _sender), do: false
 
-  defp dm_access_allows?(%User{dm_access: "followers"} = recipient, sender) do
-    actor_uri = Federation.actor_uri(:user, recipient.username)
-    sender_uri = Federation.actor_uri(:user, sender.username)
-    Federation.follower_exists?(actor_uri, sender_uri)
+  # A local follow is a `user_follows` row, not a `followers` row — that table
+  # holds only *remote* followers of local actors. Asking it about a local
+  # sender, as this did until v1.38.0, meant "Followers only" admitted no
+  # member of this instance at all, including the ones who followed.
+  defp dm_access_allows?(%User{dm_access: "followers"} = recipient, sender),
+    do: follows?(sender, recipient)
+
+  defp new_account_may_reach?(sender, recipient) do
+    Auth.trusted?(sender) or Baudrate.Auth.Trust.staff?(recipient) or
+      follows?(recipient, sender) or wrote_to?(recipient, sender)
+  end
+
+  defp follows?(%User{id: follower_id}, %User{id: followed_id}) do
+    Repo.exists?(
+      from(uf in Federation.UserFollow,
+        where:
+          uf.user_id == ^follower_id and uf.followed_user_id == ^followed_id and
+            uf.state == "accepted"
+      )
+    )
+  end
+
+  # Whether `author` has ever sent `reader` a message. Deleted ones count: the
+  # conversation was theirs to start, and deleting a message does not undo
+  # having written it.
+  defp wrote_to?(%User{id: author_id}, %User{id: reader_id}) do
+    Repo.exists?(
+      from(dm in DirectMessage,
+        join: c in Conversation,
+        on: c.id == dm.conversation_id,
+        where:
+          dm.sender_user_id == ^author_id and
+            ((c.user_a_id == ^author_id and c.user_b_id == ^reader_id) or
+               (c.user_a_id == ^reader_id and c.user_b_id == ^author_id))
+      )
+    )
   end
 
   @doc """
@@ -260,11 +321,12 @@ defmodule Baudrate.Messaging do
   participant is a remote actor.
   """
   @spec create_message(Conversation.t(), User.t(), map()) ::
-          {:ok, DirectMessage.t()} | {:error, :not_allowed | Ecto.Changeset.t()}
+          {:ok, DirectMessage.t()}
+          | {:error, :not_allowed | :new_account_dm | Ecto.Changeset.t()}
   def create_message(%Conversation{} = conversation, %User{} = sender, attrs) do
     case authorize_send(conversation, sender) do
       :ok -> do_create_message(conversation, sender, attrs)
-      {:error, :not_allowed} = err -> err
+      {:error, _reason} = err -> err
     end
   end
 
@@ -274,10 +336,19 @@ defmodule Baudrate.Messaging do
   defp authorize_send(%Conversation{} = conversation, %User{} = sender) do
     case other_participant(conversation, sender) do
       %User{} = other ->
-        if can_send_dm?(sender, other), do: :ok, else: {:error, :not_allowed}
+        dm_permission(sender, other)
 
       %RemoteActor{} = remote ->
-        if can_send_dm_to_remote?(sender, remote), do: :ok, else: {:error, :not_allowed}
+        cond do
+          not can_send_dm_to_remote?(sender, remote) ->
+            {:error, :not_allowed}
+
+          not new_account_may_reach_remote?(sender, remote, conversation) ->
+            {:error, :new_account_dm}
+
+          true ->
+            :ok
+        end
 
       nil ->
         {:error, :not_allowed}
@@ -289,6 +360,19 @@ defmodule Baudrate.Messaging do
       Auth.can_interact?(sender) &&
       !Federation.Validator.domain_blocked?(remote.domain) &&
       !Auth.blocked?(sender, remote.ap_id)
+  end
+
+  # The same rule as `new_account_may_reach?/2`, across the federation: the
+  # remote actor follows the sender, or has written in this conversation.
+  defp new_account_may_reach_remote?(sender, remote, conversation) do
+    Auth.trusted?(sender) or
+      Federation.follower_exists?(Federation.actor_uri(:user, sender.username), remote.ap_id) or
+      Repo.exists?(
+        from(dm in DirectMessage,
+          where:
+            dm.conversation_id == ^conversation.id and dm.sender_remote_actor_id == ^remote.id
+        )
+      )
   end
 
   defp do_create_message(%Conversation{} = conversation, %User{} = sender, attrs) do
