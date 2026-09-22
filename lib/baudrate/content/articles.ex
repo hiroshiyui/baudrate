@@ -4,7 +4,8 @@ defmodule Baudrate.Content.Articles do
 
   Manages the full lifecycle of articles including creation (local and
   remote), editing, soft-deletion, cross-posting to boards, revision
-  history, and pin/lock moderation actions.
+  history, and pin/lock moderation actions. A member's article arrives
+  through `submit_article/3`, which may hold it for a moderator (ADR 0065).
   """
 
   import Ecto.Query
@@ -135,6 +136,23 @@ defmodule Baudrate.Content.Articles do
 
     * `attrs` — article attributes (title, body, slug, user_id, etc.)
     * `board_ids` — list of board IDs to place the article in
+
+  The author must be allowed to act (ADR 0029), a content filter may refuse
+  it (ADR 0065) and a new account is held to its limits (ADR 0064); each
+  refusal is `{:error, :account, reason, %{}}`. This never holds a post — a
+  `hold` filter flags it instead — so a member's composer calls
+  `submit_article/3`.
+
+  ## Options
+
+    * `:image_ids`, `:poll` — uploads to attach, and a poll to create.
+    * `:trusted` — for bots, which may set `url` and `published_at`.
+    * `:forwarded_comment` — a comment forwarded into a board; not new
+      writing, so none of the gates above applies.
+    * `:held_post` — the held submission a moderator approved
+      (`Baudrate.Moderation.HeldPosts.approve/2`). Only the author's standing
+      is checked again, and deleting the held row is the transaction's first
+      step, so a second approval rolls back.
   """
   @spec create_article(map(), [term()], keyword()) ::
           {:ok, %{article: %Article{}, board_articles: non_neg_integer()}}

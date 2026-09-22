@@ -9,6 +9,13 @@ defmodule Baudrate.Moderation do
   pages, their timeline, and their conversations. `report_timeline_item/3`,
   `report_message/3` and `report_remote_actor/3` check that the reporter can
   see what they report.
+
+  Two neighbours hold the rest of moderation (ADR 0065):
+  `Baudrate.Moderation.HeldPosts`, the posts waiting for a moderator before
+  anyone else sees them, and `Baudrate.Moderation.ContentFilters`, the
+  admin-written filters every post and inbound object is screened against. A
+  report a filter opens is an ordinary report here, with `content_filter_id`
+  set.
   """
 
   import Ecto.Query

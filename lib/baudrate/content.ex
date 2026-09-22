@@ -12,6 +12,11 @@ defmodule Baudrate.Content do
   enqueue delivery of the corresponding ActivityPub activities to remote
   followers via `Federation.Publisher` and `Federation.TaskSupervisor`.
 
+  A member's writing arrives through `submit_article/3` and
+  `submit_comment/2`, which may hold it for a moderator instead of publishing
+  it (ADR 0065); `create_article/3` and `create_comment/2` never hold, and are
+  for bots, forwarding and approval itself.
+
   This module is a facade — all implementations live in focused sub-modules
   under `Baudrate.Content.*`:
 

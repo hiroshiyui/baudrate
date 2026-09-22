@@ -42,8 +42,11 @@ defmodule Baudrate.Setup do
   ## Admin Settings
 
   `change_settings/1` and `save_settings/1` provide virtual-changeset-based
-  management of site-wide settings (site name, registration mode, timezone,
-  federation toggle, domain blocklist) used by the admin settings UI.
+  management of site-wide settings (site name, registration mode and its
+  challenge difficulty, the limits on new accounts, how many first posts are
+  held, timezone, federation mode and allowlist, themes) used by the admin
+  settings UI. Blocked domains are rows of their own (ADR 0030), not a
+  setting.
 
   `federation_enabled?/0` returns whether federation is active (defaults to true).
 
@@ -592,8 +595,10 @@ defmodule Baudrate.Setup do
   @valid_federation_modes ~w(blocklist allowlist)
 
   @doc """
-  Returns a virtual changeset for admin settings (site_name, site_description,
-  registration_mode, timezone, federation options).
+  Returns a virtual changeset for admin settings: site name and description,
+  registration mode and challenge difficulty, the limits on new accounts
+  (ADR 0064), how many first posts are held (ADR 0065), timezone, federation
+  options and themes.
 
   Used by `Admin.SettingsLive` for form validation.
   """
