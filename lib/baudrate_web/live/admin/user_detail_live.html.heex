@@ -457,6 +457,165 @@
         </span>
       </li>
     </ul>
+
+    <button
+      :if={@admin? and is_nil(@chain_ban)}
+      id="admin-user-detail-chain-ban-open"
+      type="button"
+      phx-click="chain_ban_open"
+      class="admin-user-detail-chain-ban-open btn btn-sm btn-error btn-outline mt-3"
+    >
+      {gettext("Ban with invitees…")}
+    </button>
+
+    <div
+      :if={@chain_ban}
+      id="admin-user-detail-chain-ban"
+      class="admin-user-detail-chain-ban card bg-base-200 mt-4"
+    >
+      <div class="card-body gap-3">
+        <h3
+          id="admin-user-detail-chain-ban-heading"
+          class="admin-user-detail-chain-ban-heading font-semibold"
+        >
+          {gettext("Ban this member and accounts in their invite chain")}
+        </h3>
+        <p
+          id="admin-user-detail-chain-ban-explainer"
+          class="admin-user-detail-chain-ban-explainer text-sm"
+        >
+          {gettext(
+            "Nothing is selected. Tick each account you have looked at and mean to ban: an account invited by a spammer is sometimes a real member. Accounts already banned keep their original ban."
+          )}
+        </p>
+        <p
+          :if={@chain_ban.tree.truncated}
+          id="admin-user-detail-chain-ban-truncated"
+          class="admin-user-detail-chain-ban-truncated alert alert-warning text-sm"
+        >
+          {gettext(
+            "The chain is longer than this list shows. Accounts further down can be reached from the detail pages of the accounts below."
+          )}
+        </p>
+
+        <form
+          id="admin-user-detail-chain-ban-form"
+          class="admin-user-detail-chain-ban-form space-y-3"
+          phx-change="chain_ban_change"
+          phx-submit="chain_ban_submit"
+        >
+          <div class="flex gap-2">
+            <button
+              id="admin-user-detail-chain-ban-all"
+              type="button"
+              phx-click="chain_ban_all"
+              class="admin-user-detail-chain-ban-all btn btn-xs"
+            >
+              {gettext("Select all")}
+            </button>
+            <button
+              id="admin-user-detail-chain-ban-none"
+              type="button"
+              phx-click="chain_ban_none"
+              class="admin-user-detail-chain-ban-none btn btn-xs"
+            >
+              {gettext("Select none")}
+            </button>
+          </div>
+
+          <ul
+            id="admin-user-detail-chain-ban-list"
+            class="admin-user-detail-chain-ban-list space-y-1 list-none pl-0"
+          >
+            <li id="admin-user-detail-chain-ban-root" class="admin-user-detail-chain-ban-node">
+              <label class="flex flex-wrap items-center gap-2">
+                <input
+                  type="checkbox"
+                  name="selected[]"
+                  value={@user.id}
+                  checked={MapSet.member?(@chain_ban.selected, @user.id)}
+                  disabled={@user.status == "banned"}
+                  class="admin-user-detail-chain-ban-check checkbox checkbox-sm"
+                />
+                <span class="font-medium">{@user.username}</span>
+                <span class="text-sm text-base-content/70">{gettext("(this member)")}</span>
+              </label>
+            </li>
+            <li
+              :for={node <- @chain_ban.tree.nodes}
+              id={"admin-user-detail-chain-ban-node-#{node.user.id}"}
+              class="admin-user-detail-chain-ban-node"
+              style={"padding-inline-start: #{node.depth * 1.25}rem"}
+            >
+              <label class="flex flex-wrap items-center gap-2">
+                <input
+                  type="checkbox"
+                  name="selected[]"
+                  value={node.user.id}
+                  checked={MapSet.member?(@chain_ban.selected, node.user.id)}
+                  disabled={node.user.status == "banned"}
+                  class="admin-user-detail-chain-ban-check checkbox checkbox-sm"
+                />
+                <.link
+                  navigate={~p"/admin/users/#{node.user.id}"}
+                  class="admin-user-detail-chain-ban-user link"
+                >
+                  {node.user.username}
+                </.link>
+                <span class="admin-user-detail-chain-ban-meta text-sm text-base-content/70">
+                  {ngettext("%{count} post", "%{count} posts", node.post_count)} &middot; {gettext(
+                    "joined %{date}", date: format_datetime(node.user.inserted_at))} &middot; {translate_status(
+                    node.user.status
+                  )}
+                </span>
+              </label>
+            </li>
+          </ul>
+
+          <label
+            for="admin-user-detail-chain-ban-reason"
+            class="admin-user-detail-chain-ban-reason-label text-sm font-medium"
+          >
+            {gettext("Reason (recorded in the moderation log)")}
+          </label>
+          <textarea
+            id="admin-user-detail-chain-ban-reason"
+            name="reason"
+            maxlength="500"
+            class="admin-user-detail-chain-ban-reason textarea textarea-bordered w-full"
+          >{@chain_ban.reason}</textarea>
+
+          <div class="flex gap-2 justify-end">
+            <button
+              id="admin-user-detail-chain-ban-cancel"
+              type="button"
+              phx-click="chain_ban_cancel"
+              class="admin-user-detail-chain-ban-cancel btn btn-sm btn-ghost"
+            >
+              {gettext("Cancel")}
+            </button>
+            <button
+              id="admin-user-detail-chain-ban-submit"
+              type="submit"
+              class="admin-user-detail-chain-ban-submit btn btn-sm btn-error"
+              data-confirm={
+                ngettext(
+                  "Ban %{count} account? This signs them out everywhere.",
+                  "Ban %{count} accounts? This signs them out everywhere.",
+                  MapSet.size(@chain_ban.selected)
+                )
+              }
+            >
+              {ngettext(
+                "Ban %{count} selected account",
+                "Ban %{count} selected accounts",
+                MapSet.size(@chain_ban.selected)
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </section>
 
   <!-- Admin only: personal data that judging behaviour does not require -->

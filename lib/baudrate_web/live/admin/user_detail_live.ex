@@ -92,6 +92,7 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
     |> assign(:articles, Content.list_recent_articles_by_user(user.id, 10, viewer: actor))
     |> assign(:comments, Content.list_recent_comments_by_user(user.id, 10, viewer: actor))
     |> assign(:invitees, Auth.list_invitees(user.id))
+    |> assign_new(:chain_ban, fn -> nil end)
     |> assign(:login_attempts, login_attempts(user, admin?))
     |> assign(:recovery_contacts, recovery_contacts(user, admin?))
     |> assign(:live_reset, Auth.live_account_reset(user))
@@ -309,6 +310,60 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
     end
   end
 
+  # --- Ban with invitees (Phase 5A) ---
+  #
+  # The whole chain is shown and nothing is ticked: the point of showing it is
+  # that somebody looked at every account before it was banned, because a
+  # spammer's invitee is sometimes a real member.
+
+  def handle_event("chain_ban_open", _params, socket) do
+    tree = Auth.invite_tree(socket.assigns.user.id)
+    {:noreply, assign(socket, :chain_ban, %{tree: tree, selected: MapSet.new(), reason: ""})}
+  end
+
+  def handle_event("chain_ban_cancel", _params, socket) do
+    {:noreply, socket |> assign(:chain_ban, nil) |> focus_heading()}
+  end
+
+  # The checkboxes and the reason are one form, and every change is assigned
+  # back — otherwise ticking a box re-renders the form and erases the reason
+  # being typed (the LiveView input-reset trap in CLAUDE.md).
+  def handle_event("chain_ban_change", params, socket) do
+    {:noreply, update_chain_ban(socket, params)}
+  end
+
+  def handle_event("chain_ban_all", _params, socket) do
+    %{chain_ban: cb, user: user} = socket.assigns
+    ids = [user.id | Enum.map(cb.tree.nodes, & &1.user.id)]
+    {:noreply, assign(socket, :chain_ban, %{cb | selected: MapSet.new(ids)})}
+  end
+
+  def handle_event("chain_ban_none", _params, socket) do
+    {:noreply, update(socket, :chain_ban, &%{&1 | selected: MapSet.new()})}
+  end
+
+  def handle_event("chain_ban_submit", params, socket) do
+    socket = update_chain_ban(socket, params)
+    %{chain_ban: cb, user: user, current_user: actor} = socket.assigns
+    reason = if String.trim(cb.reason) == "", do: nil, else: String.trim(cb.reason)
+
+    if MapSet.size(cb.selected) == 0 do
+      {:noreply, put_flash(socket, :error, gettext("Select at least one account to ban."))}
+    else
+      # The context intersects this selection with a tree it computes itself,
+      # so an id edited into the page cannot reach an account outside it.
+      {:ok, %{banned: banned, refused: refused}} =
+        Auth.ban_invite_chain(user, MapSet.to_list(cb.selected), actor, reason)
+
+      {:noreply,
+       socket
+       |> assign(:chain_ban, nil)
+       |> put_flash(chain_ban_flash_kind(refused), chain_ban_flash(banned, refused))
+       |> load(Auth.get_user(user.id))
+       |> focus_heading()}
+    end
+  end
+
   @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
 
@@ -396,4 +451,38 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
 
   defp presence(""), do: nil
   defp presence(value), do: value
+
+  defp update_chain_ban(%{assigns: %{chain_ban: nil}} = socket, _params), do: socket
+
+  defp update_chain_ban(socket, params) do
+    selected =
+      params
+      |> Map.get("selected", [])
+      |> List.wrap()
+      |> Enum.flat_map(fn id ->
+        case parse_id(id) do
+          {:ok, n} -> [n]
+          :error -> []
+        end
+      end)
+      |> MapSet.new()
+
+    update(socket, :chain_ban, &%{&1 | selected: selected, reason: params["reason"] || &1.reason})
+  end
+
+  defp chain_ban_flash_kind([]), do: :info
+  defp chain_ban_flash_kind(_refused), do: :error
+
+  defp chain_ban_flash(banned, []) do
+    ngettext("%{count} account banned.", "%{count} accounts banned.", length(banned))
+  end
+
+  # A refusal is almost always the rank rule: an admin's invitee who is also
+  # staff. Name them, so the moderator knows the chain is not fully closed.
+  defp chain_ban_flash(banned, refused) do
+    gettext("%{banned} banned. Not banned, because you may not ban them: %{refused}.",
+      banned: length(banned),
+      refused: refused |> Enum.map(fn {u, _why} -> u.username end) |> Enum.join(", ")
+    )
+  end
 end

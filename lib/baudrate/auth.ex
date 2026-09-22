@@ -56,6 +56,7 @@ defmodule Baudrate.Auth do
   defdelegate dismiss_recovery_notice(user), to: Users
   defdelegate list_pending_users, to: Users
   defdelegate list_invitees(user_id, limit \\ 20), to: Users
+  defdelegate invite_tree(user_id), to: Baudrate.Auth.Users
   defdelegate user_active?(user), to: Users
   defdelegate can_create_content?(user), to: Users
   defdelegate can_upload_avatar?(user), to: Users
@@ -147,6 +148,7 @@ defmodule Baudrate.Auth do
   # --- Moderation ---
   defdelegate ban_user(user, actor, reason \\ nil), to: Moderation
   defdelegate unban_user(user, actor), to: Moderation
+  defdelegate ban_invite_chain(root, selected_ids, actor, reason), to: Moderation
 
   # --- IP bans (Phase 5E) ---
   #

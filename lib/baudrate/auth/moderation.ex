@@ -51,6 +51,91 @@ defmodule Baudrate.Auth.Moderation do
   end
 
   @doc """
+  Bans the accounts a moderator selected from `root`'s invite chain
+  (Phase 5A), each through `ban_user/3` and so each under the same
+  authorization.
+
+  `selected_ids` comes from the client, so it is **intersected with a tree
+  recomputed here** — `root` plus `Users.invite_tree/1` — and an id outside it
+  is dropped rather than banned. Without that the dialog would be a way to ban
+  any account on the instance by editing a checkbox value.
+
+  Each account is authorized individually by `Sanctions.authorize_ban/2`, so
+  the rank rule and `admin.manage_users` hold per account rather than once for
+  the set: an admin's invitee who is also an admin is refused, and the rest are
+  still banned. Nothing is rolled back because one was refused — the result
+  names both lists, so the flash can say exactly what happened.
+
+  Logged from here rather than from the LiveView, for the reason
+  `approve_user/1` gives: a second caller must not be able to skip it. Each
+  banned account gets the same `ban_user` entry `UsersLive` writes, so its own
+  history is complete, and one `ban_invite_chain` entry records the action as
+  a whole, including what was refused and why.
+
+  Returns `{:ok, %{banned: [user], refused: [{user, reason}]}}`.
+  """
+  @spec ban_invite_chain(User.t(), [integer()], User.t(), String.t() | nil) ::
+          {:ok, %{banned: [User.t()], refused: [{User.t(), atom()}]}}
+  def ban_invite_chain(%User{} = root, selected_ids, %User{} = actor, reason)
+      when is_list(selected_ids) do
+    tree = Baudrate.Auth.Users.invite_tree(root.id)
+    candidates = [Repo.preload(root, :role) | Enum.map(tree.nodes, & &1.user)]
+    wanted = MapSet.new(selected_ids)
+    targets = Enum.filter(candidates, &MapSet.member?(wanted, &1.id))
+
+    results =
+      for target <- targets do
+        # Re-banning would overwrite `banned_at` and `ban_reason`, replacing
+        # the original ban's reason with this one. A chain often holds
+        # accounts banned earlier, so they are reported, not re-banned.
+        if target.status == "banned" do
+          {:refused, target, :already_banned}
+        else
+          case ban_user(target, actor, reason) do
+            {:ok, banned, revoked} -> {:banned, banned, revoked}
+            {:error, why} -> {:refused, target, why}
+          end
+        end
+      end
+
+    banned = for {:banned, user, _} <- results, do: user
+    refused = for {:refused, user, why} <- results, do: {user, why}
+
+    for {:banned, user, revoked} <- results do
+      Baudrate.Moderation.log_action(actor.id, "ban_user",
+        target_type: "user",
+        target_id: user.id,
+        details: %{
+          "username" => user.username,
+          "reason" => reason,
+          "revoked_invites" => revoked,
+          "via" => "invite_chain",
+          "chain_root_id" => root.id
+        }
+      )
+    end
+
+    if targets != [] do
+      Baudrate.Moderation.log_action(actor.id, "ban_invite_chain",
+        target_type: "user",
+        target_id: root.id,
+        details: %{
+          "root" => root.username,
+          "reason" => reason,
+          "banned" => Enum.map(banned, & &1.username),
+          "refused" =>
+            Enum.map(refused, fn {u, why} ->
+              %{"username" => u.username, "why" => to_string(why)}
+            end),
+          "truncated" => tree.truncated
+        }
+      )
+    end
+
+    {:ok, %{banned: banned, refused: refused}}
+  end
+
+  @doc """
   Unbans a user by setting status back to `"active"` and clearing ban fields.
 
   Authorized by `Sanctions.authorize_unban/2`: the same permission as a ban,

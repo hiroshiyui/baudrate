@@ -269,6 +269,101 @@ defmodule Baudrate.Auth.Users do
     |> Repo.all()
   end
 
+  @max_tree_depth 5
+  @max_tree_accounts 200
+
+  @doc """
+  The accounts `user_id` invited, and the accounts they invited, and so on —
+  for the ban dialog on the user detail page (Phase 5A).
+
+  Returns `%{nodes: [...], truncated: boolean}`, where each node is
+  `%{user: user, depth: n, inviter_id: id, post_count: n}` and `depth` is 1 for
+  the accounts the root invited directly.
+
+  **Bounded two ways**, because the page renders whatever this returns and an
+  invite chain is data somebody else chose the shape of: at most
+  #{@max_tree_depth} levels and at most #{@max_tree_accounts} accounts, with
+  `truncated: true` when either stopped the walk. A visited set guards against
+  a cycle — `invited_by_id` cannot form one through registration, but this
+  must not hang if a manual repair ever made one.
+
+  `post_count` is articles plus comments not soft-deleted, so the moderator
+  choosing what to ban can tell an account that has written nothing from one
+  that has a history.
+  """
+  @spec invite_tree(integer()) :: %{nodes: [map()], truncated: boolean()}
+  def invite_tree(user_id) when is_integer(user_id) do
+    {nodes, truncated} = walk_invites([user_id], MapSet.new([user_id]), 1, [])
+    counts = post_counts(Enum.map(nodes, & &1.user.id))
+
+    %{
+      nodes: Enum.map(nodes, &Map.put(&1, :post_count, Map.get(counts, &1.user.id, 0))),
+      truncated: truncated
+    }
+  end
+
+  defp walk_invites([], _seen, _depth, acc), do: {Enum.reverse(acc), false}
+
+  defp walk_invites(_frontier, _seen, depth, acc) when depth > @max_tree_depth,
+    do: {Enum.reverse(acc), true}
+
+  defp walk_invites(frontier, seen, depth, acc) do
+    room = @max_tree_accounts - length(acc)
+
+    children =
+      from(u in User,
+        where: u.invited_by_id in ^frontier,
+        order_by: [asc: u.inserted_at, asc: u.id],
+        # One past the room left, so a full batch can be told from a batch
+        # that exactly fits.
+        limit: ^(room + 1),
+        preload: :role
+      )
+      |> Repo.all()
+      |> Enum.reject(&MapSet.member?(seen, &1.id))
+
+    {taken, overflow} = Enum.split(children, room)
+
+    nodes = Enum.map(taken, &%{user: &1, depth: depth, inviter_id: &1.invited_by_id})
+    acc = Enum.reverse(nodes, acc)
+
+    cond do
+      overflow != [] ->
+        {Enum.reverse(acc), true}
+
+      taken == [] ->
+        {Enum.reverse(acc), false}
+
+      true ->
+        seen = Enum.reduce(taken, seen, &MapSet.put(&2, &1.id))
+        walk_invites(Enum.map(taken, & &1.id), seen, depth + 1, acc)
+    end
+  end
+
+  defp post_counts([]), do: %{}
+
+  defp post_counts(ids) do
+    articles =
+      from(a in Baudrate.Content.Article,
+        where: a.user_id in ^ids and is_nil(a.deleted_at),
+        group_by: a.user_id,
+        select: {a.user_id, count(a.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    comments =
+      from(c in Baudrate.Content.Comment,
+        where: c.user_id in ^ids and is_nil(c.deleted_at),
+        group_by: c.user_id,
+        select: {c.user_id, count(c.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    Map.merge(articles, comments, fn _id, a, c -> a + c end)
+  end
+
   @doc """
   Returns `true` if the user's account is active.
   """
