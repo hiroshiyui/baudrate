@@ -224,6 +224,7 @@ defmodule BaudrateWeb.Features.LayoutTest do
     # columns of staff-written text), so it is crawled with a real record.
     member = sanctioned_member(admin)
     domain = blocked_instance(admin)
+    :ok = held_and_filtered(admin)
 
     paths = [
       "/admin/settings",
@@ -238,7 +239,10 @@ defmodule BaudrateWeb.Features.LayoutTest do
       "/admin/invites",
       "/admin/login-attempts",
       "/admin/data-exports",
-      "/admin/bots"
+      "/admin/bots",
+      "/admin/ip-bans",
+      "/admin/filters",
+      "/moderation/held"
     ]
 
     assert check_layout(session, paths) == []
@@ -357,5 +361,28 @@ defmodule BaudrateWeb.Features.LayoutTest do
             DateTime.add(DateTime.utc_now(), -n * 60, :second) |> DateTime.truncate(:second)
         })
     end
+  end
+
+  # A held post and a filter, each carrying the long unbreakable token that
+  # widens a page before short test text ever does (ADR 0065's two pages).
+  defp held_and_filtered(admin) do
+    long = String.duplicate("unbreakable", 12)
+
+    {:ok, _} =
+      Baudrate.Moderation.HeldPosts.hold_article(
+        %{"title" => "Held #{long}", "body" => "Body #{long}", "user_id" => admin.id},
+        [],
+        [],
+        "first_posts",
+        nil
+      )
+
+    {:ok, _} =
+      Baudrate.Moderation.ContentFilters.create_filter(
+        %{"pattern" => long, "kind" => "substring", "action" => "hold", "note" => "Note #{long}"},
+        admin
+      )
+
+    :ok
   end
 end

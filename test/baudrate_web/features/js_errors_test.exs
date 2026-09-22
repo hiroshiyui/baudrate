@@ -282,6 +282,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
     {:ok, _code} = Baudrate.Auth.generate_invite_code(admin)
 
     instance_domain = blocked_instance(admin)
+    :ok = held_and_filtered(admin)
 
     admin_paths = [
       "/admin/settings",
@@ -297,6 +298,9 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
       "/admin/login-attempts",
       "/admin/data-exports",
       "/admin/bots",
+      "/admin/ip-bans",
+      "/admin/filters",
+      "/moderation/held",
       "/boards/#{board.slug}/follows"
     ]
 
@@ -359,6 +363,13 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
 
       Process.sleep(400)
 
+      # The form check types into every `phx-change` field, which is exactly
+      # what crashes a view whose change handler is wrong — so the error log
+      # is read after it, not before. Read before, a crash in a filter form's
+      # `validate` went unreported: the view rejoined, form recovery put the
+      # typed values back, and the check found nothing lost.
+      resets = form_resets(session)
+
       execute_script(session, "return window.__jsErrors || []", fn value ->
         send(self(), {:js_errors, value})
       end)
@@ -370,7 +381,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
           1_000 -> ["no result"]
         end
 
-      Enum.map(errors ++ form_resets(session), &"#{path} — #{&1}")
+      Enum.map(errors ++ resets, &"#{path} — #{&1}")
     end)
   end
 
@@ -386,5 +397,28 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
       nil -> Process.sleep(200) && wait_for_form_resets(session, tries - 1)
       lost -> lost
     end
+  end
+
+  # A held post and a filter, each carrying the long unbreakable token that
+  # widens a page before short test text ever does (ADR 0065's two pages).
+  defp held_and_filtered(admin) do
+    long = String.duplicate("unbreakable", 12)
+
+    {:ok, _} =
+      Baudrate.Moderation.HeldPosts.hold_article(
+        %{"title" => "Held #{long}", "body" => "Body #{long}", "user_id" => admin.id},
+        [],
+        [],
+        "first_posts",
+        nil
+      )
+
+    {:ok, _} =
+      Baudrate.Moderation.ContentFilters.create_filter(
+        %{"pattern" => long, "kind" => "substring", "action" => "hold", "note" => "Note #{long}"},
+        admin
+      )
+
+    :ok
   end
 end
