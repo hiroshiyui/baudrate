@@ -17,7 +17,8 @@ v1.31.0, and Phase 4 across v1.32.0–v1.34.0.
 **Phase 5 is under way.** It was deferred on 2026-09-21 so that 6A could go
 first — comment editing and image descriptions in v1.35.0, server-side drafts in
 v1.36.0 — and planned on 2026-09-22 as three releases. The first, 5A + 5E, shipped
-in v1.37.0; 5B is next. Its three decisions are settled and recorded below.
+in v1.37.0; 5B is done and ships in v1.38.0; 5C + 5D are next. Its three
+decisions are settled and recorded below.
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -342,7 +343,7 @@ These are the facts that are still nowhere else.
 
 **Planned 2026-09-22, three releases:** 5A + 5E (the door), then 5B (trust),
 then 5C + 5D — 5D's "hold for review" has nowhere to put a submission until 5C
-exists. The first, 5A + 5E, shipped in v1.37.0; 5B is next.
+exists. The first, 5A + 5E, shipped in v1.37.0; 5B ships in v1.38.0.
 
 ### 5A — Registration friction (S) — **shipped in v1.37.0**
 
@@ -354,19 +355,17 @@ release: a Pixel 8a at 20 bits had its answer before its owner finished the
 form. The default stays 18 for older phones; `Baudrate.Auth.Challenge`'s
 moduledoc keeps the numbers.
 
-### 5B — Limits for new accounts (M)
+### 5B — Limits for new accounts (M) — **done, ships in v1.38.0**
 
-- [ ] **A trust level, earned by age and approved activity (P5-D2).** Until a
-  member earns it: lower rate limits, at most one link per post, no DMs to
-  non-followers, fewer images. Computed at check time, never a stored flag a
-  sweep flips ([ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)'s
-  rule). **Bots are exempt inside the predicate's own query** — a bot has no age
-  and no approved activity, and an RSS item routinely carries several links, so
-  without the exemption turning trust on stops every feed, exactly as
-  [ADR 0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md) found for
-  the terms gate.
-- [ ] `extract_urls/2` on the `baudrate_html_parser` NIF. Counting links needs
-  every URL and it exposes only the first; 5D needs it too.
+Trust by age and posts still up, decided when asked
+([ADR 0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md)). Four
+things the plan did not say, all recorded there: the article edit page attached
+uploads to the live post with **no check at all** (ADR 0029's included); a link
+counter that read `href` as text missed `//host` and `/\host`, so
+`extract_urls/2` resolves links as a browser does; the per-kind buckets became
+**one** bucket taken at the context boundary; and a new account may also DM
+someone who wrote first, or staff. Building the DM rule found that "Followers
+only" admitted no local follower at all.
 
 ### 5C — Hold first posts (S)
 

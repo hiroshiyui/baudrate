@@ -39,7 +39,7 @@ native/
 ├── baudrate_html_parser/        # Rust NIF crate (html5ever / scraper)
 │   ├── Cargo.toml               # Crate manifest (scraper, rustler)
 │   └── src/
-│       └── lib.rs               # NIF functions: parse_og_metadata, extract_first_url
+│       └── lib.rs               # NIF functions: parse_og_metadata, extract_urls, extract_first_url, count_images
 └── baudrate_feed_parser/        # Rust NIF crate (feedparser-rs)
     ├── Cargo.toml               # Crate manifest (feedparser-rs, rustler)
     └── src/
@@ -78,6 +78,7 @@ lib/
 │   │   ├── session_cleaner.ex   # GenServer: hourly cleanup — sessions, login attempts, orphan images, retention (ADR 0040)
 │   │   ├── sessions.ex          # Session lifecycle: creation, rotation, eviction
 │   │   ├── totp_vault.ex        # TOTP secrets, encrypted with the :auth key
+│   │   ├── trust.ex             # Whether an account has outgrown the limits on new accounts (ADR 0064)
 │   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
 │   │   ├── user_mute.ex         # UserMute schema (local-only soft-mute/ignore)
 │   │   ├── user_session.ex      # Ecto schema for server-side sessions
@@ -144,7 +145,7 @@ lib/
 │   │   ├── link_preview/
 │   │   │   ├── fetcher.ex       # Fetches and parses Open Graph / Twitter Card metadata
 │   │   │   ├── image_proxy.ex   # Fetches, validates and re-encodes preview images to WebP
-│   │   │   ├── url_extractor.ex # Extracts the first external HTTP(S) URL from rendered HTML
+│   │   │   ├── url_extractor.ex # Extracts the first external URL from rendered HTML, resolved as a browser would
 │   │   │   └── worker.ex        # Schedules async preview fetches after content creation
 │   │   ├── markdown.ex          # Markdown → HTML rendering (MDEx + Ammonia NIF + hashtag/mention linkification + mention extraction)
 │   │   ├── pagination.ex        # Content-specific paginated query helpers
@@ -434,6 +435,7 @@ and never need to know about the internal split.
 | `Auth.Challenge` | The registration proof-of-work challenge: issue a nonce and verify one SHA-256 (ADR 0063) |
 | `Auth.IpBans` | IP and CIDR bans for registration and sign-in — the only write path, its four refusals, and `banned?/1` against `Auth.IpBanCache` (ADR 0063) |
 | `Auth.Sanctions` | Warnings, silences and suspensions, refusing a pending registration, and `ensure_can_interact/1` — the one gate every posting and interaction path calls (ADR 0029) |
+| `Auth.Trust` | Whether an account has outgrown the limits on new accounts (`standing/1`, `trusted?/1`), and `check_post/4`, which every posting path calls beside `ensure_can_interact/1` (ADR 0064) |
 
 ### Authentication Flow
 
@@ -782,6 +784,44 @@ Approval sends an always-delivered `registration_approved` notice from
 second approval path can skip it. `pending_registration` (to staff) is
 always-delivered too: an approval queue nobody is told about is an approval
 queue nobody empties.
+
+#### Limits on New Accounts
+
+An account that has not yet earned trust is slowed down, not shut out
+(ADR 0064). It is **trusted** once it is `new_account_days` old *and* has
+`new_account_posts` local articles and comments that are not soft-deleted —
+3 and 3 by default, set on `/admin/settings`, 0 and 0 to turn the limits off.
+`Auth.Trust.standing/1` answers from the clock and one query every time it is
+asked; nothing is stored, so removing the posts that earned trust takes it
+away again. Bots are trusted inside that query, admins and moderators by role,
+and an invite confers nothing. Replies to remote timeline items are not
+counted: no moderator here can remove one.
+
+Until then:
+
+| Limit | Where it is enforced |
+|---|---|
+| At most one external link and one image per post (uploads plus images in the body) | `Auth.check_post/4`, called from `Content.create_article/3`, `update_article/3`, `create_comment/2`, `update_comment/3` and `Federation.create_timeline_item_reply/4` |
+| At most ten posts an hour, articles, comments and timeline replies together | the same call, which takes a place in `RateLimits.check_new_account_post/1` once the post has passed the other checks |
+| Direct messages only to people who follow the account, have written to it first, or are staff | `Messaging.dm_permission/2` and `create_message/3` |
+| No image attached past the limit from the article edit page, where an upload is published as it lands | `Content.authorize_article_image/2` and `add_article_image/3` |
+
+**An edit is the second way in.** An edit may not link anywhere the post did
+not already link once it is over the limit, nor raise the image count past it;
+it never has to remove what is already there, so a post made before the limits
+were switched on can still have its typo fixed. Edits do not take a place in
+the hourly bucket.
+
+Links are counted by `HtmlParser.Native.extract_urls/2`, which joins each
+`href` to the site's origin the way a browser does and compares hosts, so
+`//host`, `/\host` and `http:host` count and `https://<this host>.example/`
+does not pass as local. `extract_first_url/2` — what link previews fetch — is
+the first of the same list.
+
+Every refusal is an atom (`:new_account_links`, `:new_account_images`,
+`:new_account_rate_limited`, `:new_account_dm`) that
+`Helpers.refusal_message/3` turns into the limit plus what is left for this
+member: a date, a number of posts, or both.
 
 #### Invite Codes
 
@@ -1556,7 +1596,7 @@ Users set `dm_access` on their profile (`/profile`):
 | Setting | Effect |
 |---------|--------|
 | `anyone` (default) | Any authenticated user or remote actor can DM |
-| `followers` | Only AP followers can DM |
+| `followers` | Only accounts that follow them — here (`user_follows`) or on another instance (`followers`) — can DM |
 | `nobody` | DMs are disabled entirely |
 
 Bidirectional blocks (via `Auth.blocked?/2`) are always enforced regardless of
@@ -1566,9 +1606,18 @@ first started — so a recipient who blocks the sender or switches `dm_access`
 to `nobody`/`followers` after an existing conversation began cannot be messaged
 further (`{:error, :not_allowed}`).
 
+A local follow is a `user_follows` row; the `followers` table holds only
+*remote* followers of local actors. Until v1.38.0 the `followers` setting asked
+only that table, so it admitted no member of this instance at all.
+
+An account still under the limits on new accounts may message only people who
+follow it, who have written to it first, or who are staff, whatever the
+recipient's `dm_access` says (`{:error, :new_account_dm}`, ADR 0064). The
+recipient's own refusal is reported first.
+
 **Key functions in `Messaging`:**
 
-- `can_send_dm?/2` — checks dm_access, blocks, status (local recipient)
+- `dm_permission/2` — `:ok`, `{:error, :not_allowed}` (dm_access, blocks, status, sanctions) or `{:error, :new_account_dm}` (local recipient); `can_send_dm?/2` is its boolean form
 - `find_or_create_conversation/2` — canonical ordering prevents duplicates
 - `create_message/3` — authorizes the send, creates the message, broadcasts PubSub, schedules federation
 - `receive_remote_dm/3` — handles incoming federated DMs
@@ -2831,6 +2880,7 @@ these responses loads a subresource.
 | Article update | 20 / 5 min | per user |
 | Comment creation | 30 / 5 min | per user |
 | Comment update | 20 / 5 min | per user |
+| Posts by an account not yet trusted (articles, comments, timeline replies together) | 10 / hour | per user |
 | Draft autosave | 60 / min | per user |
 | Content deletion | 20 / 5 min | per user |
 | User muting | 10 / 5 min | per user |
@@ -2851,7 +2901,9 @@ these responses loads a subresource.
 
 IP-based rate limits use `BaudrateWeb.Plugs.RateLimit` (Plug-based, in the
 router pipeline). Per-user rate limits use `BaudrateWeb.RateLimits` (called
-from LiveView event handlers). Both use Hammer with ETS backend and fail open
+from LiveView event handlers — except the new-account bucket, which
+`Auth.Trust.check_post/4` takes at the context boundary so that no posting
+path can skip it). Both use Hammer with ETS backend and fail open
 on backend errors. Admin users are exempt from per-user content rate limits.
 
 ### Supervision Tree

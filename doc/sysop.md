@@ -221,6 +221,8 @@ Configure at `/admin/settings`:
 | `site_name` | string | (set at setup) | Display name in headers and NodeInfo |
 | `registration_mode` | enum | `"approval_required"` | Registration policy (see [Registration Modes](#registration-modes)) |
 | `registration_challenge_bits` | integer 0–22 | `18` | Work a browser does before it may register (see [The Registration Challenge](#the-registration-challenge)); 0 turns it off |
+| `new_account_days` | integer 0–30 | `3` | How old an account must be before the [limits on new accounts](#limits-on-new-accounts) lift |
+| `new_account_posts` | integer 0–20 | `3` | How many articles and comments, still up, it must have too; 0 and 0 turns the limits off |
 | `timezone` | IANA zone | `"Etc/UTC"` | The zone every date and time on the site is displayed in (`BaudrateWeb.Helpers.format_datetime/2`); validated against the `tz` database |
 | `eua` | markdown | (empty) | Terms of service — shown at registration, published at `/terms` |
 | `privacy_policy` | markdown | (empty) | Privacy policy, published at `/privacy` |
@@ -372,6 +374,41 @@ picture; both it and the Skip button count as answered, so it appears once.
 Registration requires accepting terms: a system activity-logging notice (always
 shown) and an optional site-specific End User Agreement (configurable at
 `/admin/settings`, stored as markdown).
+
+### Limits on New Accounts
+
+An account that is new here is slowed down rather than trusted at once
+(ADR 0064). Until it is **`new_account_days` old and has `new_account_posts`
+articles and comments that have not been removed** — 3 and 3 by default — it:
+
+- may put **one external link and one image** in a post, and an edit may not
+  add more (it never has to remove what is already there);
+- may post **ten times an hour**, articles, comments and replies together;
+- may send direct messages only to **people who follow it, people who have
+  written to it first, and staff** — whatever the recipient's own setting
+  allows.
+
+Admins, moderators and bot accounts are never limited; an RSS bot's items
+carry several links, and limiting it would stop the feed. An invite confers
+nothing — an account created by an invite code waits like any other.
+
+Nothing is stored about this. The site works it out from the account's age and
+its post count every time the account posts, so it lifts on its own the moment
+both are met, and **removing a spammer's warm-up posts takes it away again**.
+Replies to posts from other instances do not count: nobody here can moderate
+them.
+
+**During a wave**, raise both at `/admin/settings` — a week and five posts,
+say — and put them back afterwards. Because nothing is stored, a change applies
+at once to every account: raising the numbers limits again any account below
+them, including ones that had met the old numbers, and lowering them lifts the
+limits the same moment. **0 and 0 turns the limits off**, which suits a small
+invite-only community where everyone is known.
+
+A member who runs into a limit is told which one, and what is left for them:
+a date, a number of posts, or both. There is no way to exempt one account by
+hand; a member who needs one sooner can be made a moderator, which is a
+decision with its own consequences.
 
 ### Policy Pages
 
@@ -1340,6 +1377,7 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | Article creation | 10 / 15 min | per user |
 | Article update | 20 / 5 min | per user |
 | Comment creation | 30 / 5 min | per user |
+| Posts by a [new account](#limits-on-new-accounts) (articles, comments, replies together) | 10 / hour | per user |
 | Content deletion (own content) | 20 / 5 min | per user |
 | Content deletion from a moderation queue | 100 / 5 min | per user |
 | User muting | 10 / 5 min | per user |

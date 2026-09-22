@@ -9,6 +9,67 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Added
+
+- **Limits on new accounts** (Phase 5B,
+  [ADR 0064](doc/adr/0064-a-new-account-is-slowed-down-not-shut-out.md)).
+  Until an account is three days old *and* has three articles or comments that
+  have not been removed, it may put one external link and one image in a
+  post, post ten times an hour (articles, comments and timeline replies
+  together), and send direct messages only to people who follow it, people
+  who have written to it first, and staff. Bots, admins and moderators are
+  never limited, and an invite confers nothing. The site works this out every
+  time from the account's age and post count, so the limits lift the moment
+  both are met — and come back if a moderator removes the posts that earned
+  it.
+- Two settings at `/admin/settings`: **Days before a new account is trusted**
+  and **Posts before a new account is trusted** (3 and 3; up to 30 and 20;
+  0 and 0 turns the limits off). Raise them during a wave.
+- A member who runs into a limit is told which one, and what is left for them:
+  a date, a number of posts, or both.
+
+### Changed
+
+- **Edits are held to the same limits as new posts.** An edit may not add a
+  link or an image past a new account's limit; it never has to remove what was
+  already there, so a post written before the limits existed can still have
+  its typo fixed.
+- Links are now counted the way a browser follows them: every `href` is
+  resolved against the site's address and compared by host. The HTML parser
+  gained `extract_urls/2` and `count_images/1`, and the link-preview extractor
+  now takes the first of the same list.
+- A refused article keeps what was written in the composer, on the new-post
+  page and the timeline composer alike, rather than depending on the page
+  having seen the text typed.
+
+### Fixed
+
+- **"Followers only" direct messages admitted no follower on this instance.**
+  The check asked the table of *remote* followers, so a member here who
+  followed you could never message you under that setting. It now asks both.
+- A link to a host that merely begins with this site's name
+  (`https://example.org.spam.example/`) was treated as a link to this site, so
+  it was never given a link preview. Same-site is now a host comparison.
+
+### Security
+
+- **The article edit page attached an uploaded image to the published article
+  with no check at all.** The upload landed on the live post before anything
+  was submitted, so a silenced or suspended member could still add pictures to
+  their own article, and nothing looked at how many. It now goes through
+  `Content.authorize_article_image/2` — the member must be able to edit the
+  article and to act at all, and a new account may not pass its image limit —
+  before the file is even processed, and again as it attaches.
+- Link counting cannot be walked round with `//host`, `/\host` or `http:host`,
+  which a browser follows off the site and a prefix check did not count.
+
+### Documentation
+
+- [ADR 0064](doc/adr/0064-a-new-account-is-slowed-down-not-shut-out.md), with
+  its rows in the conformance index; a section on the limits in
+  `doc/development.md` and `doc/sysop.md`, and the new bucket in both rate
+  limit tables.
+
 ## [1.37.0] — 2026-09-22
 
 Phase 5's first release, "the door": an instance with open registration can
