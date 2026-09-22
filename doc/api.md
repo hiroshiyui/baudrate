@@ -1177,6 +1177,14 @@ for clock skew lives.)
 board, a locked or deleted article, a block, a suspended actor — is dropped with
 a log line, not a 4xx, so remote instances do not retry.
 
+**Content filters.** An admin's filters (ADR 0065) screen the content of every
+`Create` and `Update` of a `Note` that is not a direct message, an `Article`,
+`Page` or `Question`, and every object an `Announce` brings in — embedded,
+fetched or carried by a group. A filter set to refuse drops the activity like
+any other refusal; one set to hold or to report stores it as usual and opens a
+moderation report, since nothing arriving over federation can be held. The
+sender is told nothing either way. Direct messages are never screened.
+
 ---
 
 ### DM Detection
