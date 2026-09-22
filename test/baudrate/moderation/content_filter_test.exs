@@ -493,6 +493,27 @@ defmodule Baudrate.Moderation.ContentFilterTest do
 
       assert {:ok, _} = Content.update_comment(dirty, %{"body" => "casino typo"}, ctx.user)
     end
+
+    test "an upload's description is screened with the comment", ctx do
+      filter!(ctx.admin, "casino", "word", "block")
+
+      image =
+        %Baudrate.Content.CommentImage{}
+        |> Baudrate.Content.CommentImage.changeset(%{
+          filename: "#{:crypto.strong_rand_bytes(32) |> Base.encode16(case: :lower)}.webp",
+          storage_path: "/nonexistent",
+          width: 10,
+          height: 10,
+          user_id: ctx.user.id,
+          alt: "casino flyer"
+        })
+        |> Repo.insert!()
+
+      assert {:error, :content_filtered} =
+               Content.submit_comment(comment_attrs(ctx.user, ctx.article, "Look"),
+                 image_ids: [image.id]
+               )
+    end
   end
 
   describe "timeline replies" do
@@ -671,6 +692,11 @@ defmodule Baudrate.Moderation.ContentFilterTest do
 
       assert ContentFilters.screen_remote(
                %{"content" => "<p>fine</p>", "oneOf" => [%{"name" => "casino"}]},
+               ctx.actor
+             ).outcome == :drop
+
+      assert ContentFilters.screen_remote(
+               %{"content" => "<p>fine</p>", "anyOf" => [%{"name" => "casino"}]},
                ctx.actor
              ).outcome == :drop
     end
