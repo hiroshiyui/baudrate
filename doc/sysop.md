@@ -220,6 +220,7 @@ Configure at `/admin/settings`:
 |---------|------|---------|---------|
 | `site_name` | string | (set at setup) | Display name in headers and NodeInfo |
 | `registration_mode` | enum | `"approval_required"` | Registration policy (see [Registration Modes](#registration-modes)) |
+| `registration_challenge_bits` | integer 0–22 | `18` | Work a browser does before it may register (see [The Registration Challenge](#the-registration-challenge)); 0 turns it off |
 | `timezone` | IANA zone | `"Etc/UTC"` | The zone every date and time on the site is displayed in (`BaudrateWeb.Helpers.format_datetime/2`); validated against the `tz` database |
 | `eua` | markdown | (empty) | Terms of service — shown at registration, published at `/terms` |
 | `privacy_policy` | markdown | (empty) | Privacy policy, published at `/privacy` |
@@ -295,6 +296,16 @@ what, change the account's **role**.
   the new one
 - **Change roles** — assign any role to any user
 - **Ban/Unban** — banning invalidates all existing sessions immediately
+- **Ban with invitees** — on a member's detail page, `/admin/users/:id`, when
+  they have invited anyone. The whole invite chain is listed, up to five levels
+  and two hundred accounts, with each account's post count and join date, and
+  **nothing is ticked**: an account a spammer invited is sometimes a real
+  member, so tick only what you have looked at. Accounts already banned are
+  shown but skipped, so their original ban and reason stand. Each account is
+  checked separately — an invitee who is staff is refused and the rest are
+  still banned — and the flash names anyone who was not. Every ban is in the
+  [moderation log](#moderation-log-adminmoderation-log), plus one entry for
+  the action as a whole
 - **Self-protection** — admins cannot ban themselves or change their own role
 
 ### Registration Modes
@@ -312,6 +323,39 @@ member** — they used to find out by trying to post and discovering they could.
 Staff are told about a new pending registration the same way, and neither
 notice can be switched off in preferences: an approval queue nobody is told
 about is an approval queue nobody empties.
+
+### The Registration Challenge
+
+Every registration costs the visitor's browser a small proof-of-work: it finds
+a number whose SHA-256 with a server-issued nonce starts with a set number of
+zero bits, and the server checks the one hash that proves it (ADR 0063). It is
+self-hosted — there is no CAPTCHA and no third party on the page — and it
+applies in all three registration modes.
+
+Set the difficulty with **Registration challenge difficulty** at
+`/admin/settings`. Each bit doubles the work:
+
+| Bits | Desktop browser | A phone several times slower |
+|------|-----------------|------------------------------|
+| 16 | 0.05 s | 0.4 s |
+| **18** (default) | 0.2 s | 1.7 s |
+| 20 | 0.8 s | 7 s |
+| 22 (the cap) | 3.4 s | 27 s |
+
+Those are averages; an unlucky visitor takes three or four times as long. So
+**raise it during a wave of automated sign-ups and lower it afterwards** —
+leaving it at 22 makes registration look broken on a phone. `0` switches the
+challenge off.
+
+**What it does and does not do.** It does not stop a determined attacker:
+native code computes SHA-256 far faster than a browser. It puts a price on
+every attempt and forces an attacker to run the protocol rather than replay a
+form post — together with the per-address rate limit, the approval queue and
+[IP bans](#ip-bans-adminip-bans), that is what turns a flood into something a
+moderator can keep up with.
+
+Nothing about a visitor is stored: the challenge lives in the page's
+connection and is replaced after every attempt.
 
 **Registering signs the new member in**, in every mode. Approval mode signs
 them in as `pending`, which can browse and set up a profile but not post. The
@@ -479,6 +523,49 @@ Failed logins trigger **progressive per-account delays** (not hard lockout):
 
 Progressive delay avoids the DoS vector of an attacker deliberately locking
 out accounts by submitting wrong passwords.
+
+### IP Bans (`/admin/ip-bans`)
+
+Admin-only. A banned address or CIDR range cannot **register or sign in**;
+reading the site is never affected. Most bans start from the login-attempt
+log above — each row with an address has a **Ban…** link that opens this page
+with the address filled in. Nothing is banned until you submit.
+
+Type an address (`1.2.3.4`) or a range (`1.2.3.0/24`, `2606:4700::/32`). The
+page says how many addresses the range covers before you commit, because a
+`/24` is 256 people and a `/16` is 65 536. Give a reason — it goes into the
+moderation log — and, usually, an expiry: an address is shared by everyone
+behind the same network and is reassigned by ISPs, so a ban should be as
+narrow and as short as stops what you are seeing.
+
+Four things are refused, each for a reason:
+
+| Refused | Why |
+|---------|-----|
+| A private or loopback range (`127.0.0.1`, `10.0.0.0/8`, `::1`, …) | It is what **every** visitor looks like when the reverse proxy's trust is misconfigured (see `BAUDRATE_TRUSTED_PROXIES`), so banning it bans the whole site |
+| Anything broader than a `/8` (IPv4) or `/16` (IPv6) | No spam wave calls for it |
+| A range containing **your own** current address | You would lock yourself out of the page that undoes it |
+| A range broader than a `/16` (IPv4) or `/32` (IPv6), unconfirmed | Sometimes right against one provider in a wave, never worth doing by accident — tick the confirmation that appears |
+
+A ban with an expiry stops applying the moment it passes; nothing has to run
+for that to happen. Expired bans stay listed, marked as such, until lifted.
+
+**If you are locked out anyway** — the page refuses a range containing your
+address, but an address can change afterwards and land inside one — lift the
+bans from the server console. Open the remote console as described under
+[Erlang distribution and the remote console](#erlang-distribution-and-the-remote-console)
+(`bin/baudrate remote`, run as the service account from `/opt/baudrate`), then:
+
+```elixir
+Baudrate.Repo.delete_all(Baudrate.Auth.IpBan)
+Baudrate.Auth.IpBanCache.refresh()
+```
+
+That lifts every ban. To lift one, find it with
+`Baudrate.Repo.all(Baudrate.Auth.IpBan)` and pass its id to
+`Baudrate.Repo.delete!/1` before the `refresh/0`. The deletion is not recorded
+in the moderation log, so note it there by hand if the instance has other
+admins.
 
 ### Password Reset
 

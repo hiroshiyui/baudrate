@@ -344,22 +344,23 @@ These are the facts that are still nowhere else.
 
 **Planned 2026-09-22, three releases:** 5A + 5E (the door), then 5B (trust),
 then 5C + 5D — 5D's "hold for review" has nowhere to put a submission until 5C
-exists. Phase 5 starts after 6A's second half, so the first of the three is
-v1.37.0.
+exists. The first, 5A + 5E, is built and unreleased as v1.37.0; 5B is next.
 
-### 5A — Registration friction (S)
+### 5A — Registration friction (S) — **done, unreleased**
 
-- [ ] **A self-hosted proof-of-work challenge** on registration (P5-D1), in all
-  three registration modes. Held in socket assigns and stored nowhere; the
-  solver is a same-origin worker file because `worker-src` is `'self'`, and its
-  path is a bare literal for [ADR 0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md)'s
-  reason. It must survive a browser with no `Worker` and a submit that arrives
-  before the solve: registration is the one page a visitor cannot route around.
-- [ ] **Ban an account and the accounts it invited** in one audited action,
-  using the invite chain (`invited_by_id`). The transitive tree is shown with
-  each account's age and post count and the moderator ticks what goes — not
-  cascaded automatically, because a spammer's invitee is sometimes a real
-  member.
+Both items are built
+([ADR 0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md)).
+Two things the plan got wrong, corrected in the building:
+
+- **The difficulty.** The plan set 20 bits and expected about a second or two
+  on a phone. Measured, the solver manages ~1.2 M hashes/s on a desktop
+  browser, so 20 bits is ~7 s on a phone several times slower — long enough to
+  look broken — and the plan's cap of 24 is nearly two minutes. The default is
+  18 and the cap 22.
+- **"One solve, one attempt" needed the success case too.** A challenge
+  consumed by leaving it `nil` reads as "switched off", so a crafted socket
+  could register once properly and then keep going on the same solve. It is
+  re-issued after every attempt, success included.
 
 ### 5B — Limits for new accounts (M)
 
@@ -405,16 +406,12 @@ v1.37.0.
   - Every match is audited, whatever the action — that is what makes a bad
     filter findable.
 
-### 5E — IP bans (S)
+### 5E — IP bans (S) — **done, unreleased**
 
-- [ ] **IP and CIDR bans** for registration and sign-in, with a reason and an optional expiry, audited.
-  - Resolve addresses through `RealIp` only. Expiry is decided by the clock at
-    read time, never by a sweep.
-  - Refuse a loopback or private range — that is a `RealIp` misconfiguration
-    rather than a visitor, and banning it bans everyone — plus `/0` and any
-    range holding the acting admin's own address.
-  - Checked at registration, at sign-in, and at `SessionController.create/2`,
-    which is the only one of the three that mints a session.
+Built with 5A, under the same record. Sign-in is checked at
+`SessionController`'s `establish_session/3` rather than at `create/2` alone as
+planned: every sign-in path — password, TOTP, recovery codes, first-time TOTP
+setup — ends there, so it is the one place a later path cannot route around.
 
 ### Decisions (made 2026-09-22)
 

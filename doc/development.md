@@ -55,8 +55,12 @@ lib/
 │   │   └── account_move.ex      # AccountMove schema: a pending move, its 24-hour delay and cancellation
 │   ├── auth.ex                  # Auth context facade: defdelegate to focused sub-modules
 │   ├── auth/
+│   │   ├── challenge.ex         # The registration proof-of-work challenge: issue and verify (ADR 0063)
 │   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)
 │   │   ├── invites.ex           # Invite code generation, revocation, and quota logic
+│   │   ├── ip_ban.ex            # IpBan schema, and parsing a typed address or CIDR range into its network
+│   │   ├── ip_ban_cache.ex      # ETS cache of the bans, holding expired ones too (the clock decides)
+│   │   ├── ip_bans.ex           # IP and CIDR bans for registration and sign-in, and their four refusals (ADR 0063)
 │   │   ├── login_attempt.ex     # LoginAttempt schema (per-account brute-force tracking)
 │   │   ├── moderation.ex        # User-level moderation: ban, unban, role changes
 │   │   ├── passwords.ex         # Password hashing, validation, and reset logic
@@ -311,6 +315,7 @@ lib/
 │   │   │   ├── federation_live.ex      # Admin federation dashboard
 │   │   │   ├── invites_live.ex         # Admin invite code management (generate, revoke, invite chain)
 │   │   │   ├── instance_detail_live.ex # One remote instance: whether it is blocked, and its known actors
+│   │   │   ├── ip_bans_live.ex        # /admin/ip-bans — refuse registration and sign-in from a range
 │   │   │   ├── login_attempts_live.ex # Admin login attempts viewer (paginated, filterable)
 │   │   │   ├── moderation_live.ex     # Admin moderation queue (every report)
 │   │   │   ├── moderation_log_live.ex # Moderation audit log (filterable, paginated)
@@ -2848,6 +2853,7 @@ Baudrate.Supervisor (one_for_one)
 ├── BaudrateWeb.RateLimit                   # Hammer 7 ETS rate-limit store
 ├── Baudrate.Federation.TaskSupervisor      # Delivery and inbound processing tasks, best-effort background work
 ├── Baudrate.Federation.DomainBlockCache    # ETS cache for domain blocking decisions
+├── Baudrate.Auth.IpBanCache                # ETS cache of IP bans, read on every registration and sign-in
 ├── Baudrate.Federation.DeliveryWorker      # Delivery queue: woken on commit (own LISTEN connection), polls every 60s
 ├── Baudrate.Federation.InboundWorker       # Inbound queue: woken by the inbox, polls every 30s
 ├── Baudrate.Federation.StaleActorCleaner   # Daily stale remote actor cleanup

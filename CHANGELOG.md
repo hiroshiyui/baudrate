@@ -7,6 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [Unreleased]
+
+Phase 5's first release, "the door": an instance with open registration can
+now make every sign-up cost something, refuse a network outright, and ban an
+account together with the accounts it invited — the tools for a spam wave
+that arrive at the registration form rather than in the boards
+([ADR 0063](doc/adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md)).
+
+**Nothing here is a third party.** The obvious tool for automated sign-ups is
+a CAPTCHA, and it is a subresource from somebody else's host on the one page
+every new member must load, handing them every registrant's address. The
+challenge here is self-hosted proof-of-work instead: the browser does a little
+arithmetic, the server checks one hash.
+
+### Added
+
+- **A registration challenge.** Each registration makes the browser find a
+  number whose SHA-256 with a server-issued nonce begins with a set number of
+  zero bits; the server checks the one hash. It applies in all three
+  registration modes, stores nothing about the visitor, and is replaced after
+  every attempt — success included, so one answer can never be spent on more
+  than one account. The difficulty is a setting (**Registration challenge
+  difficulty**, `/admin/settings`): 18 bits by default, about two seconds on a
+  phone; raise it during a wave, `0` switches it off.
+- The solver runs in a Web Worker off the page's main thread, falls back to
+  the main thread if a worker cannot start, and never disables the submit
+  button: a submit that arrives before the answer is held by the server and
+  completed when the answer lands, with a line saying what is happening.
+- **IP and CIDR bans** at `/admin/ip-bans`, admin-only, with a reason and an
+  optional expiry. A banned address cannot register or sign in; reading the
+  site is never affected. The page says how many addresses a range covers
+  before it is submitted, and every row of the login-attempt log with an
+  address has a link that opens the form filled in.
+- **Ban with invitees**, on a member's detail page: the whole invite chain is
+  listed with each account's post count and join date, and nothing is ticked —
+  an account a spammer invited is sometimes a real member, so each one is
+  chosen by somebody who looked.
+
+### Changed
+
+- The challenge's default is **18 bits, not the 20 the plan proposed**, and the
+  cap 22 rather than 24. Measured, the solver manages about 1.2 million hashes
+  a second in a desktop browser, so 20 bits is about seven seconds on a phone
+  several times slower and 24 is nearly two minutes — long enough to look
+  broken, and long enough to close the door.
+
+### Security
+
+- Sign-in from a banned address is refused **before the password is
+  tested**, so it learns nothing about any account and adds nothing to the
+  login-attempt log — and again in `establish_session/3`, the one function
+  every sign-in path ends in, so a sign-in path added later cannot route
+  around the ban.
+- A ban is refused for a **private or loopback range** — what every visitor
+  looks like when the reverse proxy's trust is misconfigured, so banning it
+  bans the whole site — for anything broader than a `/8` or a `/16`, and for a
+  range containing the admin's own address. A range broader than a `/16`
+  (IPv4) or `/32` (IPv6) needs a second, deliberate tick.
+- An IP ban's expiry is decided by the clock when the ban is read. There is no
+  job that lifts it, and the cache keeps expired rows so it cannot enforce a
+  ban past its end.
+- A chain ban acts only on accounts in a tree the server recomputes — an id
+  edited into the page is dropped, not banned — authorizes every account
+  separately, so an invitee who is staff is refused while the rest are banned,
+  and skips an account already banned rather than overwrite the reason its
+  original ban was given.
+
+### Records
+
+- **[ADR 0063](doc/adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md)
+  — the door is defended by work, not by a third party.** Why the challenge is
+  proof-of-work and applies in every mode, why one solve buys one attempt, why
+  the numbers are 18 and 22, and what an IP ban may and may not name. Also what
+  none of it does: native code computes SHA-256 far faster than a browser, so a
+  determined attacker pays milliseconds. The challenge is a price, not a wall.
+
 ## [1.36.0] — 2026-09-22
 
 Phase 6A's second half, and with it 6A is complete: an unfinished article is
