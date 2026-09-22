@@ -9,6 +9,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.37.0] — 2026-09-22
+
 Phase 5's first release, "the door": an instance with open registration can
 now make every sign-up cost something, refuse a network outright, and ban an
 account together with the accounts it invited — the tools for a spam wave
@@ -29,8 +31,8 @@ arithmetic, the server checks one hash.
   registration modes, stores nothing about the visitor, and is replaced after
   every attempt — success included, so one answer can never be spent on more
   than one account. The difficulty is a setting (**Registration challenge
-  difficulty**, `/admin/settings`): 18 bits by default, about two seconds on a
-  phone; raise it during a wave, `0` switches it off.
+  difficulty**, `/admin/settings`): 18 bits by default, estimated at about two
+  seconds on a phone; raise it during a wave, `0` switches it off.
 - The solver runs in a Web Worker off the page's main thread, falls back to
   the main thread if a worker cannot start, and never disables the submit
   button: a submit that arrives before the answer is held by the server and
@@ -49,9 +51,10 @@ arithmetic, the server checks one hash.
 
 - The challenge's default is **18 bits, not the 20 the plan proposed**, and the
   cap 22 rather than 24. Measured, the solver manages about 1.2 million hashes
-  a second in a desktop browser, so 20 bits is about seven seconds on a phone
-  several times slower and 24 is nearly two minutes — long enough to look
-  broken, and long enough to close the door.
+  a second in a desktop browser; taking a phone to be eight times slower — an
+  estimate, not yet timed on a real one — 20 bits is about seven seconds there
+  and 24 nearly two minutes: long enough to look broken, and long enough to
+  close the door.
 
 ### Security
 
@@ -73,6 +76,15 @@ arithmetic, the server checks one hash.
   separately, so an invitee who is staff is refused while the rest are banned,
   and skips an account already banned rather than overwrite the reason its
   original ban was given.
+
+### Documentation
+
+- The SysOp Guide covers tuning the challenge, banning an invite chain, and
+  IP bans, including how to lift one from the server console when an admin's
+  own address has moved into a banned range. Troubleshooting covers a
+  registration that never finishes and a visitor refused by a ban — a refused
+  sign-in is not in the login-attempt log, and the entry says where the
+  address is logged instead.
 
 ### Records
 
