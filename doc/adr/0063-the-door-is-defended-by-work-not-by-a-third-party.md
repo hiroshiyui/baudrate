@@ -59,12 +59,13 @@ codebase refuses on principle.
    crafted socket could register once properly and then keep submitting on the
    same solve. `registration_challenge_test.exs` asserts both halves.
 
-4. **18 bits by default, 22 at most, and those numbers are measured.** The
-   solver manages about 1.2 million hashes a second on a desktop browser and a
-   phone is several times slower, and the work is geometric, so an unlucky
+4. **18 bits by default, 22 at most, from a measured rate.** The solver
+   manages about 1.2 million hashes a second in a desktop browser — measured —
+   and a phone is taken to be about eight times slower, which is an estimate
+   nobody has yet timed on a real one; the work is geometric, so an unlucky
    visitor takes three or four times the average. The approved plan set 20
-   bits and expected "~1–2 s on a phone"; measured, 20 is about seven seconds on
-   such a phone, long enough to look broken, and 24 is nearly two minutes. So
+   bits and expected "~1–2 s on a phone"; at that rate 20 is about seven
+   seconds on a phone, long enough to look broken, and 24 nearly two minutes. So
    the default is the highest value an unlucky phone still finishes before the
    person does, and the cap is where registration stops being possible in
    practice — raising the setting during a wave is its purpose, and a slip of
