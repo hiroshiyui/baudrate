@@ -9,6 +9,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.39.0] — 2026-09-22
+
 Phase 5's third release, which completes it: posts can wait for a moderator,
 and an admin can write filters on words, text and linked domains in the middle
 of a wave ([ADR 0065](doc/adr/0065-what-waits-for-review-is-not-content-yet.md)).
@@ -79,14 +81,35 @@ regular expressions, and an edit is screened like a new post.
 - Approving a held post re-checks what can have changed since it was
   submitted — the author's standing, their boards, the thread, blocks — and two
   moderators approving at once publish it once.
+- **A security audit before this release** closed five gaps, each with a
+  regression test that fails when the hole is put back:
+  - A remote `Update` addressed like a direct message skipped the filters,
+    while the handler still rewrote the public comment it named — so a peer
+    could post a clean reply and edit refused text into it. Updates are now
+    screened whatever their addressing.
+  - Remote text carried only in `source.content`, and attachment and poll
+    option names, were stored and shown but never screened; so were a local
+    post's poll options and image descriptions. All are screened now.
+  - **An image description could be changed on a published post by a
+    silenced member**, and nothing screened it. Changing a published image's
+    description now passes the sanction gate and the filters, as an edit
+    ([ADR 0029](doc/adr/0029-sanctions-are-rows-with-an-explicit-end.md)).
+  - Importing a remote post by its URL from `/search` bypassed the filters,
+    and was not rate limited although each import makes the server fetch an
+    address the member chose. It is screened and limited to 10 per 5 minutes.
+  - A held post's poll was stored with however many options of whatever
+    length the client sent; it is now held to a published poll's bounds.
 
 ### Documentation
 
 - [ADR 0065](doc/adr/0065-what-waits-for-review-is-not-content-yet.md), with
-  seventeen rows in the conformance index. The SysOp guide covers holding
+  twenty-one rows in the conformance index. The SysOp guide covers holding
   first posts, writing filters and what to do during a wave; the
   troubleshooting guide covers a post that "disappeared" and one refused by a
-  filter.
+  filter; the AP reference says what a filter does to inbound activities.
+- The pre-release audit brought `Setup`'s description of its settings up to
+  date — it still named a domain blocklist that has been rows of its own
+  since ADR 0030 — and `TODOs.md`'s current-state line, which said v1.34.0.
 - The browser crawl read its error log before typing into each page's forms,
   so a view that crashed on a keystroke went unreported. It reads it
   afterwards now — which is how the filter form's crash was caught before
