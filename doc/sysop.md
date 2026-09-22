@@ -335,14 +335,18 @@ applies in all three registration modes.
 Set the difficulty with **Registration challenge difficulty** at
 `/admin/settings`. Each bit doubles the work:
 
-| Bits | Desktop browser | A phone several times slower |
+| Bits | Desktop, Chrome | A phone several times slower |
 |------|-----------------|------------------------------|
 | 16 | 0.05 s | 0.4 s |
 | **18** (default) | 0.2 s | 1.7 s |
 | 20 | 0.8 s | 7 s |
 | 22 (the cap) | 3.4 s | 27 s |
 
-Those are averages; an unlucky visitor takes three or four times as long. So
+Those are averages for Chrome's engine; Firefox runs the solver about a third
+slower. An unlucky visitor takes three or four times as long, but the solve
+starts when the page opens and runs while the form is filled in, so most of
+it is hidden: on this project's own instance at 20 bits, a Pixel 8a had its
+answer before its owner finished typing. So
 **raise it during a wave of automated sign-ups and lower it afterwards** —
 leaving it at 22 makes registration look broken on a phone. `0` switches the
 challenge off.

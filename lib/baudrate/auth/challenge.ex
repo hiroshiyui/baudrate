@@ -10,8 +10,10 @@ defmodule Baudrate.Auth.Challenge do
   ## What it is for, and what it is not
 
   It does not stop a determined attacker. Native code computes SHA-256 far
-  faster than a browser, so a spammer running their own client pays a few
-  milliseconds per account where a person's phone pays a second. What it does
+  faster than a browser — OpenSSL on one desktop core, about 9 million
+  hashes a second against the browser's one — so a spammer running their own
+  client pays some 30 ms per account at 18 bits where a person's phone pays a
+  second or two, and a graphics card pays nothing worth counting. What it does
   is **put a price on every registration attempt**, and **make the attacker
   run the protocol** — hold a LiveView socket open, receive the nonce, solve
   it, answer — rather than replay a form post. Together with the per-address
@@ -35,8 +37,9 @@ defmodule Baudrate.Auth.Challenge do
   ## Bounds, and why they are these numbers
 
   The difficulty is the `registration_challenge_bits` setting, and each bit
-  doubles the work. `challenge_solver.js` manages about 1.2 million hashes a
-  second on a desktop browser; a phone is several times slower. So, expected:
+  doubles the work. On one desktop, `challenge_solver.js` manages about 1.3
+  million hashes a second in V8 (Chrome, Edge) and 0.9 million in Firefox; a
+  phone is taken to be several times slower. So, expected:
 
   | bits | desktop | a phone ~8× slower |
   |------|---------|--------------------|
@@ -53,6 +56,13 @@ defmodule Baudrate.Auth.Challenge do
   and would make registration impossible in practice — raising the setting
   during a spam wave is its purpose, and a slip of the keyboard must not be
   able to close the door. 0 turns the challenge off.
+
+  Observed on production at 20 bits (2026-09-22): headless Firefox on a
+  desktop took a median 2.5 s from page load to answer over eight loads,
+  worst 3.2 s, connection and worker start-up included; and a Pixel 8a
+  answered before its owner had finished the form, so the "checking this
+  browser" line never appeared. The phone column is still an estimate, but
+  a current mid-range phone does not contradict it.
 
   A solution longer than 32 bytes is refused unhashed, so verifying one is
   constant work and cannot itself be used to make the server hash large

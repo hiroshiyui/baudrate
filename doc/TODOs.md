@@ -349,12 +349,10 @@ exists. The first, 5A + 5E, shipped in v1.37.0; 5B is next.
 The proof-of-work challenge and the invite-chain ban
 ([ADR 0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md),
 which records the two things the plan got wrong: the difficulty, and "one solve,
-one attempt" needing the success case too). One thing is still open:
-
-- **Time the challenge on a real phone.** The default of 18 bits comes from a
-  measured desktop rate and an *estimated* phone eight times slower; nobody has
-  timed one. If an ordinary phone takes much over two seconds on average, lower
-  the default (it is a setting, so an instance can lower it without a release).
+one attempt" needing the success case too). Tried on a real phone after the
+release: a Pixel 8a at 20 bits had its answer before its owner finished the
+form. The default stays 18 for older phones; `Baudrate.Auth.Challenge`'s
+moduledoc keeps the numbers.
 
 ### 5B — Limits for new accounts (M)
 
