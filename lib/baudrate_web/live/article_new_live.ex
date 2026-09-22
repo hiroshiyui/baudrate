@@ -568,9 +568,14 @@ defmodule BaudrateWeb.ArticleNewLive do
   defp draft_boards(_draft, _user, %Baudrate.Content.Board{}), do: []
 
   defp draft_boards(draft, user, nil) do
-    draft.board_ids
-    |> Enum.map(&Content.get_board/1)
-    |> Enum.filter(&(&1 && Content.can_post_in_board?(&1, user)))
+    Enum.flat_map(draft.board_ids, fn board_id ->
+      # `get_board/1` answers `{:ok, board}`. Treating that tuple as the board
+      # crashed the composer for every draft that had a board chosen.
+      case Content.get_board(board_id) do
+        {:ok, board} -> if Content.can_post_in_board?(board, user), do: [board], else: []
+        _ -> []
+      end
+    end)
   end
 
   # Only images that are still the member's own and still unattached. The

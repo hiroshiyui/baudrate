@@ -143,6 +143,37 @@ defmodule BaudrateWeb.DraftsLiveTest do
       refute html =~ "Unrelated draft"
     end
 
+    # No test resumed a draft with a board chosen, and the composer crashed on
+    # every one: `Content.get_board/1` answers `{:ok, board}`, and the resume
+    # treated the tuple as the board.
+    test "with the boards it had, and without one the member has lost", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      closed =
+        %Board{}
+        |> Board.changeset(%{
+          name: "Staff room",
+          slug: "staff-room-drafts",
+          min_role_to_post: "moderator"
+        })
+        |> Repo.insert!()
+
+      {:ok, draft} =
+        Content.save_draft(user.id, %{
+          "title" => "Boarded draft",
+          "body" => "x",
+          "board_ids" => [board.id, closed.id, 999_999_999]
+        })
+
+      {:ok, _lv, html} = live(conn, "/articles/new?draft=#{draft.id}")
+
+      assert html =~ "Boarded draft"
+      assert html =~ ~s(name="board_ids[]" value="#{board.id}")
+      refute html =~ ~s(value="#{closed.id}")
+    end
+
     test "not a blank one left behind by opening the composer", %{conn: conn, user: user} do
       {:ok, _} = Content.save_draft(user.id, %{"title" => "", "body" => ""})
 
