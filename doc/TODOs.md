@@ -7,19 +7,18 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.34.0, deployed 2026-09-21).** The review named five
+**Current state (v1.38.0, deployed 2026-09-22).** The review named five
 gaps: broken promises (the UI or docs saying something happens when it does
 not), moderation reach, operability, federation reach, and discovery and
 onboarding. **All five are now closed** — Phase 0 in v1.18.2, Phase 1 in
 v1.21.0, Phase 2 with the alerting item that followed v1.28.2, Phase 3 in
 v1.31.0, and Phase 4 across v1.32.0–v1.34.0.
 
-**Phase 5 is under way.** It was deferred on 2026-09-21 so that 6A could go
-first — comment editing and image descriptions in v1.35.0, server-side drafts in
-v1.36.0 — and planned on 2026-09-22 as three releases. The first, 5A + 5E, shipped
-in v1.37.0; 5B shipped in v1.38.0; 5C + 5D are built and waiting to be
-released as v1.39.0, which completes the phase. Its three decisions are
-settled and recorded below.
+**Phase 5 is complete with v1.39.0.** It was deferred on 2026-09-21 so that 6A
+could go first — comment editing and image descriptions in v1.35.0, server-side
+drafts in v1.36.0 — and planned on 2026-09-22 as three releases: 5A + 5E in
+v1.37.0, 5B in v1.38.0, and 5C + 5D in v1.39.0. Its three decisions are recorded
+below. **Phase 6's remaining stages, 6B–6E, are next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -344,8 +343,9 @@ These are the facts that are still nowhere else.
 
 **Planned 2026-09-22, three releases:** 5A + 5E (the door), then 5B (trust),
 then 5C + 5D — 5D's "hold for review" has nowhere to put a submission until 5C
-exists. The first, 5A + 5E, shipped in v1.37.0; 5B in v1.38.0; 5C + 5D are
-built for v1.39.0.
+exists. 5A + 5E shipped in v1.37.0, 5B in v1.38.0, and 5C + 5D in v1.39.0,
+which completes the phase: a wave can now be slowed at the door, capped per
+account, held for review, and stopped by what it says.
 
 ### 5A — Registration friction (S) — **shipped in v1.37.0**
 
@@ -370,7 +370,7 @@ article, may gain no link or image; and a new account may also DM someone who
 wrote first, or staff. Building the DM rule found that "Followers
 only" admitted no local follower at all.
 
-### 5C — Hold first posts (S) — **built for v1.39.0**
+### 5C — Hold first posts (S) — **shipped in v1.39.0**
 
 A held post is a row in `held_posts`, and approval replays creation as the
 author with the row's delete as the first step of the same transaction
@@ -384,7 +384,7 @@ it is held, including a new account's hourly allowance. The orphan image
 sweeps spare a pending post's uploads. Building it found that resuming a
 draft with a board chosen had crashed the composer since v1.36.0.
 
-### 5D — Keyword and link filters (M) — **built for v1.39.0**
+### 5D — Keyword and link filters (M) — **shipped in v1.39.0**
 
 Words, text anywhere and linked domains, never regular expressions, matched
 in linear time over text as a reader sees it, at `/admin/filters` (ADR 0065).
