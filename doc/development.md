@@ -805,6 +805,7 @@ Until then:
 | At most ten posts an hour, articles, comments and timeline replies together | the same call, which takes a place in `RateLimits.check_new_account_post/1` once the post has passed the other checks |
 | Direct messages only to people who follow the account, have written to it first, or are staff | `Messaging.dm_permission/2` and `create_message/3` |
 | No image attached past the limit from the article edit page, where an upload is published as it lands | `Content.authorize_article_image/2` and `add_article_image/3` |
+| No link or image added to the signature, which renders under every article the account posts | `Trust.check_signature/3`, called from `Auth.update_signature/2` against the stored signature |
 
 **An edit is the second way in.** An edit may not link anywhere the post did
 not already link once it is over the limit, nor raise the image count past it;
@@ -818,8 +819,12 @@ Links are counted by `HtmlParser.Native.extract_urls/2`, which joins each
 does not pass as local. `extract_first_url/2` — what link previews fetch — is
 the first of the same list.
 
+The bio and profile fields are not limited: both render as escaped plain text,
+on the profile page and in the federated `Person`, so a URL in them is not a
+link anywhere.
+
 Every refusal is an atom (`:new_account_links`, `:new_account_images`,
-`:new_account_rate_limited`, `:new_account_dm`) that
+`:new_account_rate_limited`, `:new_account_dm`, `:new_account_signature`) that
 `Helpers.refusal_message/3` turns into the limit plus what is left for this
 member: a date, a number of posts, or both.
 

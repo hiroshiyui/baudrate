@@ -358,13 +358,14 @@ moduledoc keeps the numbers.
 ### 5B — Limits for new accounts (M) — **done, ships in v1.38.0**
 
 Trust by age and posts still up, decided when asked
-([ADR 0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md)). Four
+([ADR 0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md)). Five
 things the plan did not say, all recorded there: the article edit page attached
 uploads to the live post with **no check at all** (ADR 0029's included); a link
 counter that read `href` as text missed `//host` and `/\host`, so
 `extract_urls/2` resolves links as a browser does; the per-kind buckets became
-**one** bucket taken at the context boundary; and a new account may also DM
-someone who wrote first, or staff. Building the DM rule found that "Followers
+**one** bucket taken at the context boundary; a signature, rendered under every
+article, may gain no link or image; and a new account may also DM someone who
+wrote first, or staff. Building the DM rule found that "Followers
 only" admitted no local follower at all.
 
 ### 5C — Hold first posts (S)

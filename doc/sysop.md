@@ -386,7 +386,10 @@ articles and comments that have not been removed** — 3 and 3 by default — it
 - may post **ten times an hour**, articles, comments and replies together;
 - may send direct messages only to **people who follow it, people who have
   written to it first, and staff** — whatever the recipient's own setting
-  allows.
+  allows;
+- may not add a **link or image to its signature**, which appears under every
+  article it posts. The bio and profile fields show links as plain text, so
+  they need no limit.
 
 Admins, moderators and bot accounts are never limited; an RSS bot's items
 carry several links, and limiting it would stop the feed. An invite confers

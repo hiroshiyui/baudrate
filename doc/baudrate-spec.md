@@ -144,6 +144,7 @@ Who someone is, and how they prove it again.
 | A new account messages only people who follow it, who wrote to it first, or staff | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.Messaging.dm_permission/2` | [`trust_test.exs`](../test/baudrate/auth/trust_test.exs) |
 | "Followers only" DM access admits followers on this instance, not only remote ones | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.Messaging.dm_permission/2` | [`messaging_test.exs`](../test/baudrate/messaging_test.exs) |
 | A refusal names the limit and what is left before it lifts | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `BaudrateWeb.Helpers.new_account_message/2` | [`trust_test.exs`](../test/baudrate/auth/trust_test.exs) |
+| An untrusted account's signature gains no link or image, judged against the stored one | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.Auth.Trust.check_signature/3` | [`trust_test.exs`](../test/baudrate/auth/trust_test.exs) |
 
 ## Authorization
 

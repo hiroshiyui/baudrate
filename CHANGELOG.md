@@ -16,8 +16,9 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   Until an account is three days old *and* has three articles or comments that
   have not been removed, it may put one external link and one image in a
   post, post ten times an hour (articles, comments and timeline replies
-  together), and send direct messages only to people who follow it, people
-  who have written to it first, and staff. Bots, admins and moderators are
+  together), add no link or image to its signature — which appears under
+  every article it posts — and send direct messages only to people who follow
+  it, people who have written to it first, and staff. Bots, admins and moderators are
   never limited, and an invite confers nothing. The site works this out every
   time from the account's age and post count, so the limits lift the moment
   both are met — and come back if a moderator removes the posts that earned
@@ -44,6 +45,15 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ### Fixed
 
+- **A silenced or suspended member's profile page crashed** when they saved
+  their display name, bio or signature: the refusal was handed to the form as
+  if it were a validation error. Every profile save now shows why it was
+  refused, including profile fields and avatars, which used to say only that
+  something failed.
+- **A refused avatar change deleted the avatar anyway.** The old files were
+  removed before the update that a sanction then refused, leaving the account
+  pointing at an image that no longer existed. Files now go only after the
+  change is saved, and a refused new upload is removed instead.
 - **"Followers only" direct messages admitted no follower on this instance.**
   The check asked the table of *remote* followers, so a member here who
   followed you could never message you under that setting. It now asks both.

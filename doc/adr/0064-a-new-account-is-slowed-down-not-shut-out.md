@@ -28,7 +28,7 @@ volume. A real newcomer needs almost none of them in their first days. The gap
 between those two is where a limit can sit without anyone who belongs here
 noticing it much.
 
-Reading the posting paths against that turned up two things the plan had not
+Reading the posting paths against that turned up three things the plan had not
 said:
 
 - **An edit is a second way in, and a new one.** Articles were editable
@@ -42,6 +42,9 @@ said:
   site, and the existing extractor, which looked for an `http(s)://` prefix,
   saw none of them. It also decided "same site" by string prefix, so
   `https://example.org.spam.example/` counted as this site's own.
+- **A signature is a second body under every post.** It is Markdown, up to 500
+  characters, rendered with live links and images below each article the
+  account writes, and nothing looked at it.
 
 ## Decision
 
@@ -99,6 +102,15 @@ said:
     date, a number of posts, or both. A post refused with a shrug is ADR 0029's
     complaint about sanctions, and a new member reads it as the site being
     broken.
+11. **A signature may gain no link and no image until the account is trusted**
+    (`Trust.check_signature/3`, called from `Profiles.update_signature/2`). A
+    signature is Markdown rendered under every article the account posts, so
+    it is a second body attached to each post, and one that nothing counted:
+    an article within its one link could carry three more below it. The
+    allowance is none rather than a post's one, since one link there would
+    double what every post may carry. Like an edit, a signature never has to
+    lose what it already has, and the comparison is with the stored value, so
+    a stale copy in another tab cannot vouch for a link removed since.
 
 ## Alternatives rejected
 
@@ -118,6 +130,10 @@ said:
   shadow-ban lies to the member and to moderators alike. Holding posts for
   review is 5C, an explicit opt-in with its own queue.
 - **Counting timeline replies toward trust.** Decision 3.
+- **Limiting links in the bio and profile fields.** Both render as escaped
+  plain text — on the profile page and in the federated `Person` — so a URL
+  there is not a link anywhere, and there is nothing to count.
+- **One link in a signature, as in a post.** Decision 11.
 
 ## Consequences
 
