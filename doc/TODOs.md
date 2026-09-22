@@ -7,18 +7,14 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.38.0, deployed 2026-09-22).** The review named five
-gaps: broken promises (the UI or docs saying something happens when it does
-not), moderation reach, operability, federation reach, and discovery and
-onboarding. **All five are now closed** — Phase 0 in v1.18.2, Phase 1 in
-v1.21.0, Phase 2 with the alerting item that followed v1.28.2, Phase 3 in
-v1.31.0, and Phase 4 across v1.32.0–v1.34.0.
-
-**Phase 5 is complete with v1.39.0.** It was deferred on 2026-09-21 so that 6A
-could go first — comment editing and image descriptions in v1.35.0, server-side
-drafts in v1.36.0 — and planned on 2026-09-22 as three releases: 5A + 5E in
-v1.37.0, 5B in v1.38.0, and 5C + 5D in v1.39.0. Its three decisions are recorded
-below. **Phase 6's remaining stages, 6B–6E, are next.**
+**Current state (v1.39.0, released 2026-09-22; production runs v1.38.0).**
+The review named five gaps: broken promises (the UI or docs saying something
+happens when it does not), moderation reach, operability, federation reach,
+and discovery and onboarding. **All five are now closed** — Phase 0 in
+v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
+v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
+anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
+and v1.36.0. **Phase 6's remaining stages, 6B–6E, are next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -52,7 +48,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
 | ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (v1.31.0) |
 | ~~4~~ | ~~Discovery and onboarding~~ | 4A–4F | **Complete** (v1.32.0 – v1.34.0) |
-| 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
+| ~~5~~ | ~~Anti-spam~~ | 5A–5E | **Complete** (v1.37.0 – v1.39.0) |
 | 6 | Member depth | 6A–6E | Retention |
 | 7 | Admin and content tools | 7A–7E | Running the site without a shell |
 | 8 | Contributor health | 8A–8D | Lowers the bus factor of one |
@@ -335,84 +331,71 @@ These are the facts that are still nowhere else.
 
 ---
 
-## Phase 5 — Anti-spam (scope)
+## Phase 5 — Anti-spam — **complete** (v1.37.0 – v1.39.0)
 
-**Goal.** An instance with open registration survives a spam wave without an admin deleting posts one by one.
+**The aim it served:** an instance with open registration survives a spam wave
+without an admin deleting posts one by one.
 
-**Done when:** automated sign-ups are slowed down, new accounts cannot mass-post links, and moderators can stop a wave with filters and IP bans.
+All three goals are met: automated sign-ups are slowed down, new accounts
+cannot mass-post links, and moderators can stop a wave with filters and IP
+bans. A wave is now slowed at the door, capped per account, held for review,
+and stopped by what it says.
 
-**Planned 2026-09-22, three releases:** 5A + 5E (the door), then 5B (trust),
-then 5C + 5D — 5D's "hold for review" has nowhere to put a submission until 5C
-exists. 5A + 5E shipped in v1.37.0, 5B in v1.38.0, and 5C + 5D in v1.39.0,
-which completes the phase: a wave can now be slowed at the door, capped per
-account, held for review, and stopped by what it says.
+### Done
 
-### 5A — Registration friction (S) — **shipped in v1.37.0**
+| Stage | What | Released | Recorded in |
+|-------|------|----------|-------------|
+| 5A | A self-hosted proof-of-work challenge on registration in every mode; banning an account with the accounts it invited, each one ticked | v1.37.0 | [0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md), `registration_challenge_test.exs`, `invite_chain_ban_test.exs` |
+| 5B | Limits on new accounts, decided from the clock and a count: one link and one image a post, ten posts an hour in one bucket, DMs only where not unsolicited, nothing added to the signature | v1.38.0 | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md), `trust_test.exs` |
+| 5C | First posts held for review, as submissions of their own; approval is publication, once | v1.39.0 | [0065](adr/0065-what-waits-for-review-is-not-content-yet.md), `held_post_test.exs`, `submit_path_test.exs` |
+| 5D | Word, text and domain filters — never regular expressions — on posts, their edits and inbound content | v1.39.0 | [0065](adr/0065-what-waits-for-review-is-not-content-yet.md), `content_filter_test.exs` |
+| 5E | IP and CIDR bans on registration and sign-in, checked where every sign-in ends | v1.37.0 | [0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md), `ip_ban_test.exs` |
 
-The proof-of-work challenge and the invite-chain ban
-([ADR 0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md),
-which records the two things the plan got wrong: the difficulty, and "one solve,
-one attempt" needing the success case too). Tried on a real phone after the
-release: a Pixel 8a at 20 bits had its answer before its owner finished the
-form. The default stays 18 for older phones; `Baudrate.Auth.Challenge`'s
-moduledoc keeps the numbers.
+Three decisions were taken and all three are now records, which hold the
+reasoning: **P5-D1** — a self-hosted proof-of-work challenge rather than a
+CAPTCHA, in all three registration modes, since `approval_required` still lets
+a bot mint pending accounts that each notify every admin
+([0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md));
+**P5-D2** — trust is three days *and* three posts still up, staff always
+trusted and an invite granting nothing
+([0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md)); **P5-D3** —
+a filter blocks, holds or flags, and remote content can only be dropped or
+flagged ([0065](adr/0065-what-waits-for-review-is-not-content-yet.md)).
+Reversing any of it needs a superseding record, not a patch.
 
-### 5B — Limits for new accounts (M) — **shipped in v1.38.0**
+### Only recorded here
 
-Trust by age and posts still up, decided when asked
-([ADR 0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md)). Five
-things the plan did not say, all recorded there: the article edit page attached
-uploads to the live post with **no check at all** (ADR 0029's included); a link
-counter that read `href` as text missed `//host` and `/\host`, so
-`extract_urls/2` resolves links as a browser does; the per-kind buckets became
-**one** bucket taken at the context boundary; a signature, rendered under every
-article, may gain no link or image; and a new account may also DM someone who
-wrote first, or staff. Building the DM rule found that "Followers
-only" admitted no local follower at all.
+Everything else is in those records, in `CHANGELOG.md` and the guides —
+including what each stage's plan got wrong, which every one of the three
+records lists, and the five gaps the security audit found in 5C and 5D's own
+code before v1.39.0 (`CHANGELOG.md`). These are the facts that are still
+nowhere else.
 
-### 5C — Hold first posts (S) — **shipped in v1.39.0**
+- **ADR 0065 lists fewer routes and fields than the code screens.** The audit
+  added the import by URL from `/search`, remote `source.content`, attachment
+  and poll option names, and local poll options and image descriptions, after
+  the record was accepted; it was released unamended. `doc/development.md`,
+  `doc/api.md` and four rows of `doc/baudrate-spec.md` have the full set. A
+  reader of the record alone will think its list complete — the next record
+  that touches filters should restate it.
+- **The plan's shape changed at every stage, as Phase 4's did** — per-kind
+  rate limits in LiveViews became one bucket at the context boundary, a
+  "Held" tab on two queues became one page scoped per reviewer, and filter
+  matches left the moderation log for a table of their own. The list is a
+  prompt to go and read, never a specification.
 
-A held post is a row in `held_posts`, and approval replays creation as the
-author with the row's delete as the first step of the same transaction
-([ADR 0065](adr/0065-what-waits-for-review-is-not-content-yet.md)). Three
-things the plan did not say, all recorded there: only a composer can hold, so
-every composer now *submits* (`Content.submit_article/3` /
-`submit_comment/2`) and a build check keeps it that way; one review page,
-`/moderation/held`, for staff and board moderators alike, scoped to what each
-could approve; and a held post passes every gate a published one must before
-it is held, including a new account's hourly allowance. The orphan image
-sweeps spare a pending post's uploads. Building it found that resuming a
-draft with a board chosen had crashed the composer since v1.36.0.
+### Accepted knowingly
 
-### 5D — Keyword and link filters (M) — **shipped in v1.39.0**
-
-Words, text anywhere and linked domains, never regular expressions, matched
-in linear time over text as a reader sees it, at `/admin/filters` (ADR 0065).
-What the plan did not say: an edit is judged by what it *adds*, as ADR 0064
-judges links, and an edit a `hold` filter matches is refused, because it
-cannot wait; remote content arrives by five routes and is screened on all of
-them; **direct messages are never screened**; matches are recorded without
-their text, in a table of their own rather than the moderation log. The browser
-crawl caught the filter form crashing on its first keystroke — after it was
-changed to read its error log *after* typing into forms rather than before.
-
-### 5E — IP bans (S) — **shipped in v1.37.0**
-
-Built with 5A, under the same record, with sign-in checked at
-`establish_session/3` — the one function every sign-in path ends in — rather
-than at `create/2` alone as planned.
-
-### Decisions (made 2026-09-22)
-
-- **P5-D1. Challenge type:** a self-hosted proof-of-work challenge, no external
-  CAPTCHA ([ADR 0006](adr/0006-media-proxy-no-third-party-subresources.md)), in all three
-  registration modes — `approval_required` still lets a bot mint pending
-  accounts, and each one notifies every admin.
-- **P5-D2. Trust thresholds:** 3 days old **and** 3 posts not removed. Admins
-  and moderators are always trusted; an invite grants nothing, which is the case
-  5A's second item exists for.
-- **P5-D3. Filter actions:** block, hold for review, or flag; remote content can
-  only be dropped or flagged.
+- **Profile text is not filtered.** Display name, bio and profile fields are
+  outside ADR 0065's scope; the bio and fields render as plain text (why
+  ADR 0064 does not limit them), but they are still text other people read.
+- **A refusal is still an oracle by bisection.** It names nothing, but a
+  spammer can split a post until it passes. The composer rate limits make
+  that slow, not impossible.
+- **Nothing here classifies content by machine**, and there are no per-board
+  filters or per-board trust and no held DMs — the plan's "not in this phase",
+  none of which has a record yet. (The automatic invite cascade and the
+  shadow-ban, from the same list, are refused in 0063 and 0064.)
 
 ---
 
