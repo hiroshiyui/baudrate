@@ -84,6 +84,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0062](0062-a-draft-is-kept-in-two-places-on-purpose.md) | A draft is kept in two places, on purpose | Accepted |
 | [0063](0063-the-door-is-defended-by-work-not-by-a-third-party.md) | The door is defended by work, not by a third party | Accepted |
 | [0064](0064-a-new-account-is-slowed-down-not-shut-out.md) | A new account is slowed down, not shut out | Accepted |
+| [0065](0065-what-waits-for-review-is-not-content-yet.md) | What waits for review is not content yet | Accepted |
 
 ## Writing a new ADR
 
