@@ -371,12 +371,10 @@ records lists, and the five gaps the security audit found in 5C and 5D's own
 code before v1.39.0 (`CHANGELOG.md`). These are the facts that are still
 nowhere else.
 
-- **ADR 0065 lists fewer routes and fields than the code screens.** The audit
-  added the import by URL from `/search`, remote `source.content`, attachment
-  and poll option names, and local poll options and image descriptions, after
-  the record was accepted; it was released unamended. `doc/development.md`,
-  `doc/api.md` and four rows of `doc/baudrate-spec.md` have the full set. A
-  reader of the record alone will think its list complete — the next record
+- **ADR 0065's body lists fewer routes and fields than the code screens.**
+  The audit widened the screening after the record was accepted; its Status
+  line says so and points at `doc/development.md`, which with `doc/api.md`
+  and four rows of `doc/baudrate-spec.md` has the full set. The next record
   that touches filters should restate it.
 - **The plan's shape changed at every stage, as Phase 4's did** — per-kind
   rate limits in LiveViews became one bucket at the context boundary, a

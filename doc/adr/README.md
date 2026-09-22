@@ -84,7 +84,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0062](0062-a-draft-is-kept-in-two-places-on-purpose.md) | A draft is kept in two places, on purpose | Accepted |
 | [0063](0063-the-door-is-defended-by-work-not-by-a-third-party.md) | The door is defended by work, not by a third party | Accepted |
 | [0064](0064-a-new-account-is-slowed-down-not-shut-out.md) | A new account is slowed down, not shut out | Accepted |
-| [0065](0065-what-waits-for-review-is-not-content-yet.md) | What waits for review is not content yet | Accepted |
+| [0065](0065-what-waits-for-review-is-not-content-yet.md) | What waits for review is not content yet | Accepted; validated 2026-09-22, screening wider than decisions 8 and 13 list |
 
 ## Writing a new ADR
 
@@ -124,6 +124,14 @@ A record whose whole purpose is to change an older one also carries an
 **Amends** / **Refines** header field naming it (see 0044 and 0045). That is
 the forward pointer; the older record's Status line is the backward one, and
 both have to be written — a reader arrives from either end.
+
+**Validated** is not a status of its own, and not a relationship. A Status
+may add, after `Accepted`, that the record was validated — checked against the
+code after it was accepted — with the date, what did the checking, and
+anything the check found that the record's body does not say. It changes no
+decision, and it is the one way to correct an accepted record's account of
+the code without rewriting the record, which rule 3 forbids.
+[0065](0065-what-waits-for-review-is-not-content-yet.md) is the first.
 
 Two statuses deliberately do **not** exist. Nothing is `Deprecated`: every
 reversal here has a replacement, and a status value nothing ever takes is the
