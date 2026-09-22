@@ -9,6 +9,12 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.39.1] — 2026-09-22
+
+A documentation release: nothing an instance runs has changed since v1.39.0.
+It records what the security audit before v1.39.0 changed in how posts are
+screened, which the record written for that release did not yet say.
+
 ### Documentation
 
 - [ADR 0066](doc/adr/0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md)
@@ -21,6 +27,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   one delivered. Two more regression cases hold the fields the audit had left
   untested — a remote poll's `anyOf` options and a comment upload's
   description.
+- The NodeInfo sample and the manual-install and build examples name this
+  release; they had named v1.34.0.
 
 ## [1.39.0] — 2026-09-22
 
