@@ -563,10 +563,17 @@
                   {node.user.username}
                 </.link>
                 <span class="admin-user-detail-chain-ban-meta text-sm text-base-content/70">
-                  {ngettext("%{count} post", "%{count} posts", node.post_count)} &middot; {gettext(
-                    "joined %{date}", date: format_datetime(node.user.inserted_at))} &middot; {translate_status(
-                    node.user.status
-                  )}
+                  <span class="admin-user-detail-chain-ban-posts">
+                    {ngettext("%{count} post", "%{count} posts", node.post_count)}
+                  </span>
+                  &middot;
+                  <span class="admin-user-detail-chain-ban-joined">
+                    {gettext("joined %{date}", date: format_datetime(node.user.inserted_at))}
+                  </span>
+                  &middot;
+                  <span class="admin-user-detail-chain-ban-status">
+                    {translate_status(node.user.status)}
+                  </span>
                 </span>
               </label>
             </li>

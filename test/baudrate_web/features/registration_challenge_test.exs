@@ -31,7 +31,9 @@ defmodule BaudrateWeb.Features.RegistrationChallengeTest do
   feature "the worker solves the challenge and the visitor is registered", %{session: session} do
     session
     |> visit("/register")
-    |> assert_has(Query.css("#register-challenge .register-challenge-via[data-via='worker']", visible: false))
+    |> assert_has(
+      Query.css("#register-challenge .register-challenge-via[data-via='worker']", visible: false)
+    )
     |> fill_in(Query.css("#user_username"), with: "solver_#{System.unique_integer([:positive])}")
     |> fill_in(Query.css("#user_password"), with: "Password123!x")
     |> fill_in(Query.css("#user_password_confirmation"), with: "Password123!x")

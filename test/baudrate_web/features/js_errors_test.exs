@@ -141,7 +141,10 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
     # it on here so /register renders ChallengeHook and its worker, and the
     # crawl can see any error either of them throws (ADR 0063). Low, so the
     # worker finishes well inside the crawl's time on the page.
-    Baudrate.Repo.insert!(%Baudrate.Setup.Setting{key: "registration_challenge_bits", value: "10"})
+    Baudrate.Repo.insert!(%Baudrate.Setup.Setting{
+      key: "registration_challenge_bits",
+      value: "10"
+    })
 
     user = setup_user("user")
     other = setup_user("user")
