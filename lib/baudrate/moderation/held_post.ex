@@ -98,11 +98,43 @@ defmodule Baudrate.Moderation.HeldPost do
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
     |> validate_inclusion(:visibility, ~w(public unlisted))
+    |> validate_poll()
     |> validate_kind()
     |> foreign_key_constraint(:article_id)
     |> foreign_key_constraint(:parent_id)
     |> foreign_key_constraint(:user_id)
   end
+
+  # The bounds a published poll is held to (`Poll`, `PollOption`), applied
+  # when the submission is held rather than only when it is approved: the
+  # poll is kept as a map, and without this a crafted submission could store
+  # any number of options of any length in a row nobody has reviewed yet.
+  @max_poll_options 4
+  @max_option_length 200
+  @max_open_for 30 * 86_400
+
+  defp validate_poll(changeset) do
+    validate_change(changeset, :poll, fn :poll, poll ->
+      if valid_poll?(poll), do: [], else: [poll: "is not a poll this site accepts"]
+    end)
+  end
+
+  defp valid_poll?(%{"mode" => mode, "options" => options} = poll)
+       when mode in ["single", "multiple"] and is_list(options) do
+    length(options) in 2..@max_poll_options and
+      Enum.all?(options, &(is_binary(&1) and String.length(&1) <= @max_option_length)) and
+      valid_open_for?(poll["open_for"]) and
+      map_size(poll) <= 3
+  end
+
+  defp valid_poll?(_), do: false
+
+  defp valid_open_for?(nil), do: true
+
+  defp valid_open_for?(seconds) when is_integer(seconds),
+    do: seconds > 0 and seconds <= @max_open_for
+
+  defp valid_open_for?(_), do: false
 
   defp validate_kind(changeset) do
     case get_field(changeset, :kind) do

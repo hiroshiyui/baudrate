@@ -150,6 +150,21 @@ defmodule Baudrate.Moderation.HeldPostTest do
       assert Repo.aggregate(HeldPost, :count) == 0
     end
 
+    # Found by the security audit before v1.39.0: the poll is kept as a map,
+    # and was stored with however many options of whatever length the
+    # client sent, validated only if a moderator approved it.
+    test "a poll a published article could not have is not held", ctx do
+      options = for n <- 1..50, do: %{text: String.duplicate("x", 5_000) <> "#{n}", position: n}
+
+      assert {:error, :held_post, changeset, _} =
+               submit(ctx.newcomer, ctx.board,
+                 poll: %{mode: "single", closes_at: nil, options: options}
+               )
+
+      assert %{poll: [_]} = errors_on(changeset)
+      assert Repo.aggregate(HeldPost, :count) == 0
+    end
+
     test "the people who can review it are told", ctx do
       {:held, held} = submit(ctx.newcomer, ctx.board)
 
