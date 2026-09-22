@@ -5,12 +5,13 @@ defmodule Baudrate.Retention do
   @timeline_days 90
   @announce_days 180
   @deleted_days 90
+  @filter_match_days 90
   @batch 500
 
   @moduledoc """
   Deletes what the instance has agreed not to keep (Phase 2F, P2-D4).
 
-  Three passes, run hourly from `Baudrate.Auth.SessionCleaner` and safe to run
+  Five passes, run hourly from `Baudrate.Auth.SessionCleaner` and safe to run
   by hand:
 
   - **Timeline items** older than #{@timeline_days} days that nobody touched. The
@@ -24,6 +25,13 @@ defmodule Baudrate.Retention do
   - **Soft-deleted articles and comments** whose `deleted_at` is more than
     #{@deleted_days} days old, which is the evidence window a closed report's copy lives
     for (P1-D6). Nothing a report references is deleted, whatever its age.
+  - **Rejected held posts** reviewed more than 90 days ago
+    (`Baudrate.Moderation.HeldPosts.purge_rejected/1`), and **content filter
+    matches** older than #{@filter_match_days} days (ADR 0065). A rejected
+    submission is the record of what was refused, kept as long as a removed
+    post's copy; a match row is how a filter that catches the wrong thing is
+    found, and a quarter is long enough to see one. A pending held post is
+    never purged: only a moderator decides what happens to it.
 
   ## What the cutoffs measure
 
@@ -62,7 +70,7 @@ defmodule Baudrate.Retention do
   alias Baudrate.DataPortability.Files
   alias Baudrate.Federation.{Announce, TimelineItem, TimelineItemBoost}
   alias Baudrate.Federation.{TimelineItemLike, TimelineItemReply}
-  alias Baudrate.Moderation.Report
+  alias Baudrate.Moderation.{ContentFilterMatch, Report}
   alias Baudrate.Repo
 
   @type counts :: %{
@@ -70,7 +78,9 @@ defmodule Baudrate.Retention do
           announces: non_neg_integer(),
           articles: non_neg_integer(),
           comments: non_neg_integer(),
-          files: non_neg_integer()
+          files: non_neg_integer(),
+          held_posts: non_neg_integer(),
+          filter_matches: non_neg_integer()
         }
 
   @doc """
@@ -92,7 +102,9 @@ defmodule Baudrate.Retention do
       announces: purge_announces(opts),
       articles: 0,
       comments: 0,
-      files: 0
+      files: 0,
+      held_posts: Baudrate.Moderation.HeldPosts.purge_rejected(opts),
+      filter_matches: purge_filter_matches(opts)
     }
 
     {articles, comments, files} = purge_soft_deleted(opts)
@@ -121,6 +133,15 @@ defmodule Baudrate.Retention do
     cutoff = cutoff(opts, @announce_days)
 
     from(a in Announce, where: a.inserted_at < ^cutoff)
+    |> delete_in_batches(opts)
+  end
+
+  @doc "Deletes content filter match records past the retention period (ADR 0065)."
+  @spec purge_filter_matches(keyword()) :: non_neg_integer()
+  def purge_filter_matches(opts \\ []) do
+    cutoff = cutoff(opts, @filter_match_days)
+
+    from(m in ContentFilterMatch, where: m.inserted_at < ^cutoff)
     |> delete_in_batches(opts)
   end
 
@@ -332,7 +353,8 @@ defmodule Baudrate.Retention do
       Logger.info(
         prefix <>
           "timeline_items=#{counts.timeline_items} announces=#{counts.announces} " <>
-          "articles=#{counts.articles} comments=#{counts.comments} files=#{counts.files}"
+          "articles=#{counts.articles} comments=#{counts.comments} files=#{counts.files} " <>
+          "held_posts=#{counts.held_posts} filter_matches=#{counts.filter_matches}"
       )
     end
 

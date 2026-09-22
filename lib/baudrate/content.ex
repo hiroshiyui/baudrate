@@ -105,6 +105,8 @@ defmodule Baudrate.Content do
   defdelegate list_articles_for_board(board), to: Articles
   defdelegate get_article_by_slug!(slug), to: Articles
   defdelegate create_article(attrs, board_ids, opts), to: Articles
+  # The composers' way in: may hold the post for a moderator (ADR 0065).
+  defdelegate submit_article(attrs, board_ids, opts \\ []), to: Articles
   defdelegate add_article_to_board(article, board_id), to: Articles
   defdelegate forward_article_to_board(article, board, user), to: Articles
   defdelegate forward_timeline_item_to_board(timeline_item, board, user), to: Articles
@@ -162,6 +164,7 @@ defmodule Baudrate.Content do
   defdelegate max_drafts(), to: Drafts
 
   defdelegate create_comment(attrs, opts \\ []), to: Comments
+  defdelegate submit_comment(attrs, opts \\ []), to: Comments
   defdelegate create_remote_comment(attrs), to: Comments
   defdelegate get_comment(id), to: Comments
   defdelegate get_comment_by_ap_id(ap_id), to: Comments

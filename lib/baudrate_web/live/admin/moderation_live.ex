@@ -33,6 +33,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
        selected_report_ids: MapSet.new(),
        bulk_resolve_note: "",
        show_bulk_resolve_modal: false,
+       held_count: Baudrate.Moderation.HeldPosts.count_pending(socket.assigns.current_user),
        page_title: gettext("Admin Moderation")
      )}
   end

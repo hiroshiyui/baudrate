@@ -367,8 +367,8 @@ defmodule Baudrate.Federation.Timeline do
 
   Returns `{:ok, %TimelineItemReply{}}`, `{:error, :not_found}`, the sanction
   gate's refusals (ADR 0029), `{:error, :blocked}` (the user has blocked the
-  item's author), a new account's refusals from `Baudrate.Auth.Trust`
-  (ADR 0064), or `{:error, changeset}`.
+  item's author), `{:error, :content_filtered}` (ADR 0065), a new account's
+  refusals from `Baudrate.Auth.Trust` (ADR 0064), or `{:error, changeset}`.
   """
   def create_timeline_item_reply(timeline_item, user, body, opts \\ []) do
     # A moved, silenced or suspended account cannot reply (ADR 0029).
@@ -378,19 +378,44 @@ defmodule Baudrate.Federation.Timeline do
       not timeline_item_accessible?(user, timeline_item) -> {:error, :not_found}
       gate != :ok -> gate
       Baudrate.Auth.blocked_with_author?(user.id, timeline_item) -> {:error, :blocked}
-      true -> check_new_account_limits(timeline_item, user, body, opts)
+      true -> screen_and_create_reply(timeline_item, user, body, opts)
     end
   end
 
-  # A reply leaves the site as surely as an article does, so a new account's
-  # link and image limits apply to it too (ADR 0064), and it takes a place in
-  # the same hourly bucket. Checked last, so a refused reply spends nothing.
-  defp check_new_account_limits(timeline_item, user, body, opts) do
+  # A reply leaves the site as surely as an article does, so the content
+  # filters (ADR 0065) and a new account's link and image limits (ADR 0064)
+  # apply to it too, and it takes a place in the same hourly bucket — the
+  # filter first and the bucket last, so a refused reply spends nothing.
+  #
+  # A reply cannot be held: it is addressed to somebody on another server, and
+  # holding it would mean deciding later whether to send it. A `hold` filter
+  # flags it, and since a reply has no page of its own here, the report keeps
+  # a copy of its text.
+  defp screen_and_create_reply(timeline_item, user, body, opts) do
     image_count = opts |> Keyword.get(:image_ids, []) |> Enum.uniq() |> length()
 
-    case Baudrate.Auth.check_post(user, body, image_count) do
-      :ok -> do_create_timeline_item_reply(timeline_item, user, body, opts)
-      error -> error
+    verdict =
+      Baudrate.Moderation.ContentFilters.screen(%{body: body},
+        mode: :publish,
+        target_type: "timeline_reply",
+        user_id: user.id
+      )
+
+    with :ok <- Baudrate.Moderation.ContentFilters.refuse_blocked(verdict),
+         :ok <- Baudrate.Auth.check_post(user, body, image_count) do
+      Baudrate.Moderation.ContentFilters.record(verdict)
+
+      timeline_item
+      |> do_create_timeline_item_reply(user, body, opts)
+      |> tap(fn
+        {:ok, _reply} ->
+          Baudrate.Moderation.ContentFilters.flag(verdict, %{reported_user_id: user.id},
+            evidence: body
+          )
+
+        _ ->
+          :ok
+      end)
     end
   end
 

@@ -21,6 +21,7 @@ defmodule Baudrate.Content.Comments do
   alias Baudrate.Content.LinkPreview.Worker, as: PreviewWorker
 
   alias Baudrate.Content.PubSub, as: ContentPubSub
+  alias Baudrate.Moderation.{ContentFilters, HeldPosts}
 
   @comments_per_page 20
 
@@ -40,22 +41,102 @@ defmodule Baudrate.Content.Comments do
 
   Returns the sanction gate's refusals for an account that may not act
   (ADR 0029), `{:error, :blocked}` when a block stands between the commenter
-  and the author of the article or of the parent comment, and
-  `Baudrate.Auth.Trust`'s refusals for a new account over its limits
-  (ADR 0064).
+  and the author of the article or of the parent comment,
+  `{:error, :content_filtered}` when a content filter refuses it (ADR 0065),
+  and `Baudrate.Auth.Trust`'s refusals for a new account over its limits
+  (ADR 0064). A filter set to `hold` flags the comment instead, since only
+  `submit_comment/2` can hold.
   """
   @spec create_comment(map(), keyword()) ::
           {:ok, %Comment{}} | {:error, Ecto.Changeset.t() | term()}
   def create_comment(attrs, opts \\ []) do
     attrs = attrs |> Map.new(fn {k, v} -> {to_string(k), v} end)
 
-    # A moved, silenced or suspended account cannot comment (ADR 0029), and a
-    # new one is held to the limits on new accounts (ADR 0064).
-    with :ok <- Baudrate.Auth.ensure_can_interact(attrs["user_id"]),
-         :ok <- ensure_not_blocked(attrs),
-         :ok <- check_new_account_limits(attrs, opts) do
-      do_create_comment(attrs, opts)
+    if Keyword.has_key?(opts, :held_post) do
+      # A held comment a moderator approved (ADR 0065): it passed the filters
+      # and the limits when it was submitted, but whether the author may act,
+      # and whether a block now stands between them, can have changed.
+      with :ok <- Baudrate.Auth.ensure_can_interact(attrs["user_id"]),
+           :ok <- ensure_not_blocked(attrs) do
+        do_create_comment(attrs, opts)
+      end
+    else
+      gate_and_create_comment(attrs, opts)
     end
+  end
+
+  @doc """
+  Creates a comment from the article page's composer, or holds it for a
+  moderator (ADR 0065).
+
+  The same as `create_comment/2`, except that a comment that is one of a new
+  account's first (`hold_first_posts`), or that a `hold` filter matched, is
+  held rather than published, and `{:held, %HeldPost{}}` is returned. A
+  LiveView never calls `create_comment/2` itself —
+  `test/baudrate/content/submit_path_test.exs` fails the build otherwise.
+  """
+  @spec submit_comment(map(), keyword()) ::
+          {:ok, %Comment{}}
+          | {:held, Baudrate.Moderation.HeldPost.t()}
+          | {:error, Ecto.Changeset.t() | term()}
+  def submit_comment(attrs, opts \\ []) do
+    attrs = attrs |> Map.new(fn {k, v} -> {to_string(k), v} end)
+
+    gate_and_create_comment(
+      attrs,
+      opts |> Keyword.delete(:held_post) |> Keyword.put(:holdable, true)
+    )
+  end
+
+  # A moved, silenced or suspended account cannot comment (ADR 0029), a
+  # filter may refuse, hold or flag what it wrote (ADR 0065), and a new
+  # account is held to the limits on new accounts (ADR 0064) — the filter
+  # first, so a refused comment spends no place in the hourly bucket.
+  defp gate_and_create_comment(attrs, opts) do
+    holdable = Keyword.get(opts, :holdable, false)
+    author_id = attrs["user_id"]
+
+    with :ok <- Baudrate.Auth.ensure_can_interact(author_id),
+         :ok <- ensure_not_blocked(attrs),
+         verdict = screen_comment(attrs, if(holdable, do: :post, else: :publish)),
+         :ok <- ContentFilters.refuse_blocked(verdict),
+         :ok <- check_new_account_limits(attrs, opts) do
+      ContentFilters.record(verdict)
+
+      case hold_reason(holdable, author_id, verdict) do
+        nil ->
+          attrs
+          |> do_create_comment(Keyword.delete(opts, :holdable))
+          |> tap(fn
+            {:ok, comment} -> ContentFilters.flag(verdict, %{comment_id: comment.id})
+            _ -> :ok
+          end)
+
+        {reason, filter} ->
+          HeldPosts.hold_comment(attrs, opts, reason, filter)
+          |> case do
+            {:ok, held} -> {:held, held}
+            {:error, _} = error -> error
+          end
+      end
+    end
+  end
+
+  defp screen_comment(attrs, mode) do
+    ContentFilters.screen(
+      %{summary: attrs["summary"], body: attrs["body"]},
+      mode: mode,
+      target_type: "comment",
+      user_id: attrs["user_id"]
+    )
+  end
+
+  defp hold_reason(false, _author_id, _verdict), do: nil
+  defp hold_reason(true, _author_id, %{outcome: :hold, filter: filter}), do: {"filter", filter}
+
+  defp hold_reason(true, author_id, verdict) do
+    if HeldPosts.first_post?(author_id),
+      do: {"first_posts", if(verdict.outcome == :flag, do: verdict.filter)}
   end
 
   # Association only ever takes the commenter's own orphan uploads, so the
@@ -92,6 +173,7 @@ defmodule Baudrate.Content.Comments do
 
     multi_result =
       Ecto.Multi.new()
+      |> claim_held_post(Keyword.get(opts, :held_post))
       |> Ecto.Multi.insert(
         :comment,
         Comment.changeset(%Comment{}, Map.put(attrs, "body_html", body_html))
@@ -134,6 +216,13 @@ defmodule Baudrate.Content.Comments do
     end
   end
 
+  # Approving a held comment deletes its row in the transaction that
+  # publishes it, so a second approval rolls back instead of posting twice.
+  defp claim_held_post(multi, nil), do: multi
+
+  defp claim_held_post(multi, held),
+    do: Ecto.Multi.run(multi, :claim_held_post, fn repo, _ -> HeldPosts.claim(repo, held) end)
+
   @doc """
   Returns a comment changeset for form tracking.
   """
@@ -171,9 +260,33 @@ defmodule Baudrate.Content.Comments do
     with :ok <- Permissions.authorize_edit_comment(editor, comment),
          :ok <- Baudrate.Auth.ensure_can_interact(editor),
          :ok <- ensure_editable(comment),
+         verdict = screen_edit(comment, attrs, editor),
+         :ok <- ContentFilters.refuse_blocked(verdict),
          :ok <- check_edit_limits(comment, attrs, editor) do
-      do_update_comment(comment, attrs, editor)
+      ContentFilters.record(verdict)
+
+      comment
+      |> do_update_comment(attrs, editor)
+      |> tap(fn
+        {:ok, updated} -> ContentFilters.flag(verdict, %{comment_id: updated.id})
+        _ -> :ok
+      end)
     end
+  end
+
+  # An edit is judged by what it adds (ADR 0065), as the limits on new
+  # accounts judge it (ADR 0064).
+  defp screen_edit(comment, attrs, editor) do
+    ContentFilters.screen(
+      %{
+        summary: Map.get(attrs, :summary, Map.get(attrs, "summary", comment.summary)),
+        body: attrs[:body] || attrs["body"] || comment.body
+      },
+      mode: :edit,
+      previous: %{summary: comment.summary, body: comment.body},
+      target_type: "comment",
+      user_id: editor.id
+    )
   end
 
   # An edit may not add a link or an image past a new account's limit

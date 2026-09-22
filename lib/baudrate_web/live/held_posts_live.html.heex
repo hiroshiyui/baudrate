@@ -1,0 +1,224 @@
+<div id="held-posts-page" class="held-posts-page space-y-6">
+  <header id="held-posts-header" class="held-posts-header">
+    <h1 id="held-posts-heading" class="held-posts-heading text-2xl font-bold" tabindex="-1">
+      {gettext("Posts waiting for review")}
+    </h1>
+    <p id="held-posts-subtitle" class="held-posts-subtitle text-sm text-base-content/70 mt-1">
+      {gettext(
+        "Nobody else can see these yet. Approving one publishes it as its author, exactly as if it had never waited; declining it tells the author, who can still read what they wrote."
+      )}
+    </p>
+  </header>
+
+  <nav
+    id="held-posts-status-tabs"
+    class="held-posts-status-tabs tabs tabs-box"
+    aria-label={gettext("Review status")}
+  >
+    <button
+      id="held-posts-tab-pending"
+      class={["held-posts-tab tab", @status == "pending" && "tab-active"]}
+      phx-click="filter"
+      phx-value-status="pending"
+      aria-pressed={to_string(@status == "pending")}
+    >
+      {gettext("Awaiting review")}
+    </button>
+    <button
+      id="held-posts-tab-rejected"
+      class={["held-posts-tab tab", @status == "rejected" && "tab-active"]}
+      phx-click="filter"
+      phx-value-status="rejected"
+      aria-pressed={to_string(@status == "rejected")}
+    >
+      {gettext("Declined")}
+    </button>
+  </nav>
+
+  <div id="held-posts-list" class="held-posts-list space-y-4" data-focus-target>
+    <p
+      :if={@held_posts == []}
+      id="held-posts-empty"
+      class="held-posts-empty text-center py-8 opacity-70"
+    >
+      {if @status == "pending",
+        do: gettext("Nothing is waiting for review."),
+        else: gettext("No declined posts.")}
+    </p>
+
+    <article
+      :for={held <- @held_posts}
+      id={"held-post-#{held.id}"}
+      class="held-post card bg-base-200 shadow-sm"
+      aria-labelledby={"held-post-heading-#{held.id}"}
+    >
+      <div class="card-body gap-3">
+        <div class="held-post-meta flex flex-wrap items-center gap-2 text-sm">
+          <span class="held-post-kind badge badge-sm badge-outline">
+            {if held.kind == "article", do: gettext("Article"), else: gettext("Comment")}
+          </span>
+          <span
+            id={"held-post-reason-#{held.id}"}
+            class="held-post-reason badge badge-sm badge-warning max-w-full truncate"
+          >
+            {BaudrateWeb.HeldPostsLive.reason_label(held)}
+          </span>
+          <span class="held-post-author">
+            <.link
+              :if={held.user}
+              id={"held-post-author-#{held.id}"}
+              navigate={~p"/users/#{held.user.username}"}
+              class="held-post-author-link link link-primary"
+            >
+              {display_name(held.user)}
+            </.link>
+          </span>
+          <time class="held-post-time opacity-70" datetime={datetime_attr(held.inserted_at)}>
+            {format_datetime(held.inserted_at)}
+          </time>
+        </div>
+
+        <h2
+          id={"held-post-heading-#{held.id}"}
+          class="held-post-heading font-semibold break-words"
+        >
+          {if held.kind == "article",
+            do: held.title,
+            else:
+              gettext("A comment on “%{title}”",
+                title: (held.article && held.article.title) || gettext("a removed article")
+              )}
+        </h2>
+
+        <p
+          :if={held.kind == "article" and held.board_ids != []}
+          id={"held-post-boards-#{held.id}"}
+          class="held-post-boards text-sm opacity-80"
+        >
+          {gettext("In: %{boards}",
+            boards:
+              held.board_ids
+              |> Enum.map(&(@boards[&1] && @boards[&1].name))
+              |> Enum.reject(&is_nil/1)
+              |> Enum.join(", ")
+          )}
+        </p>
+
+        <.link
+          :if={(held.kind == "comment" and held.article) && is_nil(held.article.deleted_at)}
+          id={"held-post-article-link-#{held.id}"}
+          navigate={~p"/articles/#{held.article.slug}"}
+          class="held-post-article-link link link-primary text-sm"
+        >
+          {gettext("Read the article")}
+        </.link>
+
+        <p
+          :if={held.summary}
+          id={"held-post-warning-#{held.id}"}
+          class="held-post-warning text-sm font-semibold break-words"
+        >
+          {gettext("Content warning: %{summary}", summary: held.summary)}
+        </p>
+
+        <div
+          id={"held-post-body-#{held.id}"}
+          class="held-post-body text-sm whitespace-pre-wrap break-words max-h-80 overflow-y-auto bg-base-100 rounded-lg p-3"
+        >
+          {held.body}
+        </div>
+
+        <ul
+          :if={held.poll && held.poll["options"] not in [nil, []]}
+          id={"held-post-poll-#{held.id}"}
+          class="held-post-poll text-sm list-disc pl-6"
+          aria-label={gettext("Poll options")}
+        >
+          <li :for={option <- held.poll["options"]} class="held-post-poll-option break-words">
+            {option}
+          </li>
+        </ul>
+
+        <div
+          :if={Map.get(@images, held.id, []) != []}
+          id={"held-post-images-#{held.id}"}
+          class="held-post-images flex flex-wrap gap-2"
+        >
+          <img
+            :for={image <- Map.get(@images, held.id, [])}
+            id={"held-post-image-#{held.id}-#{image.id}"}
+            class="held-post-image h-24 w-24 object-cover rounded"
+            src={Baudrate.Content.ArticleImageStorage.image_url(image.filename)}
+            alt={image.alt || gettext("An image without a description")}
+          />
+        </div>
+
+        <p
+          :if={held.status == "rejected"}
+          id={"held-post-reviewed-#{held.id}"}
+          class="held-post-reviewed text-sm opacity-80 break-words"
+        >
+          {if held.review_note,
+            do:
+              gettext("Declined by %{name} on %{at} — %{note}",
+                name: (held.reviewed_by && display_name(held.reviewed_by)) || "—",
+                at: format_datetime(held.reviewed_at),
+                note: held.review_note
+              ),
+            else:
+              gettext("Declined by %{name} on %{at}",
+                name: (held.reviewed_by && display_name(held.reviewed_by)) || "—",
+                at: format_datetime(held.reviewed_at)
+              )}
+        </p>
+
+        <div
+          :if={held.status == "pending"}
+          class="held-post-actions flex flex-wrap items-end justify-end gap-2"
+        >
+          <form
+            id={"held-post-reject-form-#{held.id}"}
+            class="held-post-reject-form flex flex-wrap gap-2 items-end"
+            phx-submit="reject"
+          >
+            <input type="hidden" name="held_post_id" value={held.id} />
+            <label class="held-post-note-label text-sm" for={"held-post-note-#{held.id}"}>
+              <span class="sr-only">{gettext("Note to the author (optional)")}</span>
+              <input
+                id={"held-post-note-#{held.id}"}
+                class="held-post-note input input-bordered input-sm w-64"
+                type="text"
+                name="note"
+                maxlength="1000"
+                placeholder={gettext("Note to the author (optional)")}
+              />
+            </label>
+            <button
+              id={"held-post-reject-#{held.id}"}
+              type="submit"
+              class="held-post-reject btn btn-sm btn-ghost"
+            >
+              {gettext("Decline")}
+            </button>
+          </form>
+          <button
+            id={"held-post-approve-#{held.id}"}
+            type="button"
+            class="held-post-approve btn btn-sm btn-primary"
+            phx-click="approve"
+            phx-value-id={held.id}
+          >
+            {gettext("Approve and publish")}
+          </button>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <.pagination
+    :if={@total_pages > 1}
+    page={@page}
+    total_pages={@total_pages}
+    path={~p"/moderation/held?status=#{@status}"}
+  />
+</div>

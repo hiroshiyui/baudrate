@@ -11,6 +11,11 @@ defmodule BaudrateWeb.DraftsLive do
   composer re-checks ownership itself — the id in that URL is client-supplied
   like any other, and the page that produced it proves nothing.
 
+  It also lists the member's posts that are waiting for a moderator, and the
+  ones a moderator declined, with the text they wrote (ADR 0065). A pending
+  one can be withdrawn; a declined one cannot be deleted from here, because it
+  is the record of what was refused and is removed on its own after 90 days.
+
   The page is `noindex` and names no canonical (ADR 0057). It is behind
   `:require_auth` so a crawler is redirected to the login page long before it
   gets here, but a list of what somebody has started writing and not published
@@ -20,6 +25,7 @@ defmodule BaudrateWeb.DraftsLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Content
+  alias Baudrate.Moderation.HeldPosts
 
   import BaudrateWeb.Helpers, only: [parse_id: 1]
 
@@ -47,6 +53,22 @@ defmodule BaudrateWeb.DraftsLive do
     end
   end
 
+  def handle_event("withdraw_held", %{"id" => id}, socket) do
+    case parse_id(id) do
+      {:ok, held_id} ->
+        HeldPosts.withdraw(socket.assigns.current_user.id, held_id)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Withdrawn. Nobody will review it now."))
+         |> load_drafts()
+         |> push_event("focus", %{id: "drafts-heading"})}
+
+      :error ->
+        {:noreply, socket}
+    end
+  end
+
   # Authenticated LiveViews receive DM and notification PubSub messages via the
   # count hooks whether or not they use them.
   @impl true
@@ -59,6 +81,7 @@ defmodule BaudrateWeb.DraftsLive do
     |> assign(:drafts, drafts)
     |> assign(:draft_count, length(drafts))
     |> assign(:max_drafts, Content.max_drafts())
+    |> assign(:held_posts, HeldPosts.list_for_author(socket.assigns.current_user.id))
   end
 
   @doc """
@@ -79,4 +102,12 @@ defmodule BaudrateWeb.DraftsLive do
   end
 
   def draft_heading(_), do: gettext("Empty draft")
+
+  @doc "A held post's heading: an article's title, or which article a comment is on."
+  def held_heading(%{kind: "article", title: title}) when is_binary(title), do: title
+
+  def held_heading(%{kind: "comment", article: %{title: title}}) when is_binary(title),
+    do: gettext("Your comment on “%{title}”", title: title)
+
+  def held_heading(_), do: gettext("Your comment")
 end

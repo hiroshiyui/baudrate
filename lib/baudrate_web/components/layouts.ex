@@ -93,6 +93,11 @@ defmodule BaudrateWeb.Layouts do
                         {gettext("Moderation")}
                       </.link>
                     </li>
+                    <li>
+                      <.link navigate="/moderation/held" class="nav-admin-link">
+                        {gettext("Held Posts")}
+                      </.link>
+                    </li>
                     <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/boards" class="nav-admin-link">
                         {gettext("Manage Boards")}
@@ -121,6 +126,11 @@ defmodule BaudrateWeb.Layouts do
                     <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/ip-bans" class="nav-admin-link">
                         {gettext("IP Bans")}
+                      </.link>
+                    </li>
+                    <li :if={@current_user.role.name == "admin"}>
+                      <.link navigate="/admin/filters" class="nav-admin-link">
+                        {gettext("Content Filters")}
                       </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
@@ -346,6 +356,11 @@ defmodule BaudrateWeb.Layouts do
                         {gettext("Moderation")}
                       </.link>
                     </li>
+                    <li>
+                      <.link navigate="/moderation/held" class="nav-admin-link">
+                        {gettext("Held Posts")}
+                      </.link>
+                    </li>
                     <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/boards" class="nav-admin-link">
                         {gettext("Manage Boards")}
@@ -374,6 +389,11 @@ defmodule BaudrateWeb.Layouts do
                     <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/ip-bans" class="nav-admin-link">
                         {gettext("IP Bans")}
+                      </.link>
+                    </li>
+                    <li :if={@current_user.role.name == "admin"}>
+                      <.link navigate="/admin/filters" class="nav-admin-link">
+                        {gettext("Content Filters")}
                       </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>

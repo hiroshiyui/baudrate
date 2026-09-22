@@ -605,6 +605,7 @@ defmodule Baudrate.Setup do
       registration_challenge_bits: :integer,
       new_account_days: :integer,
       new_account_posts: :integer,
+      hold_first_posts: :integer,
       timezone: :string,
       ap_federation_enabled: :string,
       ap_federation_mode: :string,
@@ -622,6 +623,7 @@ defmodule Baudrate.Setup do
       registration_challenge_bits: Baudrate.Auth.Challenge.bits(),
       new_account_days: Baudrate.Auth.Trust.thresholds().days,
       new_account_posts: Baudrate.Auth.Trust.thresholds().posts,
+      hold_first_posts: Baudrate.Moderation.HeldPosts.first_posts(),
       timezone: get_setting("timezone") || "Etc/UTC",
       ap_federation_enabled: get_setting("ap_federation_enabled") || "true",
       ap_federation_mode: get_setting("ap_federation_mode") || "blocklist",
@@ -656,6 +658,12 @@ defmodule Baudrate.Setup do
     |> Ecto.Changeset.validate_number(:new_account_posts,
       greater_than_or_equal_to: 0,
       less_than_or_equal_to: Baudrate.Auth.Trust.max_thresholds().posts
+    )
+    # How many of an account's first posts wait for a moderator (ADR 0065).
+    # 0 turns it off.
+    |> Ecto.Changeset.validate_number(:hold_first_posts,
+      greater_than_or_equal_to: 0,
+      less_than_or_equal_to: Baudrate.Moderation.HeldPosts.max_first_posts()
     )
     |> Ecto.Changeset.validate_inclusion(:ap_federation_enabled, ["true", "false"])
     |> Ecto.Changeset.validate_inclusion(:ap_federation_mode, @valid_federation_modes)
@@ -699,6 +707,7 @@ defmodule Baudrate.Setup do
 
         set_setting("new_account_days", Integer.to_string(changes.new_account_days || 0))
         set_setting("new_account_posts", Integer.to_string(changes.new_account_posts || 0))
+        set_setting("hold_first_posts", Integer.to_string(changes.hold_first_posts || 0))
         set_setting("timezone", changes.timezone || "Etc/UTC")
         set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")
         set_setting("ap_federation_mode", changes.ap_federation_mode || "blocklist")

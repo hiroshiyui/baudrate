@@ -507,6 +507,71 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
     end
   end
 
+  describe "reports a content filter opened (ADR 0065)" do
+    test "say which filter, not who reported them", %{conn: conn} do
+      admin = setup_user("admin")
+      author = setup_user("user")
+
+      {:ok, _} =
+        Baudrate.Moderation.ContentFilters.create_filter(
+          %{"pattern" => "poker", "kind" => "word", "action" => "flag"},
+          admin
+        )
+
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Filtered",
+          slug: "filtered-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.submit_article(
+          %{
+            "title" => "Poker night",
+            "body" => "Bring chips",
+            "slug" => "poker-#{System.unique_integer([:positive])}",
+            "user_id" => author.id
+          },
+          [board.id]
+        )
+
+      report = Repo.get_by!(Baudrate.Moderation.Report, article_id: article.id)
+
+      {:ok, lv, _html} = live(log_in_admin(conn, admin), "/admin/moderation")
+
+      assert has_element?(lv, "#admin-moderation-report-filter-#{report.id}", "poker")
+      refute has_element?(lv, "#admin-moderation-report-reporter-#{report.id}")
+    end
+
+    test "a flagged timeline reply keeps a copy of its text", %{conn: conn} do
+      admin = setup_user("admin")
+      author = setup_user("user")
+
+      {:ok, filter} =
+        Baudrate.Moderation.ContentFilters.create_filter(
+          %{"pattern" => "poker", "kind" => "word", "action" => "flag"},
+          admin
+        )
+
+      verdict =
+        Baudrate.Moderation.ContentFilters.screen(%{body: "poker?"},
+          mode: :publish,
+          target_type: "timeline_reply",
+          user_id: author.id
+        )
+
+      :ok =
+        Baudrate.Moderation.ContentFilters.flag(verdict, %{reported_user_id: author.id},
+          evidence: "poker?"
+        )
+
+      report = Repo.get_by!(Baudrate.Moderation.Report, content_filter_id: filter.id)
+      {:ok, lv, _html} = live(log_in_admin(conn, admin), "/admin/moderation")
+
+      assert has_element?(lv, "#admin-moderation-report-user-evidence-#{report.id}", "poker?")
+    end
+  end
+
   describe "evidence retention (P1-D6)" do
     test "a removal keeps a copy of the content for staff, and the queue shows it", %{
       conn: conn

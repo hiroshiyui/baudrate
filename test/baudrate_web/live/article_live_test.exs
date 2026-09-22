@@ -87,6 +87,52 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert html =~ "Great article!"
   end
 
+  # ADR 0065: the composer submits, so a comment that must wait for a
+  # moderator is held rather than published, and the member is told where it
+  # went rather than seeing it vanish.
+  test "a comment held for review is not shown, and the member is told", %{
+    conn: conn,
+    article: article
+  } do
+    Repo.insert!(%Setting{key: "hold_first_posts", value: "5"})
+    newcomer = setup_user("user")
+    {:ok, lv, _html} = live(log_in_user(conn, newcomer), "/articles/#{article.slug}")
+
+    html =
+      lv
+      |> form("form[phx-submit=submit_comment]", comment: %{body: "My very first words"})
+      |> render_submit()
+
+    assert html =~ "once a moderator has looked at it"
+    refute html =~ "My very first words"
+    assert Content.list_comments_for_article(article) == []
+    assert [%{kind: "comment"}] = Baudrate.Moderation.HeldPosts.list_for_author(newcomer.id)
+  end
+
+  test "a comment a filter refuses says so without naming the filter", %{
+    conn: conn,
+    article: article
+  } do
+    admin = setup_user("admin")
+
+    {:ok, _} =
+      Baudrate.Moderation.ContentFilters.create_filter(
+        %{"pattern" => "casino", "kind" => "word", "action" => "block"},
+        admin
+      )
+
+    {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+    html =
+      lv
+      |> form("form[phx-submit=submit_comment]", comment: %{body: "Casino tonight"})
+      |> render_submit()
+
+    assert html =~ "doesn&#39;t allow"
+    refute html =~ "casino"
+    assert Content.list_comments_for_article(article) == []
+  end
+
   test "updates comment list when new comment is posted via PubSub", %{
     conn: conn,
     user: user,

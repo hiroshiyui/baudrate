@@ -274,6 +274,28 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
     assert {:error, {:redirect, %{to: "/"}}} = live(conn, "/articles/new")
   end
 
+  # ADR 0065: a new account's first article waits for a moderator. The
+  # composer's draft goes, as it would on publishing, and the member lands on
+  # the page that lists what is waiting.
+  test "an article held for review goes to Drafts, not onto the board", %{
+    conn: conn,
+    board: board
+  } do
+    Repo.insert!(%Setting{key: "hold_first_posts", value: "1"})
+    {:ok, lv, _html} = live(conn, "/boards/#{board.slug}/articles/new")
+
+    result =
+      render_hook(lv, "submit", %{
+        "article" => %{"title" => "Held title", "body" => "Held body"},
+        "board_ids" => ["#{board.id}"]
+      })
+
+    assert {:error, {:redirect, %{to: "/drafts"}}} = result
+    assert_redirect(lv, "/drafts")
+    refute Repo.get_by(Baudrate.Content.Article, title: "Held title")
+    assert Repo.get_by(Baudrate.Moderation.HeldPost, title: "Held title")
+  end
+
   describe "server-owned fields" do
     test "ignores client-supplied ap_id, url and published_at", %{conn: conn, board: board} do
       {:ok, lv, _html} = live(conn, "/boards/#{board.slug}/articles/new")

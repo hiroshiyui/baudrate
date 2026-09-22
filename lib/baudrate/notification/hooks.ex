@@ -24,6 +24,9 @@ defmodule Baudrate.Notification.Hooks do
     * `notify_remote_follow/2` — new_follower (remote actor)
     * `notify_remote_comment_created/3` — reply_to_article, reply_to_comment
     * `notify_report_created/1` — moderation_report (all admins)
+    * `notify_post_held/1` — held_post (whoever can review it, ADR 0065)
+    * `notify_post_approved/2` / `notify_post_rejected/1` — post_approved,
+      post_rejected (the author)
     * `notify_account_security/3` — security_key_added, security_key_removed,
       totp_enabled, totp_disabled, password_changed, signed_out_everywhere,
       totp_login_failed, account_alias_added, account_alias_removed,
@@ -310,6 +313,62 @@ defmodule Baudrate.Notification.Hooks do
       user_id: report.reporter_id,
       data: %{"report_id" => report.id}
     })
+
+    :ok
+  end
+
+  @doc """
+  Tells the people who can review a held post that it is waiting (ADR 0065):
+  admins, global moderators, and the board moderators who moderate every
+  board it would appear in. Always delivered, for `pending_registration`'s
+  reason: a queue nobody is told about is a queue nobody empties.
+  """
+  @spec notify_post_held(Baudrate.Moderation.HeldPost.t()) :: :ok
+  def notify_post_held(%Baudrate.Moderation.HeldPost{} = held) do
+    (Setup.staff_user_ids() ++ Baudrate.Moderation.HeldPosts.board_reviewer_ids(held))
+    |> Enum.uniq()
+    |> Enum.reject(&(&1 == held.user_id))
+    |> Enum.each(fn user_id ->
+      Notification.create_notification(%{
+        type: "held_post",
+        user_id: user_id,
+        data: %{"held_post_id" => held.id, "kind" => held.kind}
+      })
+    end)
+
+    :ok
+  end
+
+  @doc """
+  Tells an author that a moderator approved their held post, which is now
+  published. Actorless, so it names no moderator, and always delivered — it is
+  about the recipient's own content (P1-D4).
+  """
+  @spec notify_post_approved(Baudrate.Moderation.HeldPost.t(), Article.t() | Comment.t()) :: :ok
+  def notify_post_approved(held, %Article{} = article) do
+    deliver_review(held.user_id, "post_approved", %{article_id: article.id})
+  end
+
+  def notify_post_approved(held, %Comment{} = comment) do
+    deliver_review(held.user_id, "post_approved", %{
+      article_id: comment.article_id,
+      comment_id: comment.id
+    })
+  end
+
+  @doc """
+  Tells an author that a moderator declined to publish their held post. The
+  note, if any, is on `/drafts` beside the text, not in the notification.
+  """
+  @spec notify_post_rejected(Baudrate.Moderation.HeldPost.t()) :: :ok
+  def notify_post_rejected(held) do
+    deliver_review(held.user_id, "post_rejected", %{data: %{"kind" => held.kind}})
+  end
+
+  defp deliver_review(user_id, type, attrs) do
+    attrs
+    |> Map.merge(%{type: type, user_id: user_id})
+    |> Notification.create_notification()
 
     :ok
   end

@@ -53,6 +53,7 @@ defmodule Baudrate.Federation.InboxHandler do
   }
 
   alias Baudrate.Messaging
+  alias Baudrate.Moderation.ContentFilters
 
   # Reply-chain walking is rate limited (see `walk_remote_reply_chain/2`). The
   # context → `BaudrateWeb.RateLimits` direction follows the existing precedent
@@ -198,19 +199,22 @@ defmodule Baudrate.Federation.InboxHandler do
 
       :not_a_vote ->
         if direct_message?(object) do
+          # Direct messages are never screened (ADR 0065).
           handle_incoming_dm(object, remote_actor)
         else
-          case handle_create_note_comment(object, remote_actor) do
-            :ok ->
-              :ok
+          screened(object, remote_actor, fn ->
+            case handle_create_note_comment(object, remote_actor) do
+              :ok ->
+                :ok
 
-            {:error, reason} when reason in [:article_not_found, :missing_in_reply_to] ->
-              # Try auto-routing to boards that follow this actor, then fall back to timeline item
-              maybe_auto_route_to_boards(object, remote_actor, "Note")
+              {:error, reason} when reason in [:article_not_found, :missing_in_reply_to] ->
+                # Try auto-routing to boards that follow this actor, then fall back to timeline item
+                maybe_auto_route_to_boards(object, remote_actor, "Note")
 
-            other ->
-              other
-          end
+              other ->
+                other
+            end
+          end)
         end
     end
   end
@@ -225,26 +229,7 @@ defmodule Baudrate.Federation.InboxHandler do
          _target
        )
        when type in ["Article", "Page", "Question"] do
-    with :ok <- validate_attribution_match(object, remote_actor),
-         {:ok, body, _body_html} <- sanitize_content(object),
-         {:ok, board} <- resolve_target_board(object),
-         :ok <- check_board_accept_policy(board, remote_actor) do
-      create_article_in_board(object, body, remote_actor, board, type)
-    else
-      {:error, :board_not_found} ->
-        # Auto-route: if the actor is followed by boards, create article there
-        maybe_auto_route_to_boards(object, remote_actor, type)
-
-      {:error, :not_authorized} ->
-        Logger.info(
-          "federation.activity: type=Create(#{type}) rejected by accept policy actor=#{remote_actor.ap_id}"
-        )
-
-        :ok
-
-      other ->
-        other
-    end
+    screened(object, remote_actor, fn -> create_article_object(object, remote_actor, type) end)
   end
 
   # --- Like ---
@@ -405,8 +390,15 @@ defmodule Baudrate.Federation.InboxHandler do
        when type in ["Note", "Article", "Page"] do
     with :ok <- validate_attribution_match(object, remote_actor) do
       case type do
-        "Note" -> handle_update_note(object, remote_actor)
-        t when t in ["Article", "Page"] -> handle_update_article(object, remote_actor)
+        # An edited DM is still a DM, and is not screened (ADR 0065).
+        "Note" ->
+          if direct_message?(object),
+            do: handle_update_note(object, remote_actor),
+            else:
+              screened(object, remote_actor, fn -> handle_update_note(object, remote_actor) end)
+
+        t when t in ["Article", "Page"] ->
+          screened(object, remote_actor, fn -> handle_update_article(object, remote_actor) end)
       end
     end
   end
@@ -631,6 +623,90 @@ defmodule Baudrate.Federation.InboxHandler do
     Logger.info("federation.activity_unhandled: type=#{type}")
     :ok
   end
+
+  defp create_article_object(object, remote_actor, type) do
+    with :ok <- validate_attribution_match(object, remote_actor),
+         {:ok, body, _body_html} <- sanitize_content(object),
+         {:ok, board} <- resolve_target_board(object),
+         :ok <- check_board_accept_policy(board, remote_actor) do
+      create_article_in_board(object, body, remote_actor, board, type)
+    else
+      {:error, :board_not_found} ->
+        # Auto-route: if the actor is followed by boards, create article there
+        maybe_auto_route_to_boards(object, remote_actor, type)
+
+      {:error, :not_authorized} ->
+        Logger.info(
+          "federation.activity: type=Create(#{type}) rejected by accept policy actor=#{remote_actor.ap_id}"
+        )
+
+        :ok
+
+      other ->
+        other
+    end
+  end
+
+  # --- Content filters (ADR 0065) ---
+
+  # Remote content can only be dropped or flagged: nothing arriving over
+  # federation can be held, because holding it would mean deciding later
+  # whether something another server already published exists here. A drop
+  # answers `:ok`, like every other refusal in this module, so the sender
+  # does not retry. A flag stores the content as usual and then opens a
+  # report on whatever was stored under the object's id.
+  defp screened(object, remote_actor, fun) do
+    verdict = ContentFilters.screen_remote(object, remote_actor)
+
+    case verdict.outcome do
+      :pass ->
+        fun.()
+
+      :drop ->
+        ContentFilters.record(verdict)
+
+        Logger.info(
+          "federation.content_filtered: actor=#{remote_actor.ap_id} object=#{inspect(object["id"])}"
+        )
+
+        :ok
+
+      :flag ->
+        ContentFilters.record(verdict)
+        result = fun.()
+        flag_stored(verdict, object, remote_actor)
+        result
+    end
+  end
+
+  defp flag_stored(verdict, %{"id" => id}, remote_actor) when is_binary(id) do
+    target =
+      cond do
+        article = Content.get_article_by_ap_id(id) ->
+          %{article_id: article.id, remote_actor_id: article.remote_actor_id}
+
+        comment = Content.get_comment_by_ap_id(id) ->
+          %{comment_id: comment.id, remote_actor_id: comment.remote_actor_id}
+
+        item = Federation.get_timeline_item_by_ap_id(id) ->
+          %{timeline_item_id: item.id, remote_actor_id: item.remote_actor_id}
+
+        true ->
+          nil
+      end
+
+    # Nothing stored means nothing here to read; the match is still recorded.
+    if target do
+      ContentFilters.flag(verdict, %{
+        target
+        | remote_actor_id: target.remote_actor_id || remote_actor.id
+      })
+    end
+
+    :ok
+  end
+
+  defp flag_stored(_verdict, _object, _remote_actor), do: :ok
 
   # --- Update helpers ---
 
@@ -1215,11 +1291,15 @@ defmodule Baudrate.Federation.InboxHandler do
         :ok
 
       true ->
-        # Route to boards that follow the booster
-        maybe_route_announce_to_boards(object, booster_actor, object_type)
+        # A boosted object is content arriving here like any other, whether it
+        # came embedded, fetched, or carried by a group (ADR 0065).
+        screened(object, booster_actor, fn ->
+          # Route to boards that follow the booster
+          maybe_route_announce_to_boards(object, booster_actor, object_type)
 
-        # Create timeline item for users that follow the booster
-        maybe_create_announce_timeline_item(announce_ap_id, object, booster_actor, object_type)
+          # Create timeline item for users that follow the booster
+          maybe_create_announce_timeline_item(announce_ap_id, object, booster_actor, object_type)
+        end)
     end
   end
 

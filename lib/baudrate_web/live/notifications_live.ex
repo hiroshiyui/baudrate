@@ -126,6 +126,8 @@ defmodule BaudrateWeb.NotificationsLive do
   defp actor_link(_), do: nil
 
   defp target_link(%{article: %{slug: slug}}) when not is_nil(slug), do: ~p"/articles/#{slug}"
+  defp target_link(%{type: "held_post"}), do: ~p"/moderation/held"
+  defp target_link(%{type: "post_rejected"}), do: ~p"/drafts"
   defp target_link(%{type: "data_export_" <> _}), do: ~p"/profile/export"
   defp target_link(%{type: "totp_login_failed"}), do: ~p"/profile/password"
   defp target_link(%{type: "account_" <> _}), do: ~p"/profile/move"
@@ -157,6 +159,8 @@ defmodule BaudrateWeb.NotificationsLive do
   defp target_title(%{type: "account_move_" <> _, data: %{"label" => label}}) when label != "",
     do: gettext("Destination: %{label}", label: label)
 
+  defp target_title(%{type: "held_post"}), do: gettext("Review held posts")
+  defp target_title(%{type: "post_rejected"}), do: gettext("See what you wrote")
   defp target_title(%{type: "data_export_" <> _}), do: gettext("Review your data exports")
   defp target_title(%{type: "totp_login_failed"}), do: gettext("Change your password")
 

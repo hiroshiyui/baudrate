@@ -608,6 +608,73 @@ defmodule Baudrate.RetentionTest do
     end
   end
 
+  # ADR 0065. A rejected submission is the record of what was refused, kept
+  # as long as a removed post's copy; a pending one is only a moderator's to
+  # decide, and is never purged.
+  describe "held posts" do
+    test "a rejected one goes 90 days after review; a pending one stays", %{user: user} do
+      {:ok, pending} =
+        Baudrate.Moderation.HeldPosts.hold_article(
+          %{"title" => "t", "body" => "b", "user_id" => user.id},
+          [],
+          [],
+          "first_posts",
+          nil
+        )
+
+      {:ok, rejected} =
+        Baudrate.Moderation.HeldPosts.hold_article(
+          %{"title" => "t", "body" => "b", "user_id" => user.id},
+          [],
+          [],
+          "first_posts",
+          nil
+        )
+
+      old =
+        DateTime.utc_now() |> DateTime.add(-91 * 86_400, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(from(h in Baudrate.Moderation.HeldPost, where: h.id == ^rejected.id),
+        set: [status: "rejected", reviewed_at: old]
+      )
+
+      Repo.update_all(from(h in Baudrate.Moderation.HeldPost, where: h.id == ^pending.id),
+        set: [inserted_at: old]
+      )
+
+      assert %{held_posts: 1} = Retention.run()
+      refute exists?(Baudrate.Moderation.HeldPost, rejected.id)
+      assert exists?(Baudrate.Moderation.HeldPost, pending.id)
+    end
+  end
+
+  describe "content filter matches" do
+    test "go after 90 days", %{user: user} do
+      admin = user
+
+      {:ok, filter} =
+        %Baudrate.Moderation.ContentFilter{created_by_id: admin.id}
+        |> Baudrate.Moderation.ContentFilter.changeset(%{
+          "pattern" => "poker",
+          "kind" => "word",
+          "action" => "flag"
+        })
+        |> Repo.insert()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      old = DateTime.add(now, -91 * 86_400, :second)
+
+      Repo.insert_all(Baudrate.Moderation.ContentFilterMatch, [
+        %{content_filter_id: filter.id, action: "flag", target_type: "article", inserted_at: old},
+        %{content_filter_id: filter.id, action: "flag", target_type: "article", inserted_at: now}
+      ])
+
+      assert Retention.purge_filter_matches(dry_run: true) == 1
+      assert %{filter_matches: 1} = Retention.run()
+      assert Repo.aggregate(Baudrate.Moderation.ContentFilterMatch, :count) == 1
+    end
+  end
+
   describe "run/1" do
     test "reports what every pass removed", %{actor: actor} do
       create_timeline_item(actor, 91)

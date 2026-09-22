@@ -202,7 +202,9 @@ defmodule Baudrate.Auth.SessionCleaner do
   # cannot take the other fifteen with it.
   defp retention do
     counts = Baudrate.Retention.run()
-    counts.timeline_items + counts.announces + counts.articles + counts.comments
+
+    counts.timeline_items + counts.announces + counts.articles + counts.comments +
+      counts.held_posts + counts.filter_matches
   end
 
   # A draft nobody has touched in 90 days. Its images are released with it:

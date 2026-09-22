@@ -72,6 +72,80 @@
     </li>
   </ul>
 
+  <section
+    :if={@held_posts != []}
+    id="drafts-held"
+    class="drafts-held space-y-3"
+    aria-labelledby="drafts-held-heading"
+  >
+    <h2 id="drafts-held-heading" class="drafts-held-heading text-lg font-semibold">
+      {gettext("Waiting for review")}
+    </h2>
+    <p id="drafts-held-explainer" class="drafts-held-explainer text-sm text-base-content/70">
+      {gettext(
+        "A moderator looks at these before anyone else can see them. You'll get a notification either way."
+      )}
+    </p>
+
+    <ul id="drafts-held-list" class="drafts-held-list space-y-3 list-none pl-0">
+      <li
+        :for={held <- @held_posts}
+        id={"held-#{held.id}"}
+        class="drafts-held-item card bg-base-100 border border-base-300"
+      >
+        <div class="card-body p-4 gap-2">
+          <h3 class="drafts-held-item-heading font-semibold break-words">
+            {BaudrateWeb.DraftsLive.held_heading(held)}
+          </h3>
+          <p class="drafts-held-item-meta text-sm text-base-content/70">
+            <span
+              :if={held.status == "pending"}
+              id={"held-status-#{held.id}"}
+              class="drafts-held-status badge badge-sm badge-warning"
+            >
+              {gettext("Awaiting review")}
+            </span>
+            <span
+              :if={held.status == "rejected"}
+              id={"held-status-#{held.id}"}
+              class="drafts-held-status badge badge-sm badge-ghost"
+            >
+              {gettext("Declined")}
+            </span>
+            {gettext("Sent %{at}", at: format_datetime(held.inserted_at))}
+          </p>
+          <p
+            :if={held.status == "rejected" && held.review_note}
+            id={"held-note-#{held.id}"}
+            class="drafts-held-note text-sm break-words"
+          >
+            {gettext("The moderator's note: %{note}", note: held.review_note)}
+          </p>
+          <details id={"held-text-#{held.id}"} class="drafts-held-text">
+            <summary class="drafts-held-text-summary text-sm cursor-pointer">
+              {gettext("What you wrote")}
+            </summary>
+            <div class="drafts-held-text-body text-sm whitespace-pre-wrap break-words mt-2 max-h-64 overflow-y-auto">
+              {held.body}
+            </div>
+          </details>
+          <div :if={held.status == "pending"} class="drafts-held-actions flex justify-end">
+            <button
+              id={"held-withdraw-#{held.id}"}
+              type="button"
+              phx-click="withdraw_held"
+              phx-value-id={held.id}
+              data-confirm={gettext("Withdraw this post? It will not be published.")}
+              class="drafts-held-withdraw btn btn-sm btn-ghost"
+            >
+              {gettext("Withdraw")}
+            </button>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </section>
+
   <p id="drafts-quota" class="drafts-quota text-sm text-base-content/70">
     {gettext("%{count} of %{limit} drafts kept", count: @draft_count, limit: @max_drafts)}
   </p>

@@ -107,7 +107,19 @@ defmodule BaudrateWeb.ModerationComponents do
         </div>
       </div>
 
-      <div class="moderation-report-reason mt-2">
+      <%!-- A report a content filter opened rather than a person (ADR 0065).
+      `reason` holds the pattern as it stood when it matched. --%>
+      <p
+        :if={@report.content_filter_id}
+        id={"#{@prefix}-report-filter-#{@report.id}"}
+        class="moderation-report-filter mt-2 text-sm break-words"
+      >
+        {gettext("Reported automatically: it matched the filter “%{pattern}”.",
+          pattern: @report.reason
+        )}
+      </p>
+
+      <div :if={is_nil(@report.content_filter_id)} class="moderation-report-reason mt-2">
         <p class="font-semibold">{gettext("Reason:")}</p>
         <p :if={@report.reason != ""} class="whitespace-pre-wrap break-words">{@report.reason}</p>
         <p
@@ -284,6 +296,19 @@ defmodule BaudrateWeb.ModerationComponents do
             {display_name(@report.reported_user)}
           </.link>
           <span class="text-sm opacity-70">(@{@report.reported_user.username})</span>
+        </p>
+        <%!-- A flagged timeline reply has no page here, so its report keeps a
+        copy of the text (ADR 0065). --%>
+        <p
+          :if={
+            @report.content_filter_id && @report.evidence_body && is_nil(@report.article) &&
+              is_nil(@report.comment)
+          }
+          id={"#{@prefix}-report-user-evidence-#{@report.id}"}
+          class="moderation-report-evidence text-sm whitespace-pre-wrap break-words max-h-64 overflow-y-auto mt-1"
+        >
+          {gettext("The reply that matched, kept for 90 days after this report is closed:")}
+          {@report.evidence_body}
         </p>
       </div>
 

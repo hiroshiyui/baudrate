@@ -48,6 +48,9 @@ defmodule Baudrate.Application do
         # Read on every registration and sign-in, so it is up before the
         # endpoint accepts anything (Phase 5E).
         Baudrate.Auth.IpBanCache,
+        # Read on every post and every inbound object, so it is up before the
+        # endpoint and the inbound worker (Phase 5D).
+        Baudrate.Moderation.ContentFilterCache,
         Baudrate.Federation.DeliveryWorker,
         Baudrate.Federation.InboundWorker,
         Baudrate.Federation.StaleActorCleaner,

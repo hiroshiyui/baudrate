@@ -241,6 +241,39 @@ defmodule Baudrate.Auth.Trust do
     }
   end
 
+  @doc """
+  How many local articles and comments `user_id` has that are not
+  soft-deleted, counted only as far as `limit` — the count trust is earned
+  by, which `Baudrate.Moderation.HeldPosts` also asks when it decides whether
+  a post is one of an account's first (ADR 0065).
+  """
+  @spec count_posts(integer(), non_neg_integer()) :: non_neg_integer()
+  def count_posts(_user_id, 0), do: 0
+
+  def count_posts(user_id, limit) when is_integer(user_id) and is_integer(limit) do
+    count =
+      Repo.one(
+        from(u in User,
+          where: u.id == ^user_id,
+          select:
+            fragment(
+              """
+              (SELECT count(*) FROM (SELECT 1 FROM articles
+                 WHERE user_id = ? AND deleted_at IS NULL LIMIT ?) AS counted_articles)
+              + (SELECT count(*) FROM (SELECT 1 FROM comments
+                 WHERE user_id = ? AND deleted_at IS NULL LIMIT ?) AS counted_comments)
+              """,
+              u.id,
+              ^limit,
+              u.id,
+              ^limit
+            )
+        )
+      )
+
+    min(count || 0, limit)
+  end
+
   @doc "Whether the account has outgrown the limits on new accounts."
   @spec trusted?(User.t() | map() | integer() | nil) :: boolean()
   def trusted?(user), do: standing(user).trusted

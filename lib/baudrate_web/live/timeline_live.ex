@@ -730,29 +730,17 @@ defmodule BaudrateWeb.TimelineLive do
     image_ids = Enum.map(socket.assigns.uploaded_images, & &1.id)
     poll_opts = build_poll_opts(socket, all_params)
 
-    case Content.create_article(attrs, board_ids, [image_ids: image_ids] ++ poll_opts) do
+    case Content.submit_article(attrs, board_ids, [image_ids: image_ids] ++ poll_opts) do
       {:ok, %{article: _article}} ->
-        page = socket.assigns.page
-        result = Federation.list_timeline_items(user, page: page)
+        {:noreply, socket |> put_flash(:info, gettext("Article posted!")) |> reset_composer(user)}
 
+      # Waiting for a moderator (ADR 0065). The uploads stay: the held row
+      # names them.
+      {:held, _held} ->
         {:noreply,
          socket
-         |> put_flash(:info, gettext("Article posted!"))
-         |> assign(:form, to_form(Content.change_article(), as: :article))
-         |> assign(:uploaded_images, [])
-         |> assign(:poll_enabled, false)
-         |> assign(:poll_options, ["", ""])
-         |> assign(:poll_mode, "single")
-         |> assign(:poll_expires, "")
-         |> assign(:selected_post_boards, [])
-         |> assign(:post_board_search_query, "")
-         |> assign(:post_board_search_results, [])
-         |> assign(:items, result.items)
-         |> assign(:total_pages, result.total_pages)
-         |> assign(:total, result.total)
-         # `aria-setsize`/`aria-posinset` on the feed articles need the page size.
-         |> assign(:per_page, result.per_page)
-         |> assign(:article_count, Content.count_articles_by_user(user.id))}
+         |> put_flash(:info, BaudrateWeb.Helpers.held_post_message())
+         |> reset_composer(user)}
 
       {:error, :article, changeset, _} ->
         {:noreply, assign(socket, :form, to_form(changeset, as: :article))}
@@ -778,6 +766,28 @@ defmodule BaudrateWeb.TimelineLive do
       {:error, _, _, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to create article."))}
     end
+  end
+
+  # After a post is published or held: an empty composer and a fresh page.
+  defp reset_composer(socket, user) do
+    result = Federation.list_timeline_items(user, page: socket.assigns.page)
+
+    socket
+    |> assign(:form, to_form(Content.change_article(), as: :article))
+    |> assign(:uploaded_images, [])
+    |> assign(:poll_enabled, false)
+    |> assign(:poll_options, ["", ""])
+    |> assign(:poll_mode, "single")
+    |> assign(:poll_expires, "")
+    |> assign(:selected_post_boards, [])
+    |> assign(:post_board_search_query, "")
+    |> assign(:post_board_search_results, [])
+    |> assign(:items, result.items)
+    |> assign(:total_pages, result.total_pages)
+    |> assign(:total, result.total)
+    # `aria-setsize`/`aria-posinset` on the feed articles need the page size.
+    |> assign(:per_page, result.per_page)
+    |> assign(:article_count, Content.count_articles_by_user(user.id))
   end
 
   # An `attachments` row carries both kinds since Phase 3E, told apart by

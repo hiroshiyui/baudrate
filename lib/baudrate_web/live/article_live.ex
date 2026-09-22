@@ -1019,7 +1019,7 @@ defmodule BaudrateWeb.ArticleLive do
       |> Map.put("user_id", user.id)
       |> Map.put("parent_id", replying_to)
 
-    case Content.create_comment(attrs, image_ids: image_ids) do
+    case Content.submit_comment(attrs, image_ids: image_ids) do
       {:ok, _comment} ->
         {:noreply,
          socket
@@ -1028,6 +1028,16 @@ defmodule BaudrateWeb.ArticleLive do
          |> assign(:replying_to, nil)
          |> assign(:uploaded_comment_images, [])
          |> put_flash(:info, gettext("Comment posted."))}
+
+      # Waiting for a moderator (ADR 0065). The uploads are not deleted: the
+      # held row names them.
+      {:held, _held} ->
+        {:noreply,
+         socket
+         |> assign(:comment_form, to_form(Content.change_comment(), as: :comment))
+         |> assign(:replying_to, nil)
+         |> assign(:uploaded_comment_images, [])
+         |> put_flash(:info, BaudrateWeb.Helpers.held_post_message())}
 
       {:error, :blocked} ->
         {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}

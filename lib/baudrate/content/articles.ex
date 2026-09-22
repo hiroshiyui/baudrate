@@ -28,6 +28,7 @@ defmodule Baudrate.Content.Articles do
   alias Baudrate.Content.LinkPreview.Worker, as: PreviewWorker
 
   alias Baudrate.Content.PubSub, as: ContentPubSub
+  alias Baudrate.Moderation.{ContentFilters, HeldPosts}
 
   @per_page 20
 
@@ -141,21 +142,114 @@ defmodule Baudrate.Content.Articles do
   def create_article(attrs, board_ids, opts \\ []) when is_list(board_ids) do
     author_id = attrs[:user_id] || attrs["user_id"]
 
-    # A moved, silenced or suspended account cannot write (ADR 0029), and a
-    # new one is held to the limits on new accounts (ADR 0064). A comment
-    # forwarded into a board by someone else keeps its author and is not new
-    # writing by that author. The error uses the Multi shape every caller
-    # already handles.
-    if Keyword.get(opts, :forwarded_comment, false) do
-      do_create_article(attrs, board_ids, opts)
-    else
-      with :ok <- Baudrate.Auth.ensure_can_interact(author_id),
-           :ok <- check_new_account_limits(author_id, attrs, opts) do
+    cond do
+      # A comment forwarded into a board by someone else keeps its author and
+      # is not new writing by that author.
+      Keyword.get(opts, :forwarded_comment, false) ->
         do_create_article(attrs, board_ids, opts)
-      else
-        {:error, reason} -> {:error, :account, reason, %{}}
-      end
+
+      # A held post a moderator approved (ADR 0065). It passed the filters and
+      # the limits on new accounts when it was submitted, and taking another
+      # place in the author's hourly bucket for a moderator's click would be
+      # wrong; whether the author may act at all can have changed since.
+      Keyword.has_key?(opts, :held_post) ->
+        case Baudrate.Auth.ensure_can_interact(author_id) do
+          :ok -> do_create_article(attrs, board_ids, opts)
+          {:error, reason} -> {:error, :account, reason, %{}}
+        end
+
+      true ->
+        gate_and_create_article(author_id, attrs, board_ids, opts)
     end
+  end
+
+  @doc """
+  Creates an article from a composer, or holds it for a moderator
+  (ADR 0065).
+
+  The same as `create_article/3`, except that a post that is one of a new
+  account's first (`hold_first_posts`), or that a `hold` filter matched, is
+  not published but held, and `{:held, %HeldPost{}}` is returned. Every
+  LiveView that lets a member write an article calls this, never
+  `create_article/3` — `test/baudrate/content/submit_path_test.exs` fails the
+  build otherwise, because a composer that forgot would publish what should
+  have waited.
+  """
+  @spec submit_article(map(), [term()], keyword()) ::
+          {:ok, %{article: %Article{}}}
+          | {:held, Baudrate.Moderation.HeldPost.t()}
+          | {:error, Ecto.Multi.name(), any(), map()}
+  def submit_article(attrs, board_ids, opts \\ []) when is_list(board_ids) do
+    author_id = attrs[:user_id] || attrs["user_id"]
+
+    opts =
+      opts
+      |> Keyword.drop([:forwarded_comment, :held_post, :trusted])
+      |> Keyword.put(:holdable, true)
+
+    gate_and_create_article(author_id, attrs, board_ids, opts)
+  end
+
+  # A moved, silenced or suspended account cannot write (ADR 0029); a filter
+  # may refuse, hold or flag what it wrote (ADR 0065); and a new account is
+  # held to the limits on new accounts (ADR 0064) — in that order, so a post a
+  # filter refuses spends no place in the hourly bucket. The error uses the
+  # Multi shape every caller already handles.
+  defp gate_and_create_article(author_id, attrs, board_ids, opts) do
+    holdable = Keyword.get(opts, :holdable, false)
+
+    with :ok <- Baudrate.Auth.ensure_can_interact(author_id),
+         verdict = screen_article(author_id, attrs, if(holdable, do: :post, else: :publish)),
+         :ok <- ContentFilters.refuse_blocked(verdict),
+         :ok <- check_new_account_limits(author_id, attrs, opts) do
+      ContentFilters.record(verdict)
+
+      case hold_reason(holdable, author_id, verdict) do
+        nil ->
+          attrs
+          |> do_create_article(board_ids, Keyword.delete(opts, :holdable))
+          |> tap(fn
+            {:ok, %{article: article}} ->
+              ContentFilters.flag(verdict, %{article_id: article.id})
+
+            _ ->
+              :ok
+          end)
+
+        {reason, filter} ->
+          case HeldPosts.hold_article(attrs, board_ids, opts, reason, filter) do
+            {:ok, held} -> {:held, held}
+            {:error, changeset} -> {:error, :held_post, changeset, %{}}
+          end
+      end
+    else
+      {:error, reason} -> {:error, :account, reason, %{}}
+    end
+  end
+
+  defp screen_article(author_id, attrs, mode) do
+    ContentFilters.screen(
+      %{
+        title: attrs[:title] || attrs["title"],
+        summary: attrs[:summary] || attrs["summary"],
+        body: attrs[:body] || attrs["body"]
+      },
+      mode: mode,
+      target_type: "article",
+      user_id: author_id
+    )
+  end
+
+  # Only a composer's submission can be held. A filter's hold comes first, so
+  # the queue says which filter it was.
+  defp hold_reason(false, _author_id, _verdict), do: nil
+  defp hold_reason(true, _author_id, %{outcome: :hold, filter: filter}), do: {"filter", filter}
+
+  # A flag filter that matched a post held for being one of the first is
+  # named on the held row, so the moderator reviewing it knows.
+  defp hold_reason(true, author_id, verdict) do
+    if HeldPosts.first_post?(author_id),
+      do: {"first_posts", if(verdict.outcome == :flag, do: verdict.filter)}
   end
 
   # One link and one image for an account that has not earned trust yet. Bots
@@ -186,6 +280,7 @@ defmodule Baudrate.Content.Articles do
 
     result =
       Ecto.Multi.new()
+      |> claim_held_post(Keyword.get(opts, :held_post))
       |> Ecto.Multi.insert(:article, changeset)
       |> Ecto.Multi.update(:article_with_ap_id, &article_ap_id_changeset(&1.article))
       |> Ecto.Multi.run(:board_articles, fn repo, %{article_with_ap_id: article} ->
@@ -250,6 +345,13 @@ defmodule Baudrate.Content.Articles do
     end
   end
 
+  # Approving a held post deletes its row in the transaction that publishes
+  # it, so a second approval rolls back instead of publishing twice.
+  defp claim_held_post(multi, nil), do: multi
+
+  defp claim_held_post(multi, held),
+    do: Ecto.Multi.run(multi, :claim_held_post, fn repo, _ -> HeldPosts.claim(repo, held) end)
+
   @doc """
   Returns an article changeset for form tracking.
   """
@@ -285,9 +387,37 @@ defmodule Baudrate.Content.Articles do
     # into a post that creation would have refused (ADR 0064) — posting clean
     # and editing dirty is the second way in.
     with :ok <- Baudrate.Auth.ensure_can_interact(editor),
+         verdict = screen_edit(article, attrs, editor),
+         :ok <- ContentFilters.refuse_blocked(verdict),
          :ok <- check_edit_limits(article, attrs, editor) do
-      do_update_article(article, attrs, editor)
+      ContentFilters.record(verdict)
+
+      article
+      |> do_update_article(attrs, editor)
+      |> tap(fn
+        {:ok, updated} -> ContentFilters.flag(verdict, %{article_id: updated.id})
+        _ -> :ok
+      end)
     end
+  end
+
+  # An edit is judged by what it adds (ADR 0065): a filter the stored article
+  # already matched does not stop its author fixing a typo. An update from
+  # federation has no local editor and is screened in the inbox instead.
+  defp screen_edit(_article, _attrs, nil), do: %{outcome: :pass}
+
+  defp screen_edit(article, attrs, editor) do
+    ContentFilters.screen(
+      %{
+        title: attrs[:title] || attrs["title"] || article.title,
+        summary: Map.get(attrs, :summary, Map.get(attrs, "summary", article.summary)),
+        body: attrs[:body] || attrs["body"] || article.body
+      },
+      mode: :edit,
+      previous: %{title: article.title, summary: article.summary, body: article.body},
+      target_type: "article",
+      user_id: editor.id
+    )
   end
 
   # An update from federation has no local editor and no limits to apply.

@@ -43,6 +43,7 @@ defmodule BaudrateWeb.ModerationLive do
            total_pages: 1,
            reports: [],
            other_reports: %{},
+           held_count: Baudrate.Moderation.HeldPosts.count_pending(socket.assigns.current_user),
            page_title: gettext("Moderation")
          )}
     end

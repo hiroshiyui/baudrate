@@ -10,6 +10,20 @@
     </p>
   </header>
 
+  <p id="moderation-held-link-row" class="moderation-held-link-row text-sm">
+    <.link
+      id="moderation-held-link"
+      navigate={~p"/moderation/held"}
+      class="moderation-held-link link link-primary"
+    >
+      {ngettext(
+        "%{count} post waiting for review",
+        "%{count} posts waiting for review",
+        @held_count
+      )}
+    </.link>
+  </p>
+
   <nav
     id="moderation-status-tabs"
     class="moderation-status-tabs tabs tabs-box"

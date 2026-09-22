@@ -403,6 +403,9 @@ defmodule BaudrateWeb.Router do
       # Board moderators are ordinary members, so their report queue lives
       # outside /admin; the LiveView scopes it to the boards they moderate.
       live "/moderation", ModerationLive
+      # Posts waiting for review (ADR 0065), for the same people: the page
+      # scopes itself to what each reviewer could approve.
+      live "/moderation/held", HeldPostsLive
     end
 
     # Admin routes — separate live_session for TOTP re-verification (sudo mode).
@@ -429,6 +432,7 @@ defmodule BaudrateWeb.Router do
       live "/admin/invites", Admin.InvitesLive
       live "/admin/login-attempts", Admin.LoginAttemptsLive
       live "/admin/ip-bans", Admin.IpBansLive
+      live "/admin/filters", Admin.FiltersLive
       live "/admin/data-exports", Admin.DataExportsLive
       live "/admin/bots", Admin.BotsLive
     end

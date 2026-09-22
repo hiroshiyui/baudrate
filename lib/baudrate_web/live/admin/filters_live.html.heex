@@ -1,0 +1,227 @@
+<div id="filters-page" class="filters-page space-y-6">
+  <h1 id="filters-heading" class="filters-heading text-2xl font-bold" tabindex="-1">
+    {gettext("Content Filters")}
+  </h1>
+
+  <p id="filters-explainer" class="filters-explainer text-sm text-base-content/70">
+    {gettext(
+      "A filter checks every article, comment and timeline reply when it is posted and when it is edited, and what arrives from other servers. Direct messages are never checked. Someone refused by a filter is told that the site does not allow it, never which filter or word, so a spammer cannot rephrase until it passes."
+    )}
+  </p>
+
+  <section
+    id="filters-new"
+    class="filters-new card bg-base-200"
+    aria-labelledby="filters-new-heading"
+  >
+    <div class="card-body gap-3">
+      <h2 id="filters-new-heading" class="filters-new-heading font-semibold">
+        {gettext("Add a filter")}
+      </h2>
+
+      <.form
+        for={@form}
+        id="filters-form"
+        class="filters-form space-y-3"
+        phx-change="validate"
+        phx-submit="create"
+      >
+        <.input
+          field={@form[:pattern]}
+          id="filters-pattern"
+          type="text"
+          maxlength={Baudrate.Moderation.ContentFilter.max_pattern_length()}
+          autocomplete="off"
+          spellcheck="false"
+          label={gettext("Pattern")}
+        />
+        <.input
+          field={@form[:kind]}
+          id="filters-kind"
+          type="select"
+          label={gettext("Kind")}
+          prompt={gettext("Choose…")}
+          options={
+            Enum.map(
+              Baudrate.Moderation.ContentFilter.kinds(),
+              &{BaudrateWeb.Admin.FiltersLive.kind_label(&1), &1}
+            )
+          }
+        />
+        <ul
+          id="filters-kind-help"
+          class="filters-kind-help text-sm text-base-content/70 list-disc pl-6 -mt-2 space-y-1"
+        >
+          <li>
+            {gettext(
+              "Word or phrase: whole words only, ignoring case and punctuation — “casino” matches “Casino night” but not “casinos”. Languages written without spaces between words need “Text anywhere”."
+            )}
+          </li>
+          <li>
+            {gettext(
+              "Text anywhere: matches inside words too — “casino” matches “onlinecasino”. A * stands for any letters inside one word, so “c*sino” matches “cassino”."
+            )}
+          </li>
+          <li>
+            {gettext(
+              "Linked domain: a link to the domain or anything under it — “spam.example” matches links to www.spam.example. Write an international domain name in its xn-- form."
+            )}
+          </li>
+        </ul>
+        <.input
+          field={@form[:action]}
+          id="filters-action"
+          type="select"
+          label={gettext("When it matches")}
+          prompt={gettext("Choose…")}
+          options={
+            Enum.map(
+              Baudrate.Moderation.ContentFilter.actions(),
+              &{BaudrateWeb.Admin.FiltersLive.action_label(&1), &1}
+            )
+          }
+        />
+        <p id="filters-action-help" class="filters-action-help text-sm text-base-content/70 -mt-2">
+          {gettext(
+            "Hold for review applies to posts written here; what cannot be held — a bot's post, a timeline reply, anything from another server — is published and reported instead, and an edit is refused. Content from other servers can only be refused or reported."
+          )}
+        </p>
+        <.input
+          field={@form[:applies_to]}
+          id="filters-applies-to"
+          type="select"
+          label={gettext("Applies to")}
+          options={
+            Enum.map(
+              Baudrate.Moderation.ContentFilter.scopes(),
+              &{BaudrateWeb.Admin.FiltersLive.scope_label(&1), &1}
+            )
+          }
+        />
+        <.input
+          field={@form[:note]}
+          id="filters-note"
+          type="text"
+          maxlength="500"
+          label={gettext("Note for other admins (optional)")}
+        />
+        <button id="filters-submit" type="submit" class="filters-submit btn btn-primary btn-sm">
+          {gettext("Add filter")}
+        </button>
+      </.form>
+    </div>
+  </section>
+
+  <section id="filters-current" class="filters-current" aria-labelledby="filters-current-heading">
+    <h2 id="filters-current-heading" class="filters-current-heading text-lg font-semibold mb-2">
+      {gettext("Filters")}
+    </h2>
+
+    <p :if={@filters == []} id="filters-empty" class="filters-empty text-base-content/70">
+      {gettext("There are no filters.")}
+    </p>
+
+    <div :if={@filters != []} class="overflow-x-auto">
+      <table id="filters-table" class="filters-table table table-sm">
+        <thead>
+          <tr>
+            <th scope="col">{gettext("Pattern")}</th>
+            <th scope="col">{gettext("Kind")}</th>
+            <th scope="col">{gettext("When it matches")}</th>
+            <th scope="col">{gettext("Applies to")}</th>
+            <th scope="col">
+              {gettext("Matches (%{days} days)",
+                days: Baudrate.Moderation.ContentFilters.match_days()
+              )}
+            </th>
+            <th scope="col"><span class="sr-only">{gettext("Actions")}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            :for={filter <- @filters}
+            id={"content-filter-#{filter.id}"}
+            class={["content-filter", !filter.enabled && "opacity-60"]}
+          >
+            <td class="content-filter-pattern font-mono text-sm break-all">
+              {filter.pattern}
+              <span
+                :if={!filter.enabled}
+                class="content-filter-disabled badge badge-ghost badge-sm ml-1"
+              >
+                {gettext("Off")}
+              </span>
+              <p
+                :if={filter.note}
+                class="content-filter-note font-sans text-xs opacity-70 break-words"
+              >
+                {filter.note}
+              </p>
+            </td>
+            <td class="content-filter-kind text-sm">
+              {BaudrateWeb.Admin.FiltersLive.kind_label(filter.kind)}
+            </td>
+            <td class="content-filter-action text-sm">
+              <form
+                id={"content-filter-action-form-#{filter.id}"}
+                class="content-filter-action-form"
+                phx-change="set_action"
+              >
+                <input type="hidden" name="filter_id" value={filter.id} />
+                <label for={"content-filter-action-#{filter.id}"} class="sr-only">
+                  {gettext("When “%{pattern}” matches", pattern: filter.pattern)}
+                </label>
+                <select
+                  id={"content-filter-action-#{filter.id}"}
+                  name="filter_action"
+                  class="content-filter-action-select select select-bordered select-xs"
+                >
+                  <option
+                    :for={action <- Baudrate.Moderation.ContentFilter.actions()}
+                    value={action}
+                    selected={action == filter.action}
+                  >
+                    {BaudrateWeb.Admin.FiltersLive.action_label(action)}
+                  </option>
+                </select>
+              </form>
+            </td>
+            <td class="content-filter-scope text-sm">
+              {BaudrateWeb.Admin.FiltersLive.scope_label(filter.applies_to)}
+            </td>
+            <td class="content-filter-matches text-sm">
+              {Map.get(@match_counts, filter.id, 0)}
+            </td>
+            <td class="text-right whitespace-nowrap">
+              <button
+                id={"content-filter-toggle-#{filter.id}"}
+                type="button"
+                class="content-filter-toggle btn btn-ghost btn-xs"
+                phx-click="toggle"
+                phx-value-id={filter.id}
+                aria-label={
+                  if filter.enabled,
+                    do: gettext("Turn off “%{pattern}”", pattern: filter.pattern),
+                    else: gettext("Turn on “%{pattern}”", pattern: filter.pattern)
+                }
+              >
+                {if filter.enabled, do: gettext("Turn off"), else: gettext("Turn on")}
+              </button>
+              <button
+                id={"content-filter-delete-#{filter.id}"}
+                type="button"
+                class="content-filter-delete btn btn-ghost btn-xs text-error"
+                phx-click="delete"
+                phx-value-id={filter.id}
+                data-confirm={gettext("Delete this filter and its match records?")}
+                aria-label={gettext("Delete “%{pattern}”", pattern: filter.pattern)}
+              >
+                {gettext("Delete")}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

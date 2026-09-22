@@ -35,6 +35,31 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       {:ok, conn: conn}
     end
 
+    # ADR 0065: each says what happened in a full sentence, names no
+    # moderator, and leads somewhere the member can act.
+    test "renders the three held-post notices", %{conn: conn, user: user} do
+      {:ok, _} =
+        Notification.create_notification(%{
+          type: "held_post",
+          user_id: user.id,
+          data: %{"held_post_id" => 1, "kind" => "article"}
+        })
+
+      {:ok, _} =
+        Notification.create_notification(%{
+          type: "post_rejected",
+          user_id: user.id,
+          data: %{"kind" => "comment"}
+        })
+
+      {:ok, _lv, html} = live(conn, "/notifications")
+
+      assert html =~ "A post is waiting for review."
+      assert html =~ ~s(href="/moderation/held")
+      assert html =~ "A moderator declined to publish your post."
+      assert html =~ ~s(href="/drafts")
+    end
+
     test "renders notification with actor name and type text", %{
       conn: conn,
       user: user

@@ -339,7 +339,7 @@ defmodule BaudrateWeb.ArticleNewLive do
     image_ids = Enum.map(socket.assigns.uploaded_images, & &1.id)
     poll_opts = build_poll_opts(socket, all_params)
 
-    case Content.create_article(attrs, board_ids, [image_ids: image_ids] ++ poll_opts) do
+    case Content.submit_article(attrs, board_ids, [image_ids: image_ids] ++ poll_opts) do
       {:ok, %{article: article}} ->
         # The draft has become the article, so it goes — and the pending
         # autosave goes with it, or it would fire after the redirect and
@@ -349,6 +349,16 @@ defmodule BaudrateWeb.ArticleNewLive do
          |> discard_draft(user)
          |> put_flash(:info, gettext("Article created successfully."))
          |> redirect(to: ~p"/articles/#{article.slug}")}
+
+      # Waiting for a moderator (ADR 0065). The submission now lives in the
+      # held row, so the draft goes as it would on publishing, and the
+      # uploads stay: the held row names them.
+      {:held, _held} ->
+        {:noreply,
+         socket
+         |> discard_draft(user)
+         |> put_flash(:info, BaudrateWeb.Helpers.held_post_message())
+         |> redirect(to: ~p"/drafts")}
 
       {:error, :article, changeset, _} ->
         {:noreply, assign(socket, :form, to_form(changeset, as: :article))}

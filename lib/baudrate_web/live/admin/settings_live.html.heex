@@ -109,6 +109,22 @@
           )}
         </p>
         <.input
+          field={@form[:hold_first_posts]}
+          type="number"
+          min="0"
+          max={Baudrate.Moderation.HeldPosts.max_first_posts()}
+          label={gettext("First posts held for review")}
+        />
+        <p
+          id="settings-hold-first-posts-help"
+          class="settings-hold-first-posts-help text-sm text-base-content/70 -mt-2"
+        >
+          {gettext(
+            "An account's first posts — articles and comments — wait for a moderator before anyone else can see them, until it has this many that have not been removed. Admins, moderators and bots are never held. 0 turns it off. At most %{max}.",
+            max: Baudrate.Moderation.HeldPosts.max_first_posts()
+          )}
+        </p>
+        <.input
           field={@form[:ap_federation_enabled]}
           type="select"
           label={gettext("Federation")}

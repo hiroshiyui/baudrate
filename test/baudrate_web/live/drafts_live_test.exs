@@ -201,6 +201,63 @@ defmodule BaudrateWeb.DraftsLiveTest do
     end
   end
 
+  describe "posts waiting for review (ADR 0065)" do
+    setup %{user: user, board: board} do
+      Repo.insert!(%Setting{key: "hold_first_posts", value: "3"})
+
+      {:held, held} =
+        Content.submit_article(
+          %{
+            "title" => "Held for review",
+            "body" => "The text I wrote",
+            "slug" => "held-drafts-#{System.unique_integer([:positive])}",
+            "user_id" => user.id
+          },
+          [board.id]
+        )
+
+      %{held: held}
+    end
+
+    test "are listed with what was written, and can be withdrawn", %{conn: conn, held: held} do
+      {:ok, lv, html} = live(conn, "/drafts")
+
+      assert html =~ "Waiting for review"
+      assert html =~ "Held for review"
+      assert html =~ "The text I wrote"
+
+      html = lv |> element("#held-withdraw-#{held.id}") |> render_click()
+
+      assert html =~ "Withdrawn."
+      refute Repo.get(Baudrate.Moderation.HeldPost, held.id)
+    end
+
+    test "a declined one shows the moderator's note and cannot be erased", %{
+      conn: conn,
+      held: held
+    } do
+      {:ok, _} =
+        Baudrate.Moderation.HeldPosts.reject(held, setup_user("admin"), "Wrong board, sorry.")
+
+      {:ok, lv, html} = live(conn, "/drafts")
+
+      assert html =~ "Declined"
+      assert html =~ "Wrong board, sorry."
+      refute has_element?(lv, "#held-withdraw-#{held.id}")
+
+      # A forged withdrawal of a declined post changes nothing.
+      render_click(lv, "withdraw_held", %{"id" => to_string(held.id)})
+      assert Repo.get(Baudrate.Moderation.HeldPost, held.id)
+    end
+
+    test "nobody else's are listed", %{conn: conn, held: held} do
+      {:ok, _lv, html} = live(log_in_user(conn, setup_user("user")), "/drafts")
+
+      refute html =~ "Held for review"
+      refute html =~ "held-#{held.id}"
+    end
+  end
+
   describe "the drafts page" do
     test "lists the member's own and nobody else's", %{conn: conn, user: user} do
       stranger = setup_user("user")

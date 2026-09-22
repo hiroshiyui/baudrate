@@ -414,6 +414,16 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("pending_registration"),
     do: gettext("registered and is waiting to be let in")
 
+  # Held posts (ADR 0065). Actorless, so full sentences, and neither names
+  # the moderator.
+  def notification_text("held_post"), do: gettext("A post is waiting for review.")
+
+  def notification_text("post_approved"),
+    do: gettext("A moderator approved your post, and it is now published.")
+
+  def notification_text("post_rejected"),
+    do: gettext("A moderator declined to publish your post.")
+
   # Operational notices (ADR 0044). The check names follow on their own line,
   # translated by `translate_health_check/1`; the reasons stay in the detailed
   # health report, which is where an operator acts on them.
@@ -573,8 +583,8 @@ defmodule BaudrateWeb.Helpers do
 
   @doc """
   Flash text for a refused action: the gate's own explanation when the gate
-  refused it (ADR 0029) or a new account's limit did (ADR 0064), and
-  `fallback` for anything else.
+  refused it (ADR 0029), a new account's limit did (ADR 0064) or a content
+  filter did (ADR 0065), and `fallback` for anything else.
 
   Call it from the `{:error, reason}` catch-all of an interaction handler.
   A member told only "that did not work" has no way to find out that they are
@@ -585,9 +595,34 @@ defmodule BaudrateWeb.Helpers do
     cond do
       reason in @gate_refusals -> interaction_refused_message(reason, user)
       reason in @new_account_refusals -> new_account_message(reason, user)
+      reason == :content_filtered -> content_filtered_message()
       true -> fallback
     end
   end
+
+  @doc """
+  Flash text for a post a content filter refused (ADR 0065).
+
+  It says that a rule of the site stopped the post and **never which one**: a
+  filter that names the word it caught is a word-guessing oracle, and a
+  spammer would rephrase until it passed. A member caught by mistake can ask
+  the moderators, who can see which filter matched.
+  """
+  def content_filtered_message,
+    do:
+      gettext(
+        "This can't be posted because it contains something this site doesn't allow. If you think this is a mistake, please contact the moderators."
+      )
+
+  @doc """
+  Flash text for a post held for a moderator (ADR 0065): it is not lost, it
+  is not public yet, and where to find it meanwhile.
+  """
+  def held_post_message,
+    do:
+      gettext(
+        "Thanks — your post will appear once a moderator has looked at it. Until then you can find it under Drafts."
+      )
 
   @doc """
   Flash text for something an account may not do until it has earned trust
@@ -773,6 +808,9 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("report_reviewed"), do: "hero-flag"
   def notification_icon("content_removed"), do: "hero-trash"
   def notification_icon("pending_registration"), do: "hero-user-plus"
+  def notification_icon("held_post"), do: "hero-inbox-stack"
+  def notification_icon("post_approved"), do: "hero-check-circle"
+  def notification_icon("post_rejected"), do: "hero-x-circle"
   def notification_icon("health_alert"), do: "hero-exclamation-triangle"
   def notification_icon("health_recovered"), do: "hero-check-badge"
   def notification_icon("sanction_applied"), do: "hero-exclamation-triangle"

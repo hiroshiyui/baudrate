@@ -215,12 +215,14 @@ defmodule Baudrate.Content.Images do
   Paths are rebuilt from `filename`, never read from `storage_path` — see
   `image_paths/1`.
 
-  **An image a saved draft is holding is not an orphan.** An upload belongs to
-  no article until the post is submitted, which is exactly the state a draft
-  preserves, so without this a post drafted overnight is resumed with its
-  pictures already unlinked from disk. The draft's own purge is what
-  eventually releases them: once the row is gone the images are ordinary
-  orphans again and a later pass collects them.
+  **An image a saved draft is holding is not an orphan**, and nor is one a
+  post waiting for a moderator names (ADR 0065). An upload belongs to no
+  article until the post is published, which is exactly the state a draft
+  and a held post preserve, so without this a post drafted — or held —
+  overnight comes back with its pictures already unlinked from disk. The
+  draft's purge, or the held post's approval or rejection, is what eventually
+  releases them: once nothing names them they are ordinary orphans again and
+  a later pass collects them.
   """
   def delete_orphan_article_images(cutoff) do
     paths =
@@ -243,6 +245,11 @@ defmodule Baudrate.Content.Images do
       where:
         fragment(
           "NOT EXISTS (SELECT 1 FROM article_drafts d WHERE ? = ANY(d.image_ids))",
+          ai.id
+        ),
+      where:
+        fragment(
+          "NOT EXISTS (SELECT 1 FROM held_posts h WHERE h.status = 'pending' AND h.kind = 'article' AND ? = ANY(h.image_ids))",
           ai.id
         )
     )
@@ -329,22 +336,31 @@ defmodule Baudrate.Content.Images do
 
   Paths are rebuilt from `filename`, never read from `storage_path` — see
   `image_paths/1`.
+
+  An image a comment waiting for a moderator names is not an orphan
+  (ADR 0065), for the reason `delete_orphan_article_images/1` gives.
   """
   def delete_orphan_comment_images(cutoff) do
     paths =
-      from(ci in CommentImage,
-        where: is_nil(ci.comment_id) and ci.inserted_at < ^cutoff,
-        select: ci.filename
-      )
+      orphan_comment_images(cutoff)
+      |> select([ci], ci.filename)
       |> Repo.all()
       |> image_paths()
 
-    from(ci in CommentImage,
-      where: is_nil(ci.comment_id) and ci.inserted_at < ^cutoff
-    )
-    |> Repo.delete_all()
+    orphan_comment_images(cutoff) |> Repo.delete_all()
 
     paths
+  end
+
+  defp orphan_comment_images(cutoff) do
+    from(ci in CommentImage,
+      where: is_nil(ci.comment_id) and ci.inserted_at < ^cutoff,
+      where:
+        fragment(
+          "NOT EXISTS (SELECT 1 FROM held_posts h WHERE h.status = 'pending' AND h.kind = 'comment' AND ? = ANY(h.image_ids))",
+          ci.id
+        )
+    )
   end
 
   @max_image_size 8 * 1024 * 1024

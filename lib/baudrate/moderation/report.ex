@@ -24,6 +24,10 @@ defmodule Baudrate.Moderation.Report do
       `reported_user_id` or `remote_actor_id`. `message_body` is never cast
       from attributes; only `Moderation.report_message/3` sets it, from the
       stored message.
+    * `content_filter_id` — set when a content filter opened the report rather
+      than a person (ADR 0065). `reason` then holds the filter's pattern as it
+      stood, so the report still reads if the filter is edited or deleted.
+      Never cast from attributes; only `ContentFilters.flag/3` sets it.
   """
 
   use Ecto.Schema
@@ -55,6 +59,8 @@ defmodule Baudrate.Moderation.Report do
     # must still be able to report, and rules are retired rather than deleted
     # so an old citation keeps resolving.
     belongs_to :rule, Baudrate.Setup.Rule
+    # A report a content filter opened, not a person (ADR 0065).
+    belongs_to :content_filter, Baudrate.Moderation.ContentFilter
 
     timestamps(type: :utc_datetime)
   end

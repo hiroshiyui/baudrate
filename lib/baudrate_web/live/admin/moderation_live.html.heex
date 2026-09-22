@@ -3,6 +3,20 @@
     {gettext("Moderation Queue")}
   </h1>
 
+  <p id="admin-moderation-held-link-row" class="admin-moderation-held-link-row text-sm">
+    <.link
+      id="admin-moderation-held-link"
+      navigate={~p"/moderation/held"}
+      class="admin-moderation-held-link link link-primary"
+    >
+      {ngettext(
+        "%{count} post waiting for review",
+        "%{count} posts waiting for review",
+        @held_count
+      )}
+    </.link>
+  </p>
+
   <%!-- Status Filter Toggle Buttons --%>
   <div
     id="admin-moderation-status-tabs"

@@ -82,6 +82,19 @@ defmodule Baudrate.Notification.Notification do
       (`actor_user_id`). Always delivered for the same reason as the rest of
       this group: an approval queue nobody is told about is an approval queue
       nobody empties.
+    * `held_post` — a post is waiting for review (`data.held_post_id`,
+      `data.kind`), sent to whoever can review it (ADR 0065). Always
+      delivered, for the same reason.
+
+  ### Held posts, for their author
+
+  Moderation notices about the recipient's own content, always delivered
+  like `content_removed`, and actorless, so they name no moderator.
+
+    * `post_approved` — a held post was approved and is published
+      (`article_id`, and `comment_id` for a comment)
+    * `post_rejected` — a moderator declined to publish a held post
+      (`data.kind`); the text and any note stay on `/drafts`
 
   ## Deduplication
 
@@ -144,6 +157,9 @@ defmodule Baudrate.Notification.Notification do
     pending_registration
     health_alert
     health_recovered
+    held_post
+    post_approved
+    post_rejected
   )
 
   @security_types ~w(
@@ -178,13 +194,13 @@ defmodule Baudrate.Notification.Notification do
   # account security notices they are always delivered: someone must not be
   # able to switch off being told their post was removed, or that their
   # account was silenced, why and until when (P1-D4).
-  @moderation_notice_types ~w(content_removed sanction_applied sanction_lifted sanction_ended)
+  @moderation_notice_types ~w(content_removed sanction_applied sanction_lifted sanction_ended post_approved post_rejected)
 
   # Operational notices to admins (ADR 0044). Always delivered for the same
   # reason as the other two classes: the person who would switch these off is
   # exactly the person who has to act on them, and an alert that can be muted
   # by accident is not an alert.
-  @operational_notice_types ~w(health_alert health_recovered pending_registration)
+  @operational_notice_types ~w(health_alert health_recovered pending_registration held_post)
 
   @doc "Returns the list of valid notification type strings."
   def valid_types, do: @valid_types
