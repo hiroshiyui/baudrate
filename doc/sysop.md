@@ -1049,6 +1049,10 @@ the ordinary word. Links are resolved the way a browser resolves them.
   servers, or both.
 - **Direct messages are never checked**, in either direction. A member who
   wants staff to see a message reports it.
+- Poll options and image descriptions are checked with the post, and a
+  description changed later on a published image is checked as an edit.
+- A post a member **imports by its URL** from `/search` is checked like one
+  that arrived from its server: a refusing filter refuses the import.
 - Someone refused is told the site does not allow what they wrote, and **never
   which filter or word** — otherwise a spammer rephrases until it passes. A
   member caught by mistake can ask; the report or the match count shows which
@@ -1484,6 +1488,7 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | User muting | 10 / 5 min | per user |
 | Search (authenticated) | 15 / min | per user |
 | Search (guest) | 10 / min | per IP |
+| Importing a remote post by its URL from `/search` | 10 / 5 min | per user |
 | Avatar upload | 5 / hour | per user |
 | LiveView mount | 60 / min | per IP |
 | AP endpoints | 120 / min | per IP |

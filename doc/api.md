@@ -1183,7 +1183,11 @@ a log line, not a 4xx, so remote instances do not retry.
 fetched or carried by a group. A filter set to refuse drops the activity like
 any other refusal; one set to hold or to report stores it as usual and opens a
 moderation report, since nothing arriving over federation can be held. The
-sender is told nothing either way. Direct messages are never screened.
+sender is told nothing either way. What is screened is everything stored and
+shown: `name`, `summary`, `content` and `source.content`, attachment names and
+poll option names. An `Update` is screened whatever its own addressing, since
+it rewrites the stored object by its `id`. Direct messages are never
+screened. A post a member imports by its URL is screened the same way.
 
 ---
 

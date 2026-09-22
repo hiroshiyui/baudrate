@@ -1928,12 +1928,29 @@ per `*`-separated part inside one word; domain filters a comparison of hosts.
 Time is proportional to the text whatever the pattern — a test holds a
 60 000-character input against `a*a*a*a*b` to two seconds.
 
-**What is matched**: the title, the content warning, the body as rendered and
-stripped of markup (`Sanitizer.Native.strip_tags/1`, so `&#99;asino` and
-`ca<b></b>sino` are "casino"), and the address of every link that leaves the
-site (`HtmlParser.Native.extract_urls/2`). Patterns and text are compared in
+**What is matched** is everything published with the post: the title, the
+content warning, the body as rendered and stripped of markup
+(`Sanitizer.Native.strip_tags/1`, so `&#99;asino` and `ca<b></b>sino` are
+"casino"), the address of every link that leaves the site
+(`HtmlParser.Native.extract_urls/2`), a poll's options and the uploads'
+descriptions (passed lazily as `:extra`, so they cost a query only when a
+filter exists). For remote content: `name`, `summary`, `content` **and**
+`source.content` — the inbox falls back to the latter when `content` is empty
+— attachment names and poll option names. Patterns and text are compared in
 one normal form (`ContentFilter.normalize_text/1`: NFKC, format characters
 such as zero-width spaces removed, lower case, single spaces).
+
+**Descriptions are published text too.** Changing the description of an
+image that belongs to a published post, or to one waiting for review
+(`Images.update_article_image_alt/3`, `update_comment_image_alt/3`,
+`ReplyImages.update_reply_image_alt/3`), passes the sanction gate and is
+screened as an edit; a draft's uploads are screened with the post when it is
+submitted. The pages that save descriptions flash the refusal.
+
+**Importing a post by URL** (`ObjectResolver.resolve/1`, the import button on
+`/search`) does not pass through the inbox, so it screens the object itself —
+a refusing filter refuses the import, a holding or reporting one imports and
+reports it — and it is rate limited (`RateLimits.check_remote_import/1`).
 
 | Where | Screened by | block | hold | flag |
 |---|---|---|---|---|
@@ -1942,9 +1959,14 @@ such as zero-width spaces removed, lower case, single spaces).
 | edit (`update_article/3`, `update_comment/3`) | the same, against what the edit adds | refused | refused | published, reported |
 | timeline reply | `Federation.Timeline` | refused | reported | reported |
 | remote (`Create`, `Update`, `handle_announce_object/3`) | `InboxHandler.screened/3` | dropped, `:ok` | reported | reported |
+| imported by a member (`ObjectResolver.resolve/1`) | `ObjectResolver` | import refused | reported | reported |
 
 Direct messages are never screened, in either direction, and neither is
-forwarding. A refusal is `{:error, :content_filtered}` (for `create_article/3`
+forwarding. **An `Update(Note)` is screened whatever its own addressing
+says**: `handle_update_note/2` rewrites the stored comment found by `ap_id`, so
+an exemption for Updates that *look like* messages let a peer edit refused
+text into a public reply. The one Update left alone is one naming a message
+we hold, whose edits are never applied. A refusal is `{:error, :content_filtered}` (for `create_article/3`
 the usual `{:error, :account, :content_filtered, %{}}`), which
 `Helpers.refusal_message/3` turns into a sentence that never names the
 filter. A flag is a report with `content_filter_id` set and the pattern as it
@@ -2993,6 +3015,7 @@ these responses loads a subresource.
 | User muting | 10 / 5 min | per user |
 | Search (authenticated) | 15 / min | per user |
 | Search (guest) | 10 / min | per IP |
+| Importing a remote post by its URL from `/search` | 10 / 5 min | per user |
 | Avatar upload | 5 / hour | per user |
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
