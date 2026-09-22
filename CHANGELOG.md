@@ -9,6 +9,32 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.38.0] — 2026-09-22
+
+Phase 5's second release: an account that gets through the door is slowed
+down until it has been here a few days and written a few posts that stayed
+up — one link and one image a post, ten posts an hour, nothing added to its
+signature, and messages only where they are not unsolicited
+([ADR 0064](doc/adr/0064-a-new-account-is-slowed-down-not-shut-out.md)). Nothing
+about it is stored: the site asks the clock and the post count every time,
+so the limits lift on their own, and come back if the posts that lifted them
+are removed.
+
+Building it found three ways round rules that already existed: the article
+edit page published uploads with no check at all, a link counter that read
+links as text, and a "Followers only" DM setting that admitted no follower on
+this instance.
+
+### Upgrading
+
+- **The limits apply from the moment of deploy to every account that has not
+  met both numbers** — including long-standing members who have posted fewer
+  than three times. They lift on their own as soon as both are met. If that
+  is not what you want, set both **Days before a new account is trusted** and
+  **Posts before a new account is trusted** to 0 at `/admin/settings` right
+  after deploying, and raise them when you are ready. Admins, moderators and
+  bots are never limited. No migrations.
+
 ### Added
 
 - **Limits on new accounts** (Phase 5B,
@@ -18,8 +44,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   post, post ten times an hour (articles, comments and timeline replies
   together), add no link or image to its signature — which appears under
   every article it posts — and send direct messages only to people who follow
-  it, people who have written to it first, and staff. Bots, admins and moderators are
-  never limited, and an invite confers nothing. The site works this out every
+  it, people who have written to it first, and staff. Bots, admins and
+  moderators are never limited, and an invite confers nothing. The site works this out every
   time from the account's age and post count, so the limits lift the moment
   both are met — and come back if a moderator removes the posts that earned
   it.
@@ -38,7 +64,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - Links are now counted the way a browser follows them: every `href` is
   resolved against the site's address and compared by host. The HTML parser
   gained `extract_urls/2` and `count_images/1`, and the link-preview extractor
-  now takes the first of the same list.
+  now takes the first of the same list. It depends on the `url` crate, locked
+  at the version the sanitizer already uses.
 - A refused article keeps what was written in the composer, on the new-post
   page and the timeline composer alike, rather than depending on the page
   having seen the text typed.
@@ -79,6 +106,9 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   its rows in the conformance index; a section on the limits in
   `doc/development.md` and `doc/sysop.md`, and the new bucket in both rate
   limit tables.
+- `doc/troubleshooting.md`: a member who cannot post a second link or send a
+  message, how to read an account's standing from the console, and what only
+  looks like the limit.
 
 ## [1.37.0] — 2026-09-22
 
