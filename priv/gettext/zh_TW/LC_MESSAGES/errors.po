@@ -111,3 +111,15 @@ msgstr "與密碼不相符"
 
 msgid "must be different from your current password"
 msgstr "必須與目前的密碼不同"
+
+msgid "is already a filter"
+msgstr "已經是一條過濾規則"
+
+msgid "is not a domain name"
+msgstr "不是網域名稱"
+
+msgid "has no letters or numbers"
+msgstr "沒有任何文字或數字"
+
+msgid "with a * may hold only letters, numbers and *"
+msgstr "含有 * 時只能包含文字、數字與 *"

@@ -111,3 +111,15 @@ msgstr "パスワードと一致しません"
 
 msgid "must be different from your current password"
 msgstr "現在のパスワードとは異なるものにしてください"
+
+msgid "is already a filter"
+msgstr "すでにフィルターとして登録されています"
+
+msgid "is not a domain name"
+msgstr "ドメイン名ではありません"
+
+msgid "has no letters or numbers"
+msgstr "文字や数字が含まれていません"
+
+msgid "with a * may hold only letters, numbers and *"
+msgstr "* を含む場合は文字・数字・* のみ使えます"

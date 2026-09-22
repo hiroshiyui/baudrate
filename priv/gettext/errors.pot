@@ -127,3 +127,17 @@ msgstr ""
 
 msgid "must be different from your current password"
 msgstr ""
+
+## From Baudrate.Moderation.ContentFilter (custom changeset messages;
+## not statically extractable)
+msgid "is already a filter"
+msgstr ""
+
+msgid "is not a domain name"
+msgstr ""
+
+msgid "has no letters or numbers"
+msgstr ""
+
+msgid "with a * may hold only letters, numbers and *"
+msgstr ""
