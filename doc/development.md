@@ -240,6 +240,12 @@ lib/
 │   │   └── warmer.ex            # Pre-populates the cache at ingest, so the first viewer waits less
 │   ├── moderation.ex            # Moderation context: reports, resolve/dismiss, audit log
 │   ├── moderation/
+│   │   ├── content_filter.ex    # A word, substring or domain filter, stored in one normal form (ADR 0065)
+│   │   ├── content_filter_cache.ex # ETS cache of the enabled filters, compiled for matching
+│   │   ├── content_filter_match.ex # One time a filter matched: who, where, what was done — never the text
+│   │   ├── content_filters.ex   # Filter CRUD and the screening every post and inbound object goes through
+│   │   ├── held_post.ex         # A submission waiting for a moderator — not an article or comment
+│   │   ├── held_posts.ex        # Holding, reviewing, approval as publication, withdrawal, purge
 │   │   ├── log.ex               # ModerationLog schema (audit trail of moderation actions)
 │   │   └── report.ex            # Report schema (article, comment, remote actor, user, timeline item, DM targets)
 │   ├── notification.ex          # Notification context: create, list, mark read, cleanup, admin announcements
@@ -314,6 +320,7 @@ lib/
 │   │   │   ├── boards_live.ex          # Admin board CRUD + moderator management
 │   │   │   ├── data_exports_live.ex   # Admin view of data export requests (ADR 0023)
 │   │   │   ├── federation_live.ex      # Admin federation dashboard
+│   │   │   ├── filters_live.ex        # /admin/filters — word, text and domain filters, with match counts (ADR 0065)
 │   │   │   ├── invites_live.ex         # Admin invite code management (generate, revoke, invite chain)
 │   │   │   ├── instance_detail_live.ex # One remote instance: whether it is blocked, and its known actors
 │   │   │   ├── ip_bans_live.ex        # /admin/ip-bans — refuse registration and sign-in from a range
@@ -331,7 +338,7 @@ lib/
 │   │   ├── article_helpers.ex   # Pure helper logic extracted from ArticleLive
 │   │   ├── article_history_live.ex # Article edit history with inline diffs
 │   │   ├── comment_history_live.ex # A comment's edit history, public like the article's (ADR 0060)
-│   │   ├── drafts_live.ex       # /drafts — a member's own unfinished articles (ADR 0062)
+│   │   ├── drafts_live.ex       # /drafts — a member's own unfinished articles (ADR 0062), and their posts waiting for review (ADR 0065)
 │   │   ├── article_live.ex      # Single article view with paginated comments
 │   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
@@ -343,6 +350,7 @@ lib/
 │   │   ├── data_export_live.ex  # Self-service data export request and download (ADR 0023)
 │   │   ├── timeline_live.ex          # Personal timeline (remote posts, local articles, comment activity)
 │   │   ├── following_live.ex    # Following management (outbound remote actor follows)
+│   │   ├── held_posts_live.ex   # /moderation/held — posts waiting for review, scoped to the reviewer (ADR 0065)
 │   │   ├── home_live.ex         # Home page (board listing, public for guests)
 │   │   ├── interaction_helpers.ex # Shared like/boost toggle event handlers
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
@@ -1854,6 +1862,98 @@ one message's text in `reports.message_body`, taken when the report is made and
 never cast from attributes: moderators see the reported message and nothing
 else from the conversation, and the copy survives the sender deleting it.
 
+#### Posts held for review
+
+[ADR 0065](adr/0065-what-waits-for-review-is-not-content-yet.md). A post can
+wait for a moderator before anyone else sees it: one of a new account's first
+`hold_first_posts` posts (set on `/admin/settings`, 0 — the default — is off),
+or one a content filter set to `hold` matched.
+
+**A held post is a row in `held_posts`, not an article or a comment.**
+`Moderation.HeldPost` holds what the composer sent — title, body, content
+warning, visibility, boards, image ids, poll (with how long it stays open,
+counted from approval) and, for a comment, the article and the comment it
+answers. It has no `ap_id` and no slug, and no listing reads the table, so it
+is in no feed, search, sitemap or outbox by construction.
+
+| Step | Where |
+|---|---|
+| A composer submits | `Content.submit_article/3`, `Content.submit_comment/2` — `{:held, %HeldPost{}}` when held. Every LiveView that writes calls these; `create_*` never hold, and `test/baudrate/content/submit_path_test.exs` fails the build if `lib/baudrate_web` calls them |
+| Held posts are counted | `HeldPosts.first_post?/1`: fewer than `hold_first_posts` articles and comments still up (`Auth.Trust.count_posts/2`); staff and bots never |
+| Reviewers are told | `held_post` (always delivered) to staff and to board moderators who moderate every board it would appear in |
+| A reviewer approves | `HeldPosts.approve/2` → `create_*(…, held_post: held)`, whose first Multi step deletes the pending row (`HeldPosts.claim/2`) — a second approval rolls back |
+| … or declines | `HeldPosts.reject/3`: status `rejected`, reviewer, time, note; `post_rejected` to the author |
+| The author sees it | `/drafts`, "Waiting for review": the text, the status, the note; a pending one can be withdrawn (`HeldPosts.withdraw/2`), a rejected one cannot be erased |
+| It is purged | `Retention` removes rejected rows 90 days after review; a pending one is never purged |
+
+A held post has passed every gate a published one must — the sanction gate, a
+filter's `block`, and the limits on new accounts including a place in the
+hourly bucket — so a moderator is never asked to approve what the author could
+not have posted. Approval re-checks what can have changed since: the author's
+standing first (so a silenced author's refusal says so rather than "no
+boards"), each board (one the author has lost is dropped; none left refuses
+with `:no_boards`), whether the article a comment answers is still there and
+open (`:article_gone`, `:cannot_comment`), and blocks. It takes no place in
+the author's bucket.
+
+Reviewing happens at **`/moderation/held`** (`HeldPostsLive`), one page for
+everyone: staff see every held post, a board moderator sees an article only
+when they moderate every board it names and a comment only when they moderate
+every board its article is in — approving publishes into all of them (P1-D5).
+The scope is part of the query (`HeldPosts.get_pending_for_reviewer/2`); the
+id comes from the client. Both report queues link to it with the count.
+
+The orphan image sweeps (`Images.delete_orphan_article_images/1`,
+`delete_orphan_comment_images/1`) spare the uploads a **pending** row names;
+once it is approved the images belong to the post, and once it is rejected or
+withdrawn they are ordinary orphans again.
+
+#### Content filters
+
+[ADR 0065](adr/0065-what-waits-for-review-is-not-content-yet.md).
+`Moderation.ContentFilters` (not `Content.Filters`, which is the
+hidden-content query filters) manages admin-written filters at
+**`/admin/filters`** and screens posts against them. The enabled filters are
+compiled into `Moderation.ContentFilterCache` (ETS, refreshed by every write).
+
+| Kind | Matches |
+|---|---|
+| `word` | whole words or a phrase, ignoring case and punctuation: `casino` matches "Casino night", not "casinos" |
+| `substring` | anywhere, including inside words; `*` stands for letters inside one word (`c*sino`), and a pattern with a `*` may hold only letters, numbers and `*` |
+| `domain` | a link to the host or any host under it; a pasted URL or handle is reduced to its host |
+
+**No regular expressions.** Word filters are a substring search over the
+text's words joined by single spaces; substring filters a substring search,
+per `*`-separated part inside one word; domain filters a comparison of hosts.
+Time is proportional to the text whatever the pattern — a test holds a
+60 000-character input against `a*a*a*a*b` to two seconds.
+
+**What is matched**: the title, the content warning, the body as rendered and
+stripped of markup (`Sanitizer.Native.strip_tags/1`, so `&#99;asino` and
+`ca<b></b>sino` are "casino"), and the address of every link that leaves the
+site (`HtmlParser.Native.extract_urls/2`). Patterns and text are compared in
+one normal form (`ContentFilter.normalize_text/1`: NFKC, format characters
+such as zero-width spaces removed, lower case, single spaces).
+
+| Where | Screened by | block | hold | flag |
+|---|---|---|---|---|
+| composer (`submit_*`) | `Content.Articles` / `Comments` | refused | held | published, reported |
+| bot, `create_*` | the same | refused | reported | reported |
+| edit (`update_article/3`, `update_comment/3`) | the same, against what the edit adds | refused | refused | published, reported |
+| timeline reply | `Federation.Timeline` | refused | reported | reported |
+| remote (`Create`, `Update`, `handle_announce_object/3`) | `InboxHandler.screened/3` | dropped, `:ok` | reported | reported |
+
+Direct messages are never screened, in either direction, and neither is
+forwarding. A refusal is `{:error, :content_filtered}` (for `create_article/3`
+the usual `{:error, :account, :content_filtered, %{}}`), which
+`Helpers.refusal_message/3` turns into a sentence that never names the
+filter. A flag is a report with `content_filter_id` set and the pattern as it
+stood in `reason`; a flagged timeline reply keeps a copy of its text as the
+report's `evidence_body`, since it has no page here. Every match is a
+`content_filter_matches` row — the filter, the outcome, who, where, whether it
+was an edit, never the text — which `/admin/filters` counts over 30 days and
+`Retention` purges after 90.
+
 ### Terms and Site Rules
 
 The three public documents live in `live_session :public_browsable` (`/terms`,
@@ -1927,10 +2027,12 @@ In-app notification system with real-time delivery via PubSub.
 - `password_changed` — the password was changed while signed in
 - `signed_out_everywhere` — all other sessions were signed out (`data.count`)
 - `totp_login_failed` — the correct password was entered but the TOTP code failed 3 times within an hour at login; links to `/profile/password` (ADR 0024)
+- `held_post` — a post is waiting for review, to whoever can review it; links to `/moderation/held` (ADR 0065, always delivered)
+- `post_approved` / `post_rejected` — a moderator approved or declined the recipient's held post; actorless, so no moderator is named, and always delivered like `content_removed` (ADR 0065)
 
 **Account security notices** (the account-security, account-migration and
 `data_export_*` types — `Notification.Notification.security_types/0` is the
-list, and the bullets above are a selection, not all 39 valid types)
+list, and the bullets above are a selection, not all 49 valid types)
 are emitted by the Auth context itself: `WebAuthn.create_webauthn_credential/2`,
 `WebAuthn.delete_webauthn_credential/2`, `SecondFactor.enable_totp/2` and
 `SecondFactor.disable_totp/1` (the latter only when TOTP was on) call
@@ -3604,6 +3706,8 @@ only code in the project that destroys member content
 | `purge_timeline_items/1` | `timeline_items` older than 90 days | anything with a like, boost or reply, and anything a report points at |
 | `purge_announces/1` | `announces` older than 180 days | — |
 | `purge_soft_deleted/1` | articles and comments 90 days past `deleted_at`, and their image files | anything a report points at, at any age |
+| `HeldPosts.purge_rejected/1` | held posts rejected more than 90 days ago (ADR 0065) | every pending one, at any age — only a moderator decides those |
+| `purge_filter_matches/1` | `content_filter_matches` older than 90 days (ADR 0065) | — |
 
 Four things to know before changing it:
 

@@ -17,8 +17,9 @@ v1.31.0, and Phase 4 across v1.32.0–v1.34.0.
 **Phase 5 is under way.** It was deferred on 2026-09-21 so that 6A could go
 first — comment editing and image descriptions in v1.35.0, server-side drafts in
 v1.36.0 — and planned on 2026-09-22 as three releases. The first, 5A + 5E, shipped
-in v1.37.0; 5B shipped in v1.38.0; 5C + 5D are next. Its three
-decisions are settled and recorded below.
+in v1.37.0; 5B shipped in v1.38.0; 5C + 5D are built and waiting to be
+released as v1.39.0, which completes the phase. Its three decisions are
+settled and recorded below.
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -343,7 +344,8 @@ These are the facts that are still nowhere else.
 
 **Planned 2026-09-22, three releases:** 5A + 5E (the door), then 5B (trust),
 then 5C + 5D — 5D's "hold for review" has nowhere to put a submission until 5C
-exists. The first, 5A + 5E, shipped in v1.37.0; 5B in v1.38.0.
+exists. The first, 5A + 5E, shipped in v1.37.0; 5B in v1.38.0; 5C + 5D are
+built for v1.39.0.
 
 ### 5A — Registration friction (S) — **shipped in v1.37.0**
 
@@ -368,35 +370,31 @@ article, may gain no link or image; and a new account may also DM someone who
 wrote first, or staff. Building the DM rule found that "Followers
 only" admitted no local follower at all.
 
-### 5C — Hold first posts (S)
+### 5C — Hold first posts (S) — **built for v1.39.0**
 
-- [ ] **An optional setting** that holds a new account's first N posts —
-  articles and comments — until a moderator approves them.
-  - A held submission is **a row in its own table, not an article with a flag.**
-    Nothing chokepoints listings, so a flag would have to be excluded by hand
-    from board lists, search and `/ap/search`, tag pages, feeds, the sitemap,
-    the AP outbox, user pages, bookmarks, the timeline merge and unread badges —
-    the shape that leaked twice and left the `remote_visibility` and
-    `blocked_domain_hiding` gates behind it. Approval replays creation as the
-    author, so publication is when it publishes.
-  - The 24-hour orphan-image sweep has to spare images a pending held post
-    names, or a post held overnight is approved with its images already
-    unlinked.
+A held post is a row in `held_posts`, and approval replays creation as the
+author with the row's delete as the first step of the same transaction
+([ADR 0065](adr/0065-what-waits-for-review-is-not-content-yet.md)). Three
+things the plan did not say, all recorded there: only a composer can hold, so
+every composer now *submits* (`Content.submit_article/3` /
+`submit_comment/2`) and a build check keeps it that way; one review page,
+`/moderation/held`, for staff and board moderators alike, scoped to what each
+could approve; and a held post passes every gate a published one must before
+it is held, including a new account's hourly allowance. The orphan image
+sweeps spare a pending post's uploads. Building it found that resuming a
+draft with a board chosen had crashed the composer since v1.36.0.
 
-### 5D — Keyword and link filters (M)
+### 5D — Keyword and link filters (M) — **built for v1.39.0**
 
-- [ ] **Admin-managed filters** on words, patterns and domains.
-  - Each filter blocks, holds for review, or flags (P5-D3); remote content can
-    only be dropped or flagged, never held. A filter set to hold **degrades to
-    flag** where holding is impossible — bots, forwarding, inbound.
-  - Applied when local content is created **and when it is edited.** Since 6A
-    both articles and comments are editable, so a filter that only checks
-    creation is bypassed by posting clean and editing dirty.
-  - No raw regular expressions from the form: an admin-entered pattern that
-    backtracks catastrophically hangs every write on the instance. Whole word,
-    substring with `*`, or domain, compiled here.
-  - Every match is audited, whatever the action — that is what makes a bad
-    filter findable.
+Words, text anywhere and linked domains, never regular expressions, matched
+in linear time over text as a reader sees it, at `/admin/filters` (ADR 0065).
+What the plan did not say: an edit is judged by what it *adds*, as ADR 0064
+judges links, and an edit a `hold` filter matches is refused, because it
+cannot wait; remote content arrives by five routes and is screened on all of
+them; **direct messages are never screened**; matches are recorded without
+their text, in a table of their own rather than the moderation log. The browser
+crawl caught the filter form crashing on its first keystroke — after it was
+changed to read its error log *after* typing into forms rather than before.
 
 ### 5E — IP bans (S) — **shipped in v1.37.0**
 

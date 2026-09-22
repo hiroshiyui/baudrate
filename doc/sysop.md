@@ -223,6 +223,7 @@ Configure at `/admin/settings`:
 | `registration_challenge_bits` | integer 0–22 | `18` | Work a browser does before it may register (see [The Registration Challenge](#the-registration-challenge)); 0 turns it off |
 | `new_account_days` | integer 0–30 | `3` | How old an account must be before the [limits on new accounts](#limits-on-new-accounts) lift |
 | `new_account_posts` | integer 0–20 | `3` | How many articles and comments, still up, it must have too; 0 and 0 turns the limits off |
+| `hold_first_posts` | integer 0–10 | `0` | How many of an account's first articles and comments wait for a moderator (see [Holding First Posts](#holding-first-posts)); 0 turns it off |
 | `timezone` | IANA zone | `"Etc/UTC"` | The zone every date and time on the site is displayed in (`BaudrateWeb.Helpers.format_datetime/2`); validated against the `tz` database |
 | `eua` | markdown | (empty) | Terms of service — shown at registration, published at `/terms` |
 | `privacy_policy` | markdown | (empty) | Privacy policy, published at `/privacy` |
@@ -412,6 +413,47 @@ A member who runs into a limit is told which one, and what is left for them:
 a date, a number of posts, or both. There is no way to exempt one account by
 hand; a member who needs one sooner can be made a moderator, which is a
 decision with its own consequences.
+
+### Holding First Posts
+
+`hold_first_posts` makes an account's first posts wait for a moderator before
+anyone else can see them (ADR 0065). With it set to 2, a member's first two
+articles or comments go to a queue instead of the board, until they have two
+posts that are up; after that they post straight away. **It is off (0) by
+default.** Admins, moderators and bot accounts are never held.
+
+It is independent of the [limits on new accounts](#limits-on-new-accounts):
+both can be on, and they count the same thing — articles and comments not
+removed — so removing a spammer's approved posts puts them back in the queue.
+A held post has already passed the limits, the filters and any sanction, so a
+moderator is never asked to approve something that could not have been
+posted.
+
+The member is told straight away that their post is waiting, and finds it
+under **Drafts** until it is decided, where they can also withdraw it. They
+are notified when it is approved (it is then published as if it had never
+waited) or declined (with the note, if the moderator wrote one).
+
+Reviewing is at **`/moderation/held`** (linked from the admin menu as *Held
+Posts* and from both report queues with the count). Admins and moderators see
+everything. A board moderator sees only what they could approve: an article
+whose boards they all moderate, or a comment on an article in only boards they
+moderate — approving publishes into every board, so it needs rights on all of
+them. Everyone who can review a post is notified when it arrives.
+
+**Approving can fail**, and says why: the author has been silenced or
+suspended since, can no longer post in any of the boards (a board they lost is
+dropped, the rest are kept), or the article a comment answers has been removed
+or locked. The post then stays in the queue. Two moderators approving at once
+publish it once.
+
+**Declining** keeps the text, for the author and on the *Declined* tab, for 90
+days; then [retention](#retention) removes it. A post still waiting is never
+removed on its own — only a moderator decides what happens to it. Its images
+are kept while it waits.
+
+Timeline replies, bot posts and anything arriving from other instances are
+never held.
 
 ### Policy Pages
 
@@ -974,6 +1016,58 @@ The `sysop` board is a protected system board:
   with the reporter in the reported-actor field, and the upgrade migration
   moves those rows.
 
+### Content Filters (`/admin/filters`)
+
+Admin-only. A filter is a pattern and what to do when it matches (ADR 0065):
+
+| Kind | Matches | Example |
+|------|---------|---------|
+| Word or phrase | whole words, ignoring case and punctuation | `casino` matches "Casino night", not "casinos"; `buy followers` matches "Buy... followers!" |
+| Text anywhere | inside words too; `*` stands for letters inside one word | `casino` matches "onlinecasino"; `c*sino` matches "cassino"; `賭場` matches "線上賭場" |
+| Linked domain | a link to the domain or anything under it | `spam.example` matches links to `www.spam.example` |
+
+**Word filters find nothing in 台灣漢語 or Japanese**, which do not separate
+words with spaces — use *Text anywhere* for them. An internationalized domain
+is written in its `xn--` form. There are **no regular expressions**: one that
+backtracks badly would hang every post on the instance, so the three kinds
+above are matched in time proportional to the text whatever the pattern.
+
+Text is compared after folding the usual evasions: fullwidth letters,
+zero-width characters, HTML entities and empty tags inside a word all read as
+the ordinary word. Links are resolved the way a browser resolves them.
+
+| When it matches | A post written here | A bot's post, a timeline reply | An edit | From another server |
+|---|---|---|---|---|
+| **Refuse** | refused | refused | refused | dropped |
+| **Hold for review** | held at `/moderation/held` | published and reported | refused | stored and reported |
+| **Publish and report** | published and reported | the same | the same | the same |
+
+- **An edit is judged by what it adds.** A post that already contained the
+  word — from before the filter existed, or approved by a moderator — can still
+  have its typos fixed.
+- **Applies to** limits a filter to posts written here, content from other
+  servers, or both.
+- **Direct messages are never checked**, in either direction. A member who
+  wants staff to see a message reports it.
+- Someone refused is told the site does not allow what they wrote, and **never
+  which filter or word** — otherwise a spammer rephrases until it passes. A
+  member caught by mistake can ask; the report or the match count shows which
+  filter it was.
+- A report a filter opened says *Reported automatically* and names the
+  pattern, in the ordinary report queue.
+
+Every match is recorded — the filter, what was done, who, and whether it was
+an edit, **never the text** — and the table shows each filter's count for the
+last 30 days. **A filter matching far more than you expected is the one to
+read again**, or to turn off (the switch keeps it for later) while you look.
+Match records are removed after 90 days. Every filter added, changed or
+deleted is in the moderation log.
+
+**During a wave**, the usual order: a *Linked domain* filter on whatever the
+posts link to, set to Refuse; a *Hold for review* filter on the words they
+share, while you watch the count; and [holding first posts](#holding-first-posts)
+if new accounts keep arriving.
+
 ### Moderation Log (`/admin/moderation-log`)
 
 Immutable audit trail of all administrative actions:
@@ -991,6 +1085,8 @@ Immutable audit trail of all administrative actions:
 - Federation key rotations
 - Board moderator assignments
 - Bot create/update/delete/toggle, error resets and favicon refreshes
+- Held posts approved or declined, and content filters added, changed or
+  deleted
 
 Before v1.18.2, pin/lock changes and bot actions were silently not recorded.
 
@@ -1309,6 +1405,8 @@ and deletes what the instance has agreed not to keep
 | Timeline items (posts from followed remote actors) | 90 days | somebody liked, boosted or replied to it |
 | `announces` (a remote actor boosted something) | 180 days | — |
 | Articles and comments with `deleted_at` set | 90 days after deletion | a report points at it — and for an article, also a report on any of its comments, which go with it |
+| Held posts a moderator declined | 90 days after review | — (a post still waiting is never removed) |
+| Content filter match records | 90 days | — |
 
 **Nothing a report points at is ever deleted**, at any age. The report's
 pointer would be emptied rather than the delete refused, leaving a moderation
@@ -1327,7 +1425,7 @@ brpc "Baudrate.Retention.run(dry_run: true)"
 (`brpc` is the wrapper from
 [Rotating an encryption key](#rotating-an-encryption-key).) It logs one line
 per run, not per pass — `retention: timeline_items=… announces=… articles=…
-comments=… files=…` — and **nothing at all when every count is zero**, so
+comments=… files=… held_posts=… filter_matches=…` — and **nothing at all when every count is zero**, so
 silence in the log means there was nothing to remove rather than that the run
 did not happen. Each pass is batched and safe to interrupt; the next hour
 picks up where it stopped. A dry run's line carries a `[dry]` marker
@@ -2870,6 +2968,8 @@ If you put one in front anyway:
 | `/admin/moderation-log` | Audit trail of all admin actions |
 | `/admin/invites` | Invite code generation and revocation |
 | `/admin/login-attempts` | Login attempt history (filterable, paginated) |
+| `/admin/ip-bans` | Address and range bans for registration and sign-in ([IP Bans](#ip-bans-adminip-bans)) |
+| `/admin/filters` | Word, text and domain filters, with how often each matched ([Content Filters](#content-filters-adminfilters)) |
 | `/admin/data-exports` | Data export request history (admin-only, read-only; no export-on-behalf) |
 | `/admin/verify` | Admin TOTP re-verification (sudo mode, 10-min timeout) |
 
@@ -2880,7 +2980,10 @@ a redirect loop (ADR 0009). Most are admin-only; `/admin/moderation`,
 `/admin/pending-users` (refusing a registration, not approving one) and
 `/admin/users/:id` are also open to global moderators, whose individual actions
 are checked against their permissions. Board moderators have their own queue at
-`/moderation`, outside `/admin`, scoped to the boards they moderate.
+`/moderation`, outside `/admin`, scoped to the boards they moderate. Posts
+waiting for review are at `/moderation/held` for everyone who reviews them —
+admins, moderators, and board moderators for their own boards
+([Holding First Posts](#holding-first-posts)).
 
 ---
 

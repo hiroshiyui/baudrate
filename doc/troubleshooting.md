@@ -913,6 +913,57 @@ Two things that look like this limit and are not:
   follow.** Before v1.38.0 that setting admitted only followers on other
   instances; upgrade.
 
+### A member's post "disappeared", or says it is waiting for review
+
+It is held (ADR 0065): either `hold_first_posts` is above 0 and this is one
+of the account's first posts, or a filter set to *Hold for review* matched
+it. The member was told when they posted, and sees it under **Drafts →
+Waiting for review**. It is at `/moderation/held` for staff, and for a board
+moderator only if they moderate every board it is for. Approving publishes it
+as if it had never waited.
+
+- **Nobody can see it in the queue.** Board moderators see only what is wholly
+  inside their boards; an admin or a global moderator sees everything.
+- **Approving fails.** The message says why — the author was silenced or
+  suspended since, can no longer post in any of its boards, or the article a
+  comment answers was removed or locked — and the post stays in the queue to
+  be declined.
+- **Everything a new member writes is held.** Posts still up are what count,
+  so if their approved posts were later removed, the next ones are held
+  again. Set `hold_first_posts` to 0 at `/admin/settings` to stop holding.
+
+### A post is refused with "contains something this site doesn't allow"
+
+A content filter set to *Refuse* matched it (ADR 0065). The message never
+says which, on purpose. `/admin/filters` shows each filter's match count for
+the last 30 days; to find which one caught a particular member, in the server
+console:
+
+```elixir
+import Ecto.Query
+user = Baudrate.Auth.get_user_by_username("their_name")
+
+Baudrate.Repo.all(
+  from m in Baudrate.Moderation.ContentFilterMatch,
+    where: m.user_id == ^user.id,
+    order_by: [desc: m.inserted_at],
+    limit: 10,
+    preload: :content_filter
+)
+```
+
+What was written is not kept, so the member has to show you. Common causes:
+
+- **A *Word or phrase* filter never matches Chinese or Japanese** — those do
+  not separate words with spaces. Use *Text anywhere*.
+- **A *Text anywhere* filter matches inside innocent words** — `sex` in
+  "Essex". Switch it to *Word or phrase*.
+- **An edit is refused though the post already had the word.** It should not
+  be: an edit is judged by what it adds. If the *edit* adds the word, or a
+  *Hold for review* filter matches something new, it is refused, because an
+  edit cannot wait for review.
+- **Direct messages are never filtered**, so a filter will not stop them.
+
 ---
 
 ## Rate Limiting

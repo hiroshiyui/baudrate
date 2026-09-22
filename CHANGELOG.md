@@ -9,6 +9,90 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+Phase 5's third release, which completes it: posts can wait for a moderator,
+and an admin can write filters on words, text and linked domains in the middle
+of a wave ([ADR 0065](doc/adr/0065-what-waits-for-review-is-not-content-yet.md)).
+A held post is a submission of its own, not a hidden article, so no listing
+can leak it; approving publishes it as its author, once. Filters are never
+regular expressions, and an edit is screened like a new post.
+
+### Upgrading
+
+- **Nothing changes until an admin turns it on.** Holding first posts is off
+  (`hold_first_posts` = 0) and there are no filters. Two migrations add the
+  `held_posts`, `content_filters` and `content_filter_matches` tables and a
+  column on `reports`.
+
+### Added
+
+- **Holding first posts** (Phase 5C). A new setting, **First posts held for
+  review**, makes an account's first articles and comments — as many as it
+  says, counted as posts still up, like trust — wait for a moderator before
+  anyone else can see them. Admins, moderators and bots are never held. The
+  member is told, finds the post under **Drafts → Waiting for review** and can
+  withdraw it, and is notified when it is approved or declined (with the
+  moderator's note).
+- **`/moderation/held`**, one review page for admins, moderators and board
+  moderators, each seeing only what they could approve — a board moderator an
+  article whose boards they all moderate, or a comment on one. Approving
+  publishes the post as its author; declining keeps the text for 90 days. Both
+  report queues and the admin menu link to it with the count, and reviewers
+  are notified when a post arrives.
+- **Content filters** (Phase 5D) at `/admin/filters`: a word or phrase, text
+  anywhere (with `*` inside a word), or a linked domain, set to refuse, hold
+  for review, or publish and report. They apply to articles, comments and
+  timeline replies when written and when edited, and to what arrives from
+  other servers, which can only be dropped or reported. Each filter shows how
+  often it matched in the last 30 days, and can be switched off without being
+  deleted.
+- A report a filter opened says so and names the pattern; a reported timeline
+  reply keeps a copy of its text, since it has no page here.
+
+### Changed
+
+- **Every composer now submits rather than creates**
+  (`Content.submit_article/3`, `submit_comment/2`), which is what lets a post
+  be held. A build check fails if a page calls the creating functions
+  directly.
+
+### Fixed
+
+- **Resuming a draft that had a board chosen crashed the composer.** The board
+  lookup returns `{:ok, board}`, and the resume treated the whole tuple as the
+  board. No test resumed a draft with a board, so it shipped in v1.36.0.
+
+### Security
+
+- **An edit is screened like a new post, and judged by what it adds**, so
+  posting clean and editing dirty does not get past a filter — while a post
+  that already contained a word, or that a moderator approved, can still have
+  its typos fixed.
+- **Filters are matched without regular expressions**, in time proportional
+  to the text whatever the pattern, so no pattern an admin writes can hang the
+  instance. Fullwidth letters, zero-width characters, HTML entities and empty
+  tags inside a word do not hide it, and links are resolved as a browser
+  resolves them.
+- **A refusal never says which filter or word caught the post**, so it cannot
+  be used to rephrase until something passes. Matches are recorded without the
+  text.
+- **Direct messages are never screened**, in either direction.
+- Approving a held post re-checks what can have changed since it was
+  submitted — the author's standing, their boards, the thread, blocks — and two
+  moderators approving at once publish it once.
+
+### Documentation
+
+- [ADR 0065](doc/adr/0065-what-waits-for-review-is-not-content-yet.md), with
+  seventeen rows in the conformance index. The SysOp guide covers holding
+  first posts, writing filters and what to do during a wave; the
+  troubleshooting guide covers a post that "disappeared" and one refused by a
+  filter.
+- The browser crawl read its error log before typing into each page's forms,
+  so a view that crashed on a keystroke went unreported. It reads it
+  afterwards now — which is how the filter form's crash was caught before
+  release — and the admin crawl and layout checks now include `/admin/ip-bans`,
+  `/admin/filters` and `/moderation/held`.
+
 ## [1.38.0] — 2026-09-22
 
 Phase 5's second release: an account that gets through the door is slowed
