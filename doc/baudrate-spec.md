@@ -14,7 +14,7 @@ That makes the precedence explicit, and it matters when they disagree:
    immutable but for their Status line).
 3. **This index is neither.** It is a finding aid, so that "is there a rule
    about X, and what proves it holds?" is one lookup instead of a search across
-   `CLAUDE.md`, 50 records and the test suite.
+   `CLAUDE.md`, every record and the test suite.
 
 `CLAUDE.md` remains the operative guide for whoever is writing code right now;
 [`doc/development.md`](development.md) remains the reference manual. This exists
@@ -135,6 +135,15 @@ Who someone is, and how they prove it again.
 | An IP ban's expiry is decided by the clock when read, never by a sweep | [0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md) | `Baudrate.Auth.IpBans.active?/2` | [`ip_ban_test.exs`](../test/baudrate/auth/ip_ban_test.exs) |
 | An invite-chain ban reaches only a tree the server recomputes, each account authorized separately | [0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md) | `Baudrate.Auth.Moderation.ban_invite_chain/4` | [`invite_chain_ban_test.exs`](../test/baudrate/auth/invite_chain_ban_test.exs) |
 | An account already banned keeps its original ban when its chain is banned | [0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md) | `Baudrate.Auth.Moderation.ban_invite_chain/4` | [`invite_chain_ban_test.exs`](../test/baudrate/auth/invite_chain_ban_test.exs) |
+| Trust is earned by age and posts still up, decided when asked and never stored, so it leaves with the posts | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.Auth.Trust.standing/1` | [`trust_test.exs`](../test/baudrate/auth/trust_test.exs) |
+| Bots, admins and moderators are trusted inside the predicate; an invite confers nothing | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.Auth.Trust.standing/1` | [`trust_test.exs`](../test/baudrate/auth/trust_test.exs) |
+| An untrusted account puts at most one link and one image in a post, and posts ten times an hour in one bucket | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.Auth.Trust.check_post/4` | [`trust_test.exs`](../test/baudrate/auth/trust_test.exs) |
+| Every posting path checks the limits at the context boundary, edits included; an edit may not add, never has to remove | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.Auth.Trust.check_post/4` | [`trust_test.exs`](../test/baudrate/auth/trust_test.exs) |
+| The article edit page's image upload is checked where it attaches, by both gates | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.Content.Images.authorize_article_image/2` | [`trust_test.exs`](../test/baudrate/auth/trust_test.exs) |
+| Links are counted as a browser resolves them, and same-site is a host comparison | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.HtmlParser.Native.extract_urls/2` | [`native_test.exs`](../test/baudrate/html_parser/native_test.exs) |
+| A new account messages only people who follow it, who wrote to it first, or staff | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.Messaging.dm_permission/2` | [`trust_test.exs`](../test/baudrate/auth/trust_test.exs) |
+| "Followers only" DM access admits followers on this instance, not only remote ones | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `Baudrate.Messaging.dm_permission/2` | [`messaging_test.exs`](../test/baudrate/messaging_test.exs) |
+| A refusal names the limit and what is left before it lifts | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md) | `BaudrateWeb.Helpers.new_account_message/2` | [`trust_test.exs`](../test/baudrate/auth/trust_test.exs) |
 
 ## Authorization
 
