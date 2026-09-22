@@ -411,6 +411,57 @@ defmodule Baudrate.Auth.TrustTest do
     end
   end
 
+  describe "signatures" do
+    # A signature is rendered under every article the account posts, so a
+    # new account may add nothing to it that a post would have to count.
+    setup do: limits_on()
+
+    test "a new account cannot add a link or an image to its signature" do
+      user = member()
+
+      assert {:ok, _} = Auth.update_signature(user, "Plain words.")
+
+      assert {:error, :new_account_signature} =
+               Auth.update_signature(user, "My [blog](https://blog.example/)")
+
+      assert {:error, :new_account_signature} =
+               Auth.update_signature(user, "![me](https://img.example/me.png)")
+    end
+
+    test "it keeps what was already there, and may not add to it" do
+      Repo.delete_all(Setting)
+      user = member()
+      {:ok, _} = Auth.update_signature(user, "My [blog](https://blog.example/)")
+      limits_on()
+
+      assert {:ok, _} = Auth.update_signature(user, "My [old blog](https://blog.example/)")
+
+      assert {:error, :new_account_signature} =
+               Auth.update_signature(
+                 user,
+                 "My [blog](https://blog.example/) and [shop](https://shop.example/)"
+               )
+    end
+
+    test "the comparison is with the stored signature, not the caller's copy" do
+      # A stale struct from another tab must not vouch for links that were
+      # removed since.
+      Repo.delete_all(Setting)
+      user = member()
+      {:ok, stale} = Auth.update_signature(user, "My [blog](https://blog.example/)")
+      {:ok, _} = Auth.update_signature(stale, "No links now.")
+      limits_on()
+
+      assert {:error, :new_account_signature} =
+               Auth.update_signature(stale, "My [blog](https://blog.example/)")
+    end
+
+    test "a trusted account is not limited", %{board: board} do
+      assert {:ok, _} =
+               Auth.update_signature(established(board), "[a](https://a.example/) ![b](/media/b)")
+    end
+  end
+
   describe "the hourly bucket" do
     setup do
       limits_on()

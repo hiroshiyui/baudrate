@@ -431,8 +431,8 @@ msgstr "我已儲存救援碼"
 #: lib/baudrate_web/live/account_migration_live.ex:108
 #: lib/baudrate_web/live/data_export_live.ex:275
 #: lib/baudrate_web/live/password_change_live.ex:138
-#: lib/baudrate_web/live/profile_live.ex:510
-#: lib/baudrate_web/live/profile_live.ex:673
+#: lib/baudrate_web/live/profile_live.ex:519
+#: lib/baudrate_web/live/profile_live.ex:682
 #: lib/baudrate_web/live/totp_reset_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Invalid credentials. Please try again."
@@ -528,12 +528,12 @@ msgstr "您將無法再次查看這些救援碼！"
 msgid "Are you sure you want to remove your avatar?"
 msgstr "確定要移除頭像嗎？"
 
-#: lib/baudrate_web/live/profile_live.ex:750
+#: lib/baudrate_web/live/profile_live.ex:762
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr "頭像已移除。"
 
-#: lib/baudrate_web/live/profile_live.ex:785
+#: lib/baudrate_web/live/profile_live.ex:798
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr "頭像已成功更新。"
@@ -573,13 +573,13 @@ msgstr "變更頭像"
 msgid "Crop Avatar"
 msgstr "裁剪頭像"
 
-#: lib/baudrate_web/live/profile_live.ex:807
+#: lib/baudrate_web/live/profile_live.ex:821
 #: lib/baudrate_web/live/welcome_live.ex:166
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr "處理頭像圖片失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:798
+#: lib/baudrate_web/live/profile_live.ex:812
 #: lib/baudrate_web/live/welcome_live.ex:163
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
@@ -600,7 +600,7 @@ msgid "Save"
 msgstr "儲存"
 
 #: lib/baudrate_web/live/profile_live.ex:150
-#: lib/baudrate_web/live/profile_live.ex:760
+#: lib/baudrate_web/live/profile_live.ex:772
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr "頭像變更次數過多，請稍後再試。"
@@ -675,8 +675,8 @@ msgstr "還沒有帳號？"
 msgid "Failed to approve user."
 msgstr "核准使用者失敗。"
 
-#: lib/baudrate_web/live/article_new_live.ex:372
 #: lib/baudrate_web/live/article_new_live.ex:375
+#: lib/baudrate_web/live/article_new_live.ex:378
 #: lib/baudrate_web/live/timeline_live.ex:776
 #: lib/baudrate_web/live/timeline_live.ex:779
 #, elixir-autogen, elixir-format
@@ -755,7 +755,7 @@ msgstr "使用者已成功核准。"
 msgid "Your account is pending admin approval."
 msgstr "您的帳號正在等待管理員審核。"
 
-#: lib/baudrate_web/live/article_new_live.ex:505
+#: lib/baudrate_web/live/article_new_live.ex:508
 #: lib/baudrate_web/live/profile_live.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Your account is pending approval."
@@ -773,12 +773,12 @@ msgstr "由 %{author} 發表"
 msgid "Add Language"
 msgstr "新增語言"
 
-#: lib/baudrate_web/live/profile_live.ex:846
+#: lib/baudrate_web/live/profile_live.ex:860
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr "更新語言偏好失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:841
+#: lib/baudrate_web/live/profile_live.ex:855
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr "語言偏好已更新。"
@@ -1622,7 +1622,7 @@ msgstr "使用者已成功解除停權。"
 msgid "You cannot change your own role."
 msgstr "您無法變更自己的角色。"
 
-#: lib/baudrate_web/helpers.ex:691
+#: lib/baudrate_web/helpers.ex:698
 #: lib/baudrate_web/live/auth_hooks.ex:65
 #, elixir-autogen, elixir-format
 msgid "Your account has been banned."
@@ -2135,7 +2135,7 @@ msgstr "請立即儲存這些救援碼！"
 msgid "Signature"
 msgstr "簽名檔"
 
-#: lib/baudrate_web/live/profile_live.ex:285
+#: lib/baudrate_web/live/profile_live.ex:291
 #, elixir-autogen, elixir-format
 msgid "Signature updated."
 msgstr "簽名檔已更新。"
@@ -2152,9 +2152,9 @@ msgstr "這些救援碼是您忘記密碼時恢復帳號的唯一方式。每個
 #: lib/baudrate_web/live/data_export_live.ex:267
 #: lib/baudrate_web/live/password_change_live.ex:121
 #: lib/baudrate_web/live/password_reset_live.ex:53
-#: lib/baudrate_web/live/profile_live.ex:495
-#: lib/baudrate_web/live/profile_live.ex:528
-#: lib/baudrate_web/live/profile_live.ex:658
+#: lib/baudrate_web/live/profile_live.ex:504
+#: lib/baudrate_web/live/profile_live.ex:537
+#: lib/baudrate_web/live/profile_live.ex:667
 #: lib/baudrate_web/live/totp_reset_live.ex:94
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please try again later."
@@ -2701,17 +2701,17 @@ msgstr "由 %{editor} 編輯"
 msgid "Markdown preview"
 msgstr "Markdown 預覽"
 
-#: lib/baudrate_web/helpers.ex:869
+#: lib/baudrate_web/helpers.ex:876
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr "%{count} 天前"
 
-#: lib/baudrate_web/helpers.ex:868
+#: lib/baudrate_web/helpers.ex:875
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr "%{count} 小時前"
 
-#: lib/baudrate_web/helpers.ex:867
+#: lib/baudrate_web/helpers.ex:874
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr "%{count} 分鐘前"
@@ -2731,7 +2731,7 @@ msgstr "設定誰可以傳送私訊給您。"
 msgid "Conversation not found."
 msgstr "找不到對話。"
 
-#: lib/baudrate_web/live/profile_live.ex:366
+#: lib/baudrate_web/live/profile_live.ex:375
 #, elixir-autogen, elixir-format
 msgid "DM access setting updated."
 msgstr "私訊權限設定已更新。"
@@ -2761,7 +2761,7 @@ msgstr "刪除訊息失敗。"
 msgid "Failed to send message."
 msgstr "傳送訊息失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:369
+#: lib/baudrate_web/live/profile_live.ex:378
 #, elixir-autogen, elixir-format
 msgid "Failed to update DM access setting."
 msgstr "更新私訊權限設定失敗。"
@@ -2857,7 +2857,7 @@ msgstr "您只能刪除自己的訊息。"
 msgid "You cannot send messages to this user."
 msgstr "您無法傳送訊息給此使用者。"
 
-#: lib/baudrate_web/helpers.ex:866
+#: lib/baudrate_web/helpers.ex:873
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "剛才"
@@ -2968,7 +2968,7 @@ msgstr "取消靜音 %{username}"
 msgid "User muted."
 msgstr "已靜音使用者。"
 
-#: lib/baudrate_web/live/profile_live.ex:327
+#: lib/baudrate_web/live/profile_live.ex:336
 #: lib/baudrate_web/live/user_profile_live.ex:216
 #, elixir-autogen, elixir-format
 msgid "User unmuted."
@@ -3138,17 +3138,17 @@ msgstr "解除封鎖網域"
 msgid "Unblock User"
 msgstr "解除封鎖使用者"
 
-#: lib/baudrate_web/helpers.ex:886
+#: lib/baudrate_web/helpers.ex:893
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr "%{n} B"
 
-#: lib/baudrate_web/helpers.ex:889
+#: lib/baudrate_web/helpers.ex:896
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr "%{n} KB"
 
-#: lib/baudrate_web/helpers.ex:892
+#: lib/baudrate_web/helpers.ex:899
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr "%{n} MB"
@@ -3753,7 +3753,7 @@ msgstr "任何人皆可發文至此看板"
 msgid "Bio"
 msgstr "自我介紹"
 
-#: lib/baudrate_web/live/profile_live.ex:252
+#: lib/baudrate_web/live/profile_live.ex:255
 #, elixir-autogen, elixir-format
 msgid "Bio updated."
 msgstr "自我介紹已更新。"
@@ -4110,8 +4110,8 @@ msgstr "發送了通知給您"
 msgid "submitted a moderation report"
 msgstr "提交了檢舉報告"
 
-#: lib/baudrate_web/live/profile_live.ex:435
-#: lib/baudrate_web/live/profile_live.ex:456
+#: lib/baudrate_web/live/profile_live.ex:444
+#: lib/baudrate_web/live/profile_live.ex:465
 #, elixir-autogen, elixir-format
 msgid "Failed to update notification preferences."
 msgstr "更新通知偏好設定失敗。"
@@ -4146,7 +4146,7 @@ msgstr "停用推播"
 msgid "Enable Push"
 msgstr "啟用推播"
 
-#: lib/baudrate_web/live/profile_live.ex:413
+#: lib/baudrate_web/live/profile_live.ex:422
 #, elixir-autogen, elixir-format
 msgid "Failed to enable push notifications."
 msgstr "啟用推播通知失敗。"
@@ -4171,7 +4171,7 @@ msgstr "公鑰"
 msgid "Push"
 msgstr "推播"
 
-#: lib/baudrate_web/live/profile_live.ex:407
+#: lib/baudrate_web/live/profile_live.ex:416
 #, elixir-autogen, elixir-format
 msgid "Push notification permission was denied by the browser."
 msgstr "瀏覽器拒絕了推播通知權限。"
@@ -4181,12 +4181,12 @@ msgstr "瀏覽器拒絕了推播通知權限。"
 msgid "Push notifications are not supported by this browser."
 msgstr "此瀏覽器不支援推播通知。"
 
-#: lib/baudrate_web/live/profile_live.ex:398
+#: lib/baudrate_web/live/profile_live.ex:407
 #, elixir-autogen, elixir-format
 msgid "Push notifications disabled."
 msgstr "推播通知已停用。"
 
-#: lib/baudrate_web/live/profile_live.ex:390
+#: lib/baudrate_web/live/profile_live.ex:399
 #, elixir-autogen, elixir-format
 msgid "Push notifications enabled."
 msgstr "推播通知已啟用。"
@@ -4440,7 +4440,7 @@ msgstr "截止於 %{time}"
 msgid "Expires (optional)"
 msgstr "期限（選填）"
 
-#: lib/baudrate_web/live/article_new_live.ex:445
+#: lib/baudrate_web/live/article_new_live.ex:448
 #: lib/baudrate_web/live/timeline_live.ex:985
 #, elixir-autogen, elixir-format
 msgid "Failed to create poll."
@@ -4486,8 +4486,8 @@ msgstr "投票"
 msgid "Poll options"
 msgstr "投票選項"
 
-#: lib/baudrate_web/live/article_new_live.ex:439
 #: lib/baudrate_web/live/article_new_live.ex:442
+#: lib/baudrate_web/live/article_new_live.ex:445
 #: lib/baudrate_web/live/timeline_live.ex:979
 #: lib/baudrate_web/live/timeline_live.ex:982
 #, elixir-autogen, elixir-format
@@ -4634,12 +4634,12 @@ msgstr "搜尋要代為產生邀請碼的使用者"
 msgid "Select a user"
 msgstr "選擇使用者"
 
-#: lib/baudrate_web/live/profile_live.ex:755
+#: lib/baudrate_web/live/profile_live.ex:767
 #, elixir-autogen, elixir-format
 msgid "Failed to remove avatar."
 msgstr "移除頭像失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:790
+#: lib/baudrate_web/live/profile_live.ex:804
 #, elixir-autogen, elixir-format
 msgid "Failed to update avatar."
 msgstr "更新頭像失敗。"
@@ -5282,12 +5282,12 @@ msgstr "欄位 %{n} 內容"
 msgid "Save Fields"
 msgstr "儲存欄位"
 
-#: lib/baudrate_web/live/profile_live.ex:304
+#: lib/baudrate_web/live/profile_live.ex:313
 #, elixir-autogen, elixir-format
 msgid "Profile fields updated."
 msgstr "自由欄位已更新。"
 
-#: lib/baudrate_web/live/profile_live.ex:307
+#: lib/baudrate_web/live/profile_live.ex:316
 #, elixir-autogen, elixir-format
 msgid "Failed to update profile fields."
 msgstr "更新自由欄位失敗。"
@@ -5404,7 +5404,7 @@ msgstr "錯誤"
 msgid "Failed to delete bot."
 msgstr "刪除機器人失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:732
+#: lib/baudrate_web/live/profile_live.ex:741
 #, elixir-autogen, elixir-format
 msgid "Failed to remove security key."
 msgstr "無法移除安全金鑰。"
@@ -5525,17 +5525,17 @@ msgid "Security key registered successfully."
 msgstr "安全金鑰已成功註冊。"
 
 #: lib/baudrate_web/controllers/session_controller.ex:445
-#: lib/baudrate_web/live/profile_live.ex:704
+#: lib/baudrate_web/live/profile_live.ex:713
 #, elixir-autogen, elixir-format
 msgid "Security key registration failed. Please try again."
 msgstr "安全金鑰註冊失敗，請再試一次。"
 
-#: lib/baudrate_web/live/profile_live.ex:702
+#: lib/baudrate_web/live/profile_live.ex:711
 #, elixir-autogen, elixir-format
 msgid "Security key registration was cancelled or timed out."
 msgstr "安全金鑰註冊已取消或逾時。"
 
-#: lib/baudrate_web/live/profile_live.ex:728
+#: lib/baudrate_web/live/profile_live.ex:737
 #, elixir-autogen, elixir-format
 msgid "Security key removed."
 msgstr "安全金鑰已移除。"
@@ -5588,7 +5588,7 @@ msgid "Username cannot be changed after creation."
 msgstr "使用者名稱在建立後無法更改。"
 
 #: lib/baudrate_web/live/admin_totp_verify_live.ex:97
-#: lib/baudrate_web/live/profile_live.ex:703
+#: lib/baudrate_web/live/profile_live.ex:712
 #, elixir-autogen, elixir-format
 msgid "WebAuthn is not supported by this browser."
 msgstr "此瀏覽器不支援 WebAuthn。"
@@ -6136,8 +6136,8 @@ msgstr "若要新增或移除安全金鑰，請確認您的密碼。"
 #: lib/baudrate_web/live/account_migration_live.ex:100
 #: lib/baudrate_web/live/data_export_live.ex:271
 #: lib/baudrate_web/live/password_change_live.ex:129
-#: lib/baudrate_web/live/profile_live.ex:502
-#: lib/baudrate_web/live/profile_live.ex:665
+#: lib/baudrate_web/live/profile_live.ex:511
+#: lib/baudrate_web/live/profile_live.ex:674
 #: lib/baudrate_web/live/totp_reset_live.ex:102
 #, elixir-autogen, elixir-format
 msgid "Too many failed attempts. Please try again in %{seconds} seconds."
@@ -6268,7 +6268,7 @@ msgstr "登出其他所有裝置"
 msgid "Sign out of every other browser or device where your account is signed in. This one stays signed in."
 msgstr "登出您帳號在其他所有瀏覽器或裝置上的登入。目前這個工作階段會保持登入。"
 
-#: lib/baudrate_web/live/profile_live.ex:647
+#: lib/baudrate_web/live/profile_live.ex:656
 #, elixir-autogen, elixir-format
 msgid "Signed out %{count} other session."
 msgid_plural "Signed out %{count} other sessions."
@@ -6287,7 +6287,7 @@ msgstr "您的帳號密碼已變更。"
 
 #: lib/baudrate_web/live/data_export_live.ex:301
 #: lib/baudrate_web/live/password_change_live.ex:78
-#: lib/baudrate_web/live/profile_live.ex:678
+#: lib/baudrate_web/live/profile_live.ex:687
 #, elixir-autogen, elixir-format
 msgid "Your session has expired. Please sign in again."
 msgstr "您的工作階段已過期，請重新登入。"
@@ -7273,7 +7273,7 @@ msgstr "已靜音帳號。"
 msgid "Account not found."
 msgstr "找不到帳號。"
 
-#: lib/baudrate_web/live/profile_live.ex:350
+#: lib/baudrate_web/live/profile_live.ex:359
 #: lib/baudrate_web/live/safety_actions.ex:108
 #, elixir-autogen, elixir-format
 msgid "Account unblocked."
@@ -7574,7 +7574,7 @@ msgid "Failed to refuse the registration."
 msgstr "拒絕註冊失敗。"
 
 #: lib/baudrate_web/components/layouts.ex:742
-#: lib/baudrate_web/helpers.ex:725
+#: lib/baudrate_web/helpers.ex:732
 #, elixir-autogen, elixir-format
 msgid "It ends %{at}."
 msgstr "將於 %{at} 結束。"
@@ -7595,7 +7595,7 @@ msgid "Reason for refusing %{username}"
 msgstr "拒絕 %{username} 的原因"
 
 #: lib/baudrate_web/components/layouts.ex:739
-#: lib/baudrate_web/helpers.ex:724
+#: lib/baudrate_web/helpers.ex:731
 #, elixir-autogen, elixir-format
 msgid "Reason: %{reason}"
 msgstr "原因：%{reason}"
@@ -7649,7 +7649,7 @@ msgstr "操作過於頻繁，請稍後再試。"
 msgid "Warn User"
 msgstr "警告使用者"
 
-#: lib/baudrate_web/helpers.ex:705
+#: lib/baudrate_web/helpers.ex:712
 #, elixir-autogen, elixir-format
 msgid "You cannot do that right now."
 msgstr "您目前無法執行此操作。"
@@ -7662,14 +7662,14 @@ msgid "You cannot do that."
 msgstr "您無權執行此操作。"
 
 #: lib/baudrate_web/components/layouts.ex:735
-#: lib/baudrate_web/helpers.ex:694
+#: lib/baudrate_web/helpers.ex:701
 #, elixir-autogen, elixir-format
 msgid "Your account is silenced and cannot post."
 msgstr "您的帳號已被禁言，無法發表內容。"
 
 #: lib/baudrate_web/components/layouts.ex:733
-#: lib/baudrate_web/helpers.ex:697
-#: lib/baudrate_web/helpers.ex:713
+#: lib/baudrate_web/helpers.ex:704
+#: lib/baudrate_web/helpers.ex:720
 #: lib/baudrate_web/live/auth_hooks.ex:74
 #, elixir-autogen, elixir-format
 msgid "Your account is suspended."
@@ -8319,7 +8319,7 @@ msgstr "無法儲存，請再試一次。"
 msgid "The agreement was saved, but members were not asked to accept it again."
 msgstr "條款已儲存，但未要求成員重新接受。"
 
-#: lib/baudrate_web/helpers.ex:702
+#: lib/baudrate_web/helpers.ex:709
 #, elixir-autogen, elixir-format
 msgid "The terms have changed. Read and accept them to post again."
 msgstr "條款已變更。請閱讀並接受後再發文。"
@@ -8913,7 +8913,7 @@ msgstr "確認新密碼"
 msgid "Could not issue a reset link."
 msgstr "無法發出重設連結。"
 
-#: lib/baudrate_web/live/profile_live.ex:612
+#: lib/baudrate_web/live/profile_live.ex:621
 #, elixir-autogen, elixir-format
 msgid "Could not remove that contact."
 msgstr "無法移除該救援聯絡方式。"
@@ -8943,7 +8943,7 @@ msgstr "我已經複製了"
 msgid "I have saved them"
 msgstr "我已經存好了"
 
-#: lib/baudrate_web/live/profile_live.ex:487
+#: lib/baudrate_web/live/profile_live.ex:496
 #, elixir-autogen, elixir-format
 msgid "Identity confirmed. You can change your account security settings for 5 minutes."
 msgstr "身分已確認。您可以在 5 分鐘內變更帳號安全設定。"
@@ -8998,7 +8998,7 @@ msgstr "標記為已驗證"
 msgid "New password"
 msgstr "新密碼"
 
-#: lib/baudrate_web/live/profile_live.ex:537
+#: lib/baudrate_web/live/profile_live.ex:546
 #, elixir-autogen, elixir-format
 msgid "New recovery codes issued. The old ones no longer work."
 msgstr "已產生新的救援碼，舊的救援碼全部失效。"
@@ -9029,7 +9029,7 @@ msgstr "OpenPGP 公鑰"
 msgid "Picture"
 msgstr "頭像"
 
-#: lib/baudrate_web/live/profile_live.ex:893
+#: lib/baudrate_web/live/profile_live.ex:907
 #, elixir-autogen, elixir-format
 msgid "Please confirm your identity before changing account security settings."
 msgstr "變更帳號安全設定前，請先確認您的身分。"
@@ -9049,12 +9049,12 @@ msgstr "救援碼"
 msgid "Recovery contact"
 msgstr "救援聯絡方式"
 
-#: lib/baudrate_web/live/profile_live.ex:610
+#: lib/baudrate_web/live/profile_live.ex:619
 #, elixir-autogen, elixir-format
 msgid "Recovery contact removed."
 msgstr "已移除救援聯絡方式。"
 
-#: lib/baudrate_web/live/profile_live.ex:567
+#: lib/baudrate_web/live/profile_live.ex:576
 #, elixir-autogen, elixir-format
 msgid "Recovery contact saved. An admin has to verify it before it can be used."
 msgstr "已儲存救援聯絡方式。需由管理員驗證後才能使用。"
@@ -9215,7 +9215,7 @@ msgstr "撤回驗證"
 msgid "You can read the boards and set up your profile now. Posting, commenting and messages open up once a moderator approves the account — you will get a notification."
 msgstr "您現在就可以瀏覽看板並設定個人資料。發文、留言與私訊會在版主核准帳號後開放——屆時會通知您。"
 
-#: lib/baudrate_web/live/profile_live.ex:575
+#: lib/baudrate_web/live/profile_live.ex:584
 #, elixir-autogen, elixir-format
 msgid "You can register at most %{count} recovery contacts."
 msgstr "最多只能登記 %{count} 組救援聯絡方式。"
@@ -9290,7 +9290,7 @@ msgstr "您的帳號已通過核准，現在可以發文、留言與傳送訊息
 msgid "An admin issued a recovery link for your account. If you did not ask for one, tell them now."
 msgstr "管理員為您的帳號發出了一組救援連結。如果這不是您要求的，請立刻告知對方。"
 
-#: lib/baudrate_web/live/profile_live.ex:593
+#: lib/baudrate_web/live/profile_live.ex:602
 #, elixir-autogen, elixir-format
 msgid "Could not save that recovery contact."
 msgstr "無法儲存該救援聯絡方式。"
@@ -9811,25 +9811,25 @@ msgstr "於 %{date} 加入"
 msgid "Days before a new account is trusted"
 msgstr "新帳號受信任前的天數"
 
-#: lib/baudrate_web/helpers.ex:626
+#: lib/baudrate_web/helpers.ex:627
 #, elixir-autogen, elixir-format
 msgid "New accounts can post at most %{count} time an hour. Please try again later."
 msgid_plural "New accounts can post at most %{count} times an hour. Please try again later."
 msgstr[0] "新帳號每小時最多只能發文 %{count} 次，請稍後再試。"
 
-#: lib/baudrate_web/helpers.ex:616
+#: lib/baudrate_web/helpers.ex:617
 #, elixir-autogen, elixir-format
 msgid "New accounts can put at most %{count} image in a post."
 msgid_plural "New accounts can put at most %{count} images in a post."
 msgstr[0] "新帳號每則貼文最多只能放 %{count} 張圖片。"
 
-#: lib/baudrate_web/helpers.ex:606
+#: lib/baudrate_web/helpers.ex:607
 #, elixir-autogen, elixir-format
 msgid "New accounts can put at most %{count} link in a post."
 msgid_plural "New accounts can put at most %{count} links in a post."
 msgstr[0] "新帳號每則貼文最多只能放 %{count} 個連結。"
 
-#: lib/baudrate_web/helpers.ex:635
+#: lib/baudrate_web/helpers.ex:642
 #, elixir-autogen, elixir-format
 msgid "New accounts can send direct messages only to people who follow them, people who have written to them first, and staff."
 msgstr "新帳號只能傳私訊給追蹤自己的人、先傳訊息給自己的人，以及管理員與版主。"
@@ -9844,18 +9844,18 @@ msgstr "新帳號受信任前的貼文數"
 msgid "The image could not be added."
 msgstr "無法加入這張圖片。"
 
-#: lib/baudrate_web/helpers.ex:653
+#: lib/baudrate_web/helpers.ex:660
 #, elixir-autogen, elixir-format
 msgid "This lifts once %{date} has passed and you have written %{count} more post."
 msgid_plural "This lifts once %{date} has passed and you have written %{count} more posts."
 msgstr[0] "過了 %{date}，並且再發表 %{count} 則貼文後，這項限制就會解除。"
 
-#: lib/baudrate_web/helpers.ex:661
+#: lib/baudrate_web/helpers.ex:668
 #, elixir-autogen, elixir-format
 msgid "This lifts once %{date} has passed."
 msgstr "過了 %{date} 後，這項限制就會解除。"
 
-#: lib/baudrate_web/helpers.ex:666
+#: lib/baudrate_web/helpers.ex:673
 #, elixir-autogen, elixir-format
 msgid "This lifts once you have written %{count} more post."
 msgid_plural "This lifts once you have written %{count} more posts."
@@ -9865,3 +9865,23 @@ msgstr[0] "再發表 %{count} 則貼文後，這項限制就會解除。"
 #, elixir-autogen, elixir-format
 msgid "Until an account is this many days old and has this many articles and comments that have not been removed, it may put at most %{links} link and %{images} image in a post, post at most %{posts} times an hour, and send direct messages only to people who follow it, people who wrote to it first, and staff. Admins, moderators and bots are never limited. 0 and 0 turn the limits off."
 msgstr "帳號在達到這個天數、且有這麼多篇未被移除的文章與留言之前，每則貼文最多只能放 %{links} 個連結和 %{images} 張圖片，每小時最多發文 %{posts} 次，而且只能傳私訊給追蹤自己的人、先傳訊息給自己的人，以及管理員與版主。管理員、版主與機器人不受限制。兩項都設為 0 即關閉限制。"
+
+#: lib/baudrate_web/live/profile_live.ex:261
+#, elixir-autogen, elixir-format
+msgid "Failed to update bio."
+msgstr "更新自我介紹失敗。"
+
+#: lib/baudrate_web/live/profile_live.ex:231
+#, elixir-autogen, elixir-format
+msgid "Failed to update display name."
+msgstr "更新顯示名稱失敗。"
+
+#: lib/baudrate_web/live/profile_live.ex:297
+#, elixir-autogen, elixir-format
+msgid "Failed to update signature."
+msgstr "更新簽名檔失敗。"
+
+#: lib/baudrate_web/helpers.ex:636
+#, elixir-autogen, elixir-format
+msgid "New accounts cannot add links or images to their signature, which is shown under every article they post."
+msgstr "新帳號不能在簽名檔加入連結或圖片，因為簽名檔會顯示在他們發表的每篇文章下方。"

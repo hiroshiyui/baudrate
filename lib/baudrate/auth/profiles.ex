@@ -15,6 +15,7 @@ defmodule Baudrate.Auth.Profiles do
   """
 
   alias Baudrate.Auth.Sanctions
+  alias Baudrate.Auth.Trust
   alias Baudrate.Repo
   alias Baudrate.Setup.User
 
@@ -56,13 +57,23 @@ defmodule Baudrate.Auth.Profiles do
 
   @doc """
   Updates a user's signature.
+
+  A signature is Markdown shown under every article the account posts, so an
+  account still under the limits on new accounts may not add a link or an
+  image to it (`Baudrate.Auth.Trust.check_signature/3`, ADR 0064). The
+  comparison is with the signature as stored, not as the caller last saw it.
   """
   def update_signature(user, signature) do
-    with_interaction(user, fn ->
-      user
-      |> User.signature_changeset(%{signature: signature})
-      |> Repo.update()
-    end)
+    stored = Repo.get(User, user.id)
+
+    with :ok <- Sanctions.ensure_can_interact(user),
+         :ok <- Trust.check_signature(user, signature, stored && stored.signature) do
+      with_interaction(user, fn ->
+        user
+        |> User.signature_changeset(%{signature: signature})
+        |> Repo.update()
+      end)
+    end
   end
 
   @doc """

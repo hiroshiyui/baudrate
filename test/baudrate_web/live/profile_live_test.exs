@@ -1,6 +1,7 @@
 defmodule BaudrateWeb.ProfileLiveTest do
   use BaudrateWeb.ConnCase
 
+  import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
 
   alias Baudrate.Auth
@@ -396,6 +397,105 @@ defmodule BaudrateWeb.ProfileLiveTest do
       assert has_element?(lv, ~s(#profile-add-language[aria-haspopup="true"]))
       refute has_element?(lv, "#profile-add-language[tabindex]")
       refute has_element?(lv, "#profile-add-language-menu[tabindex]")
+    end
+  end
+
+  describe "a sanctioned member" do
+    # Every one of these handlers used to hand the refusal atom to `to_form`,
+    # which crashed the page; the member is told why instead (ADR 0029).
+    setup %{user: user} do
+      {:ok, _} =
+        Auth.issue_sanction(setup_user("admin"), user, "silence",
+          reason: "Cooling off",
+          expires_at: DateTime.utc_now() |> DateTime.add(3600) |> DateTime.truncate(:second)
+        )
+
+      :ok
+    end
+
+    test "saving a display name, bio or signature says why it was refused", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      for {form, params} <- [
+            {"#profile-display-name-form", %{display_name: %{display_name: "New name"}}},
+            {"#profile-bio-form", %{bio: %{bio: "New bio"}}},
+            {"#profile-signature-form", %{signature: %{signature: "New signature"}}}
+          ] do
+        lv |> form(form, params) |> render_submit()
+
+        # The page-wide notice already names the silence, so look at the flash.
+        assert has_element?(lv, "#flash-error", "Your account is silenced and cannot post.")
+        assert has_element?(lv, "#flash-error", "Cooling off")
+      end
+    end
+
+    test "a refused avatar removal leaves the avatar it still shows", %{conn: conn, user: user} do
+      # The files used to be deleted before the refused update, leaving the
+      # account pointing at an avatar that no longer existed.
+      scratch = Path.join(System.tmp_dir!(), "avatar-#{System.unique_integer([:positive])}.png")
+
+      File.write!(
+        scratch,
+        Image.new!(64, 64, color: :white) |> Image.write!(:memory, suffix: ".png")
+      )
+
+      on_exit(fn -> File.rm(scratch) end)
+
+      {:ok, avatar_id} =
+        Baudrate.Avatar.process_upload(scratch, %{
+          "x" => 0.0,
+          "y" => 0.0,
+          "width" => 1.0,
+          "height" => 1.0
+        })
+
+      Repo.update_all(
+        from(u in Baudrate.Setup.User, where: u.id == ^user.id),
+        set: [avatar_id: avatar_id]
+      )
+
+      on_exit(fn -> Baudrate.Avatar.delete_avatar(avatar_id) end)
+      BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
+
+      {:ok, lv, _html} = live(conn, "/profile")
+      render_click(lv, "remove_avatar", %{})
+
+      assert has_element?(lv, "#flash-error", "Your account is silenced and cannot post.")
+      assert Repo.reload(user).avatar_id == avatar_id
+
+      assert File.exists?(
+               Application.app_dir(:baudrate, "priv/static/uploads/avatars/#{avatar_id}/48.webp")
+             )
+    end
+
+    test "saving profile fields says why it was refused", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      render_submit(lv, "save_profile_fields", %{
+        "profile_fields" => %{"0" => %{"name" => "Site", "value" => "example"}}
+      })
+
+      assert has_element?(lv, "#flash-error", "Your account is silenced and cannot post.")
+    end
+  end
+
+  describe "a new account's signature" do
+    test "cannot gain a link, and the member is told why", %{conn: conn} do
+      Repo.insert!(%Setting{key: "new_account_days", value: "3"})
+      Repo.insert!(%Setting{key: "new_account_posts", value: "3"})
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      lv
+      |> form("#profile-signature-form",
+        signature: %{signature: "My [blog](https://blog.example/)"}
+      )
+      |> render_submit()
+
+      assert has_element?(
+               lv,
+               "#flash-error",
+               "New accounts cannot add links or images to their signature"
+             )
     end
   end
 end

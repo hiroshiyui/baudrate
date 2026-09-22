@@ -567,7 +567,8 @@ defmodule BaudrateWeb.Helpers do
     :new_account_dm,
     :new_account_images,
     :new_account_links,
-    :new_account_rate_limited
+    :new_account_rate_limited,
+    :new_account_signature
   ]
 
   @doc """
@@ -629,6 +630,12 @@ defmodule BaudrateWeb.Helpers do
       count
     )
   end
+
+  defp new_account_limit(:new_account_signature),
+    do:
+      gettext(
+        "New accounts cannot add links or images to their signature, which is shown under every article they post."
+      )
 
   defp new_account_limit(:new_account_dm),
     do:

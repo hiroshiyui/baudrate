@@ -57,6 +57,9 @@ defmodule Baudrate.Auth.Trust do
     * direct messages only to people who follow it, who have written to it
       first, or who are staff. That rule lives in `Baudrate.Messaging`, which
       asks `trusted?/1`.
+    * **no new link or image in its signature** (`check_signature/3`). A
+      signature is shown under every article the account posts, so even one
+      link there would double what each post may carry.
 
   ## An edit is a second way in
 
@@ -90,6 +93,7 @@ defmodule Baudrate.Auth.Trust do
           | :new_account_images
           | :new_account_rate_limited
           | :new_account_dm
+          | :new_account_signature
 
   @typedoc """
   An account's standing. `post_count` is counted only as far as
@@ -294,6 +298,30 @@ defmodule Baudrate.Auth.Trust do
         :error ->
           check_new(counted, user_id(user))
       end
+    end
+  end
+
+  @doc """
+  Checks a signature change by `user`: `:ok` for a trusted account, and for
+  an untrusted one unless `signature` links somewhere `previous` did not or
+  holds more images than it did (`{:error, :new_account_signature}`).
+
+  The allowance is none rather than a post's one, because a signature is
+  rendered under every article the account posts. Like an edit, it never has
+  to remove what is already there.
+  """
+  @spec check_signature(User.t() | map() | integer() | nil, String.t() | nil, String.t() | nil) ::
+          :ok | {:error, refusal()}
+  def check_signature(user, signature, previous) do
+    if trusted?(user) do
+      :ok
+    else
+      %{links: links, images: images} = count(signature, 0)
+      %{links: old_links, images: old_images} = count(previous, 0)
+
+      if links -- old_links == [] and images <= old_images,
+        do: :ok,
+        else: {:error, :new_account_signature}
     end
   end
 

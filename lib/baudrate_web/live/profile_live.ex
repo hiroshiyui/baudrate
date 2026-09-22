@@ -224,8 +224,11 @@ defmodule BaudrateWeb.ProfileLive do
          |> assign(:current_user, updated_user)
          |> put_flash(:info, gettext("Display name updated."))}
 
-      {:error, changeset} ->
+      {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :display_name_form, to_form(changeset, as: :display_name))}
+
+      {:error, reason} ->
+        {:noreply, refuse(socket, reason, gettext("Failed to update display name."))}
     end
   end
 
@@ -251,8 +254,11 @@ defmodule BaudrateWeb.ProfileLive do
          |> assign(:current_user, updated_user)
          |> put_flash(:info, gettext("Bio updated."))}
 
-      {:error, changeset} ->
+      {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :bio_form, to_form(changeset, as: :bio))}
+
+      {:error, reason} ->
+        {:noreply, refuse(socket, reason, gettext("Failed to update bio."))}
     end
   end
 
@@ -284,8 +290,11 @@ defmodule BaudrateWeb.ProfileLive do
          |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(updated_user.signature))
          |> put_flash(:info, gettext("Signature updated."))}
 
-      {:error, changeset} ->
+      {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :signature_form, to_form(changeset, as: :signature))}
+
+      {:error, reason} ->
+        {:noreply, refuse(socket, reason, gettext("Failed to update signature."))}
     end
   end
 
@@ -303,8 +312,8 @@ defmodule BaudrateWeb.ProfileLive do
          |> assign(:profile_fields, pad_profile_fields(updated_user.profile_fields))
          |> put_flash(:info, gettext("Profile fields updated."))}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to update profile fields."))}
+      {:error, reason} ->
+        {:noreply, refuse(socket, reason, gettext("Failed to update profile fields."))}
     end
   end
 
@@ -740,10 +749,13 @@ defmodule BaudrateWeb.ProfileLive do
 
     case RateLimits.check_avatar_change(user.id) do
       :ok ->
-        Avatar.delete_avatar(user.avatar_id)
-
+        # The files go only once the account no longer points at them: a
+        # refused removal (a silenced member, ADR 0029) must leave the avatar
+        # it still shows intact.
         case Auth.remove_avatar(user) do
           {:ok, updated_user} ->
+            Avatar.delete_avatar(user.avatar_id)
+
             socket =
               socket
               |> assign(:current_user, updated_user)
@@ -751,8 +763,8 @@ defmodule BaudrateWeb.ProfileLive do
 
             {:noreply, socket}
 
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to remove avatar."))}
+          {:error, reason} ->
+            {:noreply, refuse(socket, reason, gettext("Failed to remove avatar."))}
         end
 
       {:error, :rate_limited} ->
@@ -772,11 +784,12 @@ defmodule BaudrateWeb.ProfileLive do
 
     case consumed do
       [{:ok, avatar_id}] ->
-        # Delete old avatar files if they exist
-        Avatar.delete_avatar(user.avatar_id)
-
+        # The old files go only once the account points at the new ones; on a
+        # refusal the new ones go instead, and the avatar shown is untouched.
         case Auth.update_avatar(user, avatar_id) do
           {:ok, updated_user} ->
+            Avatar.delete_avatar(user.avatar_id)
+
             socket =
               socket
               |> assign(:current_user, updated_user)
@@ -786,8 +799,9 @@ defmodule BaudrateWeb.ProfileLive do
 
             {:noreply, socket}
 
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to update avatar."))}
+          {:error, reason} ->
+            Avatar.delete_avatar(avatar_id)
+            {:noreply, refuse(socket, reason, gettext("Failed to update avatar."))}
         end
 
       [{:error, :invalid_image}] ->
@@ -991,5 +1005,18 @@ defmodule BaudrateWeb.ProfileLive do
       %{username: username, domain: domain} -> "@#{username}@#{domain}"
       nil -> ap_id
     end
+  end
+
+  # A refusal from a gate says what stands against the member and until when
+  # (ADR 0029) or what a new account must wait for (ADR 0064); anything else
+  # keeps the handler's own message. Every `{:error, reason}` catch-all here
+  # goes through it — they used to hand the reason to `to_form/2`, which
+  # crashed the page for a silenced member saving their bio.
+  defp refuse(socket, reason, fallback) do
+    put_flash(
+      socket,
+      :error,
+      BaudrateWeb.Helpers.refusal_message(reason, socket.assigns.current_user, fallback)
+    )
   end
 end
