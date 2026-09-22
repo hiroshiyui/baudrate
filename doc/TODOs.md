@@ -14,12 +14,10 @@ onboarding. **All five are now closed** — Phase 0 in v1.18.2, Phase 1 in
 v1.21.0, Phase 2 with the alerting item that followed v1.28.2, Phase 3 in
 v1.31.0, and Phase 4 across v1.32.0–v1.34.0.
 
-**Phase 5 was deferred on 2026-09-21 and planned on 2026-09-22.** The roadmap
-puts anti-spam next, on the premise that growth from Phase 4 attracts spam; the
-operator took Phase 6 first, and 6A's first half — comment editing with a public
-history, and image descriptions — is committed and unreleased. The agreed order
-is now 6A's second half (server-side drafts), then Phase 5's three releases.
-Its three decisions are settled and recorded below.
+**Phase 5 is under way.** It was deferred on 2026-09-21 so that 6A could go
+first — comment editing and image descriptions in v1.35.0, server-side drafts in
+v1.36.0 — and planned on 2026-09-22 as three releases. The first, 5A + 5E, shipped
+in v1.37.0; 5B is next. Its three decisions are settled and recorded below.
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -344,23 +342,19 @@ These are the facts that are still nowhere else.
 
 **Planned 2026-09-22, three releases:** 5A + 5E (the door), then 5B (trust),
 then 5C + 5D — 5D's "hold for review" has nowhere to put a submission until 5C
-exists. The first, 5A + 5E, is built and unreleased as v1.37.0; 5B is next.
+exists. The first, 5A + 5E, shipped in v1.37.0; 5B is next.
 
-### 5A — Registration friction (S) — **done, unreleased**
+### 5A — Registration friction (S) — **shipped in v1.37.0**
 
-Both items are built
-([ADR 0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md)).
-Two things the plan got wrong, corrected in the building:
+The proof-of-work challenge and the invite-chain ban
+([ADR 0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md),
+which records the two things the plan got wrong: the difficulty, and "one solve,
+one attempt" needing the success case too). One thing is still open:
 
-- **The difficulty.** The plan set 20 bits and expected about a second or two
-  on a phone. Measured, the solver manages ~1.2 M hashes/s on a desktop
-  browser, so 20 bits is ~7 s on a phone several times slower — long enough to
-  look broken — and the plan's cap of 24 is nearly two minutes. The default is
-  18 and the cap 22.
-- **"One solve, one attempt" needed the success case too.** A challenge
-  consumed by leaving it `nil` reads as "switched off", so a crafted socket
-  could register once properly and then keep going on the same solve. It is
-  re-issued after every attempt, success included.
+- **Time the challenge on a real phone.** The default of 18 bits comes from a
+  measured desktop rate and an *estimated* phone eight times slower; nobody has
+  timed one. If an ordinary phone takes much over two seconds on average, lower
+  the default (it is a setting, so an instance can lower it without a release).
 
 ### 5B — Limits for new accounts (M)
 
@@ -406,12 +400,11 @@ Two things the plan got wrong, corrected in the building:
   - Every match is audited, whatever the action — that is what makes a bad
     filter findable.
 
-### 5E — IP bans (S) — **done, unreleased**
+### 5E — IP bans (S) — **shipped in v1.37.0**
 
-Built with 5A, under the same record. Sign-in is checked at
-`SessionController`'s `establish_session/3` rather than at `create/2` alone as
-planned: every sign-in path — password, TOTP, recovery codes, first-time TOTP
-setup — ends there, so it is the one place a later path cannot route around.
+Built with 5A, under the same record, with sign-in checked at
+`establish_session/3` — the one function every sign-in path ends in — rather
+than at `create/2` alone as planned.
 
 ### Decisions (made 2026-09-22)
 
@@ -444,8 +437,8 @@ Comment editing with a public history
 ([ADR 0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md)) and image
 descriptions ([ADR 0061](adr/0061-an-image-description-is-not-a-form-field.md))
 shipped in v1.35.0. Server-side drafts
-([ADR 0062](adr/0062-a-draft-is-kept-in-two-places-on-purpose.md)) are done and
-unreleased: articles only, beside the localStorage autosave rather than
+([ADR 0062](adr/0062-a-draft-is-kept-in-two-places-on-purpose.md)) shipped in
+v1.36.0: articles only, beside the localStorage autosave rather than
 instead of it, because the two fail in opposite directions.
 
 Two things this stage deliberately left standing:
