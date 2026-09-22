@@ -17,7 +17,7 @@ v1.31.0, and Phase 4 across v1.32.0–v1.34.0.
 **Phase 5 is under way.** It was deferred on 2026-09-21 so that 6A could go
 first — comment editing and image descriptions in v1.35.0, server-side drafts in
 v1.36.0 — and planned on 2026-09-22 as three releases. The first, 5A + 5E, shipped
-in v1.37.0; 5B is done and ships in v1.38.0; 5C + 5D are next. Its three
+in v1.37.0; 5B shipped in v1.38.0; 5C + 5D are next. Its three
 decisions are settled and recorded below.
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
@@ -343,7 +343,7 @@ These are the facts that are still nowhere else.
 
 **Planned 2026-09-22, three releases:** 5A + 5E (the door), then 5B (trust),
 then 5C + 5D — 5D's "hold for review" has nowhere to put a submission until 5C
-exists. The first, 5A + 5E, shipped in v1.37.0; 5B ships in v1.38.0.
+exists. The first, 5A + 5E, shipped in v1.37.0; 5B in v1.38.0.
 
 ### 5A — Registration friction (S) — **shipped in v1.37.0**
 
@@ -355,7 +355,7 @@ release: a Pixel 8a at 20 bits had its answer before its owner finished the
 form. The default stays 18 for older phones; `Baudrate.Auth.Challenge`'s
 moduledoc keeps the numbers.
 
-### 5B — Limits for new accounts (M) — **done, ships in v1.38.0**
+### 5B — Limits for new accounts (M) — **shipped in v1.38.0**
 
 Trust by age and posts still up, decided when asked
 ([ADR 0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md)). Five
