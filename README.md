@@ -60,7 +60,8 @@ third party on your behalf.
 - **User public profiles** -- public profile pages with stats, recent articles, and clickable author names
 - **Avatar system** -- upload, crop, WebP conversion with server-side security
 - **Flexible registration** -- open, approval-required, or invite-only modes with admin-managed invite codes; registering signs you in once you have saved your recovery codes, and a one-time first-visit step asks for a display name and picture. An account waiting for approval is told what it may do meanwhile, and told again when it is approved
-- **Admin dashboard** -- site settings, registration mode, pending user approval, federation dashboard, moderation queue, moderation log, invite code management
+- **A door that costs something to knock on** -- registering takes a proof-of-work challenge the browser solves while the form is filled in, self-hosted rather than a CAPTCHA that would hand a third party every registrant's address; admins can ban an address or network from registering and signing in (never from reading), and ban an account together with the accounts it invited, ticking each one after seeing it ([ADR 0063](doc/adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md))
+- **Admin dashboard** -- site settings, registration mode, pending user approval, federation dashboard, moderation queue, moderation log, invite code management, IP bans
 - **Rate limiting** on login, TOTP, registration, avatar uploads, and federation endpoints
 - **Security hardened** -- HSTS, CSP, signed + encrypted cookies, and secrets encrypted at rest under per-class keys that can be rotated without locking anyone out
 - **Retention** -- hourly purges destroy a deleted article or comment, its revisions and its image files 90 days after deletion, untouched timeline items after 90 days, and remote boost records after 180 days; anything a moderation report points at is kept at any age

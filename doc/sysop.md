@@ -561,9 +561,16 @@ Baudrate.Repo.delete_all(Baudrate.Auth.IpBan)
 Baudrate.Auth.IpBanCache.refresh()
 ```
 
-That lifts every ban. To lift one, find it with
-`Baudrate.Repo.all(Baudrate.Auth.IpBan)` and pass its id to
-`Baudrate.Repo.delete!/1` before the `refresh/0`. The deletion is not recorded
+That lifts every ban. To lift one, find its id with
+`Baudrate.Repo.all(Baudrate.Auth.IpBan)`, then delete that row before the
+`refresh/0`:
+
+```elixir
+Baudrate.Auth.IpBan |> Baudrate.Repo.get!(42) |> Baudrate.Repo.delete!()
+Baudrate.Auth.IpBanCache.refresh()
+```
+
+The deletion is not recorded
 in the moderation log, so note it there by hand if the instance has other
 admins.
 

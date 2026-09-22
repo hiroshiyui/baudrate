@@ -829,6 +829,57 @@ token is claimed before the password is validated, or a single-use link would
 become a password-guessing oracle. Issue a fresh one rather than hunting for
 the old.
 
+### Registration sits on "Checking this browser…" and never finishes
+
+The registration page solves a proof-of-work challenge in the visitor's
+browser (ADR 0063; [SysOp Guide](sysop.md#the-registration-challenge)). A
+Sign Up pressed before the answer arrives is held by the server and completed
+when it does, so a slow solve looks like a page that is thinking, not one that
+is broken. In order of likelihood:
+
+1. **The difficulty is too high for the device.** Each bit doubles the work,
+   and at the cap of 22 a phone averages about half a minute. Lower
+   **Registration challenge difficulty** at `/admin/settings`; it takes effect
+   for the next page load. `0` switches the challenge off entirely.
+2. **The worker did not load, so the slower fallback is doing the work.**
+   `/challenge_worker.js` is a build output (`mix assets.deploy`), not a file
+   in git. Fetch it from the site; a 404 means the build step did not run for
+   this release. In the browser's developer tools, once a solve finishes, the
+   `#register-challenge` element holds a `.register-challenge-via` child whose
+   `data-via` says `worker` or `main-thread`. The fallback still registers
+   people, just more slowly.
+3. **Scripting is off.** The registration page is a LiveView and never worked
+   without JavaScript; the challenge adds no new requirement.
+
+A visitor whose network is IP-banned does not see the form at all — they see
+the refusal described below.
+
+### "Registration and sign-in are not available from your network"
+
+An IP ban at `/admin/ip-bans` covers the visitor's address. Reading the site
+is unaffected, which is deliberate. Find the range in the IP bans table that
+holds the visitor's address — the page does not look this up for you, so
+compare against each range's prefix. A refused attempt is **not** in
+`/admin/login-attempts`: the ban is checked before the password is, so a banned
+address adds nothing there. The application log does record it, as
+`auth.ip_banned: step=login ip=…` (or `step=register`), so
+`journalctl -u baudrate | grep auth.ip_banned` gives the address; or ask the
+visitor for theirs. If the ban is too broad, lift it and add
+a narrower one, and consider
+an expiry — ISPs reassign addresses, so a permanent ban lands on whoever gets
+the address next.
+
+**An admin locked out by a ban** has to lift it from the server console; the
+procedure is in the SysOp Guide under
+[IP Bans](sysop.md#ip-bans-adminip-bans). The page refuses a range holding
+the acting admin's own address, but a dynamic address can move into one
+afterwards.
+
+**Everybody refused at once** cannot come from a ban on the proxy's address:
+private and loopback ranges are refused when the ban is made, precisely
+because a misconfigured `BAUDRATE_TRUSTED_PROXIES` makes every visitor look
+like the proxy. Check for a broad public range instead.
+
 ---
 
 ## Rate Limiting

@@ -422,7 +422,7 @@ and never need to know about the internal split.
 
 | Sub-Module | Responsibility |
 |---|---|
-| `Auth.Users` | User CRUD, lookup (by ID, username, session), registration, admin approval, role updates, and capability checks |
+| `Auth.Users` | User CRUD, lookup (by ID, username, session), registration, admin approval, role updates, capability checks, and the bounded invite tree (`invite_tree/1`) |
 | `Auth.Passwords` | Password hashing (bcrypt), verification, and recovery code-based resets |
 | `Auth.Sessions` | Session lifecycle (dual-token rotation), server-side session storage, and login attempt throttling/monitoring |
 | `Auth.SecondFactor` | TOTP enrollment, encryption/decryption of secrets, QR code generation, and recovery code management |
@@ -430,7 +430,9 @@ and never need to know about the internal split.
 | `Auth.WebAuthn` | FIDO2/WebAuthn credential registration and authentication (hardware security keys); ETS-backed challenge lifecycle |
 | `Auth.Invites` | Invite-only registration logic, quota management, and admin-issued invites |
 | `Auth.Profiles` | User preference updates: display name, bio, signature, profile fields, avatar association, and notification settings |
-| `Auth.Moderation` | Local user moderation: banning (authorized by `Sanctions.authorize_ban/2`), blocking remote actors/users, and muting interactions |
+| `Auth.Moderation` | Local user moderation: banning (authorized by `Sanctions.authorize_ban/2`), banning an invite chain (`ban_invite_chain/4`, ADR 0063), blocking remote actors/users, and muting interactions |
+| `Auth.Challenge` | The registration proof-of-work challenge: issue a nonce and verify one SHA-256 (ADR 0063) |
+| `Auth.IpBans` | IP and CIDR bans for registration and sign-in — the only write path, its four refusals, and `banned?/1` against `Auth.IpBanCache` (ADR 0063) |
 | `Auth.Sanctions` | Warnings, silences and suspensions, refusing a pending registration, and `ensure_can_interact/1` — the one gate every posting and interaction path calls (ADR 0029) |
 
 ### Authentication Flow
@@ -443,6 +445,12 @@ the shape admin sudo already uses, because a LiveView cannot write the session
 sanitises through `BaudrateWeb.Helpers.local_path/2`, the one open-redirect
 guard. It is sanitised on the way in *and* on the way out: what a controller
 receives is whatever the browser posted, whatever page rendered it.
+
+**An IP ban is checked twice** (ADR 0063): by `LoginLive` before the password
+is tested, so a banned address learns nothing about any account and adds
+nothing to `login_attempts`, and again by `establish_session/3` at the bottom
+of the diagram below — the one function every sign-in path ends in, so a path
+added later cannot route around it.
 
 ```
 ┌─────────┐     ┌─────────────┐     ┌──────────────────┐
@@ -723,6 +731,17 @@ modes controlled by the `registration_mode` setting (`approval_required`,
 
 Registration is rate-limited to 5 attempts per hour per IP. The same password
 policy as the setup wizard applies (12+ chars, complexity requirements).
+
+**Every attempt costs a proof-of-work solve**, in all three modes (ADR 0063).
+`RegisterLive` issues a challenge from `Auth.Challenge` when the socket
+connects and holds it in its assigns; `ChallengeHook` solves it in the
+same-origin worker `/challenge_worker.js` (a separate esbuild profile, loaded
+by that bare literal) or, failing that, on the main thread, and pushes
+`challenge_solved`. A submit that arrives first is kept in `:pending_submit`
+and completed when the answer lands. The challenge is re-issued at the start
+of every attempt, success included. Before any of that, a submit from an
+IP-banned address is refused, and once the page connects a banned address
+sees the refusal in place of the form.
 
 Usernames are unique **without regard to case** (migration
 `20260918160000_unique_username_case_insensitively`), on top of
