@@ -743,9 +743,13 @@ gpg:          There is no indication that the signature belongs to the owner.
 **That warning is expected, and it is not a failure.** It means you have never
 personally certified the key in the web of trust, which you have no reason to
 do. The two lines that matter are **`Good signature`** and the **key
-fingerprint**, and the fingerprint must be the one on the profile page. Read
-the fingerprint, not the name and address in quotes — those are whatever the
-key's owner typed when they made it, and anyone can type anything.
+fingerprint**, and the fingerprint must be the one of the key you imported in
+step 1. Baudrate shows the armored block and **no fingerprint** — computing one
+means parsing OpenPGP, which it does not do — so get the fingerprint from your
+own keyring (`gpg --show-keys` on the block you copied, or `gpg -K` after
+importing). Read the fingerprint, not the name and address in quotes — those
+are whatever the key's owner typed when they made it, and anyone can type
+anything.
 
 **What a failure looks like**, when the signature was made by some other key:
 
