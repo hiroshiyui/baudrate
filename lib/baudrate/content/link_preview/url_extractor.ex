@@ -2,8 +2,12 @@ defmodule Baudrate.Content.LinkPreview.UrlExtractor do
   @moduledoc """
   Extracts the first external HTTP(S) URL from rendered HTML content.
 
-  Filters out same-origin URLs, hashtag/mention links, non-HTTP(S) schemes,
-  and fragment-only links. Uses html5ever NIF for HTML parsing.
+  The first of `Baudrate.HtmlParser.Native.extract_urls/2`, so a link preview
+  and the limits on new accounts (ADR 0064) agree about what an external link
+  is: each `href` is resolved against this site's address the way a browser
+  resolves it, and same-site is a host comparison. Hashtag/mention links,
+  non-HTTP(S) schemes and fragment-only links are skipped. Uses the html5ever
+  NIF for HTML parsing.
   """
 
   alias Baudrate.HtmlParser.Native, as: HtmlParser

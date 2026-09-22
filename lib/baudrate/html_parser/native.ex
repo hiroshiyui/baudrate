@@ -6,7 +6,9 @@ defmodule Baudrate.HtmlParser.Native do
   [html5ever](https://github.com/servo/html5ever) via the `scraper` crate:
 
     * `parse_og_metadata/1` — extract Open Graph / Twitter Card / fallback metadata
-    * `extract_first_url/2` — extract the first external URL from an HTML fragment
+    * `extract_urls/2` — every distinct external URL in an HTML fragment
+    * `extract_first_url/2` — the first of those
+    * `count_images/1` — how many `<img>` elements an HTML fragment holds
   """
 
   use Rustler, otp_app: :baudrate, crate: "baudrate_html_parser"
@@ -26,13 +28,29 @@ defmodule Baudrate.HtmlParser.Native do
   def parse_og_metadata(_html), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc """
-  Parse an HTML fragment and extract the first external HTTP(S) URL.
+  Every distinct external URL in an HTML fragment, in document order.
 
-  Filters out fragment-only hrefs, hashtag/mention links, non-HTTP(S) schemes,
-  and URLs matching the given `origin`.
+  Each `href` is **resolved against `origin` the way a browser resolves it**,
+  so `//host/x`, `/\\host/x` and `http:host` count as the links they are, and
+  same-site is decided by comparing hosts rather than by string prefix. URLs are
+  returned resolved and without their fragment, so two links to one page count
+  once. Fragment-only links, links classed `hashtag` or `mention`, and anything
+  that does not resolve to http(s) are skipped.
+  """
+  @spec extract_urls(String.t(), String.t()) :: [String.t()]
+  def extract_urls(_html, _origin), do: :erlang.nif_error(:nif_not_loaded)
 
-  Returns the URL string or `nil`.
+  @doc """
+  The first external URL in an HTML fragment, by the rules of `extract_urls/2`.
+
+  Returned as written when it is already an absolute http(s) URL — a link
+  preview then shows what the author typed rather than its punycode — and
+  resolved otherwise. Returns `nil` when there is none.
   """
   @spec extract_first_url(String.t(), String.t()) :: String.t() | nil
   def extract_first_url(_html, _origin), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc "The number of `<img>` elements in an HTML fragment."
+  @spec count_images(String.t()) :: non_neg_integer()
+  def count_images(_html), do: :erlang.nif_error(:nif_not_loaded)
 end

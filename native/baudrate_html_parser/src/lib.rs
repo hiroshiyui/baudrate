@@ -1,4 +1,6 @@
 use scraper::{Html, Selector};
+use std::collections::HashSet;
+use url::Url;
 
 #[derive(rustler::NifStruct)]
 #[module = "Baudrate.HtmlParser.Native.OgMetadata"]
@@ -35,25 +37,35 @@ fn parse_og_metadata(html: &str) -> OgMetadata {
     }
 }
 
-/// Parse an HTML fragment and extract the first external URL from `<a href="...">` tags.
+/// Every external link in an HTML fragment, in document order, each as it was
+/// written and as a browser would resolve it against `origin`.
 ///
-/// Filters out:
-/// - Empty or fragment-only hrefs
-/// - Links with class "hashtag" or "mention"
-/// - Non-HTTP(S) URLs
-/// - URLs starting with the given origin
-#[rustler::nif]
-fn extract_first_url(html: &str, origin: &str) -> Option<String> {
+/// A link is resolved rather than read as text because a browser resolves it:
+/// `//spam.example/x`, `/\spam.example/x` and `http:spam.example` all leave the
+/// site, and a check that looked for an `https://` prefix counted none of them.
+/// Same-site is a **host** comparison, not a prefix one, so
+/// `https://example.org.spam.example/` is not mistaken for `https://example.org`.
+///
+/// Skipped: fragment-only and empty hrefs, links classed `hashtag` or `mention`
+/// (remote content marks its own tag and profile links that way), anything that
+/// does not resolve to http(s), and anything on `origin`'s host.
+fn external_links(html: &str, origin: &str) -> Vec<(String, Url)> {
+    let base = match Url::parse(origin) {
+        Ok(base) => base,
+        Err(_) => return Vec::new(),
+    };
+
     let fragment = Html::parse_fragment(html);
     let selector = Selector::parse("a[href]").unwrap();
+    let mut links = Vec::new();
 
     for element in fragment.select(&selector) {
         let href = match element.value().attr("href") {
-            Some(h) if !h.is_empty() => h,
+            Some(h) if !h.trim().is_empty() => h,
             _ => continue,
         };
 
-        if href.starts_with('#') {
+        if href.trim_start().starts_with('#') {
             continue;
         }
 
@@ -62,18 +74,67 @@ fn extract_first_url(html: &str, origin: &str) -> Option<String> {
             continue;
         }
 
-        if !href.starts_with("http://") && !href.starts_with("https://") {
+        let mut resolved = match base.join(href) {
+            Ok(url) => url,
+            Err(_) => continue,
+        };
+
+        if resolved.scheme() != "http" && resolved.scheme() != "https" {
             continue;
         }
 
-        if href.starts_with(origin) {
+        if resolved.host_str().is_none() || resolved.host_str() == base.host_str() {
             continue;
         }
 
-        return Some(href.to_string());
+        resolved.set_fragment(None);
+        links.push((href.to_string(), resolved));
     }
 
-    None
+    links
+}
+
+/// Every distinct external URL in an HTML fragment, resolved and without its
+/// fragment, in document order. See `external_links/2` for what counts.
+#[rustler::nif]
+fn extract_urls(html: &str, origin: &str) -> Vec<String> {
+    let mut seen = HashSet::new();
+
+    external_links(html, origin)
+        .into_iter()
+        .map(|(_, resolved)| resolved.to_string())
+        .filter(|url| seen.insert(url.clone()))
+        .collect()
+}
+
+/// The first external URL in an HTML fragment — the first of `extract_urls/2`,
+/// so the two never disagree about what an external link is.
+///
+/// Returned as written when it is already an absolute http(s) URL, so a link
+/// preview shows `https://例え.jp/` rather than its punycode; resolved
+/// otherwise, because `//host/path` is not something a fetcher can use.
+#[rustler::nif]
+fn extract_first_url(html: &str, origin: &str) -> Option<String> {
+    external_links(html, origin)
+        .into_iter()
+        .next()
+        .map(|(href, resolved)| {
+            let lower = href.trim().to_ascii_lowercase();
+
+            if lower.starts_with("http://") || lower.starts_with("https://") {
+                href.trim().to_string()
+            } else {
+                resolved.to_string()
+            }
+        })
+}
+
+/// The number of `<img>` elements in an HTML fragment.
+#[rustler::nif]
+fn count_images(html: &str) -> usize {
+    let fragment = Html::parse_fragment(html);
+    let selector = Selector::parse("img").unwrap();
+    fragment.select(&selector).count()
 }
 
 fn find_meta_property(document: &Html, property: &str) -> Option<String> {
