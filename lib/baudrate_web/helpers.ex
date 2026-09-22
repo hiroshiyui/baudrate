@@ -537,6 +537,21 @@ defmodule BaudrateWeb.Helpers do
   def blocked_interaction_message,
     do: gettext("You cannot interact with this account.")
 
+  @doc """
+  Flash text for registration or sign-in refused because the visitor's
+  address is banned (Phase 5E).
+
+  Plain about what happened, and deliberately not about why or by whom: an
+  address is shared by everyone behind the same network, so most people who
+  read this did nothing, and the sentence has to be one an innocent person
+  can act on.
+  """
+  def ip_banned_message,
+    do:
+      gettext(
+        "Registration and sign-in are not available from your network. If you think this is a mistake, please contact the site's administrators."
+      )
+
   # Everything `Auth.ensure_can_interact/1` can refuse with. Kept in one place
   # so a LiveView cannot handle three of the four and shrug at the fourth.
   @gate_refusals [

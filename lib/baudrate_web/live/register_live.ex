@@ -22,6 +22,7 @@ defmodule BaudrateWeb.RegisterLive do
   require Logger
 
   alias Baudrate.Auth
+  alias Baudrate.Auth.Challenge
   alias Baudrate.Setup
   alias Baudrate.Setup.User
   import BaudrateWeb.Helpers, only: [password_strength: 1, extract_peer_ip: 1]
@@ -34,8 +35,17 @@ defmodule BaudrateWeb.RegisterLive do
 
     peer_ip = if connected?(socket), do: extract_peer_ip(socket), else: "unknown"
 
+    # Both are decided only once the socket is up: the dead render has no
+    # trustworthy peer address, and a challenge issued there would be
+    # discarded with the process that issued it.
+    connected = connected?(socket)
+
     socket =
       socket
+      |> assign(:ip_banned, connected and Auth.ip_banned?(peer_ip))
+      |> assign(:challenge, if(connected, do: Challenge.issue()))
+      |> assign(:challenge_solution, nil)
+      |> assign(:pending_submit, nil)
       |> assign(:form, to_form(changeset, as: :user))
       |> assign(:registration_mode, registration_mode)
       |> assign(:password_strength, password_strength(""))
@@ -76,21 +86,52 @@ defmodule BaudrateWeb.RegisterLive do
   def handle_event("submit", %{"user" => params}, socket) do
     ip = socket.assigns.peer_ip
 
-    case BaudrateWeb.RateLimiter.check_rate("register:#{ip}", 3_600_000, 5) do
-      {:deny, _limit} ->
-        Logger.warning("rate_limit.denied: action=register ip=#{ip}")
+    # Checked again on submit, not only at mount: a ban can be issued while the
+    # page is open, and the mount-time value only decides what is rendered.
+    if Auth.ip_banned?(ip) do
+      Logger.warning("auth.ip_banned: step=register ip=#{ip}")
 
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           gettext("Too many registration attempts. Please try again later.")
-         )}
+      {:noreply,
+       socket
+       |> assign(:ip_banned, true)
+       |> put_flash(:error, BaudrateWeb.Helpers.ip_banned_message())}
+    else
+      case BaudrateWeb.RateLimiter.check_rate("register:#{ip}", 3_600_000, 5) do
+        {:deny, _limit} ->
+          Logger.warning("rate_limit.denied: action=register ip=#{ip}")
 
-      _ ->
-        do_register(socket, params)
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Too many registration attempts. Please try again later.")
+           )}
+
+        _ ->
+          submit_when_solved(socket, params)
+      end
     end
   end
+
+  # The browser answers the challenge (P5-D1). An answer to a challenge that is
+  # no longer current, or a wrong one, is ignored without a word: a legitimate
+  # hook never sends either, and anything else does not deserve an explanation.
+  def handle_event("challenge_solved", %{"nonce" => nonce, "solution" => solution}, socket) do
+    challenge = socket.assigns.challenge
+
+    if challenge && challenge.nonce == nonce && Challenge.solved?(challenge, solution) do
+      socket = assign(socket, :challenge_solution, solution)
+
+      case socket.assigns.pending_submit do
+        nil -> {:noreply, socket}
+        params -> do_register(assign(socket, :pending_submit, nil), params)
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("challenge_solved", _params, socket), do: {:noreply, socket}
 
   @impl true
   def handle_event("ack_codes", _params, socket) do
@@ -116,7 +157,37 @@ defmodule BaudrateWeb.RegisterLive do
     end
   end
 
+  # A submit that arrives before the browser has answered is held, not
+  # refused: the answer is usually a second away, and asking the visitor to
+  # press the button again would read as the page not working. The status line
+  # says what is happening while it waits.
+  defp submit_when_solved(socket, params) do
+    if Challenge.solved?(socket.assigns.challenge, socket.assigns.challenge_solution) do
+      do_register(socket, params)
+    else
+      {:noreply, assign(socket, :pending_submit, params)}
+    end
+  end
+
+  # One solve buys one attempt. Re-issued after *every* attempt, success
+  # included: a consumed challenge left as `nil` would read as "switched off",
+  # and a crafted socket could then register again and again on one solve.
+  defp reissue_challenge(socket) do
+    challenge = Challenge.issue()
+
+    socket
+    |> assign(:challenge, challenge)
+    |> assign(:challenge_solution, nil)
+    |> then(fn s ->
+      if challenge,
+        do: push_event(s, "challenge", %{nonce: challenge.nonce, bits: challenge.bits}),
+        else: s
+    end)
+  end
+
   defp do_register(socket, params) do
+    socket = reissue_challenge(socket)
+
     case Auth.register_user(params) do
       {:ok, user, codes} ->
         flash_msg =

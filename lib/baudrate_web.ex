@@ -22,7 +22,8 @@ defmodule BaudrateWeb do
   # an absolute URL that a static file cannot know (ADR 0057). Plug.Static
   # would shadow the route if it were listed here.
   def static_paths,
-    do: ~w(assets fonts images uploads favicon.ico favicon.svg service_worker.js site.webmanifest)
+    do:
+      ~w(assets fonts images uploads favicon.ico favicon.svg service_worker.js challenge_worker.js site.webmanifest)
 
   def router do
     quote do

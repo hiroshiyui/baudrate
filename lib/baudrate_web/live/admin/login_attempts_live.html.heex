@@ -75,7 +75,17 @@
             </time>
           </td>
           <td>{attempt.username}</td>
-          <td class="text-sm font-mono">{attempt.ip_address || "—"}</td>
+          <td class="text-sm font-mono">
+            {attempt.ip_address || "—"}
+            <.link
+              :if={attempt.ip_address}
+              id={"admin-login-attempt-ban-#{attempt.id}"}
+              navigate={~p"/admin/ip-bans?address=#{attempt.ip_address}"}
+              class="admin-login-attempt-ban link text-xs ml-1"
+            >
+              {gettext("Ban…")}
+            </.link>
+          </td>
           <td class="admin-login-attempts-factor text-sm">{factor_label(attempt.factor)}</td>
           <td>
             <span :if={attempt.success} class="badge badge-success badge-sm">

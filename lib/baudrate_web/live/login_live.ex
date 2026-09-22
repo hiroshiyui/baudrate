@@ -70,6 +70,23 @@ defmodule BaudrateWeb.LoginLive do
   defp do_login(socket, username, password) do
     ip = socket.assigns.peer_ip
 
+    # Before the throttle and before the password is tested, so a banned
+    # address learns nothing about any account and adds nothing to
+    # `login_attempts` (Phase 5E). `SessionController`'s `establish_session/3`
+    # checks again, as the backstop every sign-in path passes through.
+    if Auth.ip_banned?(ip) do
+      Logger.warning("auth.ip_banned: step=login ip=#{ip}")
+
+      {:noreply,
+       socket
+       |> put_flash(:error, BaudrateWeb.Helpers.ip_banned_message())
+       |> assign(:form, to_form(%{"username" => username, "password" => ""}, as: :login))}
+    else
+      do_login_unbanned(socket, username, password, ip)
+    end
+  end
+
+  defp do_login_unbanned(socket, username, password, ip) do
     case Auth.check_login_throttle(username) do
       {:delay, seconds} ->
         Logger.warning("login_throttle.denied: username=#{username} ip=#{ip} delay=#{seconds}s")

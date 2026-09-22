@@ -45,6 +45,9 @@ defmodule Baudrate.Application do
         {BaudrateWeb.RateLimit, [clean_period: :timer.minutes(5)]},
         {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
         Baudrate.Federation.DomainBlockCache,
+        # Read on every registration and sign-in, so it is up before the
+        # endpoint accepts anything (Phase 5E).
+        Baudrate.Auth.IpBanCache,
         Baudrate.Federation.DeliveryWorker,
         Baudrate.Federation.InboundWorker,
         Baudrate.Federation.StaleActorCleaner,

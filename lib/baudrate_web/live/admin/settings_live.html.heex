@@ -68,6 +68,22 @@
           ]}
         />
         <.input
+          field={@form[:registration_challenge_bits]}
+          type="number"
+          min="0"
+          max={Baudrate.Auth.Challenge.max_bits()}
+          label={gettext("Registration challenge difficulty")}
+        />
+        <p
+          id="settings-challenge-help"
+          class="settings-challenge-help text-sm text-base-content/70 -mt-2"
+        >
+          {gettext(
+            "How much work a browser does before it may register, in bits. Each one doubles it: 18 takes about two seconds on a phone, 20 about seven. Raise it during a wave of automated sign-ups; 0 turns it off. At most %{max}.",
+            max: Baudrate.Auth.Challenge.max_bits()
+          )}
+        </p>
+        <.input
           field={@form[:ap_federation_enabled]}
           type="select"
           label={gettext("Federation")}

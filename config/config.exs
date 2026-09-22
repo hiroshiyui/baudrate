@@ -45,6 +45,15 @@ config :esbuild,
       ~w(js/service_worker.js --bundle --target=es2022 --outdir=../priv/static --asset-names=[name]),
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
+  ],
+  # The registration challenge's solver (P5-D1). Built beside the service
+  # worker for the same reason: it is loaded by a bare literal path, so it
+  # must keep an undigested name at the site root (ADR 0059).
+  challenge_worker: [
+    args:
+      ~w(js/challenge_worker.js --bundle --target=es2022 --outdir=../priv/static --asset-names=[name]),
+    cd: Path.expand("../assets", __DIR__),
+    env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
   ]
 
 # Configure tailwind (the version is required)

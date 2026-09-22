@@ -147,6 +147,15 @@ defmodule Baudrate.Auth do
   # --- Moderation ---
   defdelegate ban_user(user, actor, reason \\ nil), to: Moderation
   defdelegate unban_user(user, actor), to: Moderation
+
+  # --- IP bans (Phase 5E) ---
+  #
+  # Refused at registration and sign-in only; reading is never affected.
+
+  defdelegate ip_banned?(ip), to: Baudrate.Auth.IpBans, as: :banned?
+  defdelegate ban_ip(input, attrs, actor, opts), to: Baudrate.Auth.IpBans, as: :create
+  defdelegate unban_ip(ban_id, actor), to: Baudrate.Auth.IpBans, as: :delete
+  defdelegate list_ip_bans(), to: Baudrate.Auth.IpBans, as: :list
   defdelegate block_user(user, target), to: Moderation
   defdelegate block_remote_actor(user, ap_id), to: Moderation
   defdelegate unblock_user(user, target), to: Moderation

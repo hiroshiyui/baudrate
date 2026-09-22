@@ -113,12 +113,14 @@ defmodule Baudrate.MixProject do
         "compile",
         "tailwind baudrate",
         "esbuild baudrate",
-        "esbuild service_worker"
+        "esbuild service_worker",
+        "esbuild challenge_worker"
       ],
       "assets.deploy": [
         "tailwind baudrate --minify",
         "esbuild baudrate --minify",
         "esbuild service_worker --minify",
+        "esbuild challenge_worker --minify",
         "phx.digest"
       ],
       lint: ["credo --strict"],

@@ -35,6 +35,8 @@ baudrate-*.tar
 # with nothing to catch it. `mix assets.build` and `mix assets.deploy` produce
 # it; the deploy runs the latter on the server.
 /priv/static/service_worker.js
+# Likewise an esbuild bundle, of assets/js/challenge_worker.js (P5-D1).
+/priv/static/challenge_worker.js
 
 # Ignore digested assets cache.
 /priv/static/cache_manifest.json

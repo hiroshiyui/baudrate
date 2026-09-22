@@ -53,6 +53,12 @@ config :baudrate, settings_cache_enabled: false
 # errors from fire-and-forget Tasks that outlive the test process.
 config :baudrate, federation_async: false
 
+# The registration proof-of-work challenge (P5-D1) is off unless a test turns
+# it on with the `registration_challenge_bits` setting: a LiveView test cannot
+# run the browser worker that solves it, and only the tests about the
+# challenge should have to answer one.
+config :baudrate, registration_challenge_bits: 0
+
 # Run web push delivery synchronously in tests
 config :baudrate, web_push_async: false
 

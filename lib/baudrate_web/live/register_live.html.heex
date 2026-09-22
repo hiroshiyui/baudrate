@@ -70,7 +70,17 @@
       {gettext("Create an account")}
     </p>
 
+    <div
+      :if={@ip_banned}
+      id="register-ip-refused"
+      class="register-ip-refused alert alert-warning"
+      role="alert"
+    >
+      <span>{BaudrateWeb.Helpers.ip_banned_message()}</span>
+    </div>
+
     <.form
+      :if={!@ip_banned}
       for={@form}
       id="register-form"
       phx-change="validate"
@@ -148,6 +158,31 @@
           label={gettext("I accept the above terms")}
         />
       </div>
+
+      <%!-- The proof-of-work challenge (P5-D1). The hook solves it as soon as
+      the page connects; `phx-update="ignore"` keeps a re-render from
+      remounting it mid-search, and a fresh challenge arrives as a pushed
+      event rather than through these attributes. --%>
+      <div
+        :if={@challenge}
+        id="register-challenge"
+        class="register-challenge"
+        phx-hook="ChallengeHook"
+        phx-update="ignore"
+        data-nonce={@challenge.nonce}
+        data-bits={@challenge.bits}
+        hidden
+      >
+      </div>
+
+      <p
+        id="register-challenge-status"
+        class="register-challenge-status text-sm text-base-content/70 min-h-5"
+        role="status"
+      >
+        {if @pending_submit,
+          do: gettext("Checking this browser before creating the account. This takes a moment.")}
+      </p>
 
       <button
         id="register-submit"

@@ -602,6 +602,7 @@ defmodule Baudrate.Setup do
       site_name: :string,
       site_description: :string,
       registration_mode: :string,
+      registration_challenge_bits: :integer,
       timezone: :string,
       ap_federation_enabled: :string,
       ap_federation_mode: :string,
@@ -616,6 +617,7 @@ defmodule Baudrate.Setup do
       site_name: get_setting("site_name") || "",
       site_description: get_setting("site_description") || "",
       registration_mode: registration_mode(),
+      registration_challenge_bits: Baudrate.Auth.Challenge.bits(),
       timezone: get_setting("timezone") || "Etc/UTC",
       ap_federation_enabled: get_setting("ap_federation_enabled") || "true",
       ap_federation_mode: get_setting("ap_federation_mode") || "blocklist",
@@ -634,6 +636,13 @@ defmodule Baudrate.Setup do
     # rendered as plain text, so there is no reason for it to be long.
     |> Ecto.Changeset.validate_length(:site_description, max: 500)
     |> Ecto.Changeset.validate_inclusion(:registration_mode, @valid_registration_modes)
+    # 0 switches the proof-of-work challenge off; above the cap a phone takes
+    # long enough to give up, which would close the door rather than slow the
+    # wave (see `Baudrate.Auth.Challenge`).
+    |> Ecto.Changeset.validate_number(:registration_challenge_bits,
+      greater_than_or_equal_to: 0,
+      less_than_or_equal_to: Baudrate.Auth.Challenge.max_bits()
+    )
     |> Ecto.Changeset.validate_inclusion(:ap_federation_enabled, ["true", "false"])
     |> Ecto.Changeset.validate_inclusion(:ap_federation_mode, @valid_federation_modes)
     |> Ecto.Changeset.validate_inclusion(:ap_authorized_fetch, ["true", "false"])
@@ -668,6 +677,12 @@ defmodule Baudrate.Setup do
         set_setting("site_name", changes.site_name)
         set_setting("site_description", changes.site_description || "")
         set_setting("registration_mode", changes.registration_mode)
+
+        set_setting(
+          "registration_challenge_bits",
+          Integer.to_string(changes.registration_challenge_bits || 0)
+        )
+
         set_setting("timezone", changes.timezone || "Etc/UTC")
         set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")
         set_setting("ap_federation_mode", changes.ap_federation_mode || "blocklist")

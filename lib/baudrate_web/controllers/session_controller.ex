@@ -582,7 +582,32 @@ defmodule BaudrateWeb.SessionController do
   # When `redirect_to` is the default `"/"`, checks for a `:return_to` key
   # in the cookie session (set by `ShareTargetController` for unauthenticated
   # share attempts). The stored path is sanitized and consumed on use.
+  #
+  # It is also the one place an IP ban is checked for sign-in (Phase 5E),
+  # because every path that signs somebody in — the password step, TOTP,
+  # recovery codes, first-time TOTP setup — ends here, and it is the step that
+  # actually mints the session. `LoginLive` checks first so a banned visitor
+  # is refused before their password is tested; this is the backstop that no
+  # new sign-in path can route around.
   defp establish_session(conn, user, redirect_to \\ "/") do
+    if Auth.ip_banned?(conn.remote_ip) do
+      Logger.warning(
+        "auth.ip_banned: user_id=#{user.id} ip=#{remote_ip(conn)} step=establish_session"
+      )
+
+      conn
+      # A half-finished sign-in (password verified, TOTP pending) must not
+      # survive the refusal.
+      |> delete_session(:user_id)
+      |> delete_session(:totp_setup_secret)
+      |> put_flash(:error, BaudrateWeb.Helpers.ip_banned_message())
+      |> redirect(to: "/login")
+    else
+      do_establish_session(conn, user, redirect_to)
+    end
+  end
+
+  defp do_establish_session(conn, user, redirect_to) do
     final_redirect =
       if redirect_to == "/" do
         case get_session(conn, :return_to) do

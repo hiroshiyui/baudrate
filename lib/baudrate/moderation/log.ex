@@ -26,6 +26,7 @@ defmodule Baudrate.Moderation.Log do
     verify_recovery_contact unverify_recovery_contact
     issue_account_reset revoke_account_reset clear_second_factors
     block_user unblock_user block_domain unblock_domain rotate_keys
+    ban_ip unban_ip
     suspend_remote_actor unsuspend_remote_actor
     update_settings update_eua update_privacy publish_terms_version generate_vapid_keys
     create_rule update_rule retire_rule restore_rule reorder_rules

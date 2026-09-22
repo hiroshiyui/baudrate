@@ -1,0 +1,167 @@
+<div id="ip-bans-page" class="ip-bans-page space-y-6">
+  <h1 id="ip-bans-heading" class="ip-bans-heading text-2xl font-bold" tabindex="-1">
+    {gettext("IP Bans")}
+  </h1>
+
+  <p id="ip-bans-explainer" class="ip-bans-explainer text-sm text-base-content/70">
+    {gettext(
+      "A banned address or range cannot register or sign in. Reading is never affected, and an address is shared by everyone behind the same network, so ban the narrowest range that stops what you are seeing and let it expire."
+    )}
+  </p>
+
+  <section
+    id="ip-bans-new"
+    class="ip-bans-new card bg-base-200"
+    aria-labelledby="ip-bans-new-heading"
+  >
+    <div class="card-body gap-3">
+      <h2 id="ip-bans-new-heading" class="ip-bans-new-heading font-semibold">
+        {gettext("Ban an address or range")}
+      </h2>
+
+      <form
+        id="ip-bans-form"
+        class="ip-bans-form space-y-3"
+        phx-change="change"
+        phx-submit="create"
+      >
+        <div>
+          <label for="ip-bans-address" class="ip-bans-address-label text-sm font-medium">
+            {gettext("Address or CIDR range")}
+          </label>
+          <input
+            id="ip-bans-address"
+            type="text"
+            name="ban[address]"
+            value={@form_params["address"]}
+            maxlength="64"
+            autocomplete="off"
+            spellcheck="false"
+            class="ip-bans-address input input-bordered w-full font-mono"
+            aria-describedby="ip-bans-preview"
+          />
+          <p id="ip-bans-preview" class="ip-bans-preview text-sm text-base-content/70 mt-1">
+            <span :if={@preview}>
+              {ngettext(
+                "%{cidr} covers %{count} address.",
+                "%{cidr} covers %{count} addresses.",
+                @preview.size,
+                cidr: @preview.cidr
+              )}
+            </span>
+          </p>
+        </div>
+
+        <div>
+          <label for="ip-bans-reason" class="ip-bans-reason-label text-sm font-medium">
+            {gettext("Reason (recorded in the moderation log)")}
+          </label>
+          <input
+            id="ip-bans-reason"
+            type="text"
+            name="ban[reason]"
+            value={@form_params["reason"]}
+            maxlength="500"
+            class="ip-bans-reason input input-bordered w-full"
+          />
+        </div>
+
+        <div>
+          <label for="ip-bans-expires" class="ip-bans-expires-label text-sm font-medium">
+            {gettext("Expires after this many days (leave empty for no end)")}
+          </label>
+          <input
+            id="ip-bans-expires"
+            type="number"
+            min="1"
+            max="3650"
+            name="ban[expires_days]"
+            value={@form_params["expires_days"]}
+            class="ip-bans-expires input input-bordered w-32"
+          />
+        </div>
+
+        <label
+          :if={@preview && @preview.broad}
+          id="ip-bans-confirm-broad"
+          class="ip-bans-confirm-broad flex items-center gap-2 alert alert-warning"
+        >
+          <input type="hidden" name="ban[confirm_broad]" value="false" />
+          <input
+            type="checkbox"
+            name="ban[confirm_broad]"
+            value="true"
+            checked={@form_params["confirm_broad"] == "true"}
+            class="ip-bans-confirm-broad-check checkbox checkbox-sm"
+          />
+          <span>
+            {gettext(
+              "I understand this refuses everyone in a range this large, not only the source of the problem."
+            )}
+          </span>
+        </label>
+
+        <button id="ip-bans-submit" type="submit" class="ip-bans-submit btn btn-error btn-sm">
+          {gettext("Ban")}
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <section id="ip-bans-current" class="ip-bans-current" aria-labelledby="ip-bans-current-heading">
+    <h2 id="ip-bans-current-heading" class="ip-bans-current-heading text-lg font-semibold mb-2">
+      {gettext("Current bans")}
+    </h2>
+
+    <p :if={@bans == []} id="ip-bans-empty" class="ip-bans-empty text-base-content/70">
+      {gettext("No address is banned.")}
+    </p>
+
+    <div :if={@bans != []} class="overflow-x-auto">
+      <table id="ip-bans-table" class="ip-bans-table table table-sm">
+        <thead>
+          <tr>
+            <th scope="col">{gettext("Range")}</th>
+            <th scope="col">{gettext("Reason")}</th>
+            <th scope="col">{gettext("Ends")}</th>
+            <th scope="col">{gettext("By")}</th>
+            <th scope="col"><span class="sr-only">{gettext("Actions")}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr :for={row <- @bans} id={"ip-ban-#{row.ban.id}"} class="ip-ban">
+            <td class="ip-ban-range font-mono text-sm">{row.cidr}</td>
+            <td class="ip-ban-reason text-sm break-words">{row.ban.reason || "—"}</td>
+            <td class="ip-ban-ends text-sm whitespace-nowrap">
+              <span :if={is_nil(row.ban.expires_at)}>{gettext("Never")}</span>
+              <span :if={row.ban.expires_at && row.active}>
+                {format_datetime(row.ban.expires_at)}
+              </span>
+              <span
+                :if={row.ban.expires_at && !row.active}
+                class="ip-ban-expired badge badge-ghost"
+              >
+                {gettext("Expired %{at}", at: format_datetime(row.ban.expires_at))}
+              </span>
+            </td>
+            <td class="ip-ban-by text-sm">
+              {(row.ban.created_by && row.ban.created_by.username) || "—"}
+            </td>
+            <td class="text-right">
+              <button
+                id={"ip-ban-delete-#{row.ban.id}"}
+                type="button"
+                phx-click="delete"
+                phx-value-id={row.ban.id}
+                data-confirm={gettext("Lift the ban on %{range}?", range: row.cidr)}
+                class="ip-ban-delete btn btn-xs btn-ghost"
+              >
+                {gettext("Lift")}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
