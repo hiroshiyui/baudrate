@@ -9,6 +9,11 @@ defmodule Baudrate.Auth.Profiles do
   (ADR 0029). A bio is a billboard, and silencing someone who is then free to
   rewrite theirs at the person they were harassing achieves nothing.
 
+  The signature is also held to the limits on new accounts: it is rendered
+  under every article the account posts, so until the account has earned
+  trust it may not gain a link or an image (ADR 0064). The bio and profile
+  fields render as plain text and need no such limit.
+
   The parts only the account itself sees or that make it *safer* — preferred
   locales, notification preferences and `dm_access` — are deliberately left
   open. Narrowing who may DM you is not something a sanction should prevent.

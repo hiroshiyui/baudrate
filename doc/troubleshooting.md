@@ -880,6 +880,39 @@ private and loopback ranges are refused when the ban is made, precisely
 because a misconfigured `BAUDRATE_TRUSTED_PROXIES` makes every visitor look
 like the proxy. Check for a broad public range instead.
 
+### A new member cannot post a second link, or cannot send a message
+
+These are the limits on new accounts (ADR 0064), working as intended: until an
+account is `new_account_days` old *and* has `new_account_posts` articles and
+comments that are still up (3 and 3 by default), it may put one link and one
+image in a post, post ten times an hour, add no link or image to its
+signature, and message only people who follow it, who wrote to it first, or
+who are staff. The refusal the member saw says which limit it was and what is
+left for them.
+
+To see where an account stands, `/admin/users/:id` shows when it joined and
+its recent articles. The exact answer is one line in the server console
+([SysOp Guide](sysop.md), `bin/baudrate remote`):
+
+```elixir
+"their_name" |> Baudrate.Auth.get_user_by_username() |> Baudrate.Auth.trust_standing()
+```
+
+`post_count` stops counting at the number required, and `old_enough_at` is
+`nil` once the account is old enough. Nothing is stored, so there is nothing
+to reset: the limits lift the moment both numbers are met. To lift them for
+everyone, set both settings to 0 at `/admin/settings`. There is no way to
+exempt a single account short of making it a moderator.
+
+Two things that look like this limit and are not:
+
+- **An RSS bot's posts refused.** Bots are never limited, so check the account
+  really has `is_bot` set — a feed posting through an ordinary account is
+  limited like any new member.
+- **A member here cannot message someone set to "Followers only" whom they
+  follow.** Before v1.38.0 that setting admitted only followers on other
+  instances; upgrade.
+
 ---
 
 ## Rate Limiting

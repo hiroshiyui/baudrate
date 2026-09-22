@@ -3,7 +3,9 @@ defmodule Baudrate.Content.Images do
   Article and comment image management.
 
   Handles creation, listing, association, and cleanup of article images
-  and comment images.
+  and comment images — and the one upload attached to published content as
+  it lands, from the article edit page, which is therefore checked here
+  (`authorize_article_image/2`, ADR 0064).
   """
 
   require Logger

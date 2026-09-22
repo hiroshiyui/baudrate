@@ -63,7 +63,9 @@ defmodule Baudrate.Setup.User do
   ## Direct Message Access
 
     * `dm_access` — controls who can send DMs to this user:
-      `"anyone"` (default), `"followers"` (AP followers only), or `"nobody"`.
+      `"anyone"` (default), `"followers"` (accounts that follow this user, here
+      or on another instance), or `"nobody"`. An account still under the
+      limits on new accounts reaches fewer people than this admits (ADR 0064).
 
   ## Display Name
 
