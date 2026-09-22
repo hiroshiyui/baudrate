@@ -18,6 +18,7 @@ defmodule Baudrate.Federation.ObjectResolver do
   alias Baudrate.Content
   alias Baudrate.Content.TitleDeriver
   alias Baudrate.Federation
+  alias Baudrate.Moderation.ContentFilters
 
   alias Baudrate.Federation.{
     ActorResolver,
@@ -204,7 +205,34 @@ defmodule Baudrate.Federation.ObjectResolver do
 
   defp extract_attributed_to(_), do: nil
 
+  # Content imported by a member's lookup arrives here without passing
+  # through the inbox, so it is screened here: a filter that would have
+  # dropped the post had its author's server delivered it refuses the
+  # import, and one that would have reported it reports the imported article
+  # (ADR 0065).
   defp materialize(object, remote_actor) do
+    verdict = ContentFilters.screen_remote(object, remote_actor)
+
+    case verdict.outcome do
+      :drop ->
+        ContentFilters.record(verdict)
+        {:error, :content_filtered}
+
+      outcome ->
+        if outcome != :pass, do: ContentFilters.record(verdict)
+
+        with {:ok, article} <- do_materialize(object, remote_actor) do
+          ContentFilters.flag(verdict, %{
+            article_id: article.id,
+            remote_actor_id: remote_actor.id
+          })
+
+          {:ok, article}
+        end
+    end
+  end
+
+  defp do_materialize(object, remote_actor) do
     with {:ok, body, _body_html} <- sanitize_content(object) do
       ap_id = object["id"]
       title = TitleDeriver.derive_title(object, body)

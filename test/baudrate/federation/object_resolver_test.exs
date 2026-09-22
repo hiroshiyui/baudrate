@@ -270,6 +270,51 @@ defmodule Baudrate.Federation.ObjectResolverTest do
     end
   end
 
+  # A member's lookup imports without passing through the inbox, so the
+  # admin's filters are applied here too (ADR 0065) — found by the security
+  # audit before v1.39.0.
+  describe "resolve/1 and content filters" do
+    defp filter!(pattern, action) do
+      %Baudrate.Moderation.ContentFilter{}
+      |> Baudrate.Moderation.ContentFilter.changeset(%{
+        "pattern" => pattern,
+        "kind" => "word",
+        "action" => action
+      })
+      |> Repo.insert!()
+    end
+
+    test "a post a filter refuses is not imported" do
+      {_actor, public_pem} = insert_remote_actor()
+      filter!("casino", "block")
+
+      stub_object_and_actor(
+        build_object_json("Note", content: "<p>casino</p>"),
+        build_actor_json(public_pem)
+      )
+
+      assert {:error, :content_filtered} = ObjectResolver.resolve(@remote_object_ap_id)
+      refute Content.get_article_by_ap_id(@remote_object_ap_id)
+    end
+
+    test "a post a filter reports is imported and reported" do
+      {_actor, public_pem} = insert_remote_actor()
+      filter = filter!("casino", "hold")
+
+      stub_object_and_actor(
+        build_object_json("Note", content: "<p>casino</p>"),
+        build_actor_json(public_pem)
+      )
+
+      assert {:ok, article} = ObjectResolver.resolve(@remote_object_ap_id)
+
+      assert %{content_filter_id: id} =
+               Repo.get_by(Baudrate.Moderation.Report, article_id: article.id)
+
+      assert id == filter.id
+    end
+  end
+
   describe "resolve/1" do
     test "creates a remote article for a valid remote Note" do
       {_actor, public_pem} = insert_remote_actor()

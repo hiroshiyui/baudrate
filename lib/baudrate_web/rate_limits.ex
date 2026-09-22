@@ -44,6 +44,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_account_reset_by_ip/1` | `account_reset:ip:` | 1 hour | 10   |
   | `check_recovery_codes/1`      | `recovery_codes:`  | 1 hour  | 5     |
   | `check_remote_follow_domain/1` | `remote_follow_domain:` | 1 min | 10 |
+  | `check_remote_import/1`       | `remote_import:`   | 5 min   | 10    |
   """
 
   require Logger
@@ -123,6 +124,20 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_create_comment(integer()) :: :ok | {:error, :rate_limited}
   def check_create_comment(user_id) do
     check("comment_create:#{user_id}", 300_000, 30, :create_comment)
+  end
+
+  @doc """
+  Importing a remote post by its URL from `/search`: 10 per 5 minutes per
+  user.
+
+  Each import makes this instance fetch an address the member chose, signed
+  with the site's key. The preview of the same URL is behind the search
+  limit; the import button was behind nothing, so a script could have the
+  server fetch any number of URLs on its behalf.
+  """
+  @spec check_remote_import(integer()) :: :ok | {:error, :rate_limited}
+  def check_remote_import(user_id) do
+    check("remote_import:#{user_id}", 300_000, 10, :remote_import)
   end
 
   @doc """

@@ -21,6 +21,17 @@ defmodule BaudrateWeb.SearchLiveTest do
     {:ok, conn: conn, user: user, board: board}
   end
 
+  # Found by the security audit before v1.39.0: each import is an outbound
+  # fetch of an address the member chose, and nothing limited it.
+  test "importing a remote post is rate limited", %{conn: conn} do
+    {:ok, lv, _html} = live(conn, "/search")
+    BaudrateWeb.RateLimiter.Sandbox.set_global_response({:deny, 60_000})
+
+    html = render_click(lv, "import_remote_object", %{"url" => "https://remote.example/posts/1"})
+
+    assert html =~ "importing posts too quickly"
+  end
+
   test "renders search page", %{conn: conn} do
     {:ok, _lv, html} = live(conn, "/search")
     assert html =~ "Search"

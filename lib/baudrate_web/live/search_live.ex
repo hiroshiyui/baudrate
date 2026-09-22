@@ -355,10 +355,23 @@ defmodule BaudrateWeb.SearchLive do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("You are not signed in."))}
 
-      _user ->
-        case Federation.lookup_remote_object(url) do
-          {:ok, article} ->
-            {:noreply, push_navigate(socket, to: ~p"/articles/#{article.slug}")}
+      user ->
+        # Each import is an outbound fetch of an address the member chose, so
+        # it is rate limited like the preview that precedes it.
+        with :ok <- RateLimits.check_remote_import(user.id),
+             {:ok, article} <- Federation.lookup_remote_object(url) do
+          {:noreply, push_navigate(socket, to: ~p"/articles/#{article.slug}")}
+        else
+          {:error, :rate_limited} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("You are importing posts too quickly. Please try again later.")
+             )}
+
+          {:error, :content_filtered} ->
+            {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.content_filtered_message())}
 
           {:error, _reason} ->
             {:noreply, put_flash(socket, :error, gettext("Could not import remote post."))}
