@@ -390,10 +390,15 @@ defmodule Baudrate.Federation.InboxHandler do
        when type in ["Note", "Article", "Page"] do
     with :ok <- validate_attribution_match(object, remote_actor) do
       case type do
-        # An edited DM is still a DM, and is not screened (ADR 0065).
+        # Screened whatever the Update's own addressing says. The handler
+        # rewrites the stored comment found by `ap_id`, so an exemption keyed
+        # on the Update looking like a message let a peer post a clean public
+        # reply and then edit filtered text into it with a privately
+        # addressed Update. A message's own edits are never applied here at
+        # all, so the one object this spares is a message we hold.
         "Note" ->
-          if direct_message?(object),
-            do: handle_update_note(object, remote_actor),
+          if Messaging.get_message_by_ap_id(object["id"] || ""),
+            do: :ok,
             else:
               screened(object, remote_actor, fn -> handle_update_note(object, remote_actor) end)
 

@@ -242,7 +242,10 @@ defmodule Baudrate.Moderation.ContentFilters do
 
   @doc """
   Screens local writing. `fields` holds any of `:title`, `:summary` and
-  `:body` (Markdown, as written).
+  `:body` (Markdown, as written), and `:extra` — a list of further plain
+  strings that are published with the post (poll options, image
+  descriptions), or a zero-arity function returning one, so that loading
+  them costs nothing when there is no filter to match.
 
   ## Options
 
@@ -276,9 +279,13 @@ defmodule Baudrate.Moderation.ContentFilters do
   end
 
   @doc """
-  Screens an ActivityPub object arriving from `remote_actor`: its `name`,
-  `summary` and `content`. Mode `:remote` — a block drops it and a hold flags
-  it, since nothing arriving over federation can be held.
+  Screens an ActivityPub object arriving from `remote_actor`: everything of
+  it this instance stores and shows — `name`, `summary`, `content` **and**
+  `source.content` (which the inbox falls back to when `content` is empty, so
+  reading only one of them let the other carry the text past every filter),
+  the names of its attachments (stored as image descriptions) and of a
+  poll's options. Mode `:remote` — a block drops it and a hold flags it,
+  since nothing arriving over federation can be held.
   """
   @spec screen_remote(map(), map()) :: verdict()
   def screen_remote(object, remote_actor) when is_map(object) do
@@ -429,13 +436,39 @@ defmodule Baudrate.Moderation.ContentFilters do
 
   defp local_corpus(fields) do
     html = Markdown.to_html(field(fields, :body))
-    corpus([field(fields, :title), field(fields, :summary), text_of(html)], html)
+    corpus([field(fields, :title), field(fields, :summary), text_of(html)] ++ extra(fields), html)
   end
 
-  defp remote_corpus(object) do
-    html = if is_binary(object["content"]), do: object["content"], else: ""
-    corpus([string(object["name"]), string(object["summary"]), text_of(html)], html)
+  defp extra(fields) do
+    case fields[:extra] do
+      fun when is_function(fun, 0) -> fun.() |> List.wrap() |> strings()
+      list when is_list(list) -> strings(list)
+      _ -> []
+    end
   end
+
+  defp strings(list), do: Enum.filter(list, &is_binary/1)
+
+  defp remote_corpus(object) do
+    html =
+      [object["content"], get_in_map(object, ["source", "content"])]
+      |> strings()
+      |> Enum.join("\n")
+
+    names =
+      [object["attachment"], object["oneOf"], object["anyOf"]]
+      |> Enum.flat_map(&List.wrap/1)
+      |> Enum.flat_map(fn
+        %{"name" => name} when is_binary(name) -> [name]
+        _ -> []
+      end)
+
+    corpus([string(object["name"]), string(object["summary"]), text_of(html)] ++ names, html)
+  end
+
+  defp get_in_map(%{} = map, [key | rest]), do: get_in_map(Map.get(map, key), rest)
+  defp get_in_map(value, []), do: value
+  defp get_in_map(_, _), do: nil
 
   defp field(fields, key), do: string(fields[key] || fields[Atom.to_string(key)])
 

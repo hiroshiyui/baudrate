@@ -217,7 +217,8 @@ defmodule Baudrate.Content.Articles do
     holdable = Keyword.get(opts, :holdable, false)
 
     with :ok <- Baudrate.Auth.ensure_can_interact(author_id),
-         verdict = screen_article(author_id, attrs, if(holdable, do: :post, else: :publish)),
+         verdict =
+           screen_article(author_id, attrs, opts, if(holdable, do: :post, else: :publish)),
          :ok <- ContentFilters.refuse_blocked(verdict),
          :ok <- check_new_account_limits(author_id, attrs, opts) do
       ContentFilters.record(verdict)
@@ -245,18 +246,33 @@ defmodule Baudrate.Content.Articles do
     end
   end
 
-  defp screen_article(author_id, attrs, mode) do
+  # The poll's options and the uploads' descriptions are published with the
+  # article, so they are screened with it — left out, they carried text past
+  # every filter.
+  defp screen_article(author_id, attrs, opts, mode) do
     ContentFilters.screen(
       %{
         title: attrs[:title] || attrs["title"],
         summary: attrs[:summary] || attrs["summary"],
-        body: attrs[:body] || attrs["body"]
+        body: attrs[:body] || attrs["body"],
+        extra: fn ->
+          poll_texts(Keyword.get(opts, :poll)) ++
+            Images.article_image_alts(Keyword.get(opts, :image_ids, []), author_id)
+        end
       },
       mode: mode,
       target_type: "article",
       user_id: author_id
     )
   end
+
+  defp poll_texts(%{} = poll) do
+    (poll[:options] || poll["options"] || [])
+    |> Enum.map(&(&1[:text] || &1["text"]))
+    |> Enum.filter(&is_binary/1)
+  end
+
+  defp poll_texts(_), do: []
 
   # Only a composer's submission can be held. A filter's hold comes first, so
   # the queue says which filter it was.

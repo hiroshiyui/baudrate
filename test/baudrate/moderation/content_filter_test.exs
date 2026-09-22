@@ -382,6 +382,74 @@ defmodule Baudrate.Moderation.ContentFilterTest do
     end
   end
 
+  # Published with the post, so screened with it — found by the security
+  # audit before v1.39.0, when both carried text past every filter.
+  describe "what is published with a post" do
+    test "a poll option is screened with the article", ctx do
+      filter!(ctx.admin, "casino", "word", "block")
+
+      assert {:error, :account, :content_filtered, _} =
+               Content.submit_article(article_attrs(ctx.user, "Vote!"), [ctx.board.id],
+                 poll: %{
+                   mode: "single",
+                   closes_at: nil,
+                   options: [%{text: "casino", position: 0}, %{text: "home", position: 1}]
+                 }
+               )
+    end
+
+    test "an upload's description is screened with the article", ctx do
+      filter!(ctx.admin, "casino", "word", "block")
+      image = orphan_image(ctx.user, "casino flyer")
+
+      assert {:error, :account, :content_filtered, _} =
+               Content.submit_article(article_attrs(ctx.user, "Look"), [ctx.board.id],
+                 image_ids: [image.id]
+               )
+    end
+  end
+
+  # A description is published text once its image is (ADR 0029, ADR 0065).
+  # Before the security audit for v1.39.0, it could be rewritten on a
+  # published post by a silenced member, and nothing screened it.
+  describe "editing an image description" do
+    setup ctx do
+      image = orphan_image(ctx.user, "a harbour")
+
+      {:ok, %{article: article}} =
+        Content.submit_article(article_attrs(ctx.user, "Photo"), [ctx.board.id],
+          image_ids: [image.id]
+        )
+
+      %{image: Repo.reload!(image), article: article}
+    end
+
+    test "on a published image is screened as an edit", ctx do
+      filter!(ctx.admin, "casino", "word", "block")
+
+      assert {:error, :content_filtered} =
+               Content.update_article_image_alt(ctx.image.id, ctx.user.id, "casino night")
+
+      assert Repo.reload!(ctx.image).alt == "a harbour"
+      assert {:ok, _} = Content.update_article_image_alt(ctx.image.id, ctx.user.id, "the harbour")
+    end
+
+    test "on a published image is refused to a silenced member", ctx do
+      {:ok, _} =
+        Baudrate.Auth.issue_sanction(ctx.admin, ctx.user, "silence",
+          reason: "Spam",
+          expires_at: DateTime.utc_now() |> DateTime.add(3600) |> DateTime.truncate(:second)
+        )
+
+      assert {:error, :account_silenced} =
+               Content.update_article_image_alt(ctx.image.id, ctx.user.id, "changed")
+
+      # A draft's upload is still the member's to describe.
+      orphan = orphan_image(ctx.user, nil)
+      assert {:ok, _} = Content.update_article_image_alt(orphan.id, ctx.user.id, "changed")
+    end
+  end
+
   describe "comments" do
     setup ctx do
       {:ok, %{article: article}} =
@@ -536,6 +604,77 @@ defmodule Baudrate.Moderation.ContentFilterTest do
       assert comment.body =~ "hello"
     end
 
+    # Found by the security audit before v1.39.0: the Update was exempted
+    # when it *looked* like a message, but the handler rewrites the stored
+    # public comment by its id whatever the Update's addressing says.
+    test "an update addressed like a message cannot edit refused text into a comment", ctx do
+      id = "https://remote.example/notes/dm-shaped"
+      assert :ok = deliver_note(ctx.actor, ctx.article, "<p>hello</p>", id: id)
+      filter!(ctx.admin, "casino", "word", "block")
+      recipient = Federation.actor_uri(:user, ctx.user.username)
+
+      update = %{
+        "id" => "https://remote.example/activities/#{System.unique_integer([:positive])}",
+        "type" => "Update",
+        "actor" => ctx.actor.ap_id,
+        "object" => %{
+          "id" => id,
+          "type" => "Note",
+          "content" => "<p>casino!</p>",
+          "attributedTo" => ctx.actor.ap_id,
+          "inReplyTo" => ctx.article.ap_id,
+          "to" => [recipient],
+          "tag" => [%{"type" => "Mention", "href" => recipient}]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(update, ctx.actor, :shared)
+      [comment] = Content.list_comments_for_article(ctx.article)
+      assert comment.body =~ "hello"
+      refute comment.body =~ "casino"
+    end
+
+    # The inbox falls back to `source.content` when `content` is empty; the
+    # filter read only `content`, so the fallback carried text past it.
+    test "text carried in source.content alone is screened", ctx do
+      filter!(ctx.admin, "casino", "word", "block")
+
+      activity = %{
+        "id" => "https://remote.example/activities/#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => ctx.actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => "",
+          "source" => %{"content" => "casino tonight", "mediaType" => "text/markdown"},
+          "attributedTo" => ctx.actor.ap_id,
+          "inReplyTo" => ctx.article.ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, ctx.actor, :shared)
+      assert Content.list_comments_for_article(ctx.article) == []
+    end
+
+    test "attachment descriptions and poll options are screened", ctx do
+      filter!(ctx.admin, "casino", "word", "block")
+
+      assert ContentFilters.screen_remote(
+               %{
+                 "content" => "<p>fine</p>",
+                 "attachment" => [%{"type" => "Image", "name" => "casino flyer"}]
+               },
+               ctx.actor
+             ).outcome == :drop
+
+      assert ContentFilters.screen_remote(
+               %{"content" => "<p>fine</p>", "oneOf" => [%{"name" => "casino"}]},
+               ctx.actor
+             ).outcome == :drop
+    end
+
     test "a direct message is never screened", ctx do
       recipient = ctx.user
       filter!(ctx.admin, "casino", "word", "block")
@@ -564,6 +703,19 @@ defmodule Baudrate.Moderation.ContentFilterTest do
   end
 
   # --- helpers ---
+
+  defp orphan_image(user, alt) do
+    %Baudrate.Content.ArticleImage{}
+    |> Baudrate.Content.ArticleImage.changeset(%{
+      filename: "#{:crypto.strong_rand_bytes(32) |> Base.encode16(case: :lower)}.webp",
+      storage_path: "/nonexistent",
+      width: 10,
+      height: 10,
+      user_id: user.id,
+      alt: alt
+    })
+    |> Repo.insert!()
+  end
 
   defp remote_actor do
     n = System.unique_integer([:positive])

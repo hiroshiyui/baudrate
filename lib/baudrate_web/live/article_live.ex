@@ -513,8 +513,21 @@ defmodule BaudrateWeb.ArticleLive do
            socket.assigns.current_user.id,
            params["value"]
          ) do
-      {:ok, image} -> {:noreply, replace_image(socket, :uploaded_comment_images, image)}
-      {:error, _} -> {:noreply, socket}
+      {:ok, image} ->
+        {:noreply, replace_image(socket, :uploaded_comment_images, image)}
+
+      {:error, reason} when is_atom(reason) and reason != :not_found ->
+        # Refused by the sanction gate or a filter (ADR 0029, ADR 0065): the
+        # description is published text once its image is.
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           refusal(socket, reason, gettext("The image description could not be saved."))
+         )}
+
+      {:error, _} ->
+        {:noreply, socket}
     end
   end
 

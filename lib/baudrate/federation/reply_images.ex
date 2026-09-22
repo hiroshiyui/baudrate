@@ -10,6 +10,7 @@ defmodule Baudrate.Federation.ReplyImages do
   alias Baudrate.Repo
   alias Baudrate.Content.ArticleImageStorage
   alias Baudrate.Federation.TimelineItemReplyImage
+  alias Baudrate.Moderation.ContentFilters
 
   @doc """
   Creates a timeline item reply image record.
@@ -77,12 +78,62 @@ defmodule Baudrate.Federation.ReplyImages do
           {:ok, %TimelineItemReplyImage{}} | {:error, Ecto.Changeset.t() | :not_found}
   def update_reply_image_alt(image_id, user_id, alt) do
     with {:ok, id} <- image_id(image_id),
-         %{} = image <- Repo.get_by(TimelineItemReplyImage, id: id, user_id: user_id) do
-      image |> TimelineItemReplyImage.changeset(%{alt: alt}) |> Repo.update()
+         %{} = image <- Repo.get_by(TimelineItemReplyImage, id: id, user_id: user_id),
+         {:ok, verdict} <- guard_alt(image, user_id, alt) do
+      image
+      |> TimelineItemReplyImage.changeset(%{alt: alt})
+      |> Repo.update()
+      |> tap(fn
+        {:ok, _} when not is_nil(verdict) ->
+          ContentFilters.flag(verdict, %{reported_user_id: user_id}, evidence: alt)
+
+        _ ->
+          :ok
+      end)
     else
+      {:error, reason} when is_atom(reason) and reason != :not_found -> {:error, reason}
       _ -> {:error, :not_found}
     end
   end
+
+  # A reply that has been sent is published; changing its image's
+  # description changes text other people read, so the sanction gate
+  # (ADR 0029) and the content filters (ADR 0065) apply, as an edit.
+  defp guard_alt(%TimelineItemReplyImage{reply_id: nil}, _user_id, _alt), do: {:ok, nil}
+
+  defp guard_alt(image, user_id, alt) do
+    with :ok <- Baudrate.Auth.ensure_can_interact(user_id) do
+      verdict =
+        ContentFilters.screen(%{body: alt || ""},
+          mode: :edit,
+          previous: %{body: image.alt || ""},
+          target_type: "timeline_reply",
+          user_id: user_id
+        )
+
+      with :ok <- ContentFilters.refuse_blocked(verdict) do
+        ContentFilters.record(verdict)
+        {:ok, verdict}
+      end
+    end
+  end
+
+  @doc """
+  The descriptions of the member's own reply uploads among `image_ids`,
+  screened with the reply (ADR 0065).
+  """
+  @spec reply_image_alts([integer()], integer() | nil) :: [String.t()]
+  def reply_image_alts([_ | _] = image_ids, user_id) when is_integer(user_id) do
+    ids = Enum.filter(image_ids, &is_integer/1)
+
+    from(ri in TimelineItemReplyImage,
+      where: ri.id in ^ids and ri.user_id == ^user_id and not is_nil(ri.alt),
+      select: ri.alt
+    )
+    |> Repo.all()
+  end
+
+  def reply_image_alts(_image_ids, _user_id), do: []
 
   # `phx-value-id` always arrives as a string, but this is a context function
   # and an integer is the natural thing for any other caller to pass. Both are

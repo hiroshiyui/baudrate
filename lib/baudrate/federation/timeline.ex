@@ -395,7 +395,16 @@ defmodule Baudrate.Federation.Timeline do
     image_count = opts |> Keyword.get(:image_ids, []) |> Enum.uniq() |> length()
 
     verdict =
-      Baudrate.Moderation.ContentFilters.screen(%{body: body},
+      Baudrate.Moderation.ContentFilters.screen(
+        %{
+          body: body,
+          extra: fn ->
+            Baudrate.Federation.ReplyImages.reply_image_alts(
+              Keyword.get(opts, :image_ids, []),
+              user.id
+            )
+          end
+        },
         mode: :publish,
         target_type: "timeline_reply",
         user_id: user.id

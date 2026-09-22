@@ -98,7 +98,7 @@ defmodule Baudrate.Content.Comments do
 
     with :ok <- Baudrate.Auth.ensure_can_interact(author_id),
          :ok <- ensure_not_blocked(attrs),
-         verdict = screen_comment(attrs, if(holdable, do: :post, else: :publish)),
+         verdict = screen_comment(attrs, opts, if(holdable, do: :post, else: :publish)),
          :ok <- ContentFilters.refuse_blocked(verdict),
          :ok <- check_new_account_limits(attrs, opts) do
       ContentFilters.record(verdict)
@@ -122,9 +122,20 @@ defmodule Baudrate.Content.Comments do
     end
   end
 
-  defp screen_comment(attrs, mode) do
+  # The uploads' descriptions are published with the comment, so they are
+  # screened with it.
+  defp screen_comment(attrs, opts, mode) do
     ContentFilters.screen(
-      %{summary: attrs["summary"], body: attrs["body"]},
+      %{
+        summary: attrs["summary"],
+        body: attrs["body"],
+        extra: fn ->
+          Baudrate.Content.Images.comment_image_alts(
+            Keyword.get(opts, :image_ids, []),
+            attrs["user_id"]
+          )
+        end
+      },
       mode: mode,
       target_type: "comment",
       user_id: attrs["user_id"]

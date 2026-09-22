@@ -20,6 +20,7 @@ defmodule Baudrate.Content.Images do
   alias Baudrate.Content.Permissions
   alias Baudrate.DataPortability.Files
   alias Baudrate.Federation.HTTPClient
+  alias Baudrate.Moderation.ContentFilters
 
   @doc """
   Creates an article image record.
@@ -148,6 +149,10 @@ defmodule Baudrate.Content.Images do
   bare `Repo.get`. Returns `{:error, :not_found}` for anything else, which is
   the same answer for "no such image" and "not yours".
 
+  Once the image belongs to a published post, or to one waiting for review,
+  the description is published text: the sanction gate (ADR 0029) and the
+  content filters (ADR 0065) apply, and their refusals are returned.
+
   It goes through the changeset rather than `update_all` so the length bound
   actually runs.
   """
@@ -166,12 +171,93 @@ defmodule Baudrate.Content.Images do
 
   defp set_alt(schema, changeset_fun, image_id, user_id, alt) do
     with {:ok, id} <- image_id(image_id),
-         %{} = image <- Repo.get_by(schema, id: id, user_id: user_id) do
-      image |> changeset_fun.(%{alt: alt}) |> Repo.update()
+         %{} = image <- Repo.get_by(schema, id: id, user_id: user_id),
+         {:ok, screened} <- guard_alt(image, user_id, alt) do
+      image
+      |> changeset_fun.(%{alt: alt})
+      |> Repo.update()
+      |> tap(fn
+        {:ok, _} -> flag_alt(screened)
+        _ -> :ok
+      end)
     else
+      {:error, reason} when is_atom(reason) and reason != :not_found -> {:error, reason}
       _ -> {:error, :not_found}
     end
   end
+
+  # A description is text other people read. While its upload is still a
+  # draft's, it is screened with the post when that is submitted; once the
+  # image belongs to a published article or comment — or to a post waiting
+  # for review — changing it is changing published text, so it passes the
+  # sanction gate (ADR 0029) and the content filters as an edit, judged by
+  # what it adds (ADR 0065). Before, a silenced member could rewrite the
+  # descriptions on their published posts, and nothing screened them.
+  defp guard_alt(image, user_id, alt) do
+    {parent, kind} = alt_parent(image)
+
+    if parent || held_image?(image.id, kind) do
+      with :ok <- Baudrate.Auth.ensure_can_interact(user_id) do
+        verdict =
+          ContentFilters.screen(%{body: alt || ""},
+            mode: :edit,
+            previous: %{body: image.alt || ""},
+            target_type: kind,
+            user_id: user_id
+          )
+
+        with :ok <- ContentFilters.refuse_blocked(verdict) do
+          ContentFilters.record(verdict)
+          {:ok, {verdict, parent, kind}}
+        end
+      end
+    else
+      {:ok, nil}
+    end
+  end
+
+  defp alt_parent(%ArticleImage{article_id: id}), do: {id, "article"}
+  defp alt_parent(%CommentImage{comment_id: id}), do: {id, "comment"}
+
+  defp held_image?(image_id, kind) do
+    Repo.exists?(
+      from(h in Baudrate.Moderation.HeldPost,
+        where:
+          h.status == "pending" and h.kind == ^kind and
+            fragment("? = ANY(?)", ^image_id, h.image_ids)
+      )
+    )
+  end
+
+  defp flag_alt({verdict, parent, kind}) when is_integer(parent) do
+    target = if kind == "article", do: %{article_id: parent}, else: %{comment_id: parent}
+    ContentFilters.flag(verdict, target)
+  end
+
+  defp flag_alt(_), do: :ok
+
+  @doc """
+  The descriptions of the member's own uploads among `image_ids`, which are
+  published with the article and so are screened with it (ADR 0065).
+  """
+  @spec article_image_alts([integer()], integer() | nil) :: [String.t()]
+  def article_image_alts(image_ids, user_id), do: alts(ArticleImage, image_ids, user_id)
+
+  @doc "As `article_image_alts/2`, for a comment's uploads."
+  @spec comment_image_alts([integer()], integer() | nil) :: [String.t()]
+  def comment_image_alts(image_ids, user_id), do: alts(CommentImage, image_ids, user_id)
+
+  defp alts(schema, [_ | _] = image_ids, user_id) when is_integer(user_id) do
+    ids = Enum.filter(image_ids, &is_integer/1)
+
+    from(i in schema,
+      where: i.id in ^ids and i.user_id == ^user_id and not is_nil(i.alt),
+      select: i.alt
+    )
+    |> Repo.all()
+  end
+
+  defp alts(_schema, _image_ids, _user_id), do: []
 
   # `phx-value-id` always arrives as a string, but this is a context function
   # and an integer is the natural thing for any other caller to pass. Both are
