@@ -5,8 +5,9 @@ defmodule Baudrate.Auth.RegistrationChallengeTest do
   Two halves. The arithmetic: a solution solves exactly its own challenge,
   verification is bounded, and the setting cannot push the difficulty past the
   point where a phone gives up. And the page: a submit that arrives first is
-  held and then completed, not refused; and **one solve buys one attempt** —
-  after any attempt, success included, the old answer proves nothing.
+  held and then completed, not refused, in each of the three registration
+  modes; and **one solve buys one attempt** — after any attempt, success
+  included, the old answer proves nothing.
 
   The JavaScript solver is checked against Erlang's `:crypto` in the browser
   test `features/registration_challenge_test.exs`, which registers end to end.
@@ -203,6 +204,49 @@ defmodule Baudrate.Auth.RegistrationChallengeTest do
 
       render_submit(lv, "submit", %{"user" => registration("second")})
       refute registered?("second")
+    end
+  end
+
+  describe "in every registration mode" do
+    # P5-D1: `approval_required` still lets a bot mint pending accounts, each
+    # of which notifies every admin, and `invite_only` would let one solve be
+    # spent guessing codes. No mode skips the challenge.
+    setup do
+      Baudrate.Setup.seed_roles_and_permissions()
+      Repo.insert!(%Setting{key: "setup_completed", value: "true"})
+      Repo.insert!(%Setting{key: "registration_challenge_bits", value: Integer.to_string(@bits)})
+      BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
+      :ok
+    end
+
+    for mode <- ~w(open approval_required invite_only) do
+      test "#{mode}: an unanswered submit registers nobody until the answer lands",
+           %{conn: conn} do
+        mode = unquote(mode)
+        Repo.insert!(%Setting{key: "registration_mode", value: mode})
+        username = "mode_#{System.unique_integer([:positive])}"
+
+        attrs =
+          if mode == "invite_only" do
+            {:ok, invite} = Baudrate.Auth.generate_invite_code(setup_user("admin"))
+            Map.put(registration(username), :invite_code, invite.code)
+          else
+            registration(username)
+          end
+
+        {:ok, lv, html} = live(conn, "/register")
+        nonce = nonce_from(html)
+
+        lv |> form("#register-form", user: attrs) |> render_submit()
+        refute registered?(username)
+
+        render_hook(lv, "challenge_solved", %{
+          "nonce" => nonce,
+          "solution" => solve(%{nonce: nonce, bits: @bits})
+        })
+
+        assert registered?(username)
+      end
     end
   end
 
