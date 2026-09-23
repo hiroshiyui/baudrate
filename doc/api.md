@@ -615,7 +615,8 @@ GET /ap/comments/:id
 ```
 
 **Content-Type:** `application/activity+json` (content-negotiated — an ordinary
-browser is redirected to `/articles/:slug#comment-:id`)
+browser is redirected to the page of the thread the comment is on,
+`/articles/:slug?page=N#comment-:id`, with no `?page` on page 1)
 **Auth:** HTTP Signature required if authorized fetch is enabled
 **Rate limit:** 120 req/min per IP
 
@@ -640,7 +641,7 @@ whose `visibility` is not `public`/`unlisted`.
   "@context": "https://www.w3.org/ns/activitystreams",
   "id": "https://example.com/ap/comments/42",
   "type": "Note",
-  "url": "https://example.com/articles/hello-world-a1b2c3#comment-42",
+  "url": "https://example.com/comments/42",
   "content": "<p>Good point.</p>",
   "mediaType": "text/html",
   "attributedTo": "https://example.com/ap/users/alice",

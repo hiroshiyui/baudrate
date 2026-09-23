@@ -1313,7 +1313,7 @@ and never need to know about the internal split.
 | `Content.Search` | Full-text search across articles, comments, and boards (FTS + CJK ILIKE + operators, relevance/date sorting) |
 | `Content.SearchQuery` | The query string: parsing operators, writing one back, and whether it names a scope |
 | `Content.Feed` | Recent-content listings (home page, profiles) and per-user content statistics. Neither the syndication sense nor the timeline — the name is kept deliberately ([ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md), restated in [ADR 0041](adr/0041-rss-and-atom-are-syndication.md)) |
-| `Content.ReadTracking` | Per-user article/board read state, unread indicators |
+| `Content.ReadTracking` | Per-user article/board read state, unread indicators, and `last_read_at/2` — the floor an article page marks comments "New" against |
 | `Content.Polls` | Poll creation, voting (local + remote), denormalized counter management, and the hourly sweep that announces a closed poll's final counts once |
 | `Content.ContentWarning` | The rules for `summary`/`sensitive`, shared by every schema that carries them (ADR 0052) |
 
@@ -2083,10 +2083,11 @@ In-app notification system with real-time delivery via PubSub.
 - `totp_login_failed` — the correct password was entered but the TOTP code failed 3 times within an hour at login; links to `/profile/password` (ADR 0024)
 - `held_post` — a post is waiting for review, to whoever can review it; links to `/moderation/held` (ADR 0065, always delivered)
 - `post_approved` / `post_rejected` — a moderator approved or declined the recipient's held post; actorless, so no moderator is named, and always delivered like `content_removed` (ADR 0065)
+- `poll_closed` — a poll the recipient wrote or voted in has closed; carries the article and nothing about any vote, sent once by the closed-poll sweep, and can be turned off ([ADR 0069](adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md))
 
 **Account security notices** (the account-security, account-migration and
 `data_export_*` types — `Notification.Notification.security_types/0` is the
-list, and the bullets above are a selection, not all 49 valid types)
+list, and the bullets above are a selection, not all 50 valid types)
 are emitted by the Auth context itself: `WebAuthn.create_webauthn_credential/2`,
 `WebAuthn.delete_webauthn_credential/2`, `SecondFactor.enable_totp/2` and
 `SecondFactor.disable_totp/1` (the latter only when TOTP was on) call
@@ -2108,6 +2109,9 @@ payload is rendered in the recipient's preferred locale and links to
 - Real-time via PubSub events: `:notification_created`, `:notification_read`, `:notifications_all_read`
 - `UnreadNotificationCountHook` on_mount hook maintains `@unread_notification_count` for the nav badge
 - Notification hooks in `Notification.Hooks` are called fire-and-forget from context functions
+- **Likes and boosts are grouped** (`Notification.groupable_types/0`) by type, article and comment: `list_notification_groups/2` pages over groups in SQL, so a group never splits across pages, and `unread_count/1` counts groups, so the badge matches the page. `mark_group_as_read/1` recomputes the group from the stored row — the client sends one notification id, never a list
+- **Filter by category** (`?filter=discussion|reactions|follows|moderation|account`), from `Notification.categories/0`; every valid type is in exactly one, and a test fails when a new type is in none
+- **A comment is linked on its page**: `NotificationsLive` builds links with `Helpers.comment_link/3`, so a reply on page 3 of a thread opens page 3. Replies from other servers store their `comment_id` too — without it the duplicate check took a second reply from the same account as the first and dropped it
 
 **Files:**
 - `lib/baudrate/notification.ex` — context (create, list, mark read, unread count, preferences)
@@ -3168,8 +3172,8 @@ end
 
 | LiveView | Topic | Behavior |
 |----------|-------|----------|
-| `BoardLive` | `board:<id>` | Re-fetches article list on article mutations |
-| `ArticleLive` | `article:<id>` | Re-fetches comment tree on comment mutations; redirects on article deletion; re-fetches article on update |
+| `BoardLive` | `board:<id>` | Offers new posts as "N new posts" (`count_new_articles_for_board/3`, from the listing's own query) instead of reloading under the reader; re-fetches on edits, pins, locks and deletions |
+| `ArticleLive` | `article:<id>` | Re-fetches comment tree on comment mutations (a comment arriving during the visit is marked "New" and the visit is recorded again); redirects on article deletion; re-fetches article on update |
 | `ConversationsLive` | `dm:user:<id>` | Re-fetches conversation list on DM events |
 | `ConversationLive` | `dm:conversation:<id>` | Appends new messages, removes deleted messages |
 

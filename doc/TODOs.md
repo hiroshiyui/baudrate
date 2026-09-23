@@ -7,14 +7,14 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.39.0, released 2026-09-22; production runs v1.38.0).**
+**Current state (v1.40.1, released 2026-09-23; production runs v1.40.1).**
 The review named five gaps: broken promises (the UI or docs saying something
 happens when it does not), moderation reach, operability, federation reach,
 and discovery and onboarding. **All five are now closed** — Phase 0 in
 v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
 v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
 anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
-and v1.36.0. **Phase 6's remaining stages, 6B–6E, are next.**
+and v1.36.0. 6B is done and unreleased. **Phase 6's remaining stages, 6C–6E, are next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -431,16 +431,25 @@ Two things this stage deliberately left standing:
   belongs to an article, and a rule for what happens when that article is
   edited from elsewhere in between (ADR 0062's rejected alternatives).
 
-### 6B — Reading and notifications (M)
+### 6B — Reading and notifications (M) — **complete**
 
-- [ ] **Per-comment "new since your last visit"** and a jump to the first unread comment.
-- [ ] **The comments heading shows the total count,** not this page's (`web/live/article_live.html.heex:536`).
-- [ ] **Guests see a "sign in to comment" prompt.**
-- [ ] **Board lists show an "N new posts" banner** instead of re-rendering under the reader (`web/live/board_live.ex:162`).
-- [ ] **Notifications link to the comment's anchor and page** (`web/live/notifications_live.ex:117`).
-  - Group similar notifications ("5 people liked…").
-  - Filter by type.
-  - Notify when a poll you voted in closes.
+Per-comment "new since your last visit" with a jump across pages, the total
+in the comments heading, a sign-in prompt for guests, a "N new posts" offer
+on board pages instead of a re-render, and notifications that link to the
+comment's page, group likes and boosts, filter by category and announce a
+closed poll. The poll notice reads who voted, which ADR 0048 had said would
+reopen it: [ADR 0069](adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md)
+records the amendment. Building it found every link to a comment pointing at
+page 1, and remote replies dropped from notifications as duplicates; both are
+fixed.
+
+Left standing:
+
+- A poll on **another instance** that a member voted in sends no notice when
+  it closes — there is no local sweep for remote polls (ADR 0069 decision 3).
+- A local comment written before `/comments/:id` existed keeps its stored
+  `url`; `ObjectBuilder` publishes the permalink for every local comment, so
+  it matters only if the stored column is read somewhere new.
 
 ### 6C — Watching and followers (M)
 

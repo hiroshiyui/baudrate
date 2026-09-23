@@ -9,6 +9,52 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+Stage 6B, reading and notifications. One new record,
+[ADR 0069](doc/adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md),
+which amends ADR 0048. There is no migration.
+
+### Added
+
+- **Comments that are new since your last visit are marked "New"**, and a
+  link under the comments heading jumps to the first of them — on whatever
+  page it is. "New" means after your last visit to the article, or after a
+  "mark all as read" in its board, whichever is later; your own comments are
+  never marked.
+- **A board offers new posts instead of reloading under you.** While a board
+  is open, a post by someone else shows a "N new posts. Show them" button
+  above the list, and the list stays where it was until you press it. It
+  counts only posts the list would show you.
+- **Guests are told how to join in.** Where the comment form would be, a
+  guest sees "Sign in to comment" (which brings them back to the article
+  afterwards), and a link to create an account unless registration is by
+  invitation. It is not shown on a locked thread, or where only staff may
+  post.
+- **Likes and boosts of the same article or comment are one notification**:
+  "Alice, Bob and 3 others liked your article". The unread badge counts them
+  the same way, and marking one read marks the group.
+- **Notifications can be filtered**: replies and mentions, likes and boosts,
+  follows, moderation and site, or account.
+- **When a poll closes, its author and everyone here who voted in it are
+  told**, once. The notice says only that the poll closed; it carries no
+  result and nothing about anyone's vote. It can be turned off in the
+  notification settings. ADR 0069 records why this is the one other thing
+  allowed to read who voted.
+- **`/comments/:id`**, a permanent address for a comment that opens the page
+  it is on. New comments publish it as their `url`.
+
+### Fixed
+
+- **A link to a comment opens the page the comment is on.** Comments are
+  paged 20 threads at a time, and every link to one — from a notification,
+  from another instance's "view original", from the moderation queue and
+  from the edit history — pointed at page 1, where a comment in a longer
+  thread is not.
+- **A second reply from the same account on another server is no longer
+  dropped from your notifications.** A remote reply was stored without its
+  comment, so the duplicate check took the second one for the first.
+- **The comments heading shows the article's total**, not the number on the
+  current page.
+
 ## [1.40.1] — 2026-09-23
 
 Two layout fixes. Nothing an instance stores or federates has changed, and
