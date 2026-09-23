@@ -9,9 +9,11 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Stage 6B, reading and notifications. One new record,
-[ADR 0069](doc/adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md),
-which amends ADR 0048. There is no migration.
+Stages 6B, reading and notifications, and 6C, watching and followers. Two new
+records: [ADR 0069](doc/adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md),
+which amends ADR 0048, and
+[ADR 0070](doc/adr/0070-a-member-hears-about-what-they-chose.md). One
+migration, which creates the `watches` table.
 
 ### Added
 
@@ -41,6 +43,16 @@ which amends ADR 0048. There is no migration.
   allowed to read who voted.
 - **`/comments/:id`**, a permanent address for a comment that opens the page
   it is on. New comments publish it as their `url`.
+- **Watch a board or a thread.** A "Watch" button on every board tells you
+  about its new threads; one on every article tells you about its new
+  comments. Nothing is ever watched for you — not when you post, reply or
+  bookmark — and `/watching` lists what you watch, with a way to stop. A
+  comment that already reached you as a reply or a mention is not announced
+  twice, and a board or thread you can no longer open tells you nothing.
+- **Your followers, at `/followers`.** Who follows you, here and on other
+  servers, with a way to remove any of them: an account elsewhere is sent a
+  `Reject(Follow)`, and nobody is told. The count is shown to you only.
+- **Your data export includes the boards and threads you watch.**
 
 ### Fixed
 
@@ -54,6 +66,11 @@ which amends ADR 0048. There is no migration.
   comment, so the duplicate check took the second one for the first.
 - **The comments heading shows the article's total**, not the number on the
   current page.
+- **A thread cross-posted into a board by another server now shows up** in
+  the board's "N new posts" offer. It used to be linked in silently.
+- **Turning a notification type off in the site no longer turns its push
+  notifications back on.** The in-app switch on `/profile` replaced that
+  type's settings instead of changing one of them.
 
 ## [1.40.1] — 2026-09-23
 

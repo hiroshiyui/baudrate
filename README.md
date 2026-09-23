@@ -53,6 +53,8 @@ third party on your behalf.
   - Cross-post deduplication for articles arriving via multiple board inboxes
   - Mastodon compatibility: `attributedTo` arrays, `to`/`cc` addressing, `<span>` tag preservation, `Mention` and hashtag tags
   - Lemmy compatibility: `Page` object type, `Announce` with embedded objects, group-relayed activities (FEP-1b12), `!board@host` WebFinger
+- **Watching** -- watch a board to hear about its new threads, or a thread to hear about its new comments; nothing is watched unless you turn it on, and `/watching` lists everything you watch
+- **Your followers** -- `/followers` lists who follows you, here and on other servers, and lets you remove any of them (an account elsewhere is sent `Reject(Follow)`); the count is shown to you and nobody else
 - **Personal timeline** -- follow remote accounts and local users from `/following`, and read their posts at `/timeline`, merged with local articles from people you follow and with comments on threads you took part in; reply, like, boost, or forward an item to a board. Non-public posts stay out: a boost of a followers-only post is never shown, and a direct message never appears
 - **Link previews** -- server-side Open Graph / Twitter Card metadata fetching with image proxy for articles, comments, and DMs
 - **No page contacts a third party on your behalf** -- every remote image, avatar and preview thumbnail is re-encoded and served from this host, so reading a federated thread discloses nothing to the instance that wrote it; the one embed, the YouTube player, loads only when you press play, from a poster stored locally

@@ -14,7 +14,7 @@ and discovery and onboarding. **All five are now closed** — Phase 0 in
 v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
 v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
 anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
-and v1.36.0. 6B is done and unreleased. **Phase 6's remaining stages, 6C–6E, are next.**
+and v1.36.0. 6B and 6C are done and unreleased. **Phase 6's remaining stages, 6D and 6E, are next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -451,10 +451,20 @@ Left standing:
   `url`; `ObjectBuilder` publishes the permalink for every local comment, so
   it matters only if the stored column is read somewhere new.
 
-### 6C — Watching and followers (M)
+### 6C — Watching and followers (M) — **complete**
 
-- [ ] **Watch a board or a thread,** and get notified of new posts or replies.
-- [ ] **Your followers:** a list, a count, and a way to remove a follower (sends `Reject`).
+Watching a board (new threads) or a thread (new comments), only ever by the
+member's own toggle, with `/watching` to manage it; and `/followers`, a
+member's own followers with a way to remove one (`Reject(Follow)` for an
+account elsewhere). [ADR 0070](adr/0070-a-member-hears-about-what-they-chose.md)
+records why nothing is watched on a member's behalf and why the follower
+count is private. Building it found the inbox's cross-posts announcing
+nothing to a board page, and the in-app notification switch discarding the
+push setting; both are fixed.
+
+Left standing: the ActivityPub followers collection still lists a member's
+remote followers to anyone while `ap_authorized_fetch` is off. That is a
+federation question, not a profile one, and 0070 leaves it to that setting.
 
 ### 6D — Direct messages (M)
 

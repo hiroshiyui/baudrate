@@ -130,6 +130,8 @@ lib/
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
 │   │   ├── bookmark.ex          # Bookmark schema (article + comment bookmarks)
+│   │   ├── watch.ex             # Watch schema (a board or a thread a member watches)
+│   │   ├── watches.ex           # Watch toggles, listing, and who watches what (ADR 0070)
 │   │   ├── boosts.ex            # Article and comment boost operations
 │   │   ├── comment_boost.ex     # CommentBoost schema (local + remote boosts on comments)
 │   │   ├── comment_like.ex      # CommentLike schema (local + remote likes on comments)
@@ -350,7 +352,9 @@ lib/
 │   │   ├── conversations_live.ex # DM conversation list
 │   │   ├── data_export_live.ex  # Self-service data export request and download (ADR 0023)
 │   │   ├── timeline_live.ex          # Personal timeline (remote posts, local articles, comment activity)
+│   │   ├── followers_live.ex    # Your own followers, with removal (ADR 0070)
 │   │   ├── following_live.ex    # Following management (outbound remote actor follows)
+│   │   ├── watching_live.ex     # Watched boards and threads (ADR 0070)
 │   │   ├── held_posts_live.ex   # /moderation/held — posts waiting for review, scoped to the reviewer (ADR 0065)
 │   │   ├── home_live.ex         # Home page (board listing, public for guests)
 │   │   ├── interaction_helpers.ex # Shared like/boost toggle event handlers
@@ -1308,6 +1312,7 @@ and never need to know about the internal split.
 | `Content.Likes` | Article and comment likes (local + remote), toggle, counts |
 | `Content.Boosts` | Article and comment boosts (local + remote), toggle, batch queries, federation via AP Announce/Undo(Announce) |
 | `Content.Bookmarks` | Article and comment bookmarks, toggle, paginated listing |
+| `Content.Watches` | Watched boards and threads: the toggles (the only writers), the list, and who watches what (ADR 0070) |
 | `Content.Images` | Article image creation, association, cleanup |
 | `Content.Tags` | Hashtag extraction from article bodies, tag syncing, tag-based browsing |
 | `Content.Search` | Full-text search across articles, comments, and boards (FTS + CJK ILIKE + operators, relevance/date sorting) |
@@ -2083,11 +2088,12 @@ In-app notification system with real-time delivery via PubSub.
 - `totp_login_failed` — the correct password was entered but the TOTP code failed 3 times within an hour at login; links to `/profile/password` (ADR 0024)
 - `held_post` — a post is waiting for review, to whoever can review it; links to `/moderation/held` (ADR 0065, always delivered)
 - `post_approved` / `post_rejected` — a moderator approved or declined the recipient's held post; actorless, so no moderator is named, and always delivered like `content_removed` (ADR 0065)
+- `watched_board_post` / `watched_thread_reply` — a new thread in a watched board, a new comment in a watched thread ([ADR 0070](adr/0070-a-member-hears-about-what-they-chose.md))
 - `poll_closed` — a poll the recipient wrote or voted in has closed; carries the article and nothing about any vote, sent once by the closed-poll sweep, and can be turned off ([ADR 0069](adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md))
 
 **Account security notices** (the account-security, account-migration and
 `data_export_*` types — `Notification.Notification.security_types/0` is the
-list, and the bullets above are a selection, not all 50 valid types)
+list, and the bullets above are a selection, not all 52 valid types)
 are emitted by the Auth context itself: `WebAuthn.create_webauthn_credential/2`,
 `WebAuthn.delete_webauthn_credential/2`, `SecondFactor.enable_totp/2` and
 `SecondFactor.disable_totp/1` (the latter only when TOTP was on) call
@@ -2201,6 +2207,49 @@ federated).
 - `lib/baudrate/content/bookmark.ex` — schema with validation
 - `lib/baudrate/content/bookmarks.ex` — context module: toggles, authorization, listing
 - `lib/baudrate_web/live/bookmarks_live.ex` — paginated bookmarks page at `/bookmarks`
+
+### Watching and followers
+
+A member can **watch** a board (told about new threads) or a thread (told
+about new comments), and can see and remove their own **followers**
+([ADR 0070](adr/0070-a-member-hears-about-what-they-chose.md)).
+
+**Watches:**
+- `watches` holds exactly one of `board_id` / `article_id` per row (check
+  constraint), unique per member and target; every reference cascades.
+- Created **only** by `Content.Watches.toggle_board_watch/2` and
+  `toggle_article_watch/2`, which check at the context boundary that the
+  member can open the target; unwatching is always allowed. Nothing else —
+  posting, replying, bookmarking, liking — creates one.
+- `Articles.announce_arrival/2` is where every article that reaches a board
+  is announced: the board page's `:article_created` broadcast and
+  `Hooks.notify_board_watchers/2`. Written here, arriving from another
+  server, forwarded, materialised from a comment, and the inbox's
+  cross-posts (`cross_post_article/2`, which announces only boards newly
+  joined) all go through it.
+- `Hooks.notify_thread_watchers/1` runs after a comment's direct notices,
+  for local comments and public or unlisted remote ones, and skips anyone
+  already told by `reply_to_article`, `reply_to_comment` or `mention`.
+- Both fan-outs check that the watcher can still open the article, and run
+  as best-effort work after the commit (`Federation.schedule_federation_task/1`).
+- `/watching` (`WatchingLive`) lists watches; a board or thread the member
+  can no longer open is listed without its name, so it can still be removed.
+
+**Followers:**
+- `/followers` (`FollowersLive`) is the only place a follower count or list is
+  shown. `Follows.list_followers_of_user/1` returns local followers
+  (`user_follows`, accepted) and remote ones (`followers` rows on the
+  member's actor URI).
+- `remove_local_follower/2` deletes the follow silently;
+  `remove_remote_follower/2` deletes the row and queues `Reject(Follow)`,
+  naming the stored Follow `activity_id`, in one transaction. Both match the
+  client-supplied id on the member in the query.
+
+**Files:**
+- `lib/baudrate/content/watch.ex`, `watches.ex` — schema and context
+- `lib/baudrate/notification/hooks.ex` — `notify_board_watchers/2`, `notify_thread_watchers/1`
+- `lib/baudrate/federation/follows.ex` — follower listing and removal
+- `lib/baudrate_web/live/watching_live.ex`, `followers_live.ex`
 
 ### Bots (RSS/Atom Feed Aggregation)
 
