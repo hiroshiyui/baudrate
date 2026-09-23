@@ -9,6 +9,25 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.41.1] — 2026-09-23
+
+A maintenance release: the HTML sanitizer's library, and two fixes to CI.
+
+### Changed
+
+- **The HTML sanitizer uses ammonia 4.2.0** (from 4.1.4), with html5ever
+  0.40 and cssparser 0.38 underneath. Only 3.3, 4.1 and 4.2 receive
+  security fixes upstream. It needs Rust 1.85 or newer to build.
+- **CI runs on refreshed images** (`ci-image` 20260920-9980ca9), rebuilt
+  from the same Dockerfile.
+
+### Fixed
+
+- **CI test jobs no longer fail after their tests pass.** The cache key
+  searched every file in the checkout for `mix.lock`, and since v1.41.0
+  the tests leave a directory the runner cannot read, so the step that
+  saves the cache failed every job. It now hashes the one `mix.lock`.
+
 ## [1.41.0] — 2026-09-23
 
 Stages 6B, reading and notifications; 6C, watching and followers; and 6D,
