@@ -133,8 +133,8 @@ Even while restricted, you may still read, undo an earlier like or boost, delete
 
 ### 8. 終止 Termination
 
-* **由您終止：** 本站目前沒有自助刪除帳號的功能，請聯絡 **[CONTACT]** 辦理。您也可以先透過 `/profile` 匯出資料，或將追蹤者遷移至其他站台的帳號。
-    **By you:** There is currently no self-service account deletion; contact **[CONTACT]** to arrange it. You may first export your data from `/profile`, or migrate your followers to an account on another server.
+* **由您終止：** 本站目前沒有自助刪除帳號的功能，請聯絡 **[CONTACT]** 辦理。您也可以先透過 `/profile/account` 匯出資料，或將追蹤者遷移至其他站台的帳號。
+    **By you:** There is currently no self-service account deletion; contact **[CONTACT]** to arrange it. You may first export your data from `/profile/account`, or migrate your followers to an account on another server.
 * **由站方終止：** 我們保留隨時修改或停止本服務的權利。嚴重或重複違規者，帳號可能被永久封鎖。
     **By us:** We reserve the right to modify or discontinue the service at any time. Accounts may be permanently banned for serious or repeated violations.
 * 帳號終止後，已傳送至其他站台的副本不在本站控制範圍內，備份中的資料亦需一段時間才會輪替消失。

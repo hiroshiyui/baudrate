@@ -14,7 +14,7 @@ and discovery and onboarding. **All five are now closed** — Phase 0 in
 v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
 v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
 anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
-and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **Phase 6's last stage, 6E, is next.**
+and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **6E-1 is done and unreleased; 6E-2 is next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -449,27 +449,46 @@ Deliberately not done, and recorded nowhere else:
   URL (ADR 0071, rejected alternative). Reporting an image-only message
   copies an empty text; the moderator sees the image through the report.
 
-### 6E — Account and privacy (L)
+### 6E — Account and privacy (L), in two releases
 
-- [ ] **Self-service account deletion** (needs an ADR, P6-D2).
-  - Cooling-off period and step-up re-authentication.
-  - `Delete(Person)` to followers.
-- [ ] **Session list:** browser family and last seen for each session, each with its own sign-out.
-- [ ] **Time zones:** a per-user time zone, and a time-zone label on timestamps (`web/helpers.ex:28`).
+Decided 2026-09-23: 6E ships as **6E-1**, the controls, then **6E-2**,
+account deletion and the privacy settings.
+
+**6E-1 is done and unreleased.** `/profile` is five pages — profile,
+security, notifications, privacy, account — instead of one 2,200-line page.
+`/profile/security` lists the member's sessions, with the addresses and a
+per-session sign-out behind the same step-up unlock as security keys.
+Timestamps are shown in the member's own time zone, with the zone named in
+the footer, and every `<time datetime>` is now UTC. The export and move
+pages give the date TOTP becomes old enough, and why the rule exists.
+
+**6E-2**, next:
+
+- [ ] **Self-service account deletion** (ADR 0072, answering P6-D2).
+  - The row becomes a tombstone and is never deleted: `articles.user_id`
+    cascades to other members' comments, the DM check constraints refuse a
+    plain delete, and a queued `Delete(Person)` needs the signing key.
+  - Requested behind step-up re-authentication, with no TOTP requirement;
+    every session signed out at once; **signing in within 7 days cancels it**.
+  - `Delete(Person)` to followers; the actor and WebFinger answer 410;
+    `Undo(Follow)` to the accounts the member followed.
+  - Banned accounts are still served by the actor endpoint and WebFinger —
+    fix that alongside.
 - [ ] **Privacy settings:**
-  - opt out of search and indexing (`noindex`, left out of search);
-  - approve followers manually;
-  - mute a domain;
-  - mute keywords.
-- [ ] **Data export and move pages (D4).**
-  - Explain the TOTP rule and link to TOTP setup.
-  - Show the date the member becomes eligible.
-  - Say that the operator can run an export offline.
-- [ ] **Split `/profile`** (887 lines, one save button per section) into sub-pages.
+  - opt out of search and indexing (`noindex`, left out of member search and
+    the sitemap; the pages stay public, ADR 0057);
+  - approve followers manually (a pending state for remote and local follows,
+    `manuallyApprovesFollowers`, a requests list on `/followers`);
+  - mute a domain, for oneself;
+  - mute keywords, for one's own views only and never DMs.
 
 ### Decisions needed
 
-- [ ] **P6-D2. What account deletion removes.** [Profile, DMs and keys are deleted. Articles and comments are anonymized ("deleted user") by default, or deleted if the member chooses.]
+- [x] **P6-D2. What account deletion removes.** Decided 2026-09-23: the
+  profile, keys, sessions, drafts and the text of the member's DMs always go;
+  articles and comments are **anonymized by default** ("deleted account") and
+  **withdrawn if the member ticks that choice**; the deletion waits **7 days**
+  and signing in cancels it. To be recorded as ADR 0072 in 6E-2.
 
 ---
 

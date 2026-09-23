@@ -9,6 +9,40 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+Stage 6E-1, the account controls. One migration: `users.time_zone`.
+
+### Added
+
+- **Your sessions, listed** on `/profile/security`: the browser and system
+  each one signed in with, when, and when it was last active. After you
+  confirm your identity — the same five-minute unlock as security keys — it
+  also shows the address each came from and lets you sign one out. Neither
+  is open to a stolen cookie alone: it must not learn your other locations,
+  nor sign you out and keep itself.
+- **Your own time zone.** Choose it on `/profile/account`, or take it from
+  the device you are on; timestamps everywhere are then shown in it, and the
+  footer says which zone that is. Unset, you see the site's zone as before.
+- **The data export and account move pages give the date** two-factor
+  authentication will have been on for a week, not only the number of days,
+  and say why the rule exists. The export page adds that the operator can
+  prepare an export if you cannot wait.
+
+### Changed
+
+- **`/profile` is five pages**: profile, security, notifications, privacy and
+  account, with a menu between them. It had grown to one page of over 2,000
+  lines. Security notices, TOTP setup, security-key registration and the
+  password change now lead to `/profile/security`.
+- **Every `<time datetime>` is now UTC**, ending in `Z`. It was the site's
+  local time with no offset, which anything reading the page could only take
+  for UTC — off by the site's offset for everyone.
+
+### Fixed
+
+- **The profile page no longer logs an error for every message or
+  notification that arrives while it is open.** It had no catch-all for the
+  events forwarded to every signed-in page.
+
 ## [1.41.1] — 2026-09-23
 
 A maintenance release: the HTML sanitizer's library, and two fixes to CI.

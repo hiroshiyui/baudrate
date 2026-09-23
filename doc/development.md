@@ -298,6 +298,7 @@ lib/
 │   │   ├── core_components.ex   # Shared UI components (avatar, flash, input, etc.)
 │   │   ├── layouts.ex           # App and setup layouts with nav, theme toggle, footer
 │   │   ├── moderation_components.ex # Shared report display, so /admin/moderation and /moderation cannot drift
+│   │   ├── profile_components.ex # The five settings pages' shared frame and navigation; the TOTP-wait note
 │   │   └── safety_components.ex # Mute / block / report menu items for remote accounts
 │   ├── controllers/
 │   │   ├── activity_pub_controller.ex  # ActivityPub endpoints (content-negotiated)
@@ -371,7 +372,11 @@ lib/
 │   │   ├── policy_live.ex       # The public terms, rules and privacy documents
 │   │   ├── poll_composer.ex     # Keeps a composer's poll inputs in socket assigns while editing
 │   │   ├── password_reset_live.ex  # Password reset via recovery codes
-│   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs, signature, WebAuthn security key management, recovery codes and contacts, blocked and muted accounts
+│   │   ├── profile_live.ex      # /profile: avatar upload/crop, display name, bio, profile fields, signature
+│   │   ├── profile_security_live.ex # /profile/security: 2FA, password, security keys, recovery codes and contacts, sessions
+│   │   ├── profile_notifications_live.ex # /profile/notifications: browser push and per-type preferences
+│   │   ├── profile_privacy_live.ex # /profile/privacy: DM access, blocked and muted accounts
+│   │   ├── profile_account_live.ex # /profile/account: languages, time zone, data export and account move links
 │   │   ├── account_reset_live.ex  # Redeeming an admin-issued recovery link (/account-reset/:token)
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
@@ -401,6 +406,7 @@ lib/
 │   │   ├── authorized_fetch.ex  # Optional HTTP Signature verification on AP GET requests
 │   │   ├── cache_body.ex        # Cache raw request body (for HTTP signature verification)
 │   │   ├── cache_body_reader.ex # Body reader caching the raw body in conn.assigns.raw_body
+│   │   ├── clear_time_zone.ex   # Clears the viewer's time zone at the start of every browser request
 │   │   ├── cors.ex              # CORS headers for AP GET endpoints (Allow-Origin: *)
 │   │   ├── deny_private_uploads.ex # 404 for /uploads/dm_images/*, ahead of Plug.Static (ADR 0071)
 │   │   ├── ensure_setup.ex      # Redirect to /setup until setup is done
@@ -431,6 +437,7 @@ lib/
 │   ├── router.ex                # Route scopes and pipelines
 │   ├── safe_html.ex             # Renders stored HTML, applying the media-proxy rewrite (use instead of raw/1)
 │   ├── telemetry.ex             # Telemetry metrics configuration
+│   ├── time_zone.ex             # The zone timestamps are shown in: the viewer's, else the site's
 │   └── theme_bootstrap.ex       # Inline script applying the stored theme before the stylesheet parses
 ```
 
@@ -546,9 +553,9 @@ Key functions in `Auth`:
 | Concurrency | Max 3 sessions per user; oldest (by `refreshed_at`) evicted |
 | Cleanup | `SessionCleaner` GenServer purges expired sessions every hour. Each hourly step runs through `run_step/2`, so a step that raises is logged (`session_cleaner.step_failed`) and the remaining steps still run |
 | LiveView sockets | Each session's cookie carries `live_socket_id` = `"user_session:<row id>"` (set at login, backfilled by `RefreshSession`); the row id is stable across rotation |
-| Revocation | Every session deletion (`delete_session_by_token/1`, `delete_all_sessions_for_user/1`, `delete_other_sessions_for_user/2`, eviction, expiry, `purge_expired_sessions/0`) broadcasts `"disconnect"` to the deleted sessions' socket ids **after** the rows are gone, so open LiveView pages remount and hit the auth hooks instead of acting on a dead session |
+| Revocation | Every session deletion (`delete_session_by_token/1`, `delete_all_sessions_for_user/1`, `delete_other_sessions_for_user/2`, `revoke_session/3`, eviction, expiry, `purge_expired_sessions/0`) broadcasts `"disconnect"` to the deleted sessions' socket ids **after** the rows are gone, so open LiveView pages remount and hit the auth hooks instead of acting on a dead session |
 
-**Password change and sign out everywhere** (`/profile/password`, `/profile` → Sessions)
+**Password change and sign out everywhere** (`/profile/password`, `/profile/security` → Sessions)
 both require step-up re-authentication (`Auth.verify_reauthentication/5`, password
 plus TOTP when enabled). `Auth.change_password/3` validates the new password first
 (`password_change_changeset/2`: policy, confirmation, different from the current one)
@@ -558,6 +565,18 @@ sessions only. Both keep the caller's session by **row id** (tokens rotate daily
 while a LiveView holds what it saw at mount) and send always-delivered security
 notices (`password_changed`, `signed_out_everywhere`). They are the account-recovery
 prerequisites for data export (ADR 0023).
+
+**The session list** (`/profile/security` → Sessions, 6E-1) shows each live
+session's browser and system (`DataPortability.UserAgent.parts/1`, translated
+on the page — the raw User-Agent never leaves `Auth.Sessions.list_sessions/1`),
+its sign-in date and its last-active **date** (tokens rotate daily, so the
+page claims no finer precision). **The IP addresses and the per-session
+"Sign out" need the same five-minute step-up unlock as security keys**: a
+stolen cookie must neither learn the member's other locations nor sign the
+owner out and keep its own session. `Auth.Sessions.revoke_session/3` scopes
+the delete by user **and** excludes the current session in the query, and
+refuses a `nil` current id outright; it sends no notice and cancels no
+export, which stays the job of "sign out everywhere".
 
 ### TOTP Code Verification
 
@@ -623,7 +642,7 @@ admin session could register its own key and pass `/admin/verify`
   passwords around the login throttle.
 - Callers first apply `RateLimits.check_reauth/1` (5 per 15 minutes per user,
   shared across all re-authentication forms).
-- `/profile` requires it before registering or removing a security key. A
+- `/profile/security` requires it before registering or removing a security key. A
   success unlocks key management for 5 minutes, held in socket assigns and
   re-checked by every event handler.
 - `/profile/totp-reset` requires it before resetting or enabling TOTP.
@@ -891,9 +910,9 @@ why the answer is an out-of-band OpenPGP anchor rather than a mailer.
 
 **Recovery codes.** `SecondFactor.generate_recovery_codes/1` is the low-level
 mint (account creation); `regenerate_recovery_codes/1` is what a member calls
-from `/profile`, behind the same step-up unlock as security-key management
+from `/profile/security`, behind the same step-up unlock as security-key management
 (ADR 0022). It retires the whole batch and sends an always-delivered
-`recovery_codes_regenerated`. `/profile` shows the **count** of unused codes,
+`recovery_codes_regenerated`. `/profile/security` shows the **count** of unused codes,
 never the codes; a fresh batch is rendered once, from assigns.
 
 **Recovery contacts.** `recovery_contacts` rows carry an encrypted address
@@ -986,6 +1005,28 @@ profile at `/profile`. The bio supports hashtag linkification via
 page at `/users/:username`. For ActivityPub federation, the bio is HTML-escaped,
 newlines converted to `<br>`, and hashtags linkified to produce the `summary`
 field on the Person actor.
+
+### Settings Pages
+
+A member's own settings are five LiveViews sharing
+`BaudrateWeb.ProfileComponents.profile_page/1` (a `<nav id="profile-nav">`
+with `aria-current="page"` on the current page). They were one 2,200-line
+page until 6E-1.
+
+| Path | LiveView | Holds |
+|------|----------|-------|
+| `/profile` | `ProfileLive` | Avatar, display name, bio, profile fields, signature — what other people see |
+| `/profile/security` | `ProfileSecurityLive` | 2FA, password, security keys, recovery codes and contacts, sessions; the step-up unlock |
+| `/profile/notifications` | `ProfileNotificationsLive` | Browser push, per-type notification preferences |
+| `/profile/privacy` | `ProfilePrivacyLive` | DM access, blocked and muted accounts |
+| `/profile/account` | `ProfileAccountLive` | Languages, time zone, links to data export and account move |
+
+No state is shared between them: moving from one to another remounts, which
+also drops the five-minute security unlock — as a reload always has. Account
+security notices and every security flow (TOTP, WebAuthn registration,
+password change) lead to `/profile/security`. `profile_pages_test.exs` checks
+that each page marks itself current, renders no duplicate `id` and ignores a
+message it does not handle.
 
 ### User Profile Fields
 
@@ -1647,7 +1688,7 @@ recipient in `to`, no `as:Public`, no followers collection).
 
 **DM access control:**
 
-Users set `dm_access` on their profile (`/profile`):
+Users set `dm_access` on their privacy settings (`/profile/privacy`):
 
 | Setting | Effect |
 |---------|--------|
@@ -2144,14 +2185,14 @@ produces one. They have no actor, so they are never deduplicated. They are
 notification preferences for these types, and
 `User.notification_preferences_changeset/2` does not accept them. The web push
 payload is rendered in the recipient's preferred locale and links to
-`/profile`. They let a user notice a factor change they did not make
+`/profile/security`. They let a user notice a factor change they did not make
 ([ADR 0022](adr/0022-step-up-reauthentication-for-second-factor-changes.md)).
 
 **Key design decisions:**
 - Self-notification suppression — users never receive notifications for their own actions
 - Blocked/muted suppression — notifications from blocked or muted users are silently dropped
 - Deduplication via COALESCE-based unique indexes on `(user_id, type, actor_*, article_id, comment_id)` — on conflict returns `{:ok, :duplicate}`
-- Per-notification-type preferences — users can opt out of specific types via `notification_preferences` (JSON column); account security notices cannot be turned off. `Notification.Notification.configurable_types/0` is the single list behind both the preferences changeset and the `/profile` toggles (they used to drift apart)
+- Per-notification-type preferences — users can opt out of specific types via `notification_preferences` (JSON column); account security notices cannot be turned off. `Notification.Notification.configurable_types/0` is the single list behind both the preferences changeset and the `/profile/notifications` toggles (they used to drift apart)
 - Web push titles are built from the same translated `Helpers.notification_text/1` fragment as the in-app list (actor name + text), in the recipient's preferred locale; the icon is the actor's 120 px avatar rendition
 - Real-time via PubSub events: `:notification_created`, `:notification_read`, `:notifications_all_read`
 - `UnreadNotificationCountHook` on_mount hook maintains `@unread_notification_count` for the nav badge
@@ -2799,7 +2840,7 @@ directions and is enforced on this site only; no `Block` activity is sent:
 - Refused with `{:error, :blocked}` at the context boundary: comments on the other's articles and replies to their comments, likes and boosts (undo stays allowed), local and remote follows, and timeline item likes, boosts and replies. Forwards are refused with `{:error, :unauthorized}`, and DMs by `Messaging.can_send_dm?/2`. Any new way to interact must add the same check
 - Inbound activities from a blocked remote actor on the blocker's content are refused (see Inbound handling)
 - Content filtering: blocked users' content is hidden from the blocker's article listings, comments, timeline, and search results. The blocked account can still read the blocker's public content
-- UI: Block / Unblock in the user profile's "More actions" menu; Mute, Block and Report account in the "More actions" menu of remote timeline items and remote comments and in the header of a conversation with a remote actor (`BaudrateWeb.SafetyActions`, `BaudrateWeb.SafetyComponents`); a Blocked Accounts list with unblock controls on `/profile`
+- UI: Block / Unblock in the user profile's "More actions" menu; Mute, Block and Report account in the "More actions" menu of remote timeline items and remote comments and in the header of a conversation with a remote actor (`BaudrateWeb.SafetyActions`, `BaudrateWeb.SafetyComponents`); a Blocked Accounts list with unblock controls on `/profile/privacy`
 - Database: `user_blocks` table with partial unique indexes for local and remote blocks
 
 **User mutes:**
@@ -2814,7 +2855,7 @@ or sending any federation activity. Mutes are purely local:
 - Content filtering: muted users' content is combined with blocked users' content via `hidden_filters/1` and filtered from article listings, comments, and search results
 - SysOp board exemption: admin articles in the SysOp board (slug `"sysop"`) are never hidden, even if the admin is muted — this ensures system announcements are always visible
 - DM conversations with muted users are visually de-emphasized (reduced opacity, no unread badge) rather than hidden
-- Mute management: toggle on user profiles, mute remote accounts from timeline items, remote comments and remote conversations, manage list on `/profile` settings page (remote actors shown as `@user@domain` when known)
+- Mute management: toggle on user profiles, mute remote accounts from timeline items, remote comments and remote conversations, manage list on the `/profile/privacy` settings page (remote actors shown as `@user@domain` when known)
 - Database: `user_mutes` table with partial unique indexes for local and remote mutes
 
 **Authorized fetch mode:**
@@ -3006,7 +3047,7 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 | `:require_auth` | Requires valid session; redirects to `/login` if unauthenticated or banned |
 | `:require_admin` | Requires admin role; redirects non-admins to `/` with access denied flash. Must be used after `:require_auth` (needs `@current_user`) |
 | `:require_admin_or_moderator` | Requires admin or moderator role; redirects others to `/` with access denied flash |
-| `:require_admin_totp` | Admin re-verification (10-min sudo mode); non-admin users (e.g. moderators) pass through. Admins without TOTP are redirected to `/profile`; admins with expired verification are redirected to `/admin/verify` (supports both TOTP and WebAuthn) |
+| `:require_admin_totp` | Admin re-verification (10-min sudo mode); non-admin users (e.g. moderators) pass through. Admins without TOTP are redirected to `/profile/security`; admins with expired verification are redirected to `/admin/verify` (supports both TOTP and WebAuthn) |
 | `:optional_auth` | Loads user if session exists; assigns `nil` for guests or banned users (no redirect) |
 | `:require_password_auth` | Requires password-level auth (for TOTP flow); redirects banned users to `/login` |
 | `:redirect_if_authenticated` | Redirects authenticated users to `/` (for login/register pages); allows banned users through |
@@ -3019,7 +3060,8 @@ Every browser request passes through these plugs in order:
 ```
 :accepts → :fetch_session → :fetch_live_flash → :put_root_layout →
 :protect_from_forgery → :put_secure_browser_headers (CSP, X-Frame-Options) →
-SetLocale (cookie → account → Accept-Language) → EnsureSetup (redirect to /setup) →
+SetLocale (cookie → account → Accept-Language) → ClearTimeZone (no zone outlives
+a request) → EnsureSetup (redirect to /setup) →
 SetTheme (inject admin-configured DaisyUI themes) → RefreshSession (token rotation)
 ```
 
@@ -3040,7 +3082,7 @@ loud. An unknown value is ignored rather than trusted — `Locale.known?/1` is
 the allow-list, and nothing else reaches `Gettext.put_locale/1`.
 
 Step 2 is a **cache**, and only a session write refreshes it. That is why
-`/profile` posts to `LocaleController` after a language change (`save_locales/2`
+`/profile/account` posts to `LocaleController` after a language change (`save_locales/2`
 → the hidden `locale-sync-form`): before it did, the database held the new
 language while the session still held the old one, so every later full page
 load rendered its dead HTML — and `lang=` on `<html>` — in the language the
@@ -3066,6 +3108,27 @@ session is a controller's job here. A language control has to keep working
 when scripting has gone wrong — it is the control a reader reaches for when
 the page is already making no sense to them. `dropdown-top` opens it upward,
 which is also what keeps it clear of the mobile dock.
+
+### Time Zones
+
+Timestamps are shown in **the viewer's** zone: the member's own
+`users.time_zone` (chosen on `/profile/account`, or taken from the device with
+`DeviceTimeZoneHook`), else the site's `timezone` setting.
+`BaudrateWeb.TimeZone` keeps it in the process dictionary, as Gettext keeps the
+locale, so the ninety `format_datetime/2` and `format_date/1` call sites need
+no viewer passed in.
+
+| Step | Where |
+|------|-------|
+| Cleared on **every** browser request | `BaudrateWeb.Plugs.ClearTimeZone` — one process serves several keep-alive requests, from different people once nginx pools connections |
+| Set to the member's zone | `AuthHooks` (`resolve_user_locale/1`), in the dead render and the connected mount alike |
+| Unset → site zone | `TimeZone.current/0`, reading the cached setting on each call |
+| Shifted with a fallback | `TimeZone.shift/1`: an unknown zone falls back to the site's, then UTC — never `shift_zone!` |
+
+`datetime_attr/1` — every `<time datetime>` — is **UTC ending in `Z`** for
+everyone; it used to be site-local time with no offset. The footer names the
+zone once (`#footer-time-zone`, `TimeZone.label/0`) instead of a label beside
+each timestamp.
 
 ### Cookies this instance sets
 
@@ -3415,7 +3478,7 @@ tracked in git; `mix assets.build` and `mix assets.deploy` produce it.
 ### The service worker, and what it may keep (ADR 0059)
 
 **`app.js` registers it, on every page, independently of push.** It used to be
-registered by `PushManagerHook`, which mounts only on `/profile` and returns
+registered by `PushManagerHook`, which mounts only on the push settings page and returns
 early when no VAPID key is configured — so an instance that never set up Web
 Push had no service worker anywhere and could not be installed. The hook now
 takes what is already installed from `navigator.serviceWorker.ready`, and its
@@ -4051,7 +4114,7 @@ to `tmp/wallaby_downloads` without a prompt.
 | `password_change_test.exs` | 1 | Change the password; the old one is refused and the new one signs in |
 | `password_reset_test.exs` | 3 | Reset page from login, full reset with a recovery code then sign-in, required-field validation |
 | `registration_test.exs` | 2 | Registration with recovery codes, acknowledging codes |
-| `security_keys_test.exs` | 1 | Register a security key on `/profile`, then pass admin sudo verification with it |
+| `security_keys_test.exs` | 1 | Register a security key on `/profile/security`, then pass admin sudo verification with it |
 | `safety_test.exs` | 3 | Block from a profile (stops comments) and unblock from Blocked Accounts; mute hides a member's articles until unmuted; report and mute from a remote post's menu |
 | `search_test.exs` | 3 | Keyword search, no results, `author:` operator |
 | `sign_out_everywhere_test.exs` | 1 | Signing out everywhere else disconnects another browser's open page |

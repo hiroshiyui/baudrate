@@ -678,9 +678,9 @@ is not kept in the session.
 
 Two related cases:
 
-- **A member changed their language on `/profile` and one page is still
+- **A member changed their language on `/profile/account` and one page is still
   wrong.** The session copy of `preferred_locales` is written at login, and a
-  LiveView cannot write the session, so `/profile` posts to `LocaleController`
+  LiveView cannot write the session, so `/profile/account` posts to `LocaleController`
   to refresh it. If that POST were blocked — a proxy stripping `Referer` will
   not do it, but a CSRF failure would — the first paint of every later page
   would keep the old language while the connected render corrected itself. Look
@@ -786,7 +786,7 @@ before the last is something the member has to have arranged in advance.
    at `/password-reset` with their username, one code and a new password. Each
    code works once. This signs out every session and cancels any pending data
    export or account move.
-3. **They are signed in somewhere and are simply low on codes.** `/profile`
+3. **They are signed in somewhere and are simply low on codes.** `/profile/security`
    shows how many are unused and issues a fresh set behind step-up
    re-authentication. The old ones stop working immediately.
 4. **Password and codes are both gone.** This is the admin-assisted path, and

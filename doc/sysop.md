@@ -667,7 +667,7 @@ at registration). There is no email-based recovery — users must save their
 recovery codes when displayed. Each code can only be used once.
 
 A member who still has a session can issue themselves a fresh set at
-`/profile`, behind step-up re-authentication. Doing so retires every earlier
+`/profile/security`, behind step-up re-authentication. Doing so retires every earlier
 code at once. A member with no unused codes and no verified recovery contact
 sees a dismissible notice saying the account cannot currently be recovered.
 
@@ -712,7 +712,7 @@ Two ways this goes wrong, and both are plausible:
 
 #### 2. Verifying a contact — the enrolment step
 
-A member adds an address and an armored public key at `/profile`; it appears as
+A member adds an address and an armored public key at `/profile/security`; it appears as
 **Not verified** on `/admin/users/:id`. To verify it:
 
 1. Take the public key **from the profile page**, not from any mail, and import
@@ -899,7 +899,7 @@ makes any copy worthless at once.
 
 - **Required** for admin and moderator roles (must enroll before first login
   completes)
-- **Optional** for user role (enable at `/profile`)
+- **Optional** for user role (enable at `/profile/security`)
 - **Disabled** for guest role
 - Secrets encrypted at rest with AES-256-GCM, keyed by `BAUDRATE_AUTH_KEYS`
   or, until that is set, by `SECRET_KEY_BASE` ([Encryption keys](#encryption-keys))
@@ -917,7 +917,7 @@ makes any copy worthless at once.
   had TOTP when that column was added are stamped with the upgrade time. Features that refuse
   a freshly enrolled factor (data export needs 7 days) count from there.
 - Signed-in users can change their password at `/profile/password` and sign out
-  every other session from `/profile` → Sessions. Both require the password (plus
+  every other session from `/profile/security` → Sessions. Both require the password (plus
   TOTP when enabled), close the other sessions' open pages immediately, and send
   a security notice that cannot be turned off.
 - If the key that encrypts TOTP secrets changes without the stored secrets
@@ -930,9 +930,9 @@ makes any copy worthless at once.
 ### WebAuthn / FIDO2 Hardware Security Keys
 
 Users can register FIDO2-compatible hardware security keys (e.g. YubiKey,
-Passkey, Touch ID) as an additional second factor at `/profile`.
+Passkey, Touch ID) as an additional second factor at `/profile/security`.
 
-- **Registration** — at `/profile` → "Security Keys" section. The user first
+- **Registration** — at `/profile/security` → "Security Keys" section. The user first
   confirms their identity (password, plus the current TOTP code if TOTP is
   enabled), which unlocks "Register New Key" and "Remove" for 5 minutes.
   Without this, a stolen session cookie could enrol a key and use it to pass
@@ -1836,7 +1836,7 @@ Safari, Firefox).
 - The site must be served over **HTTPS** (required for service workers and PWA)
 - VAPID keys must be generated in Admin Settings for push notifications to
   work. **They no longer gate installability.** The service worker used to be
-  registered only by the push settings section on `/profile`, and only when a
+  registered only by the push settings page, `/profile/notifications`, and only when a
   VAPID key was configured, so an instance that never set up push could not be
   installed at all and nothing said so. It is now registered on every page.
 - A reverse proxy serving `/site.webmanifest` from disk must be told its type.
@@ -2578,7 +2578,7 @@ get.
 something only the member has, so a rotation cannot move them: each row keeps
 the id of the key that hashed it, and codes issued under a retired key keep
 working while that key stays listed. They move when a member generates new
-codes at `/profile`. Until the census shows nothing under the old id, keep it:
+codes at `/profile/security`. Until the census shows nothing under the old id, keep it:
 recovery codes are also how a member without their authenticator gets back in,
 and Baudrate sends no email.
 

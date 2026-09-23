@@ -80,7 +80,7 @@ This policy is provided in both 台灣漢語 (Taiwanese Mandarin) and English.
 
 ### 您使用本站時自動記錄的
 
-- **您的 IP 位址與瀏覽器識別資訊**，存在兩個地方：您目前的登入工作階段，以及對您帳號的登入嘗試紀錄。
+- **您的 IP 位址與瀏覽器識別資訊**，存在兩個地方：您目前的登入工作階段，以及對您帳號的登入嘗試紀錄。您可以在 `/profile/security` 看到自己的工作階段，確認身分後也能看到各工作階段的 IP 位址。
 - **您讀過什麼。** 本站會記錄您開啟過哪些文章與看板，以便標示未讀。這是一份附在您帳號上的閱讀紀錄。
 - **您編輯過的每一個版本。** 編輯文章時會保留前一版內容與編輯者。舊版本會一直保留，直到該篇文章本身被刪除。
 - **是誰邀請您**，以及您邀請了誰。
@@ -170,9 +170,9 @@ This policy is provided in both 台灣漢語 (Taiwanese Mandarin) and English.
 
 在本站的具體行使方式：
 
-- **立即取得複製本：** 於 `/profile` →「匯出您的資料」可產生一份壓縮檔，包含您的個人檔案、文章、留言、回覆、互動、關係、您自己的私訊與邀請碼。此功能要求已啟用兩階段驗證滿七天，因為這份壓縮檔包含關於您的一切，不能讓被竊取的登入狀態就能取走。
+- **立即取得複製本：** 於 `/profile/account` →「匯出您的資料」可產生一份壓縮檔，包含您的個人檔案、文章、留言、回覆、互動、關係、您自己的私訊與邀請碼。此功能要求已啟用兩階段驗證滿七天，因為這份壓縮檔包含關於您的一切，不能讓被竊取的登入狀態就能取走。
 - **更正：** 直接編輯您的個人檔案與文章。
-- **搬家：** 於 `/profile` →「帳號遷移」可將您的追蹤者導向其他站台的帳號。
+- **搬家：** 於 `/profile/account` →「帳號遷移」可將您的追蹤者導向其他站台的帳號。
 - **匯出檔未包含的部分**——您的登入紀錄與 IP 位址、通知、檢舉、管理日誌、閱讀紀錄與推播註冊資料。請洽 **[CONTACT]** 索取。
 - **刪除：** 請洽 **[CONTACT]**。本站目前尚無自助刪除按鈕，需由人工處理，請預留一些時間。已送往其他站台的副本不在本站控制範圍內（見第一節），備份亦需約一個月才會輪替消失（見第五節）。
 
@@ -188,7 +188,7 @@ This policy is provided in both 台灣漢語 (Taiwanese Mandarin) and English.
 
 私訊、檢舉、自我介紹與管理日誌在資料庫中以一般文字儲存，靠存取控制保護，而非加密。
 
-沒有任何系統是絕對安全的。若您認為帳號遭他人存取，請立即變更密碼、於 `/profile` 登出所有裝置，並聯絡 **[CONTACT]**。
+沒有任何系統是絕對安全的。若您認為帳號遭他人存取，請立即變更密碼、於 `/profile/security` 登出所有裝置，並聯絡 **[CONTACT]**。
 
 ## 八、兒童
 
@@ -261,7 +261,9 @@ to other servers.
 ### What it records as you use the site
 
 - **Your IP address and browser identification**, in two places: your active
-  sessions, and the record of sign-in attempts to your account.
+  sessions, and the record of sign-in attempts to your account. You can see your
+  own sessions at `/profile/security`, and their addresses once you have
+  confirmed your identity there.
 - **What you have read.** The site records which articles and boards you have
   opened, so it can show you what is new. This is a reading history attached to
   your account.
@@ -408,13 +410,13 @@ Under the Personal Data Protection Act (個人資料保護法), you may ask to:
 
 How to exercise them here:
 
-- **A copy, straight away:** `/profile` → Export my data produces an archive of
+- **A copy, straight away:** `/profile/account` → Export my data produces an archive of
   your profile, posts, comments, replies, interactions, relationships, your own
   direct messages and your invites. It requires two-factor authentication
   enabled for at least seven days, because the archive is everything about you
   in one file and a stolen session must not be able to take it.
 - **Correction:** edit your profile and your posts directly.
-- **Moving on:** `/profile` → Move account redirects your followers elsewhere.
+- **Moving on:** `/profile/account` → Move account redirects your followers elsewhere.
 - **What the export does not include** — your sign-in history and IP addresses,
   notifications, reports, the moderation log, your reading history, and push
   registrations. Ask **[CONTACT]** and they will be provided.
@@ -444,7 +446,7 @@ ordinary text in the database. They are protected by access control, not by
 encryption.
 
 No system is perfectly secure. If you think someone else has reached your
-account, change your password, sign out everywhere from `/profile`, and write
+account, change your password, sign out everywhere from `/profile/security`, and write
 to **[CONTACT]**.
 
 ## 8. Children
