@@ -103,7 +103,80 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
   # Admin-only. A recovery contact is personal data and the anchor a reset
   # rests on, so a moderator never sees one.
   defp recovery_contacts(_user, false), do: []
-  defp recovery_contacts(user, true), do: Auth.list_recovery_contacts(user)
+
+  defp recovery_contacts(user, true) do
+    user
+    |> Auth.list_recovery_contacts()
+    |> Enum.map(fn contact ->
+      challenge = Auth.live_recovery_challenge(contact.id)
+      {contact, challenge, recovery_mail(user, challenge)}
+    end)
+  end
+
+  # A subject and a message the admin can paste into their mail client
+  # (ADR 0067). Writing one from scratch while somebody is locked out is how a
+  # step gets left out — the challenge line pasted without the warning against
+  # sending a private key, say, which `doc/sysop.md` says members do offer.
+  #
+  # **It is rendered in the member's own language**, because they are who
+  # reads it; the admin is told which language that is. The challenge line
+  # itself is never translated: it is signed byte for byte.
+  defp recovery_mail(_user, nil), do: nil
+
+  defp recovery_mail(user, challenge) do
+    locale = member_locale(user)
+    site = site_name()
+
+    Gettext.with_locale(BaudrateWeb.Gettext, locale, fn ->
+      %{
+        locale: locale,
+        subject: gettext("%{site}: confirming your account recovery request", site: site),
+        body:
+          Enum.join(
+            [
+              gettext("Hello %{username},", username: user.username),
+              "",
+              gettext("Somebody asked us to recover your account on %{site}.", site: site),
+              gettext(
+                "To show that it is you, reply with the line below, signed with the OpenPGP key on your profile:"
+              ),
+              "",
+              challenge.phrase,
+              "",
+              gettext(
+                "One way to sign it: run `gpg --clearsign`, paste the line, press Ctrl-D, and send back what it prints."
+              ),
+              gettext("Copy the line exactly, including every space."),
+              "",
+              gettext(
+                "It can be used once and stops working %{time}. If you did not ask for this, ignore this message and nothing changes.",
+                time: format_datetime(challenge.expires_at)
+              ),
+              gettext(
+                "Never send your private key to anyone, us included. A signature is all we need, and it proves it is you by itself."
+              )
+            ],
+            "\n"
+          )
+      }
+    end)
+  end
+
+  # The first locale the member asked for that this instance actually has.
+  # Falling back to the admin's own is deliberate: a template in a language
+  # nobody here can read is worse than one the admin has to translate.
+  defp member_locale(%{preferred_locales: locales}) when is_list(locales) do
+    Enum.find(locales, Gettext.get_locale(BaudrateWeb.Gettext), &BaudrateWeb.Locale.known?/1)
+  end
+
+  defp member_locale(_user), do: Gettext.get_locale(BaudrateWeb.Gettext)
+
+  defp site_name do
+    case Baudrate.Setup.get_setting("site_name") do
+      name when is_binary(name) and name != "" -> name
+      _ -> BaudrateWeb.Endpoint.host()
+    end
+  end
 
   # Each state reads as a sentence, because an admin scanning this page is
   # asking "did they use it?" and a bare status word does not answer that.
@@ -158,8 +231,18 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
   defp reset_refusal(:self_action),
     do: gettext("Use your own recovery codes rather than issuing yourself a link.")
 
+  defp reset_refusal(:no_live_challenge), do: no_challenge_message()
+
   defp reset_refusal(:unauthorized), do: gettext("You are not allowed to do that.")
   defp reset_refusal(_other), do: gettext("Could not issue a reset link.")
+
+  # Says what to do next, not merely what failed: this refusal is the one an
+  # admin meets while following the procedure, and the answer is a round trip.
+  defp no_challenge_message do
+    gettext(
+      "Issue a challenge first, then act on the signature that answers it. Any earlier challenge has been superseded."
+    )
+  end
 
   # Admin-only, and not fetched at all otherwise: the cheapest way to keep
   # personal data off a page is not to put it in the socket.
@@ -183,8 +266,32 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
       {:error, :unauthorized} ->
         {:noreply, put_flash(socket, :error, gettext("You are not allowed to do that."))}
 
+      {:error, :no_live_challenge} ->
+        {:noreply, put_flash(socket, :error, no_challenge_message())}
+
       _ ->
         {:noreply, put_flash(socket, :error, gettext("Could not update that contact."))}
+    end
+  end
+
+  @impl true
+  def handle_event("issue_challenge", %{"id" => id}, socket) do
+    with {:ok, contact_id} <- parse_id(id),
+         {:ok, _challenge} <-
+           Auth.issue_recovery_challenge(socket.assigns.current_user, contact_id) do
+      {:noreply,
+       socket
+       |> load(Auth.get_user(socket.assigns.user.id))
+       |> put_flash(
+         :info,
+         gettext("Challenge issued. Send it to the member and ask for it back, signed.")
+       )}
+    else
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, gettext("You are not allowed to do that."))}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Could not issue a challenge."))}
     end
   end
 

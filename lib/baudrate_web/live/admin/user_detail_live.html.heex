@@ -708,7 +708,7 @@
       class="admin-user-detail-recovery-note text-sm text-base-content/70 mb-3"
     >
       {gettext(
-        "Verify a contact only after checking a signed message from that address against the key below, in your own mail client. Send a fresh challenge to sign — an old signed message can be replayed."
+        "Issue the challenge below, send it to the member, and check their signature over it against the key below — in your own mail client. Baudrate never checks a signature itself. An old signed message can be replayed, so only a signature over a challenge issued here counts."
       )}
     </p>
 
@@ -726,7 +726,7 @@
       class="admin-user-detail-recovery-contacts space-y-3"
     >
       <li
-        :for={contact <- @recovery_contacts}
+        :for={{contact, challenge, mail} <- @recovery_contacts}
         id={"admin-user-detail-recovery-contact-#{contact.id}"}
         class="admin-user-detail-recovery-contact bg-base-200 rounded p-3 space-y-2 min-w-0"
       >
@@ -760,7 +760,79 @@
           </div>
         </details>
 
+        <%!--
+          The text the member signs (ADR 0067). Baudrate issues it and never
+          checks the answer: the signature is verified in the admin's own
+          client, and this only makes what they were asked fresh and single-use.
+        --%>
+        <div
+          id={"admin-user-detail-recovery-challenge-#{contact.id}"}
+          class="admin-user-detail-recovery-challenge bg-base-100 rounded p-2 space-y-1"
+        >
+          <p class="admin-user-detail-recovery-challenge-label text-xs font-medium">
+            {gettext("Challenge to be signed")}
+          </p>
+          <pre
+            :if={challenge}
+            class="admin-user-detail-recovery-challenge-phrase text-xs whitespace-pre-wrap break-all select-all"
+          >{challenge.phrase}</pre>
+          <p
+            :if={challenge}
+            class="admin-user-detail-recovery-challenge-expiry text-xs opacity-70"
+          >
+            {gettext("Send this exact line and ask for it back, signed. Expires %{time}.",
+              time: format_datetime(challenge.expires_at)
+            )}
+          </p>
+          <p
+            :if={!challenge}
+            class="admin-user-detail-recovery-challenge-empty text-xs opacity-70"
+          >
+            {gettext("No challenge is waiting. Issue one before verifying or issuing a link.")}
+          </p>
+
+          <%!--
+            The message to send, so the admin is not composing one while
+            somebody is locked out — that is how the line about never sending
+            a private key gets left out (ADR 0067).
+          --%>
+          <details
+            :if={mail}
+            id={"admin-user-detail-recovery-mail-#{contact.id}"}
+            class="admin-user-detail-recovery-mail collapse collapse-arrow bg-base-200"
+          >
+            <summary class="admin-user-detail-recovery-mail-summary collapse-title text-xs font-medium">
+              {gettext("Mail to send")}
+            </summary>
+            <div class="collapse-content space-y-2">
+              <p class="admin-user-detail-recovery-mail-note text-xs opacity-70">
+                {gettext(
+                  "Written in this member's own language (%{language}). Edit it as you like — but keep the challenge line exactly as it is.",
+                  language: BaudrateWeb.Locale.locale_display_name(mail.locale)
+                )}
+              </p>
+              <p class="admin-user-detail-recovery-mail-subject-label text-xs font-medium">
+                {gettext("Subject")}
+              </p>
+              <pre class="admin-user-detail-recovery-mail-subject text-xs whitespace-pre-wrap break-words select-all bg-base-100 rounded p-2">{mail.subject}</pre>
+              <p class="admin-user-detail-recovery-mail-body-label text-xs font-medium">
+                {gettext("Message")}
+              </p>
+              <pre class="admin-user-detail-recovery-mail-body text-xs whitespace-pre-wrap break-words select-all bg-base-100 rounded p-2">{mail.body}</pre>
+            </div>
+          </details>
+        </div>
+
         <div class="admin-user-detail-recovery-actions flex flex-wrap gap-2">
+          <button
+            type="button"
+            id={"admin-user-detail-recovery-challenge-issue-#{contact.id}"}
+            phx-click="issue_challenge"
+            phx-value-id={contact.id}
+            class="admin-user-detail-recovery-challenge-issue btn btn-sm btn-outline"
+          >
+            {if challenge, do: gettext("Issue a new challenge"), else: gettext("Issue challenge")}
+          </button>
           <button
             :if={contact.status == "pending"}
             type="button"
