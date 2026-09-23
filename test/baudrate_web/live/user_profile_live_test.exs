@@ -10,6 +10,13 @@ defmodule BaudrateWeb.UserProfileLiveTest do
   alias Baudrate.Repo
   alias Baudrate.Setup.Setting
 
+  @pgp_key """
+  -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+  mDMEZfakeKeyForTestingOnlyNotARealKeyAtAll0123456789abcdefghijkl
+  -----END PGP PUBLIC KEY BLOCK-----\
+  """
+
   setup %{conn: conn} do
     Repo.insert!(%Setting{key: "setup_completed", value: "true"})
     Repo.insert!(%Setting{key: "site_name", value: "Test Site"})
@@ -463,6 +470,83 @@ defmodule BaudrateWeb.UserProfileLiveTest do
 
       {:ok, _lv, html} = live(conn, "/users/#{user.username}")
       refute html =~ "follow_user"
+    end
+  end
+
+  # ADR 0068: the badge states what staff checked — control of a key — and
+  # never that the site verified who somebody is.
+  describe "the OpenPGP badge" do
+    test "is absent until an admin has confirmed a key", %{conn: conn} do
+      user = setup_user("user")
+
+      {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+      refute html =~ "user-profile-key-confirmed"
+
+      # A contact the member registered is a claim nobody has checked yet.
+      {:ok, _contact} =
+        Auth.add_recovery_contact(user, %{
+          "email" => "owner@example.com",
+          "pgp_public_key" => @pgp_key
+        })
+
+      {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+      refute html =~ "user-profile-key-confirmed"
+    end
+
+    test "says what was checked, to anyone reading the page", %{conn: conn} do
+      admin = setup_user("admin")
+      user = setup_user("user")
+
+      {:ok, contact} =
+        Auth.add_recovery_contact(user, %{
+          "email" => "owner@example.com",
+          "pgp_public_key" => @pgp_key
+        })
+
+      {:ok, _} = Auth.issue_recovery_challenge(admin, contact.id)
+      {:ok, _} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
+
+      # A guest connection: the badge is public, which is the point of it.
+      {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+
+      assert html =~ "user-profile-key-confirmed"
+      assert html =~ "OpenPGP key confirmed"
+
+      assert html =~ "controls an OpenPGP key",
+             """
+             The title says what an admin actually established. A bare
+             "Verified" would claim an identity check nobody here performed.
+             """
+
+      refute html =~ "owner@example.com",
+             "the address is encrypted at rest and belongs on no public page"
+    end
+
+    test "goes away when the member changes the key", %{conn: conn} do
+      admin = setup_user("admin")
+      user = setup_user("user")
+
+      {:ok, contact} =
+        Auth.add_recovery_contact(user, %{
+          "email" => "owner@example.com",
+          "pgp_public_key" => @pgp_key
+        })
+
+      {:ok, _} = Auth.issue_recovery_challenge(admin, contact.id)
+      {:ok, _} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
+
+      {:ok, _} =
+        Auth.update_recovery_contact(user, contact.id, %{
+          "pgp_public_key" => String.replace(@pgp_key, "0123456789", "9876543210")
+        })
+
+      {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+
+      refute html =~ "user-profile-key-confirmed",
+             """
+             Editing the key drops the anchor back to pending (ADR 0058), and
+             a badge that outlived that would vouch for a key nobody checked.
+             """
     end
   end
 end

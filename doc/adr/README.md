@@ -87,6 +87,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0065](0065-what-waits-for-review-is-not-content-yet.md) | What waits for review is not content yet | Accepted, except decisions 8 and 13, amended by [0066](0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md) |
 | [0066](0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md) | A filter reads what is stored, not what the object claims | Accepted |
 | [0067](0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md) | The instance issues the challenge; the admin still verifies it | Accepted |
+| [0068](0068-a-profile-says-what-was-checked-not-that-someone-is-verified.md) | A profile says what was checked, not that someone is verified | Accepted |
 
 ## Writing a new ADR
 

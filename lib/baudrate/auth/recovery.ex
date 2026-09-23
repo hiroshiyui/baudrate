@@ -177,6 +177,25 @@ defmodule Baudrate.Auth.Recovery do
     )
   end
 
+  @doc """
+  When an admin first confirmed that this account controls an OpenPGP key,
+  or `nil` (ADR 0068).
+
+  The earliest `verified_at` still standing, so the profile can say *since
+  when* rather than when the member last edited an anchor. It answers only
+  that a confirmation happened and when: never the address, the label, the
+  key, or how many contacts there are.
+  """
+  @spec key_confirmed_at(User.t()) :: DateTime.t() | nil
+  def key_confirmed_at(%User{} = user) do
+    Repo.one(
+      from(c in RecoveryContact,
+        where: c.user_id == ^user.id and c.status == "verified",
+        select: min(c.verified_at)
+      )
+    )
+  end
+
   @doc "Whether the account has at least one verified recovery contact."
   @spec verified_contact?(User.t()) :: boolean()
   def verified_contact?(%User{} = user) do

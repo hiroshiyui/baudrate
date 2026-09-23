@@ -34,6 +34,11 @@ defmodule BaudrateWeb.UserProfileLive do
         raise BaudrateWeb.NotFoundError
 
       user ->
+        # What staff actually checked: that this account controls an OpenPGP
+        # key (ADR 0068). Never "verified", which would claim an identity
+        # check nobody here performed.
+        key_confirmed_at = Auth.recovery_key_confirmed_at(user)
+
         article_count = Content.count_articles_by_user(user.id)
         comment_count = Content.count_comments_by_user(user.id)
         current_user = socket.assigns.current_user
@@ -68,6 +73,7 @@ defmodule BaudrateWeb.UserProfileLive do
            profile_user: user,
            moved_to: Baudrate.AccountMigration.moved_target(user),
            federation_enabled: Baudrate.Setup.federation_enabled?(),
+           key_confirmed_at: key_confirmed_at,
            article_count: article_count,
            comment_count: comment_count,
            is_muted: is_muted,

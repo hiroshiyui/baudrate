@@ -39,6 +39,23 @@
       >
         {gettext("Bot")}
       </span>
+      <%!--
+        What staff checked, said plainly: this account controls an OpenPGP key
+        (ADR 0068). Not "verified" — nobody here checked who anybody is.
+      --%>
+      <span
+        :if={@key_confirmed_at}
+        id="user-profile-key-confirmed"
+        class="user-profile-key-confirmed badge badge-outline badge-sm ml-1 gap-1"
+        title={
+          gettext("An admin confirmed this account controls an OpenPGP key, %{date}.",
+            date: format_datetime(@key_confirmed_at)
+          )
+        }
+      >
+        <.icon name="hero-key" class="size-3 shrink-0" />
+        {gettext("OpenPGP key confirmed")}
+      </span>
       <.feed_links
         id_prefix="user-profile-feed"
         label={gettext("Syndication feeds for this account")}

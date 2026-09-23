@@ -940,6 +940,14 @@ in the admin's own mail client, and `doc/sysop.md` carries that procedure. The
 instance issues the challenge and records the verdict; it verifies nothing,
 and ADR 0067 records why automating the check was refused.
 
+**The badge.** A confirmed anchor shows on the member's public profile as
+**OpenPGP key confirmed**, dated in its title
+([ADR 0068](adr/0068-a-profile-says-what-was-checked-not-that-someone-is-verified.md)).
+`Recovery.key_confirmed_at/1` answers only whether and when — never the
+address, the label or the key — and the badge follows the anchor, so editing
+either half takes it away with the verification. Nothing sorts, filters or
+lists by it, and no page marks its absence.
+
 **The notice.** `recovery_notice` renders sitewide when an account has no
 unused codes *and* no verified contact, driven by `:recovery_pending` from both
 auth hooks. The two existence queries behind it run only while

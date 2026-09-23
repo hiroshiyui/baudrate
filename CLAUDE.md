@@ -58,7 +58,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 See [`doc/baudrate-spec.md`](doc/baudrate-spec.md) for the **conformance
 index**: every invariant in one table, with the record that explains it, the
 code that enforces it and the test that fails if it breaks. It states no rules
-of its own — start there to find a rule, not to learn one. Nineteen rows have no
+of its own — start there to find a rule, not to learn one. Twenty-one rows have no
 automated gate and say so; those are the ones review has to catch.
 `test/doc/spec_index_test.exs` checks the table against the code.
 

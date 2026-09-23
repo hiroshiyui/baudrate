@@ -18,6 +18,12 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   over it in their own client as before, and only then marks the contact
   verified or issues a reset link. Both actions now refuse unless a challenge
   is waiting, and each spends it.
+- **An OpenPGP key confirmed badge on a member's profile**
+  ([ADR 0068](doc/adr/0068-a-profile-says-what-was-checked-not-that-someone-is-verified.md)),
+  dated in its title, once an admin has confirmed the account controls the key
+  it registered. It states what was checked rather than saying "verified",
+  which would claim an identity check this instance never performs, and it
+  goes away by itself when the member changes the address or the key.
 - **A mail subject and message ready to paste**, beside the challenge on
   `/admin/users/:id`, carrying the phrase, how to sign it and the warning
   never to send a private key. It is written in the member's own language when

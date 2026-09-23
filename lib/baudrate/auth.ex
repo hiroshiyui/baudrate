@@ -121,6 +121,7 @@ defmodule Baudrate.Auth do
 
   defdelegate recovery_arranged?(user), to: Recovery, as: :arranged?
   defdelegate verified_recovery_contact?(user), to: Recovery, as: :verified_contact?
+  defdelegate recovery_key_confirmed_at(user), to: Recovery, as: :key_confirmed_at
   defdelegate unused_recovery_code_count(user), to: Recovery, as: :unused_code_count
   defdelegate max_recovery_contacts, to: Recovery, as: :max_contacts
   defdelegate issue_account_reset(admin, user, contact_id, opts \\ []), to: Recovery, as: :issue

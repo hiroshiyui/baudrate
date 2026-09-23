@@ -732,6 +732,12 @@ A member adds an address and an armored public key at `/profile`; it appears as
    once, expires after 72 hours, and re-issuing invalidates whatever you sent
    before.
 
+**Confirming is public.** The member's profile then carries an **OpenPGP key
+confirmed** badge, dated (ADR 0068). It says what you checked — that the
+account controls that key — and never that the site verified who they are. It
+disappears by itself if they change the address or the key, since that drops
+the anchor back to pending.
+
 The order matters. The member registered that key from their own authenticated
 session, so confirming it binds an address to a key they had already proved
 they control. Verifying on the strength of the email alone binds nothing.

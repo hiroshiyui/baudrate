@@ -29,7 +29,7 @@ question.
 - **Changing code under a row?** The gate is the fastest way to find out what
   the rule actually is; it is more precise than any prose here, including the
   record.
-- **The gate column is the point.** Nineteen rows have no automated gate. Those
+- **The gate column is the point.** Twenty-one rows have no automated gate. Those
   are listed here rather than left to be rediscovered: a 2026-09-19 audit of
   all 46 records then on file found eight real defects, and most of them lived
   exactly where no gate did.
@@ -325,6 +325,8 @@ The rendered page: accessibility, localisation, and the CSP.
 | The text a member signs for recovery is issued by the instance, single-use and expiring by the clock | [0067](adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md) | `Baudrate.Auth.Recovery.issue_challenge/2`, `Baudrate.Auth.Recovery.live_challenge/1` | [`account_recovery_test.exs`](../test/baudrate/auth/account_recovery_test.exs) |
 | Verifying a contact and issuing a reset link each spend a live challenge; only the newest row counts | [0067](adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md) | `Baudrate.Auth.Recovery.set_verification/3`, `Baudrate.Auth.Recovery.issue/4` | [`account_recovery_test.exs`](../test/baudrate/auth/account_recovery_test.exs), [`account_recovery_web_test.exs`](../test/baudrate_web/account_recovery_web_test.exs) |
 | Baudrate parses no OpenPGP and verifies no signature: the admin's own client does | [0067](adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md) | `Baudrate.Auth.RecoveryContact.changeset/3` | **none** |
+| A profile badge states that an account controls an OpenPGP key, never that a person is verified | [0068](adr/0068-a-profile-says-what-was-checked-not-that-someone-is-verified.md) | `Baudrate.Auth.Recovery.key_confirmed_at/1` | [`user_profile_live_test.exs`](../test/baudrate_web/live/user_profile_live_test.exs) |
+| Nothing ranks, sorts, filters or lists accounts by that badge, and no page marks its absence | [0068](adr/0068-a-profile-says-what-was-checked-not-that-someone-is-verified.md) | — | **none** |
 | A recovery address is encrypted at rest and bound to its owner | [0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md) | `Baudrate.Auth.RecoveryContactVault.encrypt/2` | [`account_recovery_test.exs`](../test/baudrate/auth/account_recovery_test.exs) |
 | The member list is paged but never enumerated: the Users tab stops at five pages | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) | `Baudrate.Auth.Users.search_users_page/2` | [`auth_test.exs`](../test/baudrate/auth_test.exs) |
 | An unknown or banned account answers 404 at /users/:name and /@handle, never a redirect | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) | `BaudrateWeb.HandleRedirectController.show/2` | [`crawler_surface_test.exs`](../test/baudrate_web/crawler_surface_test.exs) |
