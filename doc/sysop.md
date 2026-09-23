@@ -2149,7 +2149,7 @@ To install it by hand, verify it first. `--source-digest` is the commit the tag 
 clone, so a tag moved on GitHub after you fetched it fails verification:
 
 ```bash
-TAG=v1.40.0
+TAG=v1.40.1
 gh release download "$TAG" --repo hiroshiyui/baudrate --pattern "baudrate-${TAG#v}-debian12-x86_64.tar.gz"
 gh attestation verify "baudrate-${TAG#v}-debian12-x86_64.tar.gz" --repo hiroshiyui/baudrate \
   --signer-workflow hiroshiyui/baudrate/.github/workflows/release.yml \
@@ -2263,7 +2263,7 @@ this step, pages load without CSS styling and JavaScript doesn't execute.
 #### Build steps
 
 **Before building**, ensure the `version` in `mix.exs` matches the release tag
-(e.g. `"1.40.0"` for tag `v1.40.0`). This version appears in the release
+(e.g. `"1.40.1"` for tag `v1.40.1`). This version appears in the release
 directory name (`lib/baudrate-<version>/`) and in runtime diagnostics.
 
 ```bash
