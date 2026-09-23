@@ -463,6 +463,41 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
+  Builds the `Delete` of a local account that deleted itself (ADR 0072):
+  `object` is the actor URI, the shape Mastodon and others treat as "this
+  account is gone" — most of them then remove everything it posted.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_delete_actor(user) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+
+    activity = %{
+      "@context" => Context.activity(),
+      "id" => "#{actor_uri}#delete-#{Ecto.UUID.generate()}",
+      "type" => "Delete",
+      "actor" => actor_uri,
+      "object" => actor_uri,
+      "to" => [@as_public]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Queues the account's `Delete(Person)` for its followers and for
+  `extra_inboxes` — everyone else elsewhere that has the account on record
+  (`Baudrate.AccountDeletion` collects them). Shared inboxes are
+  deduplicated. A withdrawal, so no board gate applies (ADR 0043).
+  """
+  def publish_actor_deleted(user, extra_inboxes \\ []) do
+    {activity, actor_uri} = build_delete_actor(user)
+    inboxes = Enum.uniq(Delivery.resolve_follower_inboxes(actor_uri) ++ extra_inboxes)
+
+    if inboxes == [], do: {:ok, 0}, else: Delivery.enqueue(activity, actor_uri, inboxes)
+  end
+
+  @doc """
   Publishes an `Update` activity for an actor to all its followers.
 
   One activity for every reason an actor document changes: a new public key

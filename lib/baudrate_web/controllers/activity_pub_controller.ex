@@ -83,6 +83,9 @@ defmodule BaudrateWeb.ActivityPubController do
       {:error, :not_found} ->
         not_found(conn)
 
+      {:error, :gone} ->
+        gone(conn)
+
       {:error, :invalid_resource} ->
         conn |> put_status(400) |> json(%{error: "Invalid resource"})
     end
@@ -125,12 +128,8 @@ defmodule BaudrateWeb.ActivityPubController do
     if wants_json?(conn) do
       with true <- Regex.match?(@username_re, username),
            user when not is_nil(user) <-
-             Baudrate.Repo.get_by(Baudrate.Setup.User, username: username),
-           {:ok, user} <- KeyStore.ensure_user_keypair(user) do
-        conn
-        |> cacheable()
-        |> put_resp_content_type(@activity_json)
-        |> json(Federation.user_actor(user))
+             Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
+        serve_user_actor(conn, user)
       else
         _ -> not_found(conn)
       end
@@ -138,6 +137,32 @@ defmodule BaudrateWeb.ActivityPubController do
       redirect(conn, to: ~p"/")
     end
   end
+
+  # A deleted account answers 410 with its Tombstone (ADR 0072), and never
+  # reaches `ensure_user_keypair/1`: a new key would only be one every server
+  # holding the old one rejects.
+  defp serve_user_actor(conn, %{status: "deleted"} = user) do
+    conn
+    |> put_status(410)
+    |> put_resp_content_type(@activity_json)
+    |> json(Federation.user_tombstone(user))
+  end
+
+  defp serve_user_actor(conn, user) do
+    case KeyStore.ensure_user_keypair(user) do
+      {:ok, user} ->
+        conn
+        |> cacheable()
+        |> put_resp_content_type(@activity_json)
+        |> json(Federation.user_actor(user))
+
+      _ ->
+        not_found(conn)
+    end
+  end
+
+  # The collections of a deleted account are gone with it.
+  defp gone(conn), do: conn |> put_status(410) |> json(%{error: "Gone"})
 
   @doc "Returns the ActivityPub Group actor for a public AP-enabled board."
   def board_actor(conn, %{"slug" => slug}) do
@@ -181,11 +206,13 @@ defmodule BaudrateWeb.ActivityPubController do
   def user_outbox(conn, %{"username" => username} = params) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <-
-           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
+           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username),
+         :ok <- not_deleted(user) do
       conn
       |> put_resp_content_type(@activity_json)
       |> json(Federation.user_outbox(user, params))
     else
+      :deleted -> gone(conn)
       _ -> not_found(conn)
     end
   end
@@ -226,13 +253,15 @@ defmodule BaudrateWeb.ActivityPubController do
   def user_followers(conn, %{"username" => username} = params) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <-
-           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
+           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username),
+         :ok <- not_deleted(user) do
       actor_uri = Federation.actor_uri(:user, user.username)
 
       conn
       |> put_resp_content_type(@activity_json)
       |> json(Federation.followers_collection(actor_uri, params))
     else
+      :deleted -> gone(conn)
       _ -> not_found(conn)
     end
   end
@@ -258,13 +287,15 @@ defmodule BaudrateWeb.ActivityPubController do
   def user_following(conn, %{"username" => username} = params) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <-
-           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
+           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username),
+         :ok <- not_deleted(user) do
       actor_uri = Federation.actor_uri(:user, user.username)
 
       conn
       |> put_resp_content_type(@activity_json)
       |> json(Federation.following_collection(actor_uri, params))
     else
+      :deleted -> gone(conn)
       _ -> not_found(conn)
     end
   end
@@ -444,9 +475,12 @@ defmodule BaudrateWeb.ActivityPubController do
   def user_inbox(conn, %{"username" => username}) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <-
-           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
+           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username),
+         :ok <- not_deleted(user) do
       handle_inbox(conn, {:user, user})
     else
+      # Accepted and dropped, so the sender stops retrying (ADR 0072).
+      :deleted -> send_resp(conn, 202, "")
       _ -> not_found(conn)
     end
   end
@@ -519,6 +553,9 @@ defmodule BaudrateWeb.ActivityPubController do
   end
 
   defp not_found(conn), do: conn |> put_status(404) |> json(%{error: "Not Found"})
+
+  defp not_deleted(%{status: "deleted"}), do: :deleted
+  defp not_deleted(_user), do: :ok
 
   defp require_federation(conn, _opts) do
     if Baudrate.Setup.federation_enabled?() do

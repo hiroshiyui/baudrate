@@ -31,7 +31,8 @@ defmodule Baudrate.Notification.Hooks do
       totp_enabled, totp_disabled, password_changed, signed_out_everywhere,
       totp_login_failed, account_alias_added, account_alias_removed,
       account_move_requested, account_move_cancelled, account_move_failed,
-      account_moved, account_redirect_removed, data_export_*
+      account_moved, account_redirect_removed, account_deletion_requested,
+      account_deletion_cancelled, data_export_*
     * `notify_actor_moved/3` — actor_moved
     * `notify_board_actor_moved/2` — board_actor_moved (all admins)
     * `notify_health_alert/1` / `notify_health_recovered/0` — health_alert,
@@ -671,6 +672,10 @@ defmodule Baudrate.Notification.Hooks do
 
     Enum.each(usernames, fn username ->
       case Auth.get_user_by_username_ci(username) do
+        # A deleted account has nobody to tell (ADR 0072).
+        %{status: "deleted"} ->
+          :ok
+
         %{id: user_id} = mentioned ->
           # A notification renders the article's title and a working permalink
           # (`NotificationsLive.target_title/1`), so mentioning someone from a

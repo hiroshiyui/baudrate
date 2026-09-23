@@ -12,18 +12,31 @@ defmodule BaudrateWeb.ProfileAccountLive do
   When the *effective* locale moves, the hidden `locale-sync-form` posts it to
   `BaudrateWeb.LocaleController`, the session write a LiveView cannot make
   (see `save_locales/2`).
+
+  ## Deleting the account
+
+  `Baudrate.AccountDeletion.request/3` checks the password (and TOTP code)
+  and signs out every other session. This session is signed out by the
+  hidden `account-deletion-signout-form`, which posts to
+  `SessionController.deletion_requested/2` — a LiveView cannot clear its own
+  cookie — and lands the member on `/login` with the date (ADR 0072).
   """
 
   use BaudrateWeb, :live_view
 
+  alias Baudrate.AccountDeletion
   alias Baudrate.Auth
   alias BaudrateWeb.Locale
+  alias BaudrateWeb.RateLimits
+
+  import BaudrateWeb.Helpers, only: [extract_peer_ip: 1]
 
   import BaudrateWeb.ProfileComponents
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     user = socket.assigns.current_user
+    user_agent = if connected?(socket), do: get_connect_info(socket, :user_agent), else: nil
 
     socket =
       socket
@@ -37,6 +50,13 @@ defmodule BaudrateWeb.ProfileAccountLive do
       |> assign(:site_zone, BaudrateWeb.TimeZone.site_zone())
       |> assign_time_zone_form(user.time_zone)
       |> assign(:page_title, gettext("Account"))
+      |> assign(:session_id, Auth.session_id_by_token(session["session_token"]))
+      |> assign(:peer_ip, if(connected?(socket), do: extract_peer_ip(socket), else: "unknown"))
+      |> assign(:user_agent, user_agent)
+      |> assign(:deletion_eligibility, AccountDeletion.eligibility(user))
+      |> assign(:can_export, Baudrate.DataPortability.eligibility(user) == :ok)
+      |> assign(:trigger_deletion_signout, false)
+      |> assign_deletion_form(%{})
 
     {:ok, socket}
   end
@@ -65,6 +85,37 @@ defmodule BaudrateWeb.ProfileAccountLive do
            "This device did not report a time zone this site knows. Choose one from the list."
          )
        )}
+    end
+  end
+
+  @impl true
+  def handle_event("request_deletion", %{"deletion" => params}, socket) do
+    user = socket.assigns.current_user
+    withdraw? = params["withdraw_content"] == "true"
+
+    result =
+      with :ok <- RateLimits.check_reauth(user.id) do
+        AccountDeletion.request(
+          user,
+          %{password: params["password"], code: params["code"]},
+          ip_address: socket.assigns.peer_ip,
+          session_id: socket.assigns.session_id,
+          user_agent: socket.assigns.user_agent,
+          withdraw_content: withdraw?
+        )
+      end
+
+    case result do
+      {:ok, _deletion} ->
+        # Every other session is gone; this one leaves through the form.
+        {:noreply, assign(socket, :trigger_deletion_signout, true)}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> assign_deletion_form(%{"withdraw_content" => to_string(withdraw?)})
+         |> put_flash(:error, deletion_error(reason))
+         |> push_event("focus", %{id: "account-deletion-password"})}
     end
   end
 
@@ -113,6 +164,42 @@ defmodule BaudrateWeb.ProfileAccountLive do
 
   @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
+
+  defp assign_deletion_form(socket, params) do
+    assign(socket, :deletion_form, to_form(params, as: :deletion))
+  end
+
+  defp deletion_error(:invalid_credentials), do: gettext("Invalid credentials. Please try again.")
+  defp deletion_error(:rate_limited), do: gettext("Too many attempts. Please try again later.")
+
+  defp deletion_error({:throttled, seconds}),
+    do:
+      gettext("Too many failed attempts. Please try again in %{seconds} seconds.",
+        seconds: seconds
+      )
+
+  defp deletion_error(:pending_deletion_exists),
+    do: gettext("Deleting this account has already been requested.")
+
+  defp deletion_error(reason), do: deletion_ineligible_message(reason)
+
+  @doc false
+  def deletion_ineligible_message(:bot),
+    do: gettext("Bot accounts are deleted by an administrator.")
+
+  def deletion_ineligible_message(:staff),
+    do:
+      gettext(
+        "Administrators and moderators cannot delete their account. Ask to be demoted first."
+      )
+
+  def deletion_ineligible_message(:board_moderator),
+    do:
+      gettext(
+        "Board moderators cannot delete their account. Ask to be removed as a moderator first."
+      )
+
+  def deletion_ineligible_message(_), do: gettext("This account cannot be deleted.")
 
   defp save_time_zone(socket, zone) do
     case Auth.update_time_zone(socket.assigns.current_user, zone) do

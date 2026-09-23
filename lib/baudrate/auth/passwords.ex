@@ -42,6 +42,9 @@ defmodule Baudrate.Auth.Passwords do
 
     if user && Bcrypt.verify_pass(password, user.hashed_password) do
       cond do
+        # Answers exactly as an unknown account does (ADR 0072). Its password
+        # is random bytes, so this is belt and braces.
+        user.status == "deleted" -> {:error, :invalid_credentials}
         user.is_bot -> {:error, :bot_account}
         user.status == "banned" -> {:error, :banned}
         true -> refuse_if_suspended(user)

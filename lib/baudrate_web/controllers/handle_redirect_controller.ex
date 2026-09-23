@@ -24,7 +24,7 @@ defmodule BaudrateWeb.HandleRedirectController do
   """
   def show(conn, %{"handle" => handle}) do
     case Auth.get_user_by_username(handle) do
-      %{status: "banned"} ->
+      %{status: status} when status in ["banned", "deleted"] ->
         not_found(conn)
 
       %{username: username} ->

@@ -42,9 +42,14 @@ defmodule Baudrate.Federation.KeyStore do
   Ensures the user has an ActivityPub keypair. If `ap_public_key` is nil,
   generates a new keypair, encrypts the private key, and stores both.
 
-  Returns `{:ok, user}` with the updated user.
+  Returns `{:ok, user}` with the updated user, or `{:error, :account_deleted}`
+  for a deleted account without a key: its key was cleared once its last
+  deliveries were out (ADR 0072), and a new one would only be a key that every
+  server holding the old one rejects.
   """
   def ensure_user_keypair(%{ap_public_key: key} = user) when is_binary(key), do: {:ok, user}
+
+  def ensure_user_keypair(%{status: "deleted"}), do: {:error, :account_deleted}
 
   def ensure_user_keypair(user) do
     {public_pem, private_pem} = generate_keypair()

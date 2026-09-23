@@ -870,12 +870,12 @@
           <div class="flex items-center gap-3 mb-2">
             <.avatar user={item.article.user} size={36} />
             <div class="flex-1 min-w-0">
-              <.link
-                navigate={~p"/users/#{item.article.user.username}"}
+              <.author_link
+                user={item.article.user}
                 class="font-bold text-sm truncate link link-hover"
               >
                 {display_name(item.article.user)}
-              </.link>
+              </.author_link>
               <div class="text-xs text-base-content/60">
                 <.icon
                   name="hero-home-solid"
@@ -1018,12 +1018,12 @@
           <div class="flex items-center gap-3 mb-2">
             <.avatar user={item.comment.user} size={36} />
             <div class="flex-1 min-w-0">
-              <.link
-                navigate={~p"/users/#{item.comment.user.username}"}
+              <.author_link
+                user={item.comment.user}
                 class="font-bold text-sm truncate link link-hover"
               >
                 {display_name(item.comment.user)}
-              </.link>
+              </.author_link>
               <div class="text-xs text-base-content/60">
                 <.icon
                   name="hero-home-solid"

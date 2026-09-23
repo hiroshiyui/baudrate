@@ -50,6 +50,11 @@ defmodule Baudrate.Notification.Notification do
       (`data.label`)
     * `account_redirect_removed` — the redirect of a moved account was removed
       (`data.label`)
+    * `account_deletion_requested` — deleting the account was requested; it is
+      carried out after 7 days unless the member signs in (`data.execute_after`,
+      `data.browser`, ADR 0072)
+    * `account_deletion_cancelled` — a pending deletion was cancelled, by
+      signing in or because the account gained a staff role (`data.reason`)
     * `data_export_requested` — a data export was requested (`data.ready_at`, `data.browser`)
     * `data_export_ready` — the export can be downloaded (`data.expires_at`)
     * `data_export_downloaded` — the export was downloaded (`data.count`, `data.remaining`)
@@ -165,6 +170,8 @@ defmodule Baudrate.Notification.Notification do
     account_move_failed
     account_moved
     account_redirect_removed
+    account_deletion_requested
+    account_deletion_cancelled
     data_export_requested
     data_export_ready
     data_export_downloaded
@@ -205,6 +212,8 @@ defmodule Baudrate.Notification.Notification do
     account_move_failed
     account_moved
     account_redirect_removed
+    account_deletion_requested
+    account_deletion_cancelled
     data_export_requested
     data_export_ready
     data_export_downloaded

@@ -327,6 +327,10 @@ defmodule Baudrate.Notification.WebPush do
     BaudrateWeb.Endpoint.url() <> "/profile/export"
   end
 
+  defp notification_url(%{type: "account_deletion_" <> _}) do
+    BaudrateWeb.Endpoint.url() <> "/profile/account"
+  end
+
   defp notification_url(%{type: "account_" <> _}) do
     BaudrateWeb.Endpoint.url() <> "/profile/move"
   end

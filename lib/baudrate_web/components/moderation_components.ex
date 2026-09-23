@@ -9,6 +9,8 @@ defmodule BaudrateWeb.ModerationComponents do
   use Phoenix.Component
   use Gettext, backend: BaudrateWeb.Gettext
 
+  import BaudrateWeb.CoreComponents, only: [author_link: 1]
+
   import BaudrateWeb.Helpers,
     only: [
       datetime_attr: 1,
@@ -286,13 +288,13 @@ defmodule BaudrateWeb.ModerationComponents do
       >
         <p class="text-sm font-semibold">{gettext("Reported User:")}</p>
         <p>
-          <.link
+          <.author_link
+            user={@report.reported_user}
             id={"#{@prefix}-report-user-link-#{@report.id}"}
-            navigate={~p"/users/#{@report.reported_user.username}"}
             class="moderation-report-user-link link link-primary"
           >
             {display_name(@report.reported_user)}
-          </.link>
+          </.author_link>
           <span class="text-sm opacity-70">(@{@report.reported_user.username})</span>
         </p>
         <%!-- A flagged timeline reply has no page here, so its report keeps a

@@ -83,7 +83,7 @@ defmodule BaudrateWeb.SessionController do
 
         # The token is minted the moment the password verifies, so a
         # suspension issued in between must still be caught here (ADR 0029).
-        if user && user.status != "banned" && not Auth.suspended?(user) do
+        if user && user.status not in ["banned", "deleted"] && not Auth.suspended?(user) do
           Logger.info(
             "auth.login_success: user_id=#{user.id} username=#{user.username} ip=#{remote_ip(conn)}"
           )
@@ -561,6 +561,55 @@ defmodule BaudrateWeb.SessionController do
     |> redirect(to: "/")
   end
 
+  @doc """
+  Signs out the session that has just requested its account's deletion
+  (ADR 0072), posted by `/profile/account`'s hidden form — a LiveView cannot
+  clear its own cookie.
+
+  Unlike `delete/2` it keeps the flash (renewing the session instead of
+  dropping it), because the member needs to be told when the deletion will
+  happen and that signing in cancels it. The date comes from the pending
+  row of this session's own user, never from the request.
+  """
+  def deletion_requested(conn, _params) do
+    token = get_session(conn, :session_token)
+
+    deletion =
+      with token when is_binary(token) <- token,
+           {:ok, user} <- Auth.get_user_by_session_token(token) do
+        # The date is shown in the member's own zone, as their pages were.
+        BaudrateWeb.TimeZone.put(user.time_zone)
+        Baudrate.AccountDeletion.open(user.id)
+      else
+        _ -> nil
+      end
+
+    if token, do: Auth.delete_session_by_token(token)
+
+    conn =
+      conn
+      |> configure_session(renew: true)
+      |> clear_session()
+
+    conn =
+      case deletion do
+        %{execute_after: at} ->
+          put_flash(
+            conn,
+            :info,
+            gettext(
+              "Your account will be deleted on %{date}. Sign in before then to cancel.",
+              date: BaudrateWeb.Helpers.format_datetime(at)
+            )
+          )
+
+        nil ->
+          conn
+      end
+
+    redirect(conn, to: "/login")
+  end
+
   @doc "Logs out the user by deleting the server-side session and dropping the cookie."
   def delete(conn, _params) do
     session_token = get_session(conn, :session_token)
@@ -589,21 +638,60 @@ defmodule BaudrateWeb.SessionController do
   # actually mints the session. `LoginLive` checks first so a banned visitor
   # is refused before their password is tested; this is the backstop that no
   # new sign-in path can route around.
+  #
+  # And it is where a pending account deletion is cancelled (ADR 0072):
+  # signing in is how a member says they are staying. It runs after the IP
+  # ban, so a banned address cannot cancel one, and after a status backstop —
+  # the TOTP and recovery-code steps re-read the user from the cookie, so a
+  # sign-in racing the deletion sweep must still find the account gone.
   defp establish_session(conn, user, redirect_to \\ "/") do
-    if Auth.ip_banned?(conn.remote_ip) do
-      Logger.warning(
-        "auth.ip_banned: user_id=#{user.id} ip=#{remote_ip(conn)} step=establish_session"
-      )
+    cond do
+      Auth.ip_banned?(conn.remote_ip) ->
+        Logger.warning(
+          "auth.ip_banned: user_id=#{user.id} ip=#{remote_ip(conn)} step=establish_session"
+        )
 
-      conn
-      # A half-finished sign-in (password verified, TOTP pending) must not
-      # survive the refusal.
-      |> delete_session(:user_id)
-      |> delete_session(:totp_setup_secret)
-      |> put_flash(:error, BaudrateWeb.Helpers.ip_banned_message())
-      |> redirect(to: "/login")
-    else
-      do_establish_session(conn, user, redirect_to)
+        refuse_sign_in(conn, BaudrateWeb.Helpers.ip_banned_message())
+
+      user.status not in ["active", "pending"] ->
+        Logger.warning(
+          "auth.sign_in_refused: user_id=#{user.id} status=#{user.status} step=establish_session"
+        )
+
+        refuse_sign_in(conn, gettext("Invalid session."))
+
+      true ->
+        case Baudrate.AccountDeletion.cancel_pending(user.id, "signed_in") do
+          :executing ->
+            refuse_sign_in(conn, gettext("This account is being deleted."))
+
+          :cancelled ->
+            conn
+            |> add_info(gettext("Your account deletion has been cancelled."))
+            |> do_establish_session(user, redirect_to)
+
+          :none ->
+            do_establish_session(conn, user, redirect_to)
+        end
+    end
+  end
+
+  # A half-finished sign-in (password verified, TOTP pending) must not
+  # survive a refusal.
+  defp refuse_sign_in(conn, message) do
+    conn
+    |> delete_session(:user_id)
+    |> delete_session(:totp_setup_secret)
+    |> put_flash(:error, message)
+    |> redirect(to: "/login")
+  end
+
+  # Adds to an info message already set on this response (enabling TOTP sets
+  # one) instead of replacing it.
+  defp add_info(conn, message) do
+    case get_in(conn.private, [:phoenix_flash, "info"]) do
+      existing when is_binary(existing) -> put_flash(conn, :info, existing <> " " <> message)
+      _ -> put_flash(conn, :info, message)
     end
   end
 

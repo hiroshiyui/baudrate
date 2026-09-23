@@ -19,7 +19,25 @@ defmodule Baudrate.Federation.ActorRenderer do
   Includes `alsoKnownAs` when the user has aliases and `movedTo` once the
   account has moved (ADR 0025). Remote servers use them to verify and follow
   a `Move`.
+
+  A **banned** account is served with its identity and key only — no name,
+  summary, avatar, profile fields or aliases — as `/users/:name` already
+  refuses its profile. It is not a `Tombstone`: a ban can be lifted, and a
+  `410` would make other servers delete the account for good (ADR 0072).
   """
+  def user_actor(%{status: "banned"} = user) do
+    user
+    |> Map.merge(%{
+      display_name: nil,
+      bio: nil,
+      avatar_id: nil,
+      profile_fields: [],
+      also_known_as: []
+    })
+    |> Map.put(:status, "active")
+    |> user_actor()
+  end
+
   def user_actor(user) do
     uri = actor_uri(:user, user.username)
 
@@ -47,6 +65,32 @@ defmodule Baudrate.Federation.ActorRenderer do
     |> put_if("attachment", render_profile_fields(user.profile_fields))
     |> put_if("alsoKnownAs", non_empty(user.also_known_as))
     |> put_if("movedTo", user.moved_to)
+  end
+
+  @doc """
+  The `Tombstone` a deleted account's actor URI answers with, under `410 Gone`
+  (ADR 0072).
+
+  While the account's last deliveries are still going out it carries the
+  `publicKey`: a server that never cached this actor fetches it to verify the
+  `Delete(Person)` and the `Undo`s. `Baudrate.AccountDeletion.sweep_keys/0`
+  clears the key afterwards, and the `Tombstone` is plain from then on.
+  """
+  def user_tombstone(user) do
+    uri = actor_uri(:user, user.username)
+
+    %{
+      "@context" => Context.actor(),
+      "id" => uri,
+      "type" => "Tombstone",
+      "formerType" => "Person"
+    }
+    |> put_if("deleted", user.deleted_at && DateTime.to_iso8601(user.deleted_at))
+    |> put_if(
+      "publicKey",
+      is_binary(user.ap_public_key) &&
+        %{"id" => "#{uri}#main-key", "owner" => uri, "publicKeyPem" => user.ap_public_key}
+    )
   end
 
   defp non_empty([_ | _] = list), do: list
@@ -168,6 +212,7 @@ defmodule Baudrate.Federation.ActorRenderer do
   end
 
   defp put_if(map, _key, nil), do: map
+  defp put_if(map, _key, false), do: map
   defp put_if(map, _key, ""), do: map
   defp put_if(map, key, value), do: Map.put(map, key, value)
 

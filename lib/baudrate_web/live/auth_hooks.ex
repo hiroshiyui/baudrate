@@ -59,6 +59,11 @@ defmodule BaudrateWeb.AuthHooks do
       case Auth.get_user_by_session_token(session_token) do
         {:ok, user} ->
           cond do
+            # Its sessions were revoked when it was deleted; this is the
+            # backstop (ADR 0072).
+            user.status == "deleted" ->
+              {:halt, to_login(socket)}
+
             user.status == "banned" ->
               {:halt,
                socket
@@ -127,7 +132,7 @@ defmodule BaudrateWeb.AuthHooks do
         {:ok, user} ->
           # A suspended account is signed out everywhere, not just kept off
           # the authenticated pages: it browses as a guest would (ADR 0029).
-          if user.status == "banned" or suspended?(user) do
+          if user.status in ["banned", "deleted"] or suspended?(user) do
             {:cont, socket |> assign(:current_user, nil) |> assign(:locale, locale)}
           else
             locale = resolve_user_locale(user)
@@ -191,7 +196,7 @@ defmodule BaudrateWeb.AuthHooks do
     if user_id do
       user = Auth.get_user(user_id)
 
-      if user && user.status != "banned" && not suspended?(user) do
+      if user && user.status not in ["banned", "deleted"] && not suspended?(user) do
         locale = resolve_user_locale(user)
 
         socket =
@@ -216,7 +221,7 @@ defmodule BaudrateWeb.AuthHooks do
     if session_token do
       case Auth.get_user_by_session_token(session_token) do
         {:ok, user} ->
-          if user.status == "banned" do
+          if user.status in ["banned", "deleted"] do
             {:cont, attach_page_metadata_hook(socket)}
           else
             {:halt, redirect(socket, to: "/")}

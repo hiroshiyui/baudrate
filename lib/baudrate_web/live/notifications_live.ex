@@ -162,7 +162,9 @@ defmodule BaudrateWeb.NotificationsLive do
   defp actor_name(%{actor_remote_actor: %{username: u, domain: d}}), do: "#{u}@#{d}"
   defp actor_name(_), do: nil
 
-  defp actor_link(%{actor_user: %{username: username}}), do: ~p"/users/#{username}"
+  defp actor_link(%{actor_user: %Baudrate.Setup.User{} = user}),
+    do: BaudrateWeb.Helpers.author_path(user)
+
   defp actor_link(_), do: nil
 
   # A comment is linked on the page it is on, for this reader — a bare
@@ -182,6 +184,7 @@ defmodule BaudrateWeb.NotificationsLive do
   defp target_link(%{type: "post_rejected"}), do: ~p"/drafts"
   defp target_link(%{type: "data_export_" <> _}), do: ~p"/profile/export"
   defp target_link(%{type: "totp_login_failed"}), do: ~p"/profile/password"
+  defp target_link(%{type: "account_deletion_" <> _}), do: ~p"/profile/account"
   defp target_link(%{type: "account_" <> _}), do: ~p"/profile/move"
   defp target_link(%{type: type}) when type in @security_types, do: ~p"/profile/security"
   defp target_link(_), do: nil

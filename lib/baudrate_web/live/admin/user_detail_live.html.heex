@@ -18,6 +18,18 @@
       {@user.username}
     </h1>
 
+    <p
+      :if={@user.status == "deleted"}
+      id="admin-user-detail-deleted"
+      class="admin-user-detail-deleted alert alert-info text-sm"
+      role="note"
+    >
+      {gettext(
+        "This account deleted itself on %{date}. Its reports, sanctions and log entries are kept, and nothing here can bring it back.",
+        date: format_datetime(@user.deleted_at)
+      )}
+    </p>
+
     <dl class="admin-user-detail-facts flex flex-wrap gap-x-6 gap-y-1 text-sm">
       <div class="admin-user-detail-fact">
         <dt class="admin-user-detail-fact-label inline text-base-content/70">

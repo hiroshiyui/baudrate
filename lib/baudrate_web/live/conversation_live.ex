@@ -474,7 +474,7 @@ defmodule BaudrateWeb.ConversationLive do
   defp resolve_conversation(%{"to" => username}, _user) do
     case Auth.get_user_by_username(username) do
       nil -> {:error, :recipient_not_found}
-      %{status: "banned"} -> {:error, :recipient_not_found}
+      %{status: status} when status in ["banned", "deleted"] -> {:error, :recipient_not_found}
       recipient -> {:new, recipient}
     end
   end

@@ -87,6 +87,7 @@ defmodule Baudrate.Auth.Sanctions do
   """
   @type refusal ::
           :banned
+          | :account_deleted
           | :account_suspended
           | :account_silenced
           | :account_moved
@@ -127,6 +128,9 @@ defmodule Baudrate.Auth.Sanctions do
 
       %{status: "banned"} ->
         {:error, :banned}
+
+      %{status: "deleted"} ->
+        {:error, :account_deleted}
 
       state ->
         cond do
@@ -417,9 +421,10 @@ defmodule Baudrate.Auth.Sanctions do
 
   Authorization is on the act, not the state: `#{@sanction_permission}` is
   enough to refuse an account that is still `pending`, while banning an active
-  member stays with `#{@unrestricted_permission}`. The row is not deleted:
-  there is no user-deletion path yet, and building one as a side effect of
-  this would decide account deletion by accident.
+  member stays with `#{@unrestricted_permission}`. The row is not deleted: a
+  user row is never deleted (ADR 0072 — a member deleting themselves leaves a
+  tombstone, through `Baudrate.AccountDeletion`), and refusing a registration
+  is a ban with a reason.
 
   Returns `{:ok, user}`, or `{:error, :not_pending | :unauthorized |
   :self_action | :role_too_high | changeset}`.

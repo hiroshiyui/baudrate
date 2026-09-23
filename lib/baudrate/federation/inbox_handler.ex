@@ -110,8 +110,10 @@ defmodule Baudrate.Federation.InboxHandler do
       # This guard is needed for the shared inbox path where the controller
       # cannot pre-filter by ap_enabled.
       # A user who has blocked the actor refuses its follow, as Mastodon does.
+      # An account that deleted itself refuses every follow (ADR 0072).
       if non_federated_board_actor?(actor_uri, target) or
-           follow_blocked_by_target?(actor_uri, remote_actor) do
+           follow_blocked_by_target?(actor_uri, remote_actor) or
+           deleted_user_actor?(actor_uri) do
         Delivery.enqueue_reject(activity, actor_uri, remote_actor)
         :ok
       else
@@ -2207,10 +2209,21 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  # The local user a `/ap/users/:username` actor URI names, or nil. The Follow
-  # names its target in the activity, so this works whichever inbox the
-  # activity arrived at — which is the point: see `notify_follow_target/2`.
+  # The local user a `/ap/users/:username` actor URI names, or nil — also for
+  # an account that deleted itself, which is nobody to notify (ADR 0072). The
+  # Follow names its target in the activity, so this works whichever inbox
+  # the activity arrived at — which is the point: see `notify_follow_target/2`.
   defp local_user_from_actor_uri(actor_uri) do
+    case local_user_record(actor_uri) do
+      %{status: "deleted"} -> nil
+      user -> user
+    end
+  end
+
+  defp deleted_user_actor?(actor_uri),
+    do: match?(%{status: "deleted"}, local_user_record(actor_uri))
+
+  defp local_user_record(actor_uri) do
     user_prefix = "#{Federation.base_url()}/ap/users/"
 
     with <<^user_prefix::binary, username::binary>> <- actor_uri,

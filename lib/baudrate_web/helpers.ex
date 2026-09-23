@@ -235,8 +235,11 @@ defmodule BaudrateWeb.Helpers do
   @doc """
   Returns a human-friendly display name for a user or remote actor.
 
-  Falls back to `username` when `display_name` is nil or empty.
+  Falls back to `username` when `display_name` is nil or empty. An account
+  that deleted itself is "deleted account", never its old name (ADR 0072).
   """
+  def display_name(%Baudrate.Setup.User{status: "deleted"}), do: gettext("deleted account")
+
   def display_name(%Baudrate.Setup.User{display_name: dn})
       when is_binary(dn) and dn != "",
       do: dn
@@ -248,6 +251,15 @@ defmodule BaudrateWeb.Helpers do
       do: dn
 
   def display_name(%Baudrate.Federation.RemoteActor{username: username}), do: username
+
+  @doc """
+  The path of a local user's profile, or `nil` for an account that deleted
+  itself — its profile is gone, so an author link renders as plain text
+  (ADR 0072). Every template that links an author uses this.
+  """
+  def author_path(%Baudrate.Setup.User{status: "deleted"}), do: nil
+  def author_path(%Baudrate.Setup.User{username: username}), do: ~p"/users/#{username}"
+  def author_path(_), do: nil
 
   @doc """
   Returns the best profile URL for a remote actor.
@@ -301,6 +313,7 @@ defmodule BaudrateWeb.Helpers do
   def translate_status("active"), do: gettext("active")
   def translate_status("pending"), do: gettext("pending")
   def translate_status("banned"), do: gettext("banned")
+  def translate_status("deleted"), do: gettext("deleted")
   def translate_status(other), do: other
 
   @doc """
@@ -501,6 +514,15 @@ defmodule BaudrateWeb.Helpers do
         "A move of your account to another server was requested. It will be sent after 24 hours unless you cancel it."
       )
 
+  def notification_text("account_deletion_requested"),
+    do:
+      gettext(
+        "Deleting your account was requested. It will happen in 7 days unless you sign in again, which cancels it."
+      )
+
+  def notification_text("account_deletion_cancelled"),
+    do: gettext("A pending deletion of your account was cancelled.")
+
   def notification_text("account_move_cancelled"),
     do: gettext("A pending move of your account was cancelled.")
 
@@ -587,6 +609,7 @@ defmodule BaudrateWeb.Helpers do
   # Everything `Auth.ensure_can_interact/1` can refuse with. Kept in one place
   # so a LiveView cannot handle three of the four and shrug at the fourth.
   @gate_refusals [
+    :account_deleted,
     :account_moved,
     :account_silenced,
     :account_suspended,
@@ -754,6 +777,9 @@ defmodule BaudrateWeb.Helpers do
   def interaction_refused_message(:banned, _user),
     do: gettext("Your account has been banned.")
 
+  def interaction_refused_message(:account_deleted, _user),
+    do: gettext("This account has been deleted.")
+
   def interaction_refused_message(:account_silenced, user),
     do: sanction_message(gettext("Your account is silenced and cannot post."), user, "silence")
 
@@ -852,6 +878,8 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("account_alias_removed"), do: "hero-link-slash"
   def notification_icon("account_move_requested"), do: "hero-truck"
   def notification_icon("account_move_cancelled"), do: "hero-x-circle"
+  def notification_icon("account_deletion_requested"), do: "hero-trash"
+  def notification_icon("account_deletion_cancelled"), do: "hero-arrow-uturn-left"
   def notification_icon("account_move_failed"), do: "hero-exclamation-triangle"
   def notification_icon("account_moved"), do: "hero-truck"
   def notification_icon("account_redirect_removed"), do: "hero-arrow-uturn-left"

@@ -89,7 +89,8 @@ defmodule BaudrateWeb.RemoteFollowController do
   # rendered the form.
   defp target(%{"type" => "user", "name" => username}) when is_binary(username) do
     with true <- Setup.federation_enabled?(),
-         %{status: status} = user when status != "banned" <- Auth.get_user_by_username(username),
+         %{status: status} = user when status not in ["banned", "deleted"] <-
+           Auth.get_user_by_username(username),
          # A moved account is a redirect elsewhere; the local Follow button is
          # already hidden for one, so this must not offer what that withholds.
          nil <- Baudrate.AccountMigration.moved_target(user) do

@@ -319,5 +319,6 @@ defmodule BaudrateWeb.DataExportLive do
   def cancel_reason_label("totp_changed"), do: gettext("two-factor authentication changed")
   def cancel_reason_label("banned"), do: gettext("account suspended")
   def cancel_reason_label("signed_out_everywhere"), do: gettext("signed out everywhere")
+  def cancel_reason_label("account_deleted"), do: gettext("account deletion requested")
   def cancel_reason_label(_), do: nil
 end

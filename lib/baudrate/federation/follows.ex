@@ -825,6 +825,12 @@ defmodule Baudrate.Federation.Follows do
       gate != :ok ->
         gate
 
+      # An account that deleted itself is gone (ADR 0072).
+      Repo.exists?(
+        from(u in Baudrate.Setup.User, where: u.id == ^followed_id and u.status == "deleted")
+      ) ->
+        {:error, :not_found}
+
       # The *target* side of a move, which is a different rule: a moved
       # account is followed at its new address (ADR 0025).
       Baudrate.AccountMigration.ensure_not_moved(followed_id) != :ok ->

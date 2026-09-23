@@ -29,8 +29,9 @@ defmodule BaudrateWeb.UserProfileLive do
       nil ->
         raise BaudrateWeb.NotFoundError
 
-      # A banned account answers exactly as one that never existed does.
-      %{status: "banned"} ->
+      # A banned or deleted account answers exactly as one that never
+      # existed does (ADR 0057, ADR 0072).
+      %{status: status} when status in ["banned", "deleted"] ->
         raise BaudrateWeb.NotFoundError
 
       user ->

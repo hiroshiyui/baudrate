@@ -29,6 +29,9 @@ defmodule Baudrate.Auth.SessionCleaner do
       than a year, and removes stale archive temp directories (also at boot)
     * Account moves — sends moves whose 24-hour cooling-off has passed, or
       marks them failed when the send-time re-check refuses them (ADR 0025)
+    * Account deletions — carries out deletions whose seven days have passed,
+      resuming any a crashed run left `executing`; then clears the keys of
+      deleted accounts whose last deliveries are out (ADR 0072)
     * Notifications — deletes notifications older than 90 days
       (`Notification.cleanup_old_notifications/1`)
     * Stale link previews — refreshes previews older than 7 days
@@ -98,6 +101,8 @@ defmodule Baudrate.Auth.SessionCleaner do
       purge_stale_media_cache: &purge_stale_media_cache/0,
       sweep_data_exports: &sweep_data_exports/0,
       sweep_account_moves: &sweep_account_moves/0,
+      sweep_account_deletions: &sweep_account_deletions/0,
+      sweep_deleted_account_keys: &sweep_deleted_account_keys/0,
       cleanup_old_notifications: &cleanup_old_notifications/0,
       notify_ended_sanctions: &notify_ended_sanctions/0,
       purge_closed_report_evidence: &Baudrate.Moderation.purge_closed_report_evidence/0,
@@ -194,6 +199,26 @@ defmodule Baudrate.Auth.SessionCleaner do
 
     if count > 0 do
       Logger.info("session_cleaner.account_moves_processed: count=#{count}")
+    end
+  end
+
+  # Carries out account deletions whose seven days have passed, and resumes
+  # any a crashed run left `executing` (ADR 0072).
+  defp sweep_account_deletions do
+    count = Baudrate.AccountDeletion.sweep()
+
+    if count > 0 do
+      Logger.info("session_cleaner.account_deletions_completed: count=#{count}")
+    end
+  end
+
+  # Clears the signing keys of deleted accounts once their last deliveries
+  # are out and 30 days have passed (ADR 0072).
+  defp sweep_deleted_account_keys do
+    count = Baudrate.AccountDeletion.sweep_keys()
+
+    if count > 0 do
+      Logger.info("session_cleaner.deleted_account_keys_cleared: count=#{count}")
     end
   end
 

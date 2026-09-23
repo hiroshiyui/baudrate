@@ -36,7 +36,8 @@ defmodule Baudrate.Federation.Discovery do
 
   Only federated boards (public + AP-enabled) are discoverable via WebFinger.
 
-  Returns `{:ok, jrd_map}` or `{:error, reason}`.
+  Returns `{:ok, jrd_map}` or `{:error, reason}` — `:gone` for an account
+  that deleted itself.
   """
   @spec webfinger(String.t()) :: {:ok, map()} | {:error, atom()}
   def webfinger(resource) when is_binary(resource) do
@@ -48,12 +49,13 @@ defmodule Baudrate.Federation.Discovery do
           if identifier == "site" do
             {:ok, webfinger_jrd(:site, "site")}
           else
-            user = Repo.get_by(Baudrate.Setup.User, username: identifier)
-
-            if user do
-              {:ok, webfinger_jrd(:user, identifier)}
-            else
-              resolve_board_webfinger(identifier)
+            case Repo.get_by(Baudrate.Setup.User, username: identifier) do
+              # A deleted account is gone, not unknown: it keeps its name
+              # reserved, and answering 404 would let a board of that name
+              # answer for it (ADR 0072).
+              %{status: "deleted"} -> {:error, :gone}
+              nil -> resolve_board_webfinger(identifier)
+              _user -> {:ok, webfinger_jrd(:user, identifier)}
             end
           end
 
@@ -149,7 +151,7 @@ defmodule Baudrate.Federation.Discovery do
     alias Baudrate.Content.{Article, Comment}
     alias Baudrate.Setup.User
 
-    members = from(u in User, where: not u.is_bot and u.status != "banned")
+    members = from(u in User, where: not u.is_bot and u.status not in ["banned", "deleted"])
     today = Date.utc_today()
 
     %{

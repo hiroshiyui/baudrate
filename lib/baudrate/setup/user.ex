@@ -154,6 +154,10 @@ defmodule Baudrate.Setup.User do
     field :onboarded_at, :utc_datetime
     field :recovery_notice_dismissed_at, :utc_datetime
 
+    # When this account deleted itself and became a tombstone (ADR 0072).
+    # Written only by `tombstone_changeset/1`.
+    field :deleted_at, :utc_datetime
+
     belongs_to :role, Baudrate.Setup.Role
     belongs_to :invited_by, __MODULE__
 
@@ -294,6 +298,7 @@ defmodule Baudrate.Setup.User do
     |> cast(attrs, [:status])
     |> validate_required([:status])
     |> validate_inclusion(:status, ["active", "pending"])
+    |> refuse_deleted()
   end
 
   @doc """
@@ -323,6 +328,7 @@ defmodule Baudrate.Setup.User do
     |> validate_required([:status, :banned_at])
     |> validate_inclusion(:status, ["banned"])
     |> validate_length(:ban_reason, max: 500)
+    |> refuse_deleted()
   end
 
   @doc "Changeset for unbanning a user: resets status to `\"active\"` and clears ban fields."
@@ -333,7 +339,15 @@ defmodule Baudrate.Setup.User do
     |> validate_inclusion(:status, ["active"])
     |> put_change(:banned_at, nil)
     |> put_change(:ban_reason, nil)
+    |> refuse_deleted()
   end
+
+  # A tombstone is final (ADR 0072): banning it and then unbanning it would
+  # otherwise bring a deleted account back as "active".
+  defp refuse_deleted(%Ecto.Changeset{data: %{status: "deleted"}} = changeset),
+    do: add_error(changeset, :status, "this account has been deleted")
+
+  defp refuse_deleted(changeset), do: changeset
 
   @doc "Changeset for updating a user's role assignment."
   def role_changeset(user, attrs) do
@@ -424,6 +438,48 @@ defmodule Baudrate.Setup.User do
     |> cast(attrs, [:dm_access])
     |> validate_required([:dm_access])
     |> validate_inclusion(:dm_access, ["anyone", "followers", "nobody"])
+  end
+
+  @doc """
+  Turns a self-deleted account into a tombstone (ADR 0072).
+
+  The row is never deleted — other members' comments, DMs, reports and the
+  invite tree point at it — so this clears everything personal and keeps
+  only what identifies the row and what is a record rather than a profile:
+  the username (which stays reserved), the role, `is_bot`, the ban and
+  terms fields, `moved_to`/`moved_at`, `invited_by_id` (the ban-chain
+  lineage) and the signing keys, which `Baudrate.AccountDeletion` clears
+  once the account's last deliveries are out.
+
+  The password becomes a bcrypt hash of random bytes: the column is NOT
+  NULL, and a non-bcrypt value would make `Bcrypt.verify_pass/2` error.
+  Nothing here is cast from params.
+  """
+  def tombstone_changeset(user) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    change(user,
+      status: "deleted",
+      deleted_at: now,
+      display_name: nil,
+      bio: nil,
+      signature: nil,
+      profile_fields: [],
+      also_known_as: [],
+      avatar_id: nil,
+      hashed_password: Bcrypt.hash_pwd_salt(Base.encode64(:crypto.strong_rand_bytes(32))),
+      totp_secret: nil,
+      totp_enabled: false,
+      totp_enabled_at: nil,
+      totp_last_used_step: nil,
+      preferred_locales: [],
+      time_zone: nil,
+      notification_preferences: %{},
+      dm_access: "nobody",
+      last_active_on: nil,
+      onboarded_at: nil,
+      recovery_notice_dismissed_at: nil
+    )
   end
 
   @doc """

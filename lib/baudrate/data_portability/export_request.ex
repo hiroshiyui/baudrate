@@ -36,7 +36,7 @@ defmodule Baudrate.DataPortability.ExportRequest do
   @statuses ~w(pending ready completed cancelled expired)
   @active_statuses ~w(pending ready)
   @sources ~w(self_service sysop)
-  @cancel_reasons ~w(user password_changed totp_changed banned suspended signed_out_everywhere account_reset)
+  @cancel_reasons ~w(user password_changed totp_changed banned suspended signed_out_everywhere account_reset account_deleted)
 
   schema "export_requests" do
     field :status, :string, default: "pending"

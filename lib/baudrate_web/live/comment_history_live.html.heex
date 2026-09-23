@@ -68,12 +68,12 @@
               </td>
               <td>
                 <span :if={version.editor}>
-                  <.link
-                    navigate={~p"/users/#{version.editor.username}"}
+                  <.author_link
+                    user={version.editor}
                     class="comment-history-editor-link link link-hover"
                   >
                     {display_name(version.editor)}
-                  </.link>
+                  </.author_link>
                 </span>
                 <span :if={!version.editor} class="text-base-content/70">
                   {gettext("Unknown")}

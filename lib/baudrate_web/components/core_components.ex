@@ -698,8 +698,15 @@ defmodule BaudrateWeb.CoreComponents do
   end
 
   def avatar(assigns) do
-    name = assigns.user.display_name || assigns.user.username
-    assigns = assign(assigns, :initial, String.first(name) |> String.upcase())
+    # A deleted account keeps its username, and its initial would still be a
+    # trace of it (ADR 0072); it gets a neutral mark instead.
+    initial =
+      case assigns.user do
+        %{status: "deleted"} -> "·"
+        user -> (user.display_name || user.username) |> String.first() |> String.upcase()
+      end
+
+    assigns = assign(assigns, :initial, initial)
 
     ~H"""
     <div
@@ -727,6 +734,24 @@ defmodule BaudrateWeb.CoreComponents do
         </span>
       </div>
     </div>
+    """
+  end
+
+  @doc """
+  Links a local author's name to their profile, or renders it as plain text
+  when the account deleted itself and has no profile (ADR 0072).
+  """
+  attr :user, :any, required: true
+  attr :id, :string, default: nil
+  attr :class, :any, default: nil
+  slot :inner_block, required: true
+
+  def author_link(assigns) do
+    assigns = assign(assigns, :path, BaudrateWeb.Helpers.author_path(assigns.user))
+
+    ~H"""
+    <.link :if={@path} id={@id} navigate={@path} class={@class}>{render_slot(@inner_block)}</.link>
+    <span :if={!@path} id={@id} class={[@class, "author-deleted"]}>{render_slot(@inner_block)}</span>
     """
   end
 

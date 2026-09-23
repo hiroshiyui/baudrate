@@ -489,7 +489,7 @@ defmodule Baudrate.Auth.Recovery do
     # good for 24 hours and an account can be banned inside that window.
     # `SessionController.create/2` re-checks for the same reason. The refusal
     # is `:invalid`, like every other one, so the page stays uninformative.
-    if user.status == "banned" do
+    if user.status in ["banned", "deleted"] do
       {:error, :invalid}
     else
       do_apply_reset(user, reset, password, password_confirmation)

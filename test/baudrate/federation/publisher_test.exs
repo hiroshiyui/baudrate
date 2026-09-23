@@ -1548,6 +1548,13 @@ defmodule Baudrate.Federation.PublisherTest do
       assert inbox_urls() == []
     end
 
+    # ADR 0072: an account that deleted itself is withdrawn wherever its
+    # posts lived, private boards included — the Delete carries no content.
+    test "a deleted account's Delete(Person) goes out", %{user: user, remote: remote} do
+      assert {:ok, 1} = Publisher.publish_actor_deleted(user)
+      assert inbox_urls() == [remote.inbox]
+    end
+
     # An edit is a publication, not a withdrawal: it carries the whole body,
     # so a comment in a board that does not federate must not start
     # federating because its author fixed a typo (ADR 0043, ADR 0060).

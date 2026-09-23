@@ -162,6 +162,7 @@ defmodule Baudrate.Federation do
   # --- Actor Rendering ---
 
   defdelegate user_actor(user), to: ActorRenderer
+  defdelegate user_tombstone(user), to: ActorRenderer
   defdelegate board_actor(board), to: ActorRenderer
   defdelegate site_actor(), to: ActorRenderer
   defdelegate render_bio_html(bio), to: ActorRenderer

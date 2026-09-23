@@ -198,4 +198,162 @@
       </.link>
     </div>
   </div>
+
+  <section
+    id="profile-account-deletion"
+    class="profile-account-deletion"
+    aria-labelledby="profile-account-deletion-heading"
+  >
+    <h2
+      id="profile-account-deletion-heading"
+      class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+    >
+      {gettext("Delete Your Account")}
+    </h2>
+    <%= if @deletion_eligibility == :ok do %>
+      <div
+        id="profile-account-deletion-explained"
+        class="profile-account-deletion-explained text-sm space-y-2 mb-3"
+      >
+        <p>
+          {gettext(
+            "Your profile, security keys, sessions, drafts and the text of your direct messages are removed. Your username stays reserved and cannot be registered again."
+          )}
+        </p>
+        <p>
+          {gettext(
+            "It happens 7 days after you ask, and signing in again before then cancels it."
+          )}
+        </p>
+        <p>
+          {gettext(
+            "Your articles and comments stay, shown as \"deleted account\", unless you choose to withdraw them below. Your replies to posts from other servers stay either way."
+          )}
+        </p>
+        <p>
+          {gettext(
+            "Other servers are told the account is gone, and most of them then remove everything it posted there."
+          )}
+        </p>
+        <p :if={@can_export} id="profile-account-deletion-export">
+          {gettext(
+            "Want a copy first? Export your data and download it before you ask: asking cancels an export in progress."
+          )}
+          <.link
+            id="profile-account-deletion-export-link"
+            navigate={~p"/profile/export"}
+            class="profile-account-deletion-export-link link"
+          >
+            {gettext("Export Your Data")}
+          </.link>
+        </p>
+      </div>
+
+      <%!-- No phx-change: a re-render would erase the typed password. --%>
+      <.form
+        for={@deletion_form}
+        id="account-deletion-form"
+        class="account-deletion-form space-y-3"
+        phx-submit="request_deletion"
+      >
+        <div class="form-control">
+          <label
+            id="account-deletion-withdraw-label"
+            class="account-deletion-withdraw-label label cursor-pointer justify-start gap-2"
+            for="account-deletion-withdraw"
+          >
+            <input type="hidden" name="deletion[withdraw_content]" value="false" />
+            <input
+              type="checkbox"
+              id="account-deletion-withdraw"
+              name="deletion[withdraw_content]"
+              value="true"
+              checked={@deletion_form[:withdraw_content].value == "true"}
+              class="account-deletion-withdraw checkbox checkbox-sm"
+              aria-describedby="account-deletion-withdraw-hint"
+            />
+            <span class="label-text">{gettext("Also withdraw my articles and comments")}</span>
+          </label>
+          <p
+            id="account-deletion-withdraw-hint"
+            class="account-deletion-withdraw-hint text-xs text-base-content/70"
+          >
+            {gettext(
+              "Withdrawing an article also hides every reply to it, including other members'. After 90 days they are deleted for good."
+            )}
+          </p>
+        </div>
+        <div class="form-control">
+          <label
+            id="account-deletion-password-label"
+            class="account-deletion-label label"
+            for="account-deletion-password"
+          >
+            <span class="label-text">{gettext("Password")}</span>
+          </label>
+          <input
+            type="password"
+            id="account-deletion-password"
+            name="deletion[password]"
+            class="account-deletion-password input input-bordered input-sm w-full max-w-xs"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <div :if={@current_user.totp_enabled} class="form-control">
+          <label
+            id="account-deletion-code-label"
+            class="account-deletion-label label"
+            for="account-deletion-code"
+          >
+            <span class="label-text">{gettext("Current TOTP Code")}</span>
+          </label>
+          <input
+            type="text"
+            id="account-deletion-code"
+            name="deletion[code]"
+            class="account-deletion-code input input-bordered input-sm w-full max-w-xs tracking-widest"
+            inputmode="numeric"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            autocomplete="one-time-code"
+            required
+            aria-describedby="account-deletion-code-hint"
+          />
+          <.totp_code_hint id="account-deletion-code-hint" />
+        </div>
+        <button
+          id="account-deletion-submit"
+          type="submit"
+          class="account-deletion-submit btn btn-sm btn-error"
+          data-confirm={
+            gettext("Delete your account in 7 days? Signing in again before then cancels it.")
+          }
+          phx-disable-with={gettext("Requesting...")}
+        >
+          <.icon name="hero-trash" class="w-4 h-4 mr-1" />
+          {gettext("Delete My Account")}
+        </button>
+      </.form>
+    <% else %>
+      <p
+        id="profile-account-deletion-ineligible"
+        class="profile-account-deletion-ineligible text-sm text-base-content/70"
+      >
+        {deletion_ineligible_message(elem(@deletion_eligibility, 1))}
+      </p>
+    <% end %>
+
+    <%!-- A LiveView cannot clear its own cookie: once the request is made,
+    this form signs the session out and lands on /login with the date. --%>
+    <form
+      id="account-deletion-signout-form"
+      method="post"
+      action={~p"/account/deletion-requested"}
+      class="hidden"
+      phx-trigger-action={@trigger_deletion_signout}
+    >
+      <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+    </form>
+  </section>
 </.profile_page>

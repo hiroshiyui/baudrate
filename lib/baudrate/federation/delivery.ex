@@ -546,6 +546,8 @@ defmodule Baudrate.Federation.Delivery do
   # Normalizes the bare `:error` that `KeyStore.decrypt_private_key/1` returns
   # so the signing path never crashes with a `CaseClauseError`.
   defp ensure_local_key({:ok, entity}), do: normalize_key(KeyStore.decrypt_private_key(entity))
+  # A deleted account whose key was cleared after its last deliveries (ADR 0072).
+  defp ensure_local_key({:error, :account_deleted} = error), do: error
   defp ensure_local_key(_), do: {:error, :no_private_key}
 
   defp normalize_key({:ok, _pem} = ok), do: ok

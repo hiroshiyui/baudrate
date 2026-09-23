@@ -57,12 +57,12 @@
               <td>{"##{length(@revisions) - index}"}</td>
               <td>
                 <span :if={revision.editor}>
-                  <.link
-                    navigate={~p"/users/#{revision.editor.username}"}
+                  <.author_link
+                    user={revision.editor}
                     class="article-history-editor-link link link-hover"
                   >
                     {display_name(revision.editor)}
-                  </.link>
+                  </.author_link>
                 </span>
                 <span :if={!revision.editor} class="text-base-content/70">
                   {gettext("Unknown")}

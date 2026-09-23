@@ -71,14 +71,14 @@ defmodule BaudrateWeb.CommentComponents do
       </p>
       <div :if={!@deleted?} class="py-2">
         <div class="comment-meta flex flex-wrap items-center gap-2 text-sm text-base-content/70 mb-1">
-          <.link
+          <.author_link
             :if={@comment.user}
-            navigate={~p"/users/#{@comment.user.username}"}
+            user={@comment.user}
             class="comment-author-link inline-flex items-center gap-1 font-semibold text-base-content link link-hover"
           >
             <.avatar user={@comment.user} size={24} decorative />
             {display_name(@comment.user)}
-          </.link>
+          </.author_link>
           <a
             :if={@comment.remote_actor}
             href={remote_actor_profile_url(@comment.remote_actor)}

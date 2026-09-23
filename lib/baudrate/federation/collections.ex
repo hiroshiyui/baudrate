@@ -39,7 +39,19 @@ defmodule Baudrate.Federation.Collections do
   article that lives only in a guest-readable board whose federation the admin
   turned off is not listed here.
   """
-  def user_outbox(user, page_params \\ %{}) do
+  def user_outbox(user, page_params \\ %{})
+
+  # A banned account's outbox is empty, as its actor is bare (ADR 0072).
+  def user_outbox(%{status: "banned"} = user, page_params) do
+    outbox_uri = "#{actor_uri(:user, user.username)}/outbox"
+
+    case parse_page(page_params) do
+      nil -> build_collection_root(outbox_uri, 0)
+      page -> build_collection_page(outbox_uri, [], page, false)
+    end
+  end
+
+  def user_outbox(user, page_params) do
     outbox_uri = "#{actor_uri(:user, user.username)}/outbox"
 
     case parse_page(page_params) do

@@ -230,13 +230,13 @@
       <div class="board-article-meta flex flex-wrap items-center gap-1 text-sm text-base-content/70 mt-1">
         <span :if={article.user} class="inline-flex items-center gap-1">
           {gettext("by")}
-          <.link
-            navigate={~p"/users/#{article.user.username}"}
+          <.author_link
+            user={article.user}
             class="board-article-author inline-flex items-center gap-1 link link-hover font-semibold relative z-10"
           >
             <.avatar user={article.user} size={24} />
             {display_name(article.user)}
-          </.link>
+          </.author_link>
           <span
             :if={article.user.is_bot}
             class="badge badge-sm badge-ghost ml-1"

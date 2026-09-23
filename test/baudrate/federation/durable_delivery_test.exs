@@ -101,6 +101,25 @@ defmodule Baudrate.Federation.DurableDeliveryTest do
 
       assert queued?("Create", remote.inbox)
     end
+
+    # ADR 0072: the account's Delete(Person) commits with the tombstone.
+    test "a deleted account's Delete(Person) is queued", %{user: user, remote: remote} do
+      {:ok, deletion} =
+        Baudrate.AccountDeletion.request(user, %{password: "Password123!x"},
+          ip_address: "203.0.113.4"
+        )
+
+      past = DateTime.utc_now() |> DateTime.add(-60, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(d in Baudrate.AccountDeletion.Deletion, where: d.id == ^deletion.id),
+        set: [execute_after: past]
+      )
+
+      Baudrate.AccountDeletion.sweep()
+
+      assert queued?("Delete", remote.inbox)
+    end
   end
 
   describe "atomicity" do

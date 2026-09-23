@@ -453,6 +453,7 @@ defmodule BaudrateWeb.Router do
     end
 
     delete "/logout", SessionController, :delete
+    post "/account/deletion-requested", SessionController, :deletion_requested
   end
 
   # Handle redirect — Mastodon and other AP implementations use the actor `url`

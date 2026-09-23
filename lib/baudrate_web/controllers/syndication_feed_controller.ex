@@ -99,7 +99,7 @@ defmodule BaudrateWeb.SyndicationFeedController do
   def user_rss(conn, %{"username" => username}) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <- Auth.get_user_by_username(username),
-         false <- user.status == "banned" do
+         false <- user.status in ["banned", "deleted"] do
       articles = Content.list_recent_public_articles_by_user(user.id)
       base = BaudrateWeb.Endpoint.url()
 
@@ -118,7 +118,7 @@ defmodule BaudrateWeb.SyndicationFeedController do
   def user_atom(conn, %{"username" => username}) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <- Auth.get_user_by_username(username),
-         false <- user.status == "banned" do
+         false <- user.status in ["banned", "deleted"] do
       articles = Content.list_recent_public_articles_by_user(user.id)
       base = BaudrateWeb.Endpoint.url()
 

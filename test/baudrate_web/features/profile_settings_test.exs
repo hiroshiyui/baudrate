@@ -55,4 +55,29 @@ defmodule BaudrateWeb.Features.ProfileSettingsTest do
     assert_has(session, Query.css("#profile-sessions-status", text: "Session signed out."))
     wait_for_path(other_device, "/login")
   end
+
+  # ADR 0072: the page signs its own session out through a form post, and the
+  # next sign-in cancels the deletion — both need a real browser to see.
+  feature "asking to delete the account signs out, and signing in again cancels it", %{
+    session: session
+  } do
+    user = setup_user("user")
+
+    session
+    |> log_in_via_browser(user)
+    |> visit("/profile/account")
+    |> fill_in(Query.css("#account-deletion-password"), with: "Password123!x")
+    |> execute_script("window.confirm = () => true")
+    |> click(Query.css("#account-deletion-submit"))
+    |> wait_for_path("/login")
+    |> assert_has(Query.text("will be deleted on", minimum: 1))
+
+    assert Baudrate.AccountDeletion.open(user.id)
+
+    session
+    |> submit_login_form(user, "Password123!x")
+    |> assert_has(Query.text("Your account deletion has been cancelled.", minimum: 1))
+
+    refute Baudrate.AccountDeletion.open(user.id)
+  end
 end

@@ -278,7 +278,7 @@
                 {gettext("Approve")}
               </button>
               <button
-                :if={user.status != "banned" && user.id != @current_user.id}
+                :if={user.status not in ["banned", "deleted"] && user.id != @current_user.id}
                 id={"admin-users-ban-#{user.id}"}
                 phx-click="show_ban_modal"
                 phx-value-id={user.id}
