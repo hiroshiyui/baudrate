@@ -100,8 +100,13 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:ap_alternate_url, ap_alternate_url(article))
         # "Unlisted" is a word with a promise in it, so the page keeps it
         # (ADR 0057). `follow` because the board it sits in is still worth
-        # crawling; only this page is held back.
-        |> assign(:noindex, article.visibility == "unlisted")
+        # crawling; only this page is held back. An author who opted out of
+        # discovery is held back the same way (ADR 0073).
+        |> assign(
+          :noindex,
+          article.visibility == "unlisted" or
+            match?(%{discoverable: false}, article.user)
+        )
         |> assign(:can_forward, Content.can_forward_article?(current_user, article))
         |> assign(:forward_search_open, false)
         |> assign(:forward_search_results, [])

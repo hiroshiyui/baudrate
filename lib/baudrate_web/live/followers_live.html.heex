@@ -23,6 +23,87 @@
     )}
   </p>
 
+  <p id="follow-requests-status" class="sr-only" role="status">{@requests_status}</p>
+
+  <section
+    :if={@local_requests != [] or @remote_requests != []}
+    id="follow-requests"
+    class="follow-requests space-y-2"
+    aria-labelledby="follow-requests-heading"
+  >
+    <h2 id="follow-requests-heading" class="follow-requests-heading text-lg font-semibold">
+      {gettext("Requests")}
+      <span class="follow-requests-count badge badge-primary ml-1">
+        {length(@local_requests) + length(@remote_requests)}
+      </span>
+    </h2>
+    <ul id="follow-requests-list" class="follow-requests-list space-y-2">
+      <li
+        :for={user <- @local_requests}
+        id={"follow-request-local-#{user.id}"}
+        class="follow-request flex flex-wrap items-center gap-3 bg-base-200 rounded p-3 min-w-0"
+      >
+        <.avatar user={user} size={36} />
+        <span class="follow-request-name font-semibold break-words min-w-0 flex-1">
+          {display_name(user)}
+          <span class="text-sm font-normal text-base-content/70">@{user.username}</span>
+        </span>
+        <button
+          id={"follow-request-approve-local-#{user.id}"}
+          type="button"
+          class="follow-request-approve btn btn-sm btn-primary"
+          phx-click="approve_local"
+          phx-value-id={user.id}
+          aria-label={gettext("Approve %{name}", name: display_name(user))}
+        >
+          {gettext("Approve")}
+        </button>
+        <button
+          id={"follow-request-decline-local-#{user.id}"}
+          type="button"
+          class="follow-request-decline btn btn-sm btn-ghost"
+          phx-click="decline_local"
+          phx-value-id={user.id}
+          aria-label={gettext("Decline %{name}", name: display_name(user))}
+        >
+          {gettext("Decline Request")}
+        </button>
+      </li>
+      <li
+        :for={row <- @remote_requests}
+        id={"follow-request-remote-#{row.id}"}
+        class="follow-request flex flex-wrap items-center gap-3 bg-base-200 rounded p-3 min-w-0"
+      >
+        <span class="follow-request-name font-semibold break-all min-w-0 flex-1">
+          {if row.remote_actor, do: display_name(row.remote_actor), else: row.follower_uri}
+          <span :if={row.remote_actor} class="text-sm font-normal text-base-content/70">
+            @{row.remote_actor.username}@{row.remote_actor.domain}
+          </span>
+        </span>
+        <button
+          id={"follow-request-approve-remote-#{row.id}"}
+          type="button"
+          class="follow-request-approve btn btn-sm btn-primary"
+          phx-click="approve_remote"
+          phx-value-id={row.id}
+          aria-label={gettext("Approve %{name}", name: row.follower_uri)}
+        >
+          {gettext("Approve")}
+        </button>
+        <button
+          id={"follow-request-decline-remote-#{row.id}"}
+          type="button"
+          class="follow-request-decline btn btn-sm btn-ghost"
+          phx-click="decline_remote"
+          phx-value-id={row.id}
+          aria-label={gettext("Decline %{name}", name: row.follower_uri)}
+        >
+          {gettext("Decline Request")}
+        </button>
+      </li>
+    </ul>
+  </section>
+
   <section
     id="followers-local"
     class="followers-local space-y-2"

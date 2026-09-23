@@ -125,7 +125,7 @@ defmodule Baudrate.Federation.Collections do
 
         follower_uris =
           from(f in Follower,
-            where: f.actor_uri == ^actor_uri_value,
+            where: f.actor_uri == ^actor_uri_value and not is_nil(f.accepted_at),
             order_by: [desc: f.inserted_at, desc: f.id],
             offset: ^offset,
             limit: ^@items_per_page,

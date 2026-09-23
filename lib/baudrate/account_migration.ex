@@ -832,7 +832,9 @@ defmodule Baudrate.AccountMigration do
                 # `refollow/3` runs this in.
                 if follower.id != target.id and
                      not Federation.local_follows?(follower.id, target.id) do
-                  Federation.create_local_follow(follower, target)
+                  # A Move carries follows over; it must not turn them into
+                  # requests for a target who approves manually (ADR 0073).
+                  Federation.create_local_follow(follower, target, system: true)
                 end
               end)
 

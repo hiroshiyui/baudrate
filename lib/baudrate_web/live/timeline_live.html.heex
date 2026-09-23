@@ -478,28 +478,40 @@
             </div>
           </div>
 
-          <h2
-            :if={item.timeline_item.title}
-            class="timeline-item-title font-semibold text-lg mb-1 break-words"
+          <.muted_collapse
+            id={"timeline-item-#{item.timeline_item.id}-muted"}
+            matchers={@muted_matchers}
+            texts={[
+              item.timeline_item.title,
+              item.timeline_item.summary,
+              Baudrate.Moderation.PatternMatcher.text_of(
+                item.timeline_item.body_html || item.timeline_item.body
+              )
+            ]}
           >
-            {item.timeline_item.title}
-          </h2>
+            <h2
+              :if={item.timeline_item.title}
+              class="timeline-item-title font-semibold text-lg mb-1 break-words"
+            >
+              {item.timeline_item.title}
+            </h2>
 
-          <.content_warning
-            :if={Baudrate.Content.ContentWarning.warned?(item.timeline_item)}
-            id={"timeline-item-#{item.timeline_item.id}-content-warning"}
-            summary={item.timeline_item.summary}
-          >
-            <p class="timeline-item-body text-sm text-base-content/80 break-words">
+            <.content_warning
+              :if={Baudrate.Content.ContentWarning.warned?(item.timeline_item)}
+              id={"timeline-item-#{item.timeline_item.id}-content-warning"}
+              summary={item.timeline_item.summary}
+            >
+              <p class="timeline-item-body text-sm text-base-content/80 break-words">
+                {digest(item.timeline_item.body_html)}
+              </p>
+            </.content_warning>
+            <p
+              :if={!Baudrate.Content.ContentWarning.warned?(item.timeline_item)}
+              class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words"
+            >
               {digest(item.timeline_item.body_html)}
             </p>
-          </.content_warning>
-          <p
-            :if={!Baudrate.Content.ContentWarning.warned?(item.timeline_item)}
-            class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words"
-          >
-            {digest(item.timeline_item.body_html)}
-          </p>
+          </.muted_collapse>
 
           <div
             :if={timeline_images(item.timeline_item) != []}
@@ -769,20 +781,32 @@
                   <span class="text-xs text-base-content/60 ml-1">
                     {format_datetime(reply.inserted_at)}
                   </span>
-                  <.content_warning
-                    :if={Baudrate.Content.ContentWarning.warned?(reply)}
-                    id={"timeline-reply-#{reply.id}-content-warning"}
+                  <.muted_collapse
+                    id={"timeline-reply-#{reply.id}-muted"}
                     class="mt-0.5"
-                    summary={reply.summary}
+                    matchers={@muted_matchers}
+                    own={reply.user_id == @current_user.id}
+                    texts={[
+                      reply.summary,
+                      Baudrate.Moderation.PatternMatcher.text_of(reply.body_html || reply.body)
+                    ]}
                   >
-                    <p class="text-sm text-base-content/80">{digest(reply.body_html)}</p>
-                  </.content_warning>
-                  <p
-                    :if={!Baudrate.Content.ContentWarning.warned?(reply)}
-                    class="text-sm text-base-content/80 mt-0.5"
-                  >
-                    {digest(reply.body_html)}
-                  </p>
+                    <.content_warning
+                      :if={Baudrate.Content.ContentWarning.warned?(reply)}
+                      id={"timeline-reply-#{reply.id}-content-warning"}
+                      class="mt-0.5"
+                      summary={reply.summary}
+                    >
+                      <p class="text-sm text-base-content/80">{digest(reply.body_html)}</p>
+                    </.content_warning>
+                    <p
+                      :if={!Baudrate.Content.ContentWarning.warned?(reply)}
+                      class="text-sm text-base-content/80 mt-0.5"
+                    >
+                      {digest(reply.body_html)}
+                    </p>
+                  </.muted_collapse>
+
                   <%!-- Reply image gallery --%>
                   <div
                     :if={is_list(reply.images) && reply.images != []}
@@ -895,16 +919,27 @@
             </div>
           </div>
 
-          <.link
-            navigate={~p"/articles/#{item.article.slug}"}
-            class="timeline-item-title font-semibold text-lg mb-1 link link-hover break-words"
+          <.muted_collapse
+            id={"timeline-article-#{item.article.id}-muted"}
+            matchers={@muted_matchers}
+            own={item.article.user_id == @current_user.id}
+            texts={[
+              item.article.title,
+              item.article.summary,
+              Baudrate.Moderation.PatternMatcher.text_of(item.article.body)
+            ]}
           >
-            {item.article.title}
-          </.link>
+            <.link
+              navigate={~p"/articles/#{item.article.slug}"}
+              class="timeline-item-title font-semibold text-lg mb-1 link link-hover break-words"
+            >
+              {item.article.title}
+            </.link>
 
-          <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
-            {digest(item.article.body)}
-          </p>
+            <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
+              {digest(item.article.body)}
+            </p>
+          </.muted_collapse>
 
           <div
             :if={item.article.article_images != []}
@@ -1053,9 +1088,21 @@
             </.link>
           </div>
 
-          <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
-            {digest(item.comment.body)}
-          </p>
+          <.muted_collapse
+            id={"timeline-comment-#{item.comment.id}-muted"}
+            matchers={@muted_matchers}
+            own={item.comment.user_id == @current_user.id}
+            texts={[
+              item.comment.summary,
+              Baudrate.Moderation.PatternMatcher.text_of(
+                item.comment.body_html || item.comment.body
+              )
+            ]}
+          >
+            <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
+              {digest(item.comment.body)}
+            </p>
+          </.muted_collapse>
 
           <div
             :if={item.comment.user_id != @current_user.id}
@@ -1284,9 +1331,21 @@
             </.link>
           </div>
 
-          <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
-            {digest(item.comment.body)}
-          </p>
+          <.muted_collapse
+            id={"timeline-comment-#{item.comment.id}-muted"}
+            matchers={@muted_matchers}
+            own={item.comment.user_id == @current_user.id}
+            texts={[
+              item.comment.summary,
+              Baudrate.Moderation.PatternMatcher.text_of(
+                item.comment.body_html || item.comment.body
+              )
+            ]}
+          >
+            <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
+              {digest(item.comment.body)}
+            </p>
+          </.muted_collapse>
 
           <div class="flex items-center gap-3 mt-2">
             <button

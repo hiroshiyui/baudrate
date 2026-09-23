@@ -1071,6 +1071,57 @@ defmodule BaudrateWeb.CoreComponents do
   end
 
   @doc """
+  Renders someone else's post collapsed when it matches one of the viewer's
+  muted words (ADR 0073), and untouched otherwise.
+
+  Collapsed, never removed: the post keeps its place, so page counts stay
+  right, and the reader can open it — the same `<details>` shape as
+  `content_warning/1`, working with scripting off. The summary never says
+  which word matched: the page may be on a screen someone else can see.
+
+  `matchers` is the viewer's compiled list (`@muted_matchers`, assigned by
+  `BaudrateWeb.AuthHooks`); `texts` are what the post shows — title, content
+  warning, stripped body. Pass `own` for the viewer's own post, which is
+  never collapsed. With no matchers nothing is built.
+  """
+  attr :id, :string, required: true
+  attr :matchers, :list, default: []
+  attr :texts, :list, default: []
+  attr :own, :boolean, default: false
+  attr :class, :any, default: nil
+  slot :inner_block, required: true
+
+  def muted_collapse(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :muted?,
+        assigns.own != true and
+          Baudrate.Moderation.PatternMatcher.any_match?(assigns.matchers, assigns.texts)
+      )
+
+    ~H"""
+    <details :if={@muted?} id={@id} class={["muted-words", @class]}>
+      <summary class="muted-words-summary cursor-pointer list-none flex items-center gap-2 rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-sm">
+        <.icon name="hero-speaker-x-mark" class="size-4 shrink-0 opacity-70" />
+        <span class="muted-words-text font-medium">
+          {gettext("Hidden by your muted words")}
+        </span>
+        <span class="muted-words-action ml-auto shrink-0 text-xs underline">
+          {gettext("Show")}
+        </span>
+      </summary>
+      <div class="muted-words-body mt-2">
+        {render_slot(@inner_block)}
+      </div>
+    </details>
+    <%= if !@muted? do %>
+      {render_slot(@inner_block)}
+    <% end %>
+    """
+  end
+
+  @doc """
   Renders the password policy checklist with a strength meter.
 
   `strength` is the map returned by `BaudrateWeb.Helpers.password_strength/1`

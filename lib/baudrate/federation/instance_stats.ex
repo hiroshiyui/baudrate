@@ -49,7 +49,7 @@ defmodule Baudrate.Federation.InstanceStats do
         from(f in Follower,
           join: ra in RemoteActor,
           on: f.remote_actor_id == ra.id,
-          where: ra.domain in ^domains,
+          where: ra.domain in ^domains and not is_nil(f.accepted_at),
           group_by: ra.domain,
           select: {ra.domain, count(f.id)}
         )

@@ -80,4 +80,24 @@ defmodule BaudrateWeb.Features.ProfileSettingsTest do
 
     refute Baudrate.AccountDeletion.open(user.id)
   end
+
+  # ADR 0073: a muted word collapses someone else's post behind a <details>,
+  # which has to open in a real browser, with no script of ours involved.
+  feature "a post with a muted word is folded, and opens when asked", %{session: session} do
+    reader = setup_user("user")
+    author = setup_user("user")
+    board = create_board(%{})
+    article = create_article(author, board, %{title: "The finale", body: "zzfolded spoiler text"})
+
+    {:ok, _} =
+      Baudrate.Auth.update_muted_keywords(reader, [%{"kind" => "word", "pattern" => "spoiler"}])
+
+    session
+    |> log_in_via_browser(reader)
+    |> visit("/articles/#{article.slug}")
+    |> assert_has(Query.css("details#article-#{article.id}-muted:not([open])"))
+    |> click(Query.css("#article-#{article.id}-muted summary"))
+    |> assert_has(Query.css("details#article-#{article.id}-muted[open]"))
+    |> assert_has(Query.text("zzfolded spoiler text"))
+  end
 end

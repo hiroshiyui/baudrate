@@ -28,19 +28,191 @@ defmodule Baudrate.Federation.Follows do
 
   @doc """
   Creates a follower record for a remote actor following a local actor.
+
+  With `pending: true` the row is a follow **request** (`accepted_at: nil`)
+  waiting for a member who approves followers manually (ADR 0073); it is no
+  follower anywhere until `approve_remote_follower/2` stamps it.
   """
-  @spec create_follower(String.t(), RemoteActor.t(), String.t()) ::
+  @spec create_follower(String.t(), RemoteActor.t(), String.t(), keyword()) ::
           {:ok, Follower.t()} | {:error, Ecto.Changeset.t()}
-  def create_follower(actor_uri, remote_actor, activity_id) do
+  def create_follower(actor_uri, remote_actor, activity_id, opts \\ []) do
+    accepted_at =
+      if Keyword.get(opts, :pending, false),
+        do: nil,
+        else: DateTime.utc_now() |> DateTime.truncate(:second)
+
     %Follower{}
     |> Follower.changeset(%{
       actor_uri: actor_uri,
       follower_uri: remote_actor.ap_id,
       remote_actor_id: remote_actor.id,
       activity_id: activity_id,
-      accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      accepted_at: accepted_at
     })
     |> Repo.insert()
+  end
+
+  @doc """
+  For a `Follow` that arrived again for an existing row: `:accepted` if it is
+  a follower (the sender asked again, so answer again), `:pending` if it is
+  still a request — whose `activity_id` is moved to this newest `Follow`, so
+  the eventual answer names one the sender still tracks — or `:missing`.
+  """
+  @spec refresh_follow(String.t(), RemoteActor.t(), String.t() | nil) ::
+          :accepted | :pending | :missing
+  def refresh_follow(actor_uri, remote_actor, activity_id) do
+    case Repo.one(
+           from(f in Follower,
+             where: f.actor_uri == ^actor_uri and f.follower_uri == ^remote_actor.ap_id
+           )
+         ) do
+      nil ->
+        :missing
+
+      %Follower{accepted_at: nil} = follower ->
+        if is_binary(activity_id) do
+          follower |> Ecto.Changeset.change(activity_id: activity_id) |> Repo.update()
+        end
+
+        :pending
+
+      %Follower{} ->
+        :accepted
+    end
+  end
+
+  @doc """
+  The member's waiting follow requests (ADR 0073): `%{remote: [follower rows
+  with remote_actor], local: [users]}`, oldest first.
+  """
+  def list_follow_requests(%{id: user_id, username: username}) do
+    actor_uri = Baudrate.Federation.actor_uri(:user, username)
+
+    remote =
+      from(f in Follower,
+        where: f.actor_uri == ^actor_uri and is_nil(f.accepted_at),
+        order_by: [asc: f.inserted_at, asc: f.id],
+        preload: :remote_actor
+      )
+      |> Repo.all()
+
+    local =
+      from(uf in UserFollow,
+        join: u in assoc(uf, :user),
+        where: uf.followed_user_id == ^user_id and uf.state == @state_pending,
+        order_by: [asc: uf.inserted_at, asc: uf.id],
+        select: u
+      )
+      |> Repo.all()
+
+    %{remote: remote, local: local}
+  end
+
+  @doc """
+  Approves one of the member's remote follow requests: stamps `accepted_at`
+  and queues the `Accept` in the same transaction (ADR 0034), naming the
+  request's newest `Follow`. Scoped to the member's own actor URI in the
+  query, so another member's row id is a miss.
+
+  Returns `:ok` or `{:error, :not_found}`.
+  """
+  def approve_remote_follower(user, follower_row_id) do
+    actor_uri = Baudrate.Federation.actor_uri(:user, user.username)
+
+    Baudrate.Federation.federate(
+      fn -> claim_request(actor_uri, follower_row_id) end,
+      fn follower -> queue_accept(follower, actor_uri) end
+    )
+    |> case do
+      {:ok, _} -> :ok
+      {:error, _} -> {:error, :not_found}
+    end
+  end
+
+  defp claim_request(actor_uri, follower_row_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(f in Follower,
+      where: f.id == ^follower_row_id and f.actor_uri == ^actor_uri and is_nil(f.accepted_at),
+      select: f
+    )
+    |> Repo.update_all(set: [accepted_at: now])
+    |> case do
+      {1, [follower]} -> {:ok, Repo.preload(follower, :remote_actor)}
+      _ -> {:error, :not_found}
+    end
+  end
+
+  # The Accept goes to the follower's own inbox, as for an immediate accept.
+  defp queue_accept(%Follower{remote_actor: remote_actor} = follower, actor_uri) do
+    follow = %{
+      "id" => follower.activity_id,
+      "type" => "Follow",
+      "actor" => follower.follower_uri,
+      "object" => actor_uri
+    }
+
+    Baudrate.Federation.Delivery.enqueue_accept(follow, actor_uri, remote_actor)
+  end
+
+  @doc """
+  Approves a local member's follow request (ADR 0073). No `new_follower`
+  notice follows: the member has just chosen it. Returns `{:ok, follow}` or
+  `{:error, :not_found}`.
+  """
+  def approve_local_follower(%{id: user_id}, follower_user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(uf in UserFollow,
+      where:
+        uf.followed_user_id == ^user_id and uf.user_id == ^follower_user_id and
+          uf.state == @state_pending,
+      select: uf
+    )
+    |> Repo.update_all(set: [state: @state_accepted, accepted_at: now])
+    |> case do
+      {1, [follow]} -> {:ok, follow}
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @doc """
+  Approves every waiting request, remote and local — what turning manual
+  approval off does (ADR 0073). Meant to run inside the transaction that
+  changes the setting, so the `Accept`s commit with it. Returns the count.
+  """
+  def approve_all_follow_requests(%{id: user_id, username: username}) do
+    actor_uri = Baudrate.Federation.actor_uri(:user, username)
+
+    remote_ids =
+      Repo.all(
+        from(f in Follower,
+          where: f.actor_uri == ^actor_uri and is_nil(f.accepted_at),
+          select: f.id
+        )
+      )
+
+    remote =
+      Enum.count(remote_ids, fn id ->
+        case claim_request(actor_uri, id) do
+          {:ok, follower} ->
+            queue_accept(follower, actor_uri)
+            true
+
+          _ ->
+            false
+        end
+      end)
+
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    {local, _} =
+      from(uf in UserFollow,
+        where: uf.followed_user_id == ^user_id and uf.state == @state_pending
+      )
+      |> Repo.update_all(set: [state: @state_accepted, accepted_at: now])
+
+    remote + local
   end
 
   @doc """
@@ -63,22 +235,28 @@ defmodule Baudrate.Federation.Follows do
   end
 
   @doc """
-  Returns true if the given follower relationship exists.
+  Returns true if the given follower relationship exists and is accepted.
+
+  A follow request still waiting for the member's approval
+  (`accepted_at IS NULL`, ADR 0073) is not a follower anywhere: not for
+  `dm_access`, not for who may reach a new account, not in any count.
   """
   def follower_exists?(actor_uri, follower_uri) do
     Repo.exists?(
       from(f in Follower,
-        where: f.actor_uri == ^actor_uri and f.follower_uri == ^follower_uri
+        where:
+          f.actor_uri == ^actor_uri and f.follower_uri == ^follower_uri and
+            not is_nil(f.accepted_at)
       )
     )
   end
 
   @doc """
-  Lists all followers of the given local actor URI.
+  Lists the accepted followers of the given local actor URI.
   """
   def list_followers(actor_uri) do
     from(f in Follower,
-      where: f.actor_uri == ^actor_uri,
+      where: f.actor_uri == ^actor_uri and not is_nil(f.accepted_at),
       preload: [:remote_actor],
       order_by: [desc: f.inserted_at, desc: f.id]
     )
@@ -89,7 +267,12 @@ defmodule Baudrate.Federation.Follows do
   Returns the count of followers for the given local actor URI.
   """
   def count_followers(actor_uri) do
-    Repo.one(from(f in Follower, where: f.actor_uri == ^actor_uri, select: count(f.id))) || 0
+    Repo.one(
+      from(f in Follower,
+        where: f.actor_uri == ^actor_uri and not is_nil(f.accepted_at),
+        select: count(f.id)
+      )
+    ) || 0
   end
 
   # --- User Follows (Outbound) ---
@@ -338,7 +521,7 @@ defmodule Baudrate.Federation.Follows do
 
     remote =
       from(f in Follower,
-        where: f.actor_uri == ^actor_uri,
+        where: f.actor_uri == ^actor_uri and not is_nil(f.accepted_at),
         order_by: [desc: f.inserted_at, desc: f.id],
         preload: :remote_actor
       )
@@ -808,7 +991,9 @@ defmodule Baudrate.Federation.Follows do
   `{:error, :blocked}` (either user has blocked the other) or
   `{:error, changeset}`.
   """
-  def create_local_follow(%{id: follower_id} = follower, %{id: followed_id}) do
+  def create_local_follow(follower, followed, opts \\ [])
+
+  def create_local_follow(%{id: follower_id} = follower, %{id: followed_id}, opts) do
     # Following is an interaction, so a silenced or suspended follower is
     # refused (ADR 0029). A *moved* account may still follow: a move is a
     # redirect, not a punishment, and ADR 0025 lets the person carry their
@@ -837,12 +1022,23 @@ defmodule Baudrate.Federation.Follows do
         {:error, :account_moved}
 
       true ->
-        insert_local_follow(follower, followed_id)
+        insert_local_follow(follower, followed_id, opts)
     end
   end
 
-  defp insert_local_follow(%{id: follower_id} = follower, followed_id) do
+  # A target who approves followers manually gets a request instead (ADR
+  # 0073) — except for `system: true`, the follows an account `Move` carries
+  # over, which must not silently turn into requests.
+  defp insert_local_follow(%{id: follower_id} = follower, followed_id, opts) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    pending? =
+      not Keyword.get(opts, :system, false) and
+        Repo.exists?(
+          from(u in Baudrate.Setup.User,
+            where: u.id == ^followed_id and u.manually_approves_followers
+          )
+        )
 
     ap_id =
       "#{Baudrate.Federation.actor_uri(:user, follower.username)}#follow-#{Ecto.UUID.generate()}"
@@ -852,14 +1048,17 @@ defmodule Baudrate.Federation.Follows do
       |> UserFollow.changeset(%{
         user_id: follower_id,
         followed_user_id: followed_id,
-        state: @state_accepted,
+        state: if(pending?, do: @state_pending, else: @state_accepted),
         ap_id: ap_id,
-        accepted_at: now
+        accepted_at: if(pending?, do: nil, else: now)
       })
       |> Repo.insert()
 
     with {:ok, _follow} <- result do
-      Baudrate.Notification.Hooks.notify_local_follow(follower_id, followed_id)
+      if pending?,
+        do: Baudrate.Notification.Hooks.notify_follow_request(follower_id, followed_id),
+        else: Baudrate.Notification.Hooks.notify_local_follow(follower_id, followed_id)
+
       result
     end
   end
@@ -906,6 +1105,20 @@ defmodule Baudrate.Federation.Follows do
     )
     |> Repo.all()
     |> Map.new()
+  end
+
+  @doc """
+  The state of `user_id`'s follow of `followed_user_id` — `"accepted"`,
+  `"pending"` (waiting for approval, ADR 0073) — or `nil`. For the Follow
+  button; `local_follows?/2` keeps its any-state meaning.
+  """
+  def local_follow_state(user_id, followed_user_id) do
+    Repo.one(
+      from(uf in UserFollow,
+        where: uf.user_id == ^user_id and uf.followed_user_id == ^followed_user_id,
+        select: uf.state
+      )
+    )
   end
 
   @doc """

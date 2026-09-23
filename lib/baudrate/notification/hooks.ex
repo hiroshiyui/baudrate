@@ -171,7 +171,31 @@ defmodule Baudrate.Notification.Hooks do
   end
 
   @doc """
-  Notifies the followed user when a local user follows them.
+  Tells a member who approves followers manually that another local member
+  asked to follow them (ADR 0073).
+  """
+  def notify_follow_request(follower_id, followed_id) do
+    Notification.create_notification(%{
+      type: "follow_request",
+      user_id: followed_id,
+      actor_user_id: follower_id
+    })
+  end
+
+  @doc """
+  Tells a member who approves followers manually that an account on another
+  server asked to follow them (ADR 0073).
+  """
+  def notify_remote_follow_request(user_id, remote_actor_id) do
+    Notification.create_notification(%{
+      type: "follow_request",
+      user_id: user_id,
+      actor_remote_actor_id: remote_actor_id
+    })
+  end
+
+  @doc """
+  Notifies a local member that another local member followed them.
   """
   def notify_local_follow(follower_id, followed_id) do
     Notification.create_notification(%{

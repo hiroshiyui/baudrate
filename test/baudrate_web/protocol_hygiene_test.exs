@@ -201,6 +201,24 @@ defmodule BaudrateWeb.ProtocolHygieneTest do
     end
   end
 
+  describe "terms from other vocabularies" do
+    # The scan above finds `baudrate:` literals only. A `Person` also carries
+    # three terms Mastodon defines (ADR 0073); undeclared, a consumer that
+    # expands the document drops them, and with them the member's settings.
+    test "the actor context declares manuallyApprovesFollowers, discoverable and indexable" do
+      terms =
+        Baudrate.Federation.Context.actor()
+        |> Enum.filter(&is_map/1)
+        |> Enum.reduce(%{}, &Map.merge(&2, &1))
+
+      assert terms["manuallyApprovesFollowers"] == "as:manuallyApprovesFollowers"
+      assert terms["as"] == "https://www.w3.org/ns/activitystreams#"
+      assert terms["discoverable"] == "toot:discoverable"
+      assert terms["indexable"] == "toot:indexable"
+      assert terms["toot"] == "http://joinmastodon.org/ns#"
+    end
+  end
+
   describe "an actor document may be cached, and only when that is safe" do
     test "a successful actor is cacheable" do
       user = create_user()

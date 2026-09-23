@@ -68,11 +68,10 @@ defmodule Baudrate.Moderation.ContentFilters do
   require Logger
 
   alias Baudrate.Content.Markdown
-  alias Baudrate.HtmlParser.Native, as: HtmlParser
   alias Baudrate.Moderation
   alias Baudrate.Moderation.{ContentFilter, ContentFilterCache, ContentFilterMatch, Report}
   alias Baudrate.Repo
-  alias Baudrate.Sanitizer.Native, as: Sanitizer
+  alias Baudrate.Moderation.PatternMatcher
   alias Baudrate.Setup
   alias Baudrate.Setup.User
 
@@ -218,24 +217,13 @@ defmodule Baudrate.Moderation.ContentFilters do
   end
 
   defp compile(%ContentFilter{} = filter) do
-    base = %{
+    PatternMatcher.compile(%{
       id: filter.id,
       pattern: filter.pattern,
       kind: filter.kind,
       action: filter.action,
       applies_to: filter.applies_to
-    }
-
-    case filter.kind do
-      "word" ->
-        Map.put(base, :needle, " " <> Enum.join(ContentFilter.words(filter.pattern), " ") <> " ")
-
-      "substring" ->
-        Map.put(base, :parts, String.split(filter.pattern, "*", trim: true))
-
-      "domain" ->
-        base
-    end
+    })
   end
 
   # --- Screening ---
@@ -475,76 +463,9 @@ defmodule Baudrate.Moderation.ContentFilters do
   defp string(value) when is_binary(value), do: value
   defp string(_), do: ""
 
-  # The body as a reader sees it: markup stripped, and the few entities the
-  # sanitizer writes back turned into characters.
-  defp text_of(""), do: ""
+  defp text_of(html), do: PatternMatcher.text_of(html)
 
-  defp text_of(html) do
-    html
-    |> Sanitizer.strip_tags()
-    |> String.replace(["&lt;", "&gt;", "&quot;", "&#39;", "&amp;"], fn
-      "&lt;" -> "<"
-      "&gt;" -> ">"
-      "&quot;" -> "\""
-      "&#39;" -> "'"
-      "&amp;" -> "&"
-    end)
-  end
+  defp corpus(texts, html), do: PatternMatcher.corpus(texts, html)
 
-  defp corpus(texts, html) do
-    links = if html == "", do: [], else: HtmlParser.extract_urls(html, BaudrateWeb.Endpoint.url())
-    text = (texts ++ links) |> Enum.join("\n") |> ContentFilter.normalize_text()
-    words = ContentFilter.words(text)
-
-    %{
-      text: text,
-      words: words,
-      word_line: " " <> Enum.join(words, " ") <> " ",
-      hosts: links |> Enum.map(&host/1) |> Enum.reject(&is_nil/1) |> Enum.uniq()
-    }
-  end
-
-  defp host(url) do
-    case URI.parse(url) do
-      %URI{host: host} when is_binary(host) and host != "" -> String.downcase(host)
-      _ -> nil
-    end
-  end
-
-  defp match_all(filters, corpus), do: Enum.filter(filters, &matches?(&1, corpus))
-
-  defp matches?(%{kind: "word", needle: needle}, corpus),
-    do: :binary.match(corpus.word_line, needle) != :nomatch
-
-  defp matches?(%{kind: "substring", parts: [part]}, corpus),
-    do: :binary.match(corpus.text, part) != :nomatch
-
-  defp matches?(%{kind: "substring", parts: parts}, corpus) do
-    # Every part must appear somewhere before any word is examined, which
-    # rejects nearly every post at the cost of a few scans of the text.
-    Enum.all?(parts, &(:binary.match(corpus.text, &1) != :nomatch)) and
-      Enum.any?(corpus.words, &parts_in_order?(&1, parts))
-  end
-
-  defp matches?(%{kind: "domain", pattern: domain}, corpus) do
-    suffix = "." <> domain
-    Enum.any?(corpus.hosts, &(&1 == domain or String.ends_with?(&1, suffix)))
-  end
-
-  defp matches?(_filter, _corpus), do: false
-
-  # Leftmost-first search for each part in turn is enough: a `*` matches any
-  # run inside the word, so an earlier match of one part never rules out a
-  # later part that a later match would have allowed.
-  defp parts_in_order?(_word, []), do: true
-
-  defp parts_in_order?(word, [part | rest]) do
-    case :binary.match(word, part) do
-      {start, len} ->
-        parts_in_order?(binary_part(word, start + len, byte_size(word) - start - len), rest)
-
-      :nomatch ->
-        false
-    end
-  end
+  defp match_all(filters, corpus), do: Enum.filter(filters, &PatternMatcher.matches?(&1, corpus))
 end

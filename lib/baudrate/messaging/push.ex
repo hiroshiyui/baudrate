@@ -47,9 +47,15 @@ defmodule Baudrate.Messaging.Push do
     {user_ids, ap_ids} = Auth.hidden_ids(recipient)
 
     case sender do
-      %User{id: id} -> id in user_ids
-      %RemoteActor{ap_id: ap_id} -> ap_id in ap_ids
-      _ -> false
+      %User{id: id} ->
+        id in user_ids
+
+      # One account, or its whole server (ADR 0073).
+      %RemoteActor{ap_id: ap_id, domain: domain} ->
+        ap_id in ap_ids or domain in Auth.muted_domains(recipient)
+
+      _ ->
+        false
     end
   end
 

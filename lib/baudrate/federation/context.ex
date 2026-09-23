@@ -30,6 +30,17 @@ defmodule Baudrate.Federation.Context do
 
   Adding a `baudrate:` field means adding a row here. A term with no row is a
   term nobody outside this repository can interpret.
+
+  ## Other vocabularies' terms
+
+  Three terms a `Person` carries come from elsewhere, and are declared the
+  way Mastodon declares them (ADR 0073):
+
+  | Term | Expands to | Meaning |
+  |---|---|---|
+  | `manuallyApprovesFollowers` | `as:manuallyApprovesFollowers` | follows wait for the member's approval |
+  | `discoverable` | `toot:discoverable` | may be listed in directories and member search |
+  | `indexable` | `toot:indexable` | may be indexed by search |
   """
 
   @as "https://www.w3.org/ns/activitystreams"
@@ -40,7 +51,12 @@ defmodule Baudrate.Federation.Context do
     "baudrate" => @namespace,
     "schema" => "http://schema.org/",
     "PropertyValue" => "schema:PropertyValue",
-    "value" => "schema:value"
+    "value" => "schema:value",
+    "as" => "https://www.w3.org/ns/activitystreams#",
+    "manuallyApprovesFollowers" => "as:manuallyApprovesFollowers",
+    "toot" => "http://joinmastodon.org/ns#",
+    "discoverable" => "toot:discoverable",
+    "indexable" => "toot:indexable"
   }
 
   @doc "The ActivityStreams 2.0 context URI."

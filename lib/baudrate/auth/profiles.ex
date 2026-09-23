@@ -128,6 +128,52 @@ defmodule Baudrate.Auth.Profiles do
   end
 
   @doc """
+  Replaces the member's muted words (ADR 0073). A plain update, outside
+  `with_interaction/2`: it changes only what this member sees, so a sanction
+  must not stop it, and nothing about it federates.
+  """
+  def update_muted_keywords(user, keywords) when is_list(keywords) do
+    user
+    |> User.muted_keywords_changeset(keywords)
+    |> Repo.update()
+  end
+
+  @doc """
+  Turns manual follower approval on or off (ADR 0073). Published as
+  `manuallyApprovesFollowers`, so it goes through
+  `Federation.update_actor/3` — but not through `with_interaction/2`: a
+  sanctioned member must still be able to lock their account. Turning it
+  **off** approves every waiting request in the same transaction, so their
+  `Accept`s and the `Update(Person)` commit together.
+  """
+  def update_manually_approves_followers(user, value) when is_boolean(value) do
+    Baudrate.Federation.update_actor(:user, user, fn ->
+      with {:ok, updated} <-
+             user
+             |> User.privacy_changeset(%{manually_approves_followers: value})
+             |> Repo.update() do
+        if user.manually_approves_followers and not value do
+          Baudrate.Federation.approve_all_follow_requests(updated)
+        end
+
+        {:ok, updated}
+      end
+    end)
+  end
+
+  @doc """
+  Turns discoverability on or off (ADR 0073): off means `noindex`, out of the
+  sitemap and the member search, and `discoverable`/`indexable` false on the
+  published actor — hence `Federation.update_actor/3`, and again not the
+  sanction gate.
+  """
+  def update_discoverable(user, value) when is_boolean(value) do
+    Baudrate.Federation.update_actor(:user, user, fn ->
+      user |> User.privacy_changeset(%{discoverable: value}) |> Repo.update()
+    end)
+  end
+
+  @doc """
   Updates a user's notification preferences map.
 
   The `prefs` map has notification type keys (e.g. `"mention"`) with value

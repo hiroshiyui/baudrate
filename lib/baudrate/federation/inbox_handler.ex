@@ -117,20 +117,35 @@ defmodule Baudrate.Federation.InboxHandler do
         Delivery.enqueue_reject(activity, actor_uri, remote_actor)
         :ok
       else
+        # A member who approves followers manually gets a request: the row
+        # waits with `accepted_at: nil` and no Accept is sent (ADR 0073).
+        # Boards and the site actor always accept.
+        pending? = approves_manually?(actor_uri)
+
         # The follower row and its Accept commit together (Phase 2C).
         Federation.federate(
-          fn -> Federation.create_follower(actor_uri, remote_actor, activity["id"]) end,
-          fn _follower -> Delivery.enqueue_accept(activity, actor_uri, remote_actor) end
+          fn ->
+            Federation.create_follower(actor_uri, remote_actor, activity["id"], pending: pending?)
+          end,
+          fn _follower ->
+            unless pending?, do: Delivery.enqueue_accept(activity, actor_uri, remote_actor)
+          end
         )
         |> case do
           {:ok, _follower} ->
-            notify_follow_target(actor_uri, remote_actor)
+            notify_follow_target(actor_uri, remote_actor, pending?)
             :ok
 
           {:error, %Ecto.Changeset{} = changeset} ->
             if has_unique_error?(changeset) do
-              # Already a follower: the remote side asked again, so answer again.
-              Delivery.enqueue_accept(activity, actor_uri, remote_actor)
+              # The row exists: a follower asking again is answered again; a
+              # request still waiting is not accepted by being repeated — it
+              # only moves to the newest Follow, so the answer names that one.
+              case Federation.refresh_follow(actor_uri, remote_actor, activity["id"]) do
+                :accepted -> Delivery.enqueue_accept(activity, actor_uri, remote_actor)
+                _ -> :ok
+              end
+
               :ok
             else
               {:error, :follow_failed}
@@ -2114,7 +2129,9 @@ defmodule Baudrate.Federation.InboxHandler do
         actor_uri = Federation.actor_uri(:user, username)
 
         Baudrate.Repo.exists?(
-          from(f in Baudrate.Federation.Follower, where: f.actor_uri == ^actor_uri)
+          from(f in Baudrate.Federation.Follower,
+            where: f.actor_uri == ^actor_uri and not is_nil(f.accepted_at)
+          )
         )
 
       _ ->
@@ -2242,11 +2259,23 @@ defmodule Baudrate.Federation.InboxHandler do
   # there, which is what Mastodon does, so the person being followed was
   # usually never told. The block check above has always resolved the target
   # this way; only the notification did not (3F).
-  defp notify_follow_target(actor_uri, remote_actor) do
+  defp notify_follow_target(actor_uri, remote_actor, pending?) do
     case local_user_from_actor_uri(actor_uri) do
-      %{id: user_id} -> Baudrate.Notification.Hooks.notify_remote_follow(user_id, remote_actor.id)
-      nil -> :ok
+      %{id: user_id} when pending? ->
+        Baudrate.Notification.Hooks.notify_remote_follow_request(user_id, remote_actor.id)
+
+      %{id: user_id} ->
+        Baudrate.Notification.Hooks.notify_remote_follow(user_id, remote_actor.id)
+
+      nil ->
+        :ok
     end
+  end
+
+  # Only a local *user* can approve manually; a board or the site actor, or
+  # an actor URI that names no one, always accepts.
+  defp approves_manually?(actor_uri) do
+    match?(%{manually_approves_followers: true}, local_user_from_actor_uri(actor_uri))
   end
 
   # --- Flag helpers ---

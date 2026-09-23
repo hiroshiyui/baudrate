@@ -251,6 +251,44 @@ defmodule BaudrateWeb.CrawlerSurfaceTest do
       assert html =~ ~s(<meta name="robots" content="noindex, follow">)
     end
 
+    # ADR 0073: a member who opted out of discovery asks not to be indexed,
+    # on their profile and their articles, and is not invited in the sitemap.
+    # The pages stay public (ADR 0057), so they still answer 200.
+    test "a member who opted out of discovery is noindex and not in the sitemap", %{
+      conn: conn,
+      user: user,
+      article: article
+    } do
+      listed = fn ->
+        Enum.map(Baudrate.Content.Sitemap.public_article_slugs(0, 1000), &elem(&1, 0))
+      end
+
+      assert article.slug in listed.()
+
+      {:ok, _} = Baudrate.Auth.update_discoverable(user, false)
+
+      for path <- ["/users/#{user.username}", "/articles/#{article.slug}"] do
+        html = conn |> get(path) |> html_response(200)
+        assert html =~ ~s(<meta name="robots" content="noindex, follow">), "#{path} is indexable"
+      end
+
+      refute article.slug in listed.()
+    end
+
+    # ADR 0057 keeps an unlisted article out of discovery; search is discovery
+    # by another name, and it backs the unauthenticated /ap/search.
+    test "an unlisted article is not found by search, except by its author", %{
+      user: user,
+      public_board: board
+    } do
+      {:ok, %{article: article}} = insert_unlisted_article(user, board, "quiet-searchable")
+
+      assert Baudrate.Content.search_articles(article.title, user: nil).articles == []
+
+      assert [%{id: id}] = Baudrate.Content.search_articles(article.title, user: user).articles
+      assert id == article.id
+    end
+
     test "an ordinary article does not", %{conn: conn, article: article} do
       html = conn |> get("/articles/#{article.slug}") |> html_response(200)
 

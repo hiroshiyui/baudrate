@@ -395,10 +395,12 @@ defmodule Baudrate.Notification do
     alias Baudrate.Federation.RemoteActor
 
     case Repo.get(RemoteActor, remote_id) do
-      %RemoteActor{ap_id: ap_id} ->
+      %RemoteActor{ap_id: ap_id, domain: domain} ->
         recipient = %User{id: user_id}
 
-        if Auth.blocked?(recipient, ap_id) or Auth.muted?(recipient, ap_id) do
+        # A muted server counts as a muted account from it (ADR 0073).
+        if Auth.blocked?(recipient, ap_id) or Auth.muted?(recipient, ap_id) or
+             domain in Auth.muted_domains(recipient) do
           {:ok, :skipped}
         else
           :ok

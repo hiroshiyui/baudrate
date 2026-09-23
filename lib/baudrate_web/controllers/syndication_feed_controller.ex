@@ -103,7 +103,9 @@ defmodule BaudrateWeb.SyndicationFeedController do
       articles = Content.list_recent_public_articles_by_user(user.id)
       base = BaudrateWeb.Endpoint.url()
 
-      render_feed(conn, :rss, articles, %{
+      conn
+      |> undiscoverable(user)
+      |> render_feed(:rss, articles, %{
         title: gettext("%{username}'s articles", username: user.username),
         link: base <> "/users/#{user.username}",
         description: gettext("Recent articles by %{username}", username: user.username),
@@ -122,7 +124,9 @@ defmodule BaudrateWeb.SyndicationFeedController do
       articles = Content.list_recent_public_articles_by_user(user.id)
       base = BaudrateWeb.Endpoint.url()
 
-      render_feed(conn, :atom, articles, %{
+      conn
+      |> undiscoverable(user)
+      |> render_feed(:atom, articles, %{
         title: gettext("%{username}'s articles", username: user.username),
         link: base <> "/users/#{user.username}",
         self_url: base <> "/feeds/users/#{user.username}/atom"
@@ -131,6 +135,13 @@ defmodule BaudrateWeb.SyndicationFeedController do
       _ -> send_resp(conn, 404, "Not Found")
     end
   end
+
+  # A member who opted out of discovery (ADR 0073): the feed still works for
+  # a reader who subscribed, and search engines are told not to index it.
+  defp undiscoverable(conn, %{discoverable: false}),
+    do: put_resp_header(conn, "x-robots-tag", "noindex")
+
+  defp undiscoverable(conn, _user), do: conn
 
   # --- Tag feeds ---
 

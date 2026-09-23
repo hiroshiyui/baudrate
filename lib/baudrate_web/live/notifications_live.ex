@@ -181,6 +181,7 @@ defmodule BaudrateWeb.NotificationsLive do
 
   defp target_link(%{article: %{slug: slug}}) when not is_nil(slug), do: ~p"/articles/#{slug}"
   defp target_link(%{type: "held_post"}), do: ~p"/moderation/held"
+  defp target_link(%{type: "follow_request"}), do: ~p"/followers"
   defp target_link(%{type: "post_rejected"}), do: ~p"/drafts"
   defp target_link(%{type: "data_export_" <> _}), do: ~p"/profile/export"
   defp target_link(%{type: "totp_login_failed"}), do: ~p"/profile/password"

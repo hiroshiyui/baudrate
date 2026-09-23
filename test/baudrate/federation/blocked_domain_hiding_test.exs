@@ -452,6 +452,35 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
     end
   end
 
+  describe "the personal feed's comment strand" do
+    # Remote replies on a member's own threads went into the timeline with no
+    # instance-level filter at all until 6E-3 (ADR 0073), page or count.
+    test "hides a reply from the blocked domain on the member's thread", ctx do
+      {:ok, %{article: mine}} =
+        Content.create_article(
+          %{
+            title: "mine",
+            body: "b",
+            slug: "mine-#{System.unique_integer([:positive])}",
+            user_id: ctx.user.id
+          },
+          [ctx.board.id]
+        )
+
+      create_remote_comment(mine, ctx.blocked_actor, ctx.marker)
+      create_remote_comment(mine, ctx.friendly_actor, ctx.safe)
+      block!()
+
+      result = Federation.list_timeline_items(ctx.user)
+
+      bodies = for %{source: :local_comment, comment: c} <- result.items, do: c.body
+
+      assert ctx.safe in bodies
+      refute ctx.marker in bodies
+      assert result.total == length(result.items)
+    end
+  end
+
   describe "single pages" do
     test "the article page refuses it, for everyone including an admin", ctx do
       block!()

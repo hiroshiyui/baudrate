@@ -814,6 +814,16 @@
               >
                 {gettext("Unfollow")}
               </button>
+            <% @local_user_follow_states[user.id] == "pending" -> %>
+              <button
+                id={"search-user-requested-#{user.username}"}
+                phx-click="unfollow_user"
+                phx-value-id={user.id}
+                data-confirm={gettext("Withdraw your follow request?")}
+                class="search-user-follow-btn btn btn-sm btn-outline"
+              >
+                {gettext("Follow Requested")}
+              </button>
             <% true -> %>
               <button
                 id={"search-user-follow-#{user.username}"}

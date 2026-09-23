@@ -190,6 +190,10 @@ defmodule Baudrate.DataPortability.Collector do
         end),
       "preferred_locales" => user.preferred_locales || [],
       "time_zone" => user.time_zone,
+      "muted_keywords" =>
+        Enum.map(user.muted_keywords || [], &%{"kind" => &1["kind"], "pattern" => &1["pattern"]}),
+      "manually_approves_followers" => user.manually_approves_followers,
+      "discoverable" => user.discoverable,
       "dm_access" => user.dm_access,
       "notification_preferences" => user.notification_preferences || %{},
       "role" => user.role.name,
@@ -597,7 +601,7 @@ defmodule Baudrate.DataPortability.Collector do
     remote_followers =
       Repo.all(
         from(f in Follower,
-          where: f.actor_uri == ^actor_uri(user.username, base_url),
+          where: f.actor_uri == ^actor_uri(user.username, base_url) and not is_nil(f.accepted_at),
           order_by: [asc: f.inserted_at, asc: f.id],
           preload: [:remote_actor]
         )
@@ -633,7 +637,9 @@ defmodule Baudrate.DataPortability.Collector do
       "following" => following,
       "followers" => local_followers ++ remote_followers,
       "blocks" => blocks,
-      "mutes" => mutes
+      "mutes" => mutes,
+      # Whole servers muted for the member's own views (ADR 0073).
+      "muted_domains" => user |> Baudrate.Auth.list_muted_domains() |> Enum.map(& &1.domain)
     }
   end
 

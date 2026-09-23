@@ -185,6 +185,11 @@ defmodule Baudrate.Auth do
   defdelegate list_mutes(user), to: Moderation
   defdelegate muted_user_ids(user), to: Moderation
   defdelegate muted_actor_ap_ids(user), to: Moderation
+  defdelegate mute_domain(user, input), to: Moderation
+  defdelegate unmute_domain(user, id), to: Moderation
+  defdelegate list_muted_domains(user), to: Moderation
+  defdelegate muted_domains(user), to: Moderation
+  defdelegate max_domain_mutes, to: Moderation
   defdelegate hidden_ids(user), to: Moderation
 
   # --- Sanctions (ADR 0029) ---
@@ -229,6 +234,9 @@ defmodule Baudrate.Auth do
   defdelegate update_bio(user, bio), to: Profiles
   defdelegate update_dm_access(user, value), to: Profiles
   defdelegate update_time_zone(user, zone), to: Profiles
+  defdelegate update_muted_keywords(user, keywords), to: Profiles
+  defdelegate update_manually_approves_followers(user, value), to: Profiles
+  defdelegate update_discoverable(user, value), to: Profiles
   defdelegate update_notification_preferences(user, prefs), to: Profiles
   defdelegate update_profile_fields(user, fields), to: Profiles
 

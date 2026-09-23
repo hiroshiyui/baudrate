@@ -476,7 +476,10 @@ defmodule Baudrate.AccountDeletion do
 
     # The followers are resolved here too, not by the publisher: their rows
     # are deleted in the same transaction, before the publish step runs.
-    followers = Delivery.resolve_follower_inboxes(Federation.actor_uri(:user, user.username))
+    followers =
+      Delivery.resolve_follower_inboxes(Federation.actor_uri(:user, user.username),
+        include_pending: true
+      )
 
     [followed, counterparts, replied_to]
     |> Enum.flat_map(&Repo.all/1)
@@ -494,7 +497,15 @@ defmodule Baudrate.AccountDeletion do
   # whose counters would otherwise drift. Blocks and mutes are removed only
   # where this account made them.
   defp delete_own_rows(user_id) do
-    alias Baudrate.Auth.{RecoveryCode, RecoveryContact, UserBlock, UserMute, WebAuthnCredential}
+    alias Baudrate.Auth.{
+      RecoveryCode,
+      RecoveryContact,
+      UserBlock,
+      UserDomainMute,
+      UserMute,
+      WebAuthnCredential
+    }
+
     alias Baudrate.Content.{ArticleDraft, ArticleRead, Bookmark, BoardRead, Watch}
     alias Baudrate.DataPortability.ExportRequest
     alias Baudrate.Messaging.ConversationReadCursor
@@ -516,6 +527,7 @@ defmodule Baudrate.AccountDeletion do
           ExportRequest,
           UserBlock,
           UserMute,
+          UserDomainMute,
           Notification
         ] do
       Repo.delete_all(from(r in schema, where: field(r, :user_id) == ^user_id))

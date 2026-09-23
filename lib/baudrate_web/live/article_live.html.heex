@@ -98,21 +98,32 @@
 
     <div class="divider"></div>
 
-    <.content_warning
-      :if={Baudrate.Content.ContentWarning.warned?(@article)}
-      id={"article-#{@article.id}-content-warning"}
-      summary={@article.summary}
+    <.muted_collapse
+      id={"article-#{@article.id}-muted"}
+      matchers={@muted_matchers}
+      own={@current_user && @article.user_id == @current_user.id}
+      texts={[
+        @article.title,
+        @article.summary,
+        Baudrate.Moderation.PatternMatcher.text_of(@article.body)
+      ]}
     >
-      <div class="article-body prose max-w-none">
+      <.content_warning
+        :if={Baudrate.Content.ContentWarning.warned?(@article)}
+        id={"article-#{@article.id}-content-warning"}
+        summary={@article.summary}
+      >
+        <div class="article-body prose max-w-none">
+          {BaudrateWeb.SafeHTML.markdown(@article.body)}
+        </div>
+      </.content_warning>
+      <div
+        :if={!Baudrate.Content.ContentWarning.warned?(@article)}
+        class="article-body prose max-w-none"
+      >
         {BaudrateWeb.SafeHTML.markdown(@article.body)}
       </div>
-    </.content_warning>
-    <div
-      :if={!Baudrate.Content.ContentWarning.warned?(@article)}
-      class="article-body prose max-w-none"
-    >
-      {BaudrateWeb.SafeHTML.markdown(@article.body)}
-    </div>
+    </.muted_collapse>
 
     <.link_preview
       :if={@article.link_preview && @article.link_preview.status in ["fetched", "failed"]}
@@ -706,6 +717,7 @@
           replying_to={@replying_to}
           comment_form={@comment_form}
           current_user={@current_user}
+          muted_matchers={@muted_matchers}
           comment_liked_ids={@comment_liked_ids}
           comment_like_counts={@comment_like_counts}
           comment_boosted_ids={@comment_boosted_ids}

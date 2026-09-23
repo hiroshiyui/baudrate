@@ -11,19 +11,37 @@ defmodule Baudrate.Content.Filters do
   alias Baudrate.Federation.{DomainBlock, DomainBlockCache, RemoteActor}
 
   @doc """
-  Returns `{hidden_user_ids, hidden_ap_ids}` for the given user's
-  block/mute lists. Returns `{[], []}` for guests.
+  Returns `{hidden_user_ids, hidden_remote}` for the given user's blocks and
+  mutes, or `{[], []}` for a guest.
+
+  `hidden_remote` is `{ap_ids, domains}`: the remote accounts blocked or
+  muted one by one, and the servers the member muted as a whole (ADR 0073).
+  Callers pass it to `apply_hidden_filters/3` unopened. A domain is filtered
+  as a domain — not expanded into every account known there, which for a
+  large server would be tens of thousands of ids on every query.
   """
   def hidden_filters(nil), do: {[], []}
-  def hidden_filters(current_user), do: Auth.hidden_ids(current_user)
+
+  def hidden_filters(current_user) do
+    {user_ids, ap_ids} = Auth.hidden_ids(current_user)
+    {user_ids, remote_hidden(ap_ids, Auth.muted_domains(current_user))}
+  end
+
+  defp remote_hidden(ap_ids, []), do: ap_ids
+  defp remote_hidden(ap_ids, domains), do: {ap_ids, domains}
 
   @doc """
   Applies block/mute filters to a comment-like query that has
   `user_id` and `remote_actor` associations.
+
+  The remote half is a list of AP ids, or `{ap_ids, muted_domains}` from
+  `hidden_filters/1`.
   """
   def apply_hidden_filters(query, [], []), do: query
 
-  def apply_hidden_filters(query, blocked_uids, blocked_ap_ids) do
+  def apply_hidden_filters(query, blocked_uids, blocked_remote) do
+    {blocked_ap_ids, muted_domains} = split_remote(blocked_remote)
+
     query =
       if blocked_uids != [] do
         from(c in query, where: is_nil(c.user_id) or c.user_id not in ^blocked_uids)
@@ -31,15 +49,20 @@ defmodule Baudrate.Content.Filters do
         query
       end
 
-    if blocked_ap_ids != [] do
+    if blocked_ap_ids != [] or muted_domains != [] do
       from(c in query,
         left_join: ra in assoc(c, :remote_actor),
-        where: is_nil(c.remote_actor_id) or ra.ap_id not in ^blocked_ap_ids
+        where:
+          is_nil(c.remote_actor_id) or
+            (ra.ap_id not in ^blocked_ap_ids and ra.domain not in ^muted_domains)
       )
     else
       query
     end
   end
+
+  defp split_remote({ap_ids, domains}), do: {ap_ids, domains}
+  defp split_remote(ap_ids) when is_list(ap_ids), do: {ap_ids, []}
 
   @doc """
   Applies hidden filters to article queries with SysOp board exemption.
@@ -47,19 +70,21 @@ defmodule Baudrate.Content.Filters do
   def apply_article_hidden_filters(query, nil, _board), do: query
 
   def apply_article_hidden_filters(query, current_user, board) do
-    {hidden_uids, hidden_ap_ids} = hidden_filters(current_user)
+    {hidden_uids, hidden_remote} = hidden_filters(current_user)
 
-    if hidden_uids == [] and hidden_ap_ids == [] do
+    if hidden_uids == [] and hidden_remote == [] do
       query
     else
       is_sysop = board.slug == "sysop"
-      apply_article_user_filters(query, hidden_uids, hidden_ap_ids, is_sysop)
+      apply_article_user_filters(query, hidden_uids, hidden_remote, is_sysop)
     end
   end
 
-  defp apply_article_user_filters(query, hidden_uids, hidden_ap_ids, is_sysop) do
+  defp apply_article_user_filters(query, hidden_uids, hidden_remote, is_sysop) do
     alias Baudrate.Setup.User, as: SetupUser
     alias Baudrate.Setup.Role
+
+    {hidden_ap_ids, muted_domains} = split_remote(hidden_remote)
 
     query =
       if hidden_uids != [] do
@@ -82,11 +107,13 @@ defmodule Baudrate.Content.Filters do
         query
       end
 
-    if hidden_ap_ids != [] do
+    if hidden_ap_ids != [] or muted_domains != [] do
       from(a in query,
         left_join: ra in assoc(a, :remote_actor),
         as: :article_ra,
-        where: is_nil(a.remote_actor_id) or ra.ap_id not in ^hidden_ap_ids
+        where:
+          is_nil(a.remote_actor_id) or
+            (ra.ap_id not in ^hidden_ap_ids and ra.domain not in ^muted_domains)
       )
     else
       query

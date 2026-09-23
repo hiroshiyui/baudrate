@@ -1,7 +1,17 @@
 defmodule BaudrateWeb.ProfilePrivacyLive do
   @moduledoc """
   LiveView for a member's privacy settings (`/profile/privacy`): who may send
-  them direct messages, and the accounts they have blocked or muted.
+  them direct messages, whether follows wait for approval, whether they are
+  discoverable, and what they have blocked or muted — accounts, whole
+  servers, and words (ADR 0073).
+
+  ## Muted servers and words
+
+  A muted server hides that server's content from the member's own views
+  (`Auth.mute_domain/2`); muted words collapse other people's posts behind
+  "Hidden by your muted words" (`Auth.update_muted_keywords/2`). Both change
+  nothing anyone else sees, and neither refuses an interaction. The add forms
+  have no `phx-change`: nothing re-renders them while a member types.
 
   ## Blocked and Muted Accounts
 
@@ -13,6 +23,7 @@ defmodule BaudrateWeb.ProfilePrivacyLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Auth
+  alias BaudrateWeb.RateLimits
 
   import BaudrateWeb.ProfileComponents
 
@@ -21,9 +32,147 @@ defmodule BaudrateWeb.ProfilePrivacyLive do
     socket =
       socket
       |> assign_blocks_and_mutes(socket.assigns.current_user)
+      |> assign(:muted_domains, Auth.list_muted_domains(socket.assigns.current_user))
+      |> assign(:domain_form, to_form(%{"domain" => ""}, as: :domain_mute))
+      |> assign(:word_form, to_form(%{"pattern" => "", "kind" => "word"}, as: :muted_word))
+      |> assign(:privacy_status, "")
       |> assign(:page_title, gettext("Privacy"))
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_approval", _params, socket) do
+    user = socket.assigns.current_user
+
+    case Auth.update_manually_approves_followers(user, !user.manually_approves_followers) do
+      {:ok, updated} ->
+        message =
+          if updated.manually_approves_followers,
+            do: gettext("New followers now wait for your approval."),
+            else: gettext("New followers no longer wait; any waiting requests were approved.")
+
+        {:noreply, socket |> assign(:current_user, updated) |> put_flash(:info, message)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Could not change that setting."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_discoverable", _params, socket) do
+    user = socket.assigns.current_user
+
+    case Auth.update_discoverable(user, !user.discoverable) do
+      {:ok, updated} ->
+        message =
+          if updated.discoverable,
+            do: gettext("Search engines and the member search may list you again."),
+            else:
+              gettext(
+                "Search engines are asked not to index you, and the member search leaves you out."
+              )
+
+        {:noreply, socket |> assign(:current_user, updated) |> put_flash(:info, message)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Could not change that setting."))}
+    end
+  end
+
+  @impl true
+  def handle_event("mute_domain", %{"domain_mute" => %{"domain" => domain} = params}, socket) do
+    user = socket.assigns.current_user
+
+    result =
+      with :ok <- RateLimits.check_mute_user(user.id) do
+        Auth.mute_domain(user, domain)
+      end
+
+    case result do
+      {:ok, mute} ->
+        {:noreply,
+         socket
+         |> assign(:muted_domains, Auth.list_muted_domains(user))
+         |> assign(:domain_form, to_form(%{"domain" => ""}, as: :domain_mute))
+         |> assign(:privacy_status, gettext("%{domain} muted.", domain: mute.domain))}
+
+      {:error, :too_many} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You can mute at most %{count} servers.", count: Auth.max_domain_mutes())
+         )}
+
+      {:error, :rate_limited} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Too many attempts. Please try again later."))}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply,
+         assign(
+           socket,
+           :domain_form,
+           to_form(params, as: :domain_mute, errors: form_errors(changeset))
+         )}
+    end
+  end
+
+  @impl true
+  def handle_event("unmute_domain", %{"id" => id}, socket) do
+    user = socket.assigns.current_user
+
+    with {int_id, ""} <- Integer.parse(to_string(id)) do
+      Auth.unmute_domain(user, int_id)
+    end
+
+    {:noreply,
+     socket
+     |> assign(:muted_domains, Auth.list_muted_domains(user))
+     |> assign(:privacy_status, gettext("Server unmuted."))
+     |> push_event("focus", %{id: "profile-muted-domains-heading"})}
+  end
+
+  @impl true
+  def handle_event("add_muted_word", %{"muted_word" => params}, socket) do
+    user = socket.assigns.current_user
+    entry = %{"kind" => params["kind"], "pattern" => params["pattern"] || ""}
+
+    case Auth.update_muted_keywords(user, (user.muted_keywords || []) ++ [entry]) do
+      {:ok, updated} ->
+        {:noreply,
+         socket
+         |> assign_muted_words(updated)
+         |> assign(
+           :word_form,
+           to_form(%{"pattern" => "", "kind" => params["kind"] || "word"}, as: :muted_word)
+         )
+         |> assign(:privacy_status, gettext("Muted word added."))}
+
+      {:error, changeset} ->
+        {:noreply,
+         socket
+         |> assign(:word_form, to_form(params, as: :muted_word, errors: form_errors(changeset)))
+         |> put_flash(:error, muted_word_error(changeset))}
+    end
+  end
+
+  @impl true
+  def handle_event("remove_muted_word", %{"index" => index}, socket) do
+    user = socket.assigns.current_user
+
+    with {i, ""} <- Integer.parse(to_string(index)),
+         {:ok, updated} <-
+           Auth.update_muted_keywords(user, List.delete_at(user.muted_keywords || [], i)) do
+      {:noreply,
+       socket
+       |> assign_muted_words(updated)
+       |> assign(:privacy_status, gettext("Muted word removed."))
+       |> push_event("focus", %{id: "profile-muted-words-heading"})}
+    else
+      _ -> {:noreply, socket}
+    end
   end
 
   @impl true
@@ -160,6 +309,37 @@ defmodule BaudrateWeb.ProfilePrivacyLive do
     case actors[ap_id] do
       %{username: username, domain: domain} -> "@#{username}@#{domain}"
       nil -> ap_id
+    end
+  end
+
+  # Keeps the assign `muted_collapse/1` reads in step with the saved list.
+  defp assign_muted_words(socket, updated) do
+    socket
+    |> assign(:current_user, updated)
+    |> assign(
+      :muted_matchers,
+      Enum.map(updated.muted_keywords || [], &Baudrate.Moderation.PatternMatcher.compile/1)
+    )
+  end
+
+  defp form_errors(%Ecto.Changeset{errors: errors}),
+    do: Enum.map(errors, fn {field, {msg, opts}} -> {field, {msg, opts}} end)
+
+  defp muted_word_error(%Ecto.Changeset{errors: errors}) do
+    case errors[:muted_keywords] do
+      {"should have at most %{count} item(s)", _} ->
+        gettext("You can keep at most %{count} muted words.",
+          count: Baudrate.Setup.User.max_muted_keywords()
+        )
+
+      {"has no letters or numbers", _} ->
+        gettext("A muted word needs a letter or a number.")
+
+      {"with a * may hold only letters, numbers and *", _} ->
+        gettext("Text with a * may hold only letters, numbers and *.")
+
+      _ ->
+        gettext("That muted word could not be added.")
     end
   end
 end

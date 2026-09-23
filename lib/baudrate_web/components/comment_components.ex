@@ -31,6 +31,7 @@ defmodule BaudrateWeb.CommentComponents do
   attr :comment_edit_form, :any, default: nil
   attr :revision_counts, :map, default: %{}
   attr :new_comment_ids, :any, default: MapSet.new()
+  attr :muted_matchers, :list, default: []
 
   def comment_node(assigns) do
     %{comment: comment, current_user: current_user} = assigns
@@ -222,21 +223,32 @@ defmodule BaudrateWeb.CommentComponents do
           </.form>
         </div>
 
-        <.content_warning
-          :if={!@editing_this and Baudrate.Content.ContentWarning.warned?(@comment)}
-          id={"comment-#{@comment.id}-content-warning"}
-          summary={@comment.summary}
+        <.muted_collapse
+          :if={!@editing_this}
+          id={"comment-#{@comment.id}-muted"}
+          matchers={@muted_matchers}
+          own={@current_user && @comment.user_id == @current_user.id}
+          texts={[
+            @comment.summary,
+            Baudrate.Moderation.PatternMatcher.text_of(@comment.body_html || @comment.body)
+          ]}
         >
-          <div class="comment-body prose prose-sm max-w-none">
+          <.content_warning
+            :if={!@editing_this and Baudrate.Content.ContentWarning.warned?(@comment)}
+            id={"comment-#{@comment.id}-content-warning"}
+            summary={@comment.summary}
+          >
+            <div class="comment-body prose prose-sm max-w-none">
+              {comment_body(@comment)}
+            </div>
+          </.content_warning>
+          <div
+            :if={!@editing_this and !Baudrate.Content.ContentWarning.warned?(@comment)}
+            class="comment-body prose prose-sm max-w-none"
+          >
             {comment_body(@comment)}
           </div>
-        </.content_warning>
-        <div
-          :if={!@editing_this and !Baudrate.Content.ContentWarning.warned?(@comment)}
-          class="comment-body prose prose-sm max-w-none"
-        >
-          {comment_body(@comment)}
-        </div>
+        </.muted_collapse>
 
         <.link_preview
           :if={@comment.link_preview && @comment.link_preview.status in ["fetched", "failed"]}
@@ -535,6 +547,7 @@ defmodule BaudrateWeb.CommentComponents do
             replying_to={@replying_to}
             comment_form={@comment_form}
             current_user={@current_user}
+            muted_matchers={@muted_matchers}
             comment_liked_ids={@comment_liked_ids}
             comment_like_counts={@comment_like_counts}
             comment_boosted_ids={@comment_boosted_ids}

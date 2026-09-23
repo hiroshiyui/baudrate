@@ -324,13 +324,26 @@ defmodule Baudrate.Federation.Delivery do
   Uses shared inbox when available, falls back to individual inbox.
   This provides shared inbox deduplication — multiple followers at the
   same instance result in a single inbox URL.
+
+  Only accepted followers: a follow request waiting for approval is not
+  owed the member's posts (ADR 0073). `include_pending: true` is for the
+  one message a requester is owed anyway — the account's `Delete(Person)`
+  (ADR 0072), since a requester holds a cached copy of the actor too.
   """
-  def resolve_follower_inboxes(actor_uri) do
-    from(f in Follower,
-      where: f.actor_uri == ^actor_uri,
-      join: ra in assoc(f, :remote_actor),
-      select: {ra.inbox, ra.shared_inbox}
-    )
+  def resolve_follower_inboxes(actor_uri, opts \\ []) do
+    query =
+      from(f in Follower,
+        where: f.actor_uri == ^actor_uri,
+        join: ra in assoc(f, :remote_actor),
+        select: {ra.inbox, ra.shared_inbox}
+      )
+
+    query =
+      if Keyword.get(opts, :include_pending, false),
+        do: query,
+        else: from([f, _ra] in query, where: not is_nil(f.accepted_at))
+
+    query
     |> Repo.all()
     |> Enum.map(fn {inbox, shared_inbox} ->
       if shared_inbox && shared_inbox != "", do: shared_inbox, else: inbox

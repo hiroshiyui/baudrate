@@ -413,6 +413,7 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("reply_to_comment"), do: gettext("replied to your comment")
   def notification_text("mention"), do: gettext("mentioned you")
   def notification_text("new_follower"), do: gettext("followed you")
+  def notification_text("follow_request"), do: gettext("asked to follow you")
 
   def notification_text("actor_moved"),
     do: gettext("moved to a new account, which you now follow")
@@ -846,6 +847,7 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("reply_to_comment"), do: "hero-chat-bubble-left-right"
   def notification_icon("mention"), do: "hero-at-symbol"
   def notification_icon("new_follower"), do: "hero-user-plus"
+  def notification_icon("follow_request"), do: "hero-user-plus"
   def notification_icon("article_liked"), do: "hero-heart"
   def notification_icon("comment_liked"), do: "hero-heart"
   def notification_icon("article_boosted"), do: "hero-arrow-path-rounded-square"

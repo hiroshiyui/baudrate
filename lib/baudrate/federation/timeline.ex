@@ -79,6 +79,8 @@ defmodule Baudrate.Federation.Timeline do
     offset = (page - 1) * per_page
 
     {hidden_user_ids, hidden_ap_ids} = Auth.hidden_ids(user)
+    # Servers the member muted as a whole (ADR 0073), filtered by domain.
+    muted_domains = Auth.muted_domains(user)
 
     remote_query =
       from(fi in TimelineItem,
@@ -131,6 +133,22 @@ defmodule Baudrate.Federation.Timeline do
           where:
             is_nil(fi.boosted_by_actor_id) or
               fi.boosted_by_actor_id not in subquery(hidden_by_ap_id)
+        )
+      else
+        remote_query
+      end
+
+    # A muted server, as author or as booster.
+    remote_query =
+      if muted_domains != [] do
+        muted_actor_ids =
+          from(mra in RemoteActor, where: mra.domain in ^muted_domains, select: mra.id)
+
+        from([fi, _uf, ra] in remote_query,
+          where: ra.domain not in ^muted_domains,
+          where:
+            is_nil(fi.boosted_by_actor_id) or
+              fi.boosted_by_actor_id not in subquery(muted_actor_ids)
         )
       else
         remote_query
@@ -192,21 +210,25 @@ defmodule Baudrate.Federation.Timeline do
         where: is_nil(c.deleted_at) and is_nil(a.deleted_at)
       )
 
+    # Remote replies on the member's threads get what every other listing
+    # gets: nothing that is not public (a `followers_only` or `direct` reply
+    # from another server is not the member's to see here), nothing from a
+    # blocked or suspended instance, and nothing the member blocked or muted —
+    # one account, or a whole server. The strand applied none of it to remote
+    # comments until 6E-3. `apply_hidden_filters/3` keeps `is_nil(c.user_id)
+    # or …`: a remote comment has no local author, and `NULL not in (…)` is
+    # NULL, which once dropped every federated reply as soon as the viewer
+    # blocked anyone.
     comment_query =
-      if hidden_user_ids != [] do
-        # `is_nil(c.user_id) or …`: a remote comment has no local author, and
-        # `NULL not in (…)` is NULL, so every federated reply disappeared from
-        # the strand as soon as the viewer blocked or muted one person —
-        # silently, and for content the block has nothing to do with.
-        from([c, _a] in comment_query,
-          where: is_nil(c.user_id) or c.user_id not in ^hidden_user_ids
-        )
-      else
-        comment_query
-      end
+      comment_query
+      |> Filters.exclude_unservable_remote()
+      |> Filters.apply_hidden_filters(
+        hidden_user_ids,
+        if(muted_domains == [], do: hidden_ap_ids, else: {hidden_ap_ids, muted_domains})
+      )
 
     {remote_total, local_total, comment_total} =
-      count_timeline_totals(user.id, hidden_user_ids, hidden_ap_ids, allowed_roles)
+      count_timeline_totals(user.id, hidden_user_ids, hidden_ap_ids, muted_domains, allowed_roles)
 
     total = remote_total + local_total + comment_total
 
@@ -697,8 +719,15 @@ defmodule Baudrate.Federation.Timeline do
   # Counts remote timeline items, local articles, and comments in a single SQL
   # round-trip using 3 scalar subqueries. The conditions exactly mirror the
   # Ecto queries in `list_timeline_items/2`.
-  defp count_timeline_totals(user_id, hidden_user_ids, hidden_ap_ids, allowed_roles) do
+  defp count_timeline_totals(
+         user_id,
+         hidden_user_ids,
+         hidden_ap_ids,
+         muted_domains,
+         allowed_roles
+       ) do
     hidden_ap_ids_param = if hidden_ap_ids == [], do: nil, else: hidden_ap_ids
+    muted_domains_param = if muted_domains == [], do: nil, else: muted_domains
     hidden_user_ids_param = if hidden_user_ids == [], do: nil, else: hidden_user_ids
 
     # Instance-level hiding, in the same shape as `Filters.hidden_actor_ids/0`.
@@ -726,6 +755,9 @@ defmodule Baudrate.Federation.Timeline do
                AND ($2::text[] IS NULL OR NOT EXISTS (
                  SELECT 1 FROM remote_actors bra
                  WHERE bra.id = fi.boosted_by_actor_id AND bra.ap_id = ANY($2)))
+               AND ($7::text[] IS NULL OR (ra.domain <> ALL($7) AND NOT EXISTS (
+                 SELECT 1 FROM remote_actors mra
+                 WHERE mra.id = fi.boosted_by_actor_id AND mra.domain = ANY($7))))
                AND NOT EXISTS (
                  SELECT 1 FROM remote_actors hra
                  WHERE hra.id IN (fi.remote_actor_id, fi.boosted_by_actor_id)
@@ -748,7 +780,18 @@ defmodule Baudrate.Federation.Timeline do
              WHERE (a.user_id = $1 OR EXISTS(
                SELECT 1 FROM comments oc WHERE oc.article_id = a.id AND oc.user_id = $1))
                AND c.deleted_at IS NULL AND a.deleted_at IS NULL
-               AND ($3::bigint[] IS NULL OR c.user_id IS NULL OR c.user_id != ALL($3)))
+               AND ($3::bigint[] IS NULL OR c.user_id IS NULL OR c.user_id != ALL($3))
+               AND (c.remote_actor_id IS NULL OR (
+                 c.visibility IN ('public', 'unlisted')
+                 AND NOT EXISTS (
+                   SELECT 1 FROM remote_actors cra
+                   WHERE cra.id = c.remote_actor_id
+                     AND (($2::text[] IS NOT NULL AND cra.ap_id = ANY($2))
+                          OR ($7::text[] IS NOT NULL AND cra.domain = ANY($7))
+                          OR cra.suspended_at IS NOT NULL
+                          OR (CASE WHEN $5::boolean
+                                   THEN cra.domain = ANY($6::text[])
+                                   ELSE cra.domain <> ALL($6::text[]) END))))))
         """,
         [
           user_id,
@@ -756,7 +799,8 @@ defmodule Baudrate.Federation.Timeline do
           hidden_user_ids_param,
           allowed_roles,
           blocklist_mode,
-          domains_param
+          domains_param,
+          muted_domains_param
         ]
       )
 

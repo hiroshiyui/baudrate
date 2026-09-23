@@ -211,6 +211,7 @@ defmodule Baudrate.Content.Search do
             )
         )
         |> apply_search_operators(operators)
+        |> exclude_unlisted(user)
         |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
         |> Filters.exclude_unservable_remote()
 
@@ -222,6 +223,22 @@ defmodule Baudrate.Content.Search do
     else
       empty_page(:articles, pagination)
     end
+  end
+
+  # A local unlisted article stays out of discovery (ADR 0057): not in the
+  # sitemap, `noindex` on its page — and not in search, which is discovery by
+  # another name and also backs the unauthenticated `/ap/search`. Its author
+  # still finds it. Remote rows keep their own visibility rules
+  # (`exclude_unservable_remote/1`).
+  defp exclude_unlisted(query, %{id: viewer_id}) do
+    from(a in query,
+      where:
+        not is_nil(a.remote_actor_id) or a.visibility != "unlisted" or a.user_id == ^viewer_id
+    )
+  end
+
+  defp exclude_unlisted(query, _guest) do
+    from(a in query, where: not is_nil(a.remote_actor_id) or a.visibility != "unlisted")
   end
 
   @doc """

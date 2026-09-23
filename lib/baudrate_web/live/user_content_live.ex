@@ -27,7 +27,13 @@ defmodule BaudrateWeb.UserContentLive do
         raise BaudrateWeb.NotFoundError
 
       user ->
-        {:ok, assign(socket, profile_user: user, syndication_user_username: user.username)}
+        {:ok,
+         assign(socket,
+           profile_user: user,
+           syndication_user_username: user.username,
+           # Opted out of discovery (ADR 0073): readable, not indexed.
+           noindex: not user.discoverable
+         )}
     end
   end
 

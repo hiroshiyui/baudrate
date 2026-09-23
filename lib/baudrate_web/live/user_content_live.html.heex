@@ -71,12 +71,25 @@
       class="comment card bg-base-200 shadow-sm"
     >
       <div class="card-body p-4">
-        <div :if={comment.body_html} class="comment-body prose prose-sm max-w-none line-clamp-3">
-          {BaudrateWeb.SafeHTML.body_html(comment.body_html)}
-        </div>
-        <div :if={!comment.body_html} class="comment-body prose prose-sm max-w-none line-clamp-3">
-          {BaudrateWeb.SafeHTML.markdown(comment.body)}
-        </div>
+        <.muted_collapse
+          id={"user-content-comment-#{comment.id}-muted"}
+          matchers={@muted_matchers}
+          own={@current_user && comment.user_id == @current_user.id}
+          texts={[
+            comment.summary,
+            Baudrate.Moderation.PatternMatcher.text_of(comment.body_html || comment.body)
+          ]}
+        >
+          <div :if={comment.body_html} class="comment-body prose prose-sm max-w-none line-clamp-3">
+            {BaudrateWeb.SafeHTML.body_html(comment.body_html)}
+          </div>
+          <div
+            :if={!comment.body_html}
+            class="comment-body prose prose-sm max-w-none line-clamp-3"
+          >
+            {BaudrateWeb.SafeHTML.markdown(comment.body)}
+          </div>
+        </.muted_collapse>
         <div class="comment-meta text-sm text-base-content/70 mt-1">
           <time datetime={datetime_attr(comment.inserted_at)}>
             {format_datetime(comment.inserted_at)}

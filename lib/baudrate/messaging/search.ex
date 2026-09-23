@@ -59,6 +59,7 @@ defmodule Baudrate.Messaging.Search do
   defp base_query(%User{id: user_id} = user, term) do
     pattern = "%" <> Repo.sanitize_like(term) <> "%"
     {hidden_user_ids, hidden_ap_ids} = Auth.hidden_ids(user)
+    muted_domains = Auth.muted_domains(user)
 
     from(dm in DirectMessage,
       join: c in Conversation,
@@ -68,7 +69,7 @@ defmodule Baudrate.Messaging.Search do
       where: is_nil(dm.deleted_at),
       where: ilike(dm.body, ^pattern),
       where: is_nil(dm.sender_user_id) or dm.sender_user_id not in ^hidden_user_ids,
-      where: is_nil(ra.id) or ra.ap_id not in ^hidden_ap_ids
+      where: is_nil(ra.id) or (ra.ap_id not in ^hidden_ap_ids and ra.domain not in ^muted_domains)
     )
   end
 end

@@ -145,6 +145,7 @@ defmodule Baudrate.Notification.Notification do
     reply_to_comment
     mention
     new_follower
+    follow_request
     article_liked
     comment_liked
     article_boosted
@@ -251,7 +252,7 @@ defmodule Baudrate.Notification.Notification do
      ~w(reply_to_article reply_to_comment mention poll_closed watched_board_post watched_thread_reply)},
     {"reactions",
      ~w(article_liked comment_liked article_boosted comment_boosted article_forwarded)},
-    {"follows", ~w(new_follower actor_moved board_actor_moved)},
+    {"follows", ~w(new_follower follow_request actor_moved board_actor_moved)},
     {"moderation",
      ~w(moderation_report report_reviewed content_removed admin_announcement sanction_applied
         sanction_lifted sanction_ended pending_registration health_alert health_recovered held_post

@@ -291,14 +291,20 @@ defmodule BaudrateWeb.SearchLive do
              followed_user when not is_nil(followed_user) <-
                Auth.get_user(followed_user_id),
              :ok <- RateLimits.check_outbound_follow(user.id),
-             {:ok, _follow} <- Federation.create_local_follow(user, followed_user) do
+             {:ok, follow} <- Federation.create_local_follow(user, followed_user) do
+          # "pending" when the member approves followers manually (ADR 0073).
           follow_states =
-            Map.put(socket.assigns.local_user_follow_states, followed_user_id, "accepted")
+            Map.put(socket.assigns.local_user_follow_states, followed_user_id, follow.state)
+
+          message =
+            if follow.state == "pending",
+              do: gettext("Follow request sent."),
+              else: gettext("Followed successfully.")
 
           {:noreply,
            socket
            |> assign(:local_user_follow_states, follow_states)
-           |> put_flash(:info, gettext("Followed successfully."))}
+           |> put_flash(:info, message)}
         else
           {:error, :self_follow} ->
             {:noreply, put_flash(socket, :error, gettext("You cannot follow yourself."))}

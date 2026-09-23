@@ -58,12 +58,13 @@ defmodule BaudrateWeb.UserProfileLive do
             false
           end
 
-        is_following =
+        # "pending" when the member approves followers manually (ADR 0073).
+        follow_state =
           if current_user && current_user.id != user.id do
-            Federation.local_follows?(current_user.id, user.id)
-          else
-            false
+            Federation.local_follow_state(current_user.id, user.id)
           end
+
+        is_following = follow_state == "accepted"
 
         jsonld = LinkedData.user_jsonld(user) |> LinkedData.encode_jsonld()
         dc_meta = LinkedData.dublin_core_meta(:user, user)
@@ -72,6 +73,9 @@ defmodule BaudrateWeb.UserProfileLive do
          socket
          |> assign(
            profile_user: user,
+           # A member who opted out of discovery is not indexed (ADR 0073);
+           # the page itself stays public (ADR 0057).
+           noindex: not user.discoverable,
            moved_to: Baudrate.AccountMigration.moved_target(user),
            federation_enabled: Baudrate.Setup.federation_enabled?(),
            key_confirmed_at: key_confirmed_at,
@@ -80,6 +84,7 @@ defmodule BaudrateWeb.UserProfileLive do
            is_muted: is_muted,
            is_blocked: is_blocked,
            is_following: is_following,
+           is_requested: follow_state == "pending",
            page_title: user.username,
            syndication_user_username: user.username,
            linked_data_json: jsonld,
@@ -115,6 +120,17 @@ defmodule BaudrateWeb.UserProfileLive do
           profile_user = socket.assigns.profile_user
 
           case Federation.create_local_follow(current_user, profile_user) do
+            {:ok, %{state: "pending"}} ->
+              {:noreply,
+               socket
+               |> assign(:is_requested, true)
+               |> put_flash(
+                 :info,
+                 gettext("Follow request sent. %{name} approves followers.",
+                   name: display_name(profile_user)
+                 )
+               )}
+
             {:ok, _follow} ->
               {:noreply,
                socket
@@ -168,7 +184,7 @@ defmodule BaudrateWeb.UserProfileLive do
         {:ok, _} ->
           {:noreply,
            socket
-           |> assign(:is_following, false)
+           |> assign(is_following: false, is_requested: false)
            |> put_flash(:info, gettext("Unfollowed successfully."))}
 
         {:error, _} ->
@@ -241,7 +257,7 @@ defmodule BaudrateWeb.UserProfileLive do
             {:ok, _} ->
               {:noreply,
                socket
-               |> assign(is_blocked: true, is_following: false)
+               |> assign(is_blocked: true, is_following: false, is_requested: false)
                |> put_flash(:info, gettext("User blocked."))
                |> push_event("focus", %{id: "user-profile-more-actions"})}
 

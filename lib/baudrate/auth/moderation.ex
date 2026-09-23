@@ -435,6 +435,63 @@ defmodule Baudrate.Auth.Moderation do
     |> Repo.all()
   end
 
+  # --- Domain Mutes (ADR 0073) ---
+
+  @max_domain_mutes 100
+
+  @doc "The most servers one member may mute."
+  def max_domain_mutes, do: @max_domain_mutes
+
+  @doc """
+  Mutes a whole remote server for `user`'s own views. `input` may be a
+  domain, a URL or an `@user@host` handle.
+
+  Returns `{:ok, mute}`, `{:error, :too_many}` or `{:error, changeset}`.
+  """
+  def mute_domain(%User{id: user_id}, input) when is_binary(input) do
+    count =
+      Repo.aggregate(
+        from(m in Baudrate.Auth.UserDomainMute, where: m.user_id == ^user_id),
+        :count
+      )
+
+    if count >= @max_domain_mutes do
+      {:error, :too_many}
+    else
+      %Baudrate.Auth.UserDomainMute{}
+      |> Baudrate.Auth.UserDomainMute.changeset(%{user_id: user_id, domain: input})
+      |> Repo.insert()
+    end
+  end
+
+  @doc "Unmutes one of `user`'s muted servers by row id. Returns `{count, nil}`."
+  def unmute_domain(%User{id: user_id}, id) when is_integer(id) do
+    from(m in Baudrate.Auth.UserDomainMute, where: m.user_id == ^user_id and m.id == ^id)
+    |> Repo.delete_all()
+  end
+
+  @doc "`user`'s muted servers, alphabetically."
+  def list_muted_domains(%User{id: user_id}) do
+    from(m in Baudrate.Auth.UserDomainMute,
+      where: m.user_id == ^user_id,
+      order_by: [asc: m.domain, asc: m.id]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  The domains `user` has muted, as a list of strings — short by construction
+  (at most #{@max_domain_mutes}), which is why listings filter on the domain
+  itself rather than on every account known there (ADR 0073).
+  """
+  @spec muted_domains(User.t() | nil) :: [String.t()]
+  def muted_domains(%User{id: user_id}) do
+    from(m in Baudrate.Auth.UserDomainMute, where: m.user_id == ^user_id, select: m.domain)
+    |> Repo.all()
+  end
+
+  def muted_domains(_), do: []
+
   @doc """
   Returns combined hidden user IDs and AP IDs from both blocks and mutes
   in a single query using `union_all`.

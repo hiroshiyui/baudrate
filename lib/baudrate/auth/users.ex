@@ -466,9 +466,13 @@ defmodule Baudrate.Auth.Users do
     exclude_id = Keyword.get(opts, :exclude_id)
     sanitized = Repo.sanitize_like(term)
 
+    # A member who opted out of discovery is not listed here (ADR 0073). The
+    # short lists `search_users/2` serves — mentions, the message picker, the
+    # admin pickers — still find them: those are someone asking for them by
+    # name, not browsing.
     base_query =
       from(u in User,
-        where: u.status == "active" and ilike(u.username, ^"%#{sanitized}%")
+        where: u.status == "active" and u.discoverable and ilike(u.username, ^"%#{sanitized}%")
       )
 
     base_query =

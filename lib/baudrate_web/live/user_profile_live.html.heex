@@ -99,7 +99,7 @@
           {gettext("Message")}
         </.link>
         <button
-          :if={!@is_following and is_nil(@moved_to) and !@is_blocked}
+          :if={!@is_following and !@is_requested and is_nil(@moved_to) and !@is_blocked}
           id="user-profile-follow"
           type="button"
           class="btn btn-sm btn-primary"
@@ -120,6 +120,23 @@
         >
           <.icon name="hero-user-minus" class="size-4" />
           {gettext("Unfollow")}
+        </button>
+        <%!-- Waiting for the member's approval (ADR 0073); pressing it withdraws the request. --%>
+        <button
+          :if={@is_requested}
+          id="user-profile-follow-requested"
+          type="button"
+          class="btn btn-sm btn-outline"
+          phx-click="unfollow_user"
+          data-confirm={gettext("Withdraw your follow request?")}
+          aria-label={
+            gettext("Follow requested — withdraw request to %{username}",
+              username: @profile_user.username
+            )
+          }
+        >
+          <.icon name="hero-clock" class="size-4" />
+          {gettext("Follow Requested")}
         </button>
         <button
           :if={!@is_muted}
@@ -299,12 +316,23 @@
                   >
                     {article.title}
                   </.link>
-                  <p
-                    :if={article.body}
-                    class="article-digest text-sm text-base-content/80 line-clamp-3 mt-1"
+                  <.muted_collapse
+                    id={"profile-recent-article-#{article.id}-muted"}
+                    matchers={@muted_matchers}
+                    own={@current_user && article.user_id == @current_user.id}
+                    texts={[
+                      article.title,
+                      article.summary,
+                      Baudrate.Moderation.PatternMatcher.text_of(article.body)
+                    ]}
                   >
-                    {digest(article.body)}
-                  </p>
+                    <p
+                      :if={article.body}
+                      class="article-digest text-sm text-base-content/80 line-clamp-3 mt-1"
+                    >
+                      {digest(article.body)}
+                    </p>
+                  </.muted_collapse>
                   <div
                     :if={article.article_images != []}
                     class="grid grid-cols-2 gap-2 mt-2"
@@ -353,9 +381,21 @@
                       {comment.article.title}
                     </.link>
                   </div>
-                  <p :if={comment.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
-                    {digest(comment.body)}
-                  </p>
+                  <.muted_collapse
+                    id={"profile-recent-comment-#{comment.id}-muted"}
+                    matchers={@muted_matchers}
+                    own={@current_user && comment.user_id == @current_user.id}
+                    texts={[
+                      comment.summary,
+                      Baudrate.Moderation.PatternMatcher.text_of(
+                        comment.body_html || comment.body
+                      )
+                    ]}
+                  >
+                    <p :if={comment.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+                      {digest(comment.body)}
+                    </p>
+                  </.muted_collapse>
                   <div class="text-sm text-base-content/70">
                     <time datetime={datetime_attr(comment.inserted_at)}>
                       {format_datetime(comment.inserted_at)}
@@ -415,9 +455,20 @@
                       {article.title}
                     </.link>
                   </div>
-                  <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
-                    {digest(article.body)}
-                  </p>
+                  <.muted_collapse
+                    id={"profile-boosted-article-#{article.id}-muted"}
+                    matchers={@muted_matchers}
+                    own={@current_user && article.user_id == @current_user.id}
+                    texts={[
+                      article.title,
+                      article.summary,
+                      Baudrate.Moderation.PatternMatcher.text_of(article.body)
+                    ]}
+                  >
+                    <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+                      {digest(article.body)}
+                    </p>
+                  </.muted_collapse>
                   <div
                     :if={article.article_images != []}
                     class="grid grid-cols-2 gap-2 mt-2"
@@ -470,9 +521,21 @@
                       {comment.article.title}
                     </.link>
                   </div>
-                  <p :if={comment.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
-                    {digest(comment.body)}
-                  </p>
+                  <.muted_collapse
+                    id={"profile-boosted-comment-#{comment.id}-muted"}
+                    matchers={@muted_matchers}
+                    own={@current_user && comment.user_id == @current_user.id}
+                    texts={[
+                      comment.summary,
+                      Baudrate.Moderation.PatternMatcher.text_of(
+                        comment.body_html || comment.body
+                      )
+                    ]}
+                  >
+                    <p :if={comment.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+                      {digest(comment.body)}
+                    </p>
+                  </.muted_collapse>
                   <div class="text-sm text-base-content/70">
                     <time datetime={datetime_attr(boosted_at)}>
                       {format_datetime(boosted_at)}

@@ -128,15 +128,21 @@ defmodule BaudrateWeb.ConversationsLive do
   defp load_muted_conversations(conversations, user) do
     muted_uids = MapSet.new(Auth.muted_user_ids(user))
     muted_ap_ids = MapSet.new(Auth.muted_actor_ap_ids(user))
+    muted_domains = MapSet.new(Auth.muted_domains(user))
 
     Map.new(conversations, fn conv ->
       other = Messaging.other_participant(conv, user)
 
       muted =
         case other do
-          %Baudrate.Setup.User{id: id} -> MapSet.member?(muted_uids, id)
-          %Baudrate.Federation.RemoteActor{ap_id: ap_id} -> MapSet.member?(muted_ap_ids, ap_id)
-          _ -> false
+          %Baudrate.Setup.User{id: id} ->
+            MapSet.member?(muted_uids, id)
+
+          %Baudrate.Federation.RemoteActor{ap_id: ap_id, domain: domain} ->
+            MapSet.member?(muted_ap_ids, ap_id) or MapSet.member?(muted_domains, domain)
+
+          _ ->
+            false
         end
 
       {conv.id, muted}

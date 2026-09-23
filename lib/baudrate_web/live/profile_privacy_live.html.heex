@@ -29,6 +29,67 @@
     </p>
   </section>
 
+  <p id="profile-privacy-status" class="sr-only" role="status">{@privacy_status}</p>
+
+  <%!-- Who may follow and find the member (ADR 0073) --%>
+  <section id="profile-reach" aria-labelledby="profile-reach-heading">
+    <h2
+      id="profile-reach-heading"
+      class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+    >
+      {gettext("Followers and Discovery")}
+    </h2>
+    <div class="space-y-3">
+      <div class="form-control">
+        <label
+          id="profile-approve-followers-label"
+          class="label cursor-pointer justify-start gap-3"
+          for="profile-approve-followers"
+        >
+          <input
+            type="checkbox"
+            id="profile-approve-followers"
+            class="profile-approve-followers toggle toggle-sm toggle-primary"
+            checked={@current_user.manually_approves_followers}
+            phx-click="toggle_approval"
+            aria-describedby="profile-approve-followers-hint"
+          />
+          <span class="label-text">{gettext("Approve new followers myself")}</span>
+        </label>
+        <p
+          id="profile-approve-followers-hint"
+          class="profile-field-hint text-sm text-base-content/70"
+        >
+          {gettext(
+            "New followers, here and on other servers, wait on your followers page until you approve them. Followers you already have stay. Turning this off approves everyone waiting."
+          )}
+        </p>
+      </div>
+      <div class="form-control">
+        <label
+          id="profile-discoverable-label"
+          class="label cursor-pointer justify-start gap-3"
+          for="profile-discoverable"
+        >
+          <input
+            type="checkbox"
+            id="profile-discoverable"
+            class="profile-discoverable toggle toggle-sm toggle-primary"
+            checked={@current_user.discoverable}
+            phx-click="toggle_discoverable"
+            aria-describedby="profile-discoverable-hint"
+          />
+          <span class="label-text">{gettext("Let search engines and the member search find me")}</span>
+        </label>
+        <p id="profile-discoverable-hint" class="profile-field-hint text-sm text-base-content/70">
+          {gettext(
+            "Turned off, your profile and articles ask search engines not to index them, and the member search leaves you out. Anyone can still read them, and people who know your name can still mention you."
+          )}
+        </p>
+      </div>
+    </div>
+  </section>
+
   <%!-- Blocked Accounts section --%>
   <section id="profile-blocked-accounts" aria-labelledby="profile-blocked-accounts-heading">
     <h2
@@ -133,5 +194,179 @@
         </button>
       </div>
     </div>
+  </section>
+
+  <%!-- Muted servers (ADR 0073) --%>
+  <section id="profile-muted-domains" aria-labelledby="profile-muted-domains-heading">
+    <h2
+      id="profile-muted-domains-heading"
+      class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+      tabindex="-1"
+    >
+      {gettext("Muted Servers")}
+    </h2>
+    <p class="profile-muted-domains-help text-xs text-base-content/70 mb-2">
+      {gettext(
+        "Hides everything from a whole server in your own views. Nobody is told, and you can still reply to or message its accounts."
+      )}
+    </p>
+    <.form
+      for={@domain_form}
+      id="profile-muted-domain-form"
+      class="profile-muted-domain-form flex flex-wrap items-end gap-2 mb-2"
+      phx-submit="mute_domain"
+    >
+      <div class="form-control">
+        <label id="profile-muted-domain-label" class="label" for="profile-muted-domain-input">
+          <span class="label-text">{gettext("Server")}</span>
+        </label>
+        <input
+          type="text"
+          id="profile-muted-domain-input"
+          name="domain_mute[domain]"
+          value={@domain_form[:domain].value}
+          placeholder="example.social"
+          class="profile-muted-domain-input input input-bordered input-sm w-full max-w-xs"
+          autocomplete="off"
+          required
+        />
+        <p
+          :for={msg <- Keyword.get_values(@domain_form.errors, :domain)}
+          class="profile-muted-domain-error text-error text-xs mt-1"
+        >
+          {translate_error(msg)}
+        </p>
+      </div>
+      <button
+        id="profile-muted-domain-submit"
+        type="submit"
+        class="profile-muted-domain-submit btn btn-sm btn-outline"
+      >
+        {gettext("Mute Server")}
+      </button>
+    </.form>
+    <p
+      :if={@muted_domains == []}
+      id="profile-muted-domains-empty"
+      class="profile-muted-domains-empty text-sm text-base-content/70 italic"
+    >
+      {gettext("No muted servers.")}
+    </p>
+    <ul :if={@muted_domains != []} id="profile-muted-domains-list" class="space-y-2">
+      <li
+        :for={mute <- @muted_domains}
+        id={"muted-domain-#{mute.id}"}
+        class="muted-domain flex items-center gap-3"
+      >
+        <span class="muted-domain-name font-mono text-sm break-all min-w-0">{mute.domain}</span>
+        <button
+          id={"muted-domain-unmute-#{mute.id}"}
+          type="button"
+          class="muted-domain-unmute btn btn-sm btn-ghost ml-auto"
+          phx-click="unmute_domain"
+          phx-value-id={mute.id}
+          aria-label={gettext("Unmute %{name}", name: mute.domain)}
+        >
+          {gettext("Unmute")}
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <%!-- Muted words (ADR 0073) --%>
+  <section id="profile-muted-words" aria-labelledby="profile-muted-words-heading">
+    <h2
+      id="profile-muted-words-heading"
+      class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+      tabindex="-1"
+    >
+      {gettext("Muted Words")}
+    </h2>
+    <p class="profile-muted-words-help text-xs text-base-content/70 mb-2">
+      {gettext(
+        "Other people's posts containing these are folded away until you open them. Your own posts and direct messages are never folded."
+      )}
+    </p>
+    <.form
+      for={@word_form}
+      id="profile-muted-word-form"
+      class="profile-muted-word-form flex flex-wrap items-end gap-2 mb-2"
+      phx-submit="add_muted_word"
+    >
+      <div class="form-control">
+        <label id="profile-muted-word-label" class="label" for="profile-muted-word-input">
+          <span class="label-text">{gettext("Word or text")}</span>
+        </label>
+        <input
+          type="text"
+          id="profile-muted-word-input"
+          name="muted_word[pattern]"
+          value={@word_form[:pattern].value}
+          maxlength="200"
+          class="profile-muted-word-input input input-bordered input-sm w-full max-w-xs"
+          autocomplete="off"
+          required
+        />
+      </div>
+      <div class="form-control">
+        <label id="profile-muted-word-kind-label" class="label" for="profile-muted-word-kind">
+          <span class="label-text">{gettext("Match")}</span>
+        </label>
+        <select
+          id="profile-muted-word-kind"
+          name="muted_word[kind]"
+          class="profile-muted-word-kind select select-bordered select-sm"
+        >
+          <option value="word" selected={@word_form[:kind].value != "substring"}>
+            {gettext("Whole word")}
+          </option>
+          <option value="substring" selected={@word_form[:kind].value == "substring"}>
+            {gettext("Anywhere in the text")}
+          </option>
+        </select>
+      </div>
+      <button
+        id="profile-muted-word-submit"
+        type="submit"
+        class="profile-muted-word-submit btn btn-sm btn-outline"
+      >
+        {gettext("Add")}
+      </button>
+    </.form>
+    <p
+      :if={(@current_user.muted_keywords || []) == []}
+      id="profile-muted-words-empty"
+      class="profile-muted-words-empty text-sm text-base-content/70 italic"
+    >
+      {gettext("No muted words.")}
+    </p>
+    <ul
+      :if={(@current_user.muted_keywords || []) != []}
+      id="profile-muted-words-list"
+      class="space-y-2"
+    >
+      <li
+        :for={{entry, index} <- Enum.with_index(@current_user.muted_keywords || [])}
+        id={"muted-word-#{index}"}
+        class="muted-word flex items-center gap-3"
+      >
+        <span class="muted-word-pattern font-mono text-sm break-all min-w-0">{entry["pattern"]}</span>
+        <span class="muted-word-kind badge badge-ghost badge-sm">
+          {if entry["kind"] == "substring",
+            do: gettext("anywhere"),
+            else: gettext("whole word")}
+        </span>
+        <button
+          id={"muted-word-remove-#{index}"}
+          type="button"
+          class="muted-word-remove btn btn-sm btn-ghost ml-auto"
+          phx-click="remove_muted_word"
+          phx-value-index={index}
+          aria-label={gettext("Remove %{word}", word: entry["pattern"])}
+        >
+          {gettext("Remove")}
+        </button>
+      </li>
+    </ul>
   </section>
 </.profile_page>

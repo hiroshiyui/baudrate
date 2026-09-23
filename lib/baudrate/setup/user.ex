@@ -130,6 +130,13 @@ defmodule Baudrate.Setup.User do
     # setting (`BaudrateWeb.TimeZone`). Written only by `time_zone_changeset/2`.
     field :time_zone, :string
     field :notification_preferences, :map, default: %{}
+    # Privacy settings (ADR 0073), each written only by its own changeset.
+    # Words that collapse other people's posts in this member's own views.
+    field :muted_keywords, {:array, :map}, default: []
+    # A new follower waits for the member's approval.
+    field :manually_approves_followers, :boolean, default: false
+    # Off: noindex, left out of the sitemap and the member search.
+    field :discoverable, :boolean, default: true
     field :is_bot, :boolean, default: false
     field :profile_fields, {:array, :map}, default: []
     # The day this account last signed in, for NodeInfo's active-user counts.
@@ -478,8 +485,63 @@ defmodule Baudrate.Setup.User do
       dm_access: "nobody",
       last_active_on: nil,
       onboarded_at: nil,
-      recovery_notice_dismissed_at: nil
+      recovery_notice_dismissed_at: nil,
+      muted_keywords: [],
+      manually_approves_followers: false,
+      discoverable: false
     )
+  end
+
+  @max_muted_keywords 50
+
+  @doc "The most muted words one member may keep."
+  def max_muted_keywords, do: @max_muted_keywords
+
+  @doc """
+  Changeset for the member's muted words (ADR 0073): a list of
+  `%{"kind" => "word" | "substring", "pattern" => …}`, each pattern
+  normalized the way the admin filters normalize theirs and judged by the
+  same rule (`ContentFilter.pattern_error/2`), at most #{@max_muted_keywords}.
+  Nothing else casts `:muted_keywords`.
+  """
+  def muted_keywords_changeset(user, keywords) when is_list(keywords) do
+    alias Baudrate.Moderation.ContentFilter
+
+    normalized =
+      Enum.map(keywords, fn entry ->
+        kind = entry["kind"] || entry[:kind]
+
+        pattern =
+          ContentFilter.normalize_text(to_string(entry["pattern"] || entry[:pattern] || ""))
+
+        %{"kind" => kind, "pattern" => pattern}
+      end)
+      |> Enum.uniq()
+
+    user
+    |> change(muted_keywords: normalized)
+    |> validate_length(:muted_keywords, max: @max_muted_keywords)
+    |> validate_change(:muted_keywords, fn :muted_keywords, list ->
+      Enum.flat_map(list, fn %{"kind" => kind, "pattern" => pattern} ->
+        cond do
+          kind not in ["word", "substring"] -> [muted_keywords: "has an unknown kind"]
+          pattern == "" -> [muted_keywords: "has an empty entry"]
+          String.length(pattern) > 200 -> [muted_keywords: "has an entry that is too long"]
+          message = ContentFilter.pattern_error(kind, pattern) -> [muted_keywords: message]
+          true -> []
+        end
+      end)
+    end)
+  end
+
+  @doc """
+  Changeset for the two privacy switches (ADR 0073): approving followers
+  manually, and being discoverable. Neither is cast anywhere else.
+  """
+  def privacy_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:manually_approves_followers, :discoverable])
+    |> validate_required([:manually_approves_followers, :discoverable])
   end
 
   @doc """

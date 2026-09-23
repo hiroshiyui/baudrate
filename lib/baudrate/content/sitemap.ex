@@ -125,6 +125,14 @@ defmodule Baudrate.Content.Sitemap do
       where: is_nil(a.deleted_at),
       where: not is_nil(a.user_id),
       where: a.visibility == "public",
+      # An author who opted out of discovery (ADR 0073) is not invited either.
+      where:
+        exists(
+          from(u in Baudrate.Setup.User,
+            where: u.id == parent_as(:article).user_id and u.discoverable,
+            select: 1
+          )
+        ),
       where:
         exists(
           from(ba in BoardArticle,

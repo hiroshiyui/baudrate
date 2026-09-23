@@ -57,7 +57,11 @@ defmodule Baudrate.Federation.ActorRenderer do
         "id" => "#{uri}#main-key",
         "owner" => uri,
         "publicKeyPem" => KeyStore.get_public_key_pem(user)
-      }
+      },
+      # The member's privacy settings, as Mastodon reads them (ADR 0073).
+      "manuallyApprovesFollowers" => user.manually_approves_followers == true,
+      "discoverable" => user.discoverable != false,
+      "indexable" => user.discoverable != false
     }
     |> put_if("name", user.display_name)
     |> put_if("summary", render_bio_html(user.bio))

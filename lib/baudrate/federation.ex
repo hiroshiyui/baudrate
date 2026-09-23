@@ -186,7 +186,13 @@ defmodule Baudrate.Federation do
 
   # --- Inbound Followers ---
 
-  defdelegate create_follower(actor_uri, remote_actor, activity_id), to: Follows
+  defdelegate create_follower(actor_uri, remote_actor, activity_id, opts \\ []), to: Follows
+  defdelegate refresh_follow(actor_uri, remote_actor, activity_id), to: Follows
+  defdelegate list_follow_requests(user), to: Follows
+  defdelegate approve_remote_follower(user, follower_row_id), to: Follows
+  defdelegate approve_local_follower(user, follower_user_id), to: Follows
+  defdelegate approve_all_follow_requests(user), to: Follows
+  defdelegate local_follow_state(user_id, followed_user_id), to: Follows
   defdelegate delete_follower(actor_uri, follower_uri), to: Follows
   defdelegate delete_followers_by_remote(remote_actor_ap_id), to: Follows
   defdelegate follower_exists?(actor_uri, follower_uri), to: Follows
@@ -232,7 +238,7 @@ defmodule Baudrate.Federation do
   # --- Local User Follows ---
 
   defdelegate local_followers_of_remote_actor(remote_actor_id), to: Follows
-  defdelegate create_local_follow(follower, followed), to: Follows
+  defdelegate create_local_follow(follower, followed, opts \\ []), to: Follows
   defdelegate delete_local_follow(follower, followed), to: Follows
   defdelegate get_local_follow(follower_user_id, followed_user_id), to: Follows
   defdelegate batch_local_follow_states(follower_user_id, followed_user_ids), to: Follows

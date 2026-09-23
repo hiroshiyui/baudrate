@@ -105,6 +105,8 @@ defmodule BaudrateWeb.AuthHooks do
                 |> assign(:terms_pending, Auth.terms_pending?(user))
                 # Whether this account can be recovered at all (ADR 0058).
                 |> assign(:recovery_pending, recovery_pending?(user))
+                # The member's muted words, compiled once per mount (ADR 0073).
+                |> assign(:muted_matchers, muted_matchers(user))
                 |> MarkdownPreviewHook.attach()
                 |> AutocompleteSuggestHook.attach()
                 |> RecoveryNoticeHook.attach()
@@ -133,7 +135,11 @@ defmodule BaudrateWeb.AuthHooks do
           # A suspended account is signed out everywhere, not just kept off
           # the authenticated pages: it browses as a guest would (ADR 0029).
           if user.status in ["banned", "deleted"] or suspended?(user) do
-            {:cont, socket |> assign(:current_user, nil) |> assign(:locale, locale)}
+            {:cont,
+             socket
+             |> assign(:current_user, nil)
+             |> assign(:locale, locale)
+             |> assign(:muted_matchers, [])}
           else
             locale = resolve_user_locale(user)
 
@@ -160,6 +166,7 @@ defmodule BaudrateWeb.AuthHooks do
               |> assign(:terms_pending, Auth.terms_pending?(user))
               # Whether this account can be recovered at all (ADR 0058).
               |> assign(:recovery_pending, recovery_pending?(user))
+              |> assign(:muted_matchers, muted_matchers(user))
               |> MarkdownPreviewHook.attach()
               |> AutocompleteSuggestHook.attach()
               |> RecoveryNoticeHook.attach()
@@ -175,6 +182,7 @@ defmodule BaudrateWeb.AuthHooks do
            socket
            |> assign(:current_user, nil)
            |> assign(:locale, locale)
+           |> assign(:muted_matchers, [])
            |> MarkdownPreviewHook.attach()
            |> attach_page_metadata_hook()}
       end
@@ -184,6 +192,7 @@ defmodule BaudrateWeb.AuthHooks do
        |> assign(:current_user, nil)
        |> assign(:locale, locale)
        |> assign(:recovery_pending, false)
+       |> assign(:muted_matchers, [])
        |> MarkdownPreviewHook.attach()
        |> attach_page_metadata_hook()}
     end
@@ -368,6 +377,13 @@ defmodule BaudrateWeb.AuthHooks do
         Gettext.get_locale()
     end
   end
+
+  # A member's muted words, compiled for `BaudrateWeb.CoreComponents.muted_collapse/1`
+  # (ADR 0073). Most members have none, and then nothing is compiled.
+  defp muted_matchers(%{muted_keywords: [_ | _] = keywords}),
+    do: Enum.map(keywords, &Baudrate.Moderation.PatternMatcher.compile/1)
+
+  defp muted_matchers(_user), do: []
 
   defp resolve_user_locale(user) do
     BaudrateWeb.TimeZone.put(user.time_zone)

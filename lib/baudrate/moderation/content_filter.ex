@@ -176,38 +176,43 @@ defmodule Baudrate.Moderation.ContentFilter do
   end
 
   defp validate_pattern(changeset, pattern) do
-    case get_field(changeset, :kind) do
-      "domain" ->
-        if Regex.match?(~r/\A[a-z0-9-]+(\.[a-z0-9-]+)+\z/, pattern),
-          do: changeset,
-          else: add_error(changeset, :pattern, "is not a domain name")
-
-      "word" ->
-        if words(pattern) == [],
-          do: add_error(changeset, :pattern, "has no letters or numbers"),
-          else: changeset
-
-      "substring" ->
-        cond do
-          not String.contains?(pattern, "*") ->
-            changeset
-
-          Regex.match?(~r/\A[\p{L}\p{N}\p{M}*]+\z/u, pattern) and
-              String.replace(pattern, "*", "") != "" ->
-            changeset
-
-          true ->
-            add_error(
-              changeset,
-              :pattern,
-              "with a * may hold only letters, numbers and *"
-            )
-        end
-
-      _ ->
-        changeset
+    case pattern_error(get_field(changeset, :kind), pattern) do
+      nil -> changeset
+      message -> add_error(changeset, :pattern, message)
     end
   end
+
+  @doc """
+  What is wrong with `pattern` for `kind`, or `nil` — the one rule for an
+  admin's filter and a member's muted word (ADR 0073). `pattern` is taken
+  already normalized (`normalize_text/1`, or `normalize_domain/1`).
+  """
+  @spec pattern_error(String.t() | nil, String.t()) :: String.t() | nil
+  def pattern_error("domain", pattern) do
+    if Regex.match?(~r/\A[a-z0-9-]+(\.[a-z0-9-]+)+\z/, pattern),
+      do: nil,
+      else: "is not a domain name"
+  end
+
+  def pattern_error("word", pattern) do
+    if words(pattern) == [], do: "has no letters or numbers", else: nil
+  end
+
+  def pattern_error("substring", pattern) do
+    cond do
+      not String.contains?(pattern, "*") ->
+        nil
+
+      Regex.match?(~r/\A[\p{L}\p{N}\p{M}*]+\z/u, pattern) and
+          String.replace(pattern, "*", "") != "" ->
+        nil
+
+      true ->
+        "with a * may hold only letters, numbers and *"
+    end
+  end
+
+  def pattern_error(_kind, _pattern), do: nil
 
   @doc """
   Splits normalized text into its words — the runs of letters, numbers and
