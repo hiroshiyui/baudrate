@@ -33,7 +33,12 @@ knowingly.
   self-service route, they can now be replaced, and past them recovery is
   anchored on an OpenPGP key verified out of band —
   [ADR 0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md)
-  records why that is better than adding a mailer, and what it costs.
+  records why that is better than adding a mailer, and what it costs. The
+  text the member signs is issued by the instance since
+  [0067](adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md),
+  and a confirmed key shows on the profile as what it is, never as a
+  verified badge
+  ([0068](adr/0068-a-profile-says-what-was-checked-not-that-someone-is-verified.md)).
 - **D4. Data export and move gate: keep "TOTP enabled for ≥ 7 days"** ([ADR 0023](adr/0023-data-export-threat-model.md), [ADR 0025](adr/0025-account-migration.md)), and improve the path for members in 6E. Accepting WebAuthn in step-up re-authentication stays a separate possible feature.
 
 ---
