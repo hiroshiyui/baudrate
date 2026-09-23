@@ -66,7 +66,7 @@ msgstr "%{count} 件のマイグレーションを適用しました"
 msgid "Admin Account"
 msgstr "管理者アカウント"
 
-#: lib/baudrate_web/components/core_components.ex:1064
+#: lib/baudrate_web/components/core_components.ex:1089
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
 msgstr "12文字以上"
@@ -103,22 +103,22 @@ msgstr "パスワード確認"
 msgid "Connected"
 msgstr "接続済み"
 
-#: lib/baudrate_web/components/core_components.ex:1067
+#: lib/baudrate_web/components/core_components.ex:1092
 #, elixir-autogen, elixir-format
 msgid "Contains a digit"
 msgstr "数字を含む"
 
-#: lib/baudrate_web/components/core_components.ex:1065
+#: lib/baudrate_web/components/core_components.ex:1090
 #, elixir-autogen, elixir-format
 msgid "Contains a lowercase letter"
 msgstr "小文字を含む"
 
-#: lib/baudrate_web/components/core_components.ex:1068
+#: lib/baudrate_web/components/core_components.ex:1093
 #, elixir-autogen, elixir-format
 msgid "Contains a special character"
 msgstr "特殊文字を含む"
 
-#: lib/baudrate_web/components/core_components.ex:1066
+#: lib/baudrate_web/components/core_components.ex:1091
 #, elixir-autogen, elixir-format
 msgid "Contains an uppercase letter"
 msgstr "大文字を含む"
@@ -170,9 +170,10 @@ msgstr "次へ"
 #: lib/baudrate_web/live/admin/login_attempts_live.ex:63
 #: lib/baudrate_web/live/data_export_live.ex:209
 #: lib/baudrate_web/live/login_live.html.heex:26
+#: lib/baudrate_web/live/profile_account_live.html.heex:292
 #: lib/baudrate_web/live/profile_security_live.html.heex:33
 #: lib/baudrate_web/live/profile_security_live.html.heex:91
-#: lib/baudrate_web/live/profile_security_live.html.heex:505
+#: lib/baudrate_web/live/profile_security_live.html.heex:507
 #: lib/baudrate_web/live/register_live.html.heex:100
 #: lib/baudrate_web/live/setup_live.html.heex:260
 #: lib/baudrate_web/live/totp_reset_live.html.heex:30
@@ -180,7 +181,7 @@ msgstr "次へ"
 msgid "Password"
 msgstr "パスワード"
 
-#: lib/baudrate_web/components/core_components.ex:1076
+#: lib/baudrate_web/components/core_components.ex:1101
 #, elixir-autogen, elixir-format
 msgid "Password requirements:"
 msgstr "パスワード要件："
@@ -367,8 +368,9 @@ msgstr "続行"
 #: lib/baudrate_web/live/account_migration_live.html.heex:454
 #: lib/baudrate_web/live/data_export_live.ex:226
 #: lib/baudrate_web/live/password_change_live.html.heex:54
+#: lib/baudrate_web/live/profile_account_live.html.heex:309
 #: lib/baudrate_web/live/profile_security_live.html.heex:109
-#: lib/baudrate_web/live/profile_security_live.html.heex:522
+#: lib/baudrate_web/live/profile_security_live.html.heex:524
 #: lib/baudrate_web/live/totp_reset_live.html.heex:51
 #, elixir-autogen, elixir-format
 msgid "Current TOTP Code"
@@ -426,6 +428,7 @@ msgstr "リカバリーコードを保存しました"
 #: lib/baudrate_web/live/account_migration_live.ex:110
 #: lib/baudrate_web/live/data_export_live.ex:278
 #: lib/baudrate_web/live/password_change_live.ex:138
+#: lib/baudrate_web/live/profile_account_live.ex:172
 #: lib/baudrate_web/live/profile_security_live.ex:117
 #: lib/baudrate_web/live/profile_security_live.ex:281
 #: lib/baudrate_web/live/totp_reset_live.ex:114
@@ -488,7 +491,7 @@ msgstr "リカバリーコード"
 msgid "Reset Authenticator"
 msgstr "認証器をリセット"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:24
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:36
 #: lib/baudrate_web/live/admin/users_live.html.heex:187
 #: lib/baudrate_web/live/profile_live.html.heex:267
 #, elixir-autogen, elixir-format
@@ -536,7 +539,7 @@ msgstr "アバターを更新しました。"
 #: lib/baudrate_web/components/comment_components.ex:216
 #: lib/baudrate_web/components/comment_components.ex:427
 #: lib/baudrate_web/components/comment_components.ex:506
-#: lib/baudrate_web/components/core_components.ex:946
+#: lib/baudrate_web/components/core_components.ex:971
 #: lib/baudrate_web/live/admin/boards_live.html.heex:120
 #: lib/baudrate_web/live/admin/bots_live.html.heex:156
 #: lib/baudrate_web/live/admin/federation_live.html.heex:334
@@ -544,8 +547,8 @@ msgstr "アバターを更新しました。"
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:206
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:104
 #: lib/baudrate_web/live/admin/rules_live.html.heex:120
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:246
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:602
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:258
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:614
 #: lib/baudrate_web/live/admin/users_live.html.heex:355
 #: lib/baudrate_web/live/admin/users_live.html.heex:408
 #: lib/baudrate_web/live/article_live.html.heex:508
@@ -602,8 +605,8 @@ msgstr "アバターの変更回数が多すぎます。しばらくしてから
 
 #: lib/baudrate_web/controllers/session_controller.ex:397
 #: lib/baudrate_web/controllers/session_controller.ex:547
-#: lib/baudrate_web/live/auth_hooks.ex:308
-#: lib/baudrate_web/live/auth_hooks.ex:320
+#: lib/baudrate_web/live/auth_hooks.ex:313
+#: lib/baudrate_web/live/auth_hooks.ex:325
 #, elixir-autogen, elixir-format
 msgid "Access denied."
 msgstr "アクセスが拒否されました。"
@@ -768,12 +771,12 @@ msgstr "%{author} による投稿"
 msgid "Add Language"
 msgstr "言語を追加"
 
-#: lib/baudrate_web/live/profile_account_live.ex:161
+#: lib/baudrate_web/live/profile_account_live.ex:248
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr "言語設定の更新に失敗しました。"
 
-#: lib/baudrate_web/live/profile_account_live.ex:156
+#: lib/baudrate_web/live/profile_account_live.ex:243
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr "言語設定を更新しました。"
@@ -930,24 +933,24 @@ msgstr "コメントを削除しました。"
 msgid "Content"
 msgstr "コンテンツ"
 
-#: lib/baudrate_web/components/moderation_components.ex:169
+#: lib/baudrate_web/components/moderation_components.ex:171
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:70
 #, elixir-autogen, elixir-format
 msgid "Delete Article"
 msgstr "記事を削除"
 
-#: lib/baudrate_web/components/moderation_components.ex:208
+#: lib/baudrate_web/components/moderation_components.ex:210
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:71
 #, elixir-autogen, elixir-format
 msgid "Delete Comment"
 msgstr "コメントを削除"
 
-#: lib/baudrate_web/components/moderation_components.ex:166
+#: lib/baudrate_web/components/moderation_components.ex:168
 #, elixir-autogen, elixir-format
 msgid "Delete this article?"
 msgstr "この記事を削除しますか？"
 
-#: lib/baudrate_web/components/moderation_components.ex:205
+#: lib/baudrate_web/components/moderation_components.ex:207
 #, elixir-autogen, elixir-format
 msgid "Delete this comment?"
 msgstr "このコメントを削除しますか？"
@@ -967,7 +970,7 @@ msgstr "配信キュー"
 msgid "Disable"
 msgstr "無効化"
 
-#: lib/baudrate_web/components/moderation_components.ex:376
+#: lib/baudrate_web/components/moderation_components.ex:378
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "却下"
@@ -1152,7 +1155,7 @@ msgstr "ステータス「%{status}」の通報はありません。"
 msgid "Pending"
 msgstr "保留中"
 
-#: lib/baudrate_web/components/moderation_components.ex:123
+#: lib/baudrate_web/components/moderation_components.ex:125
 #, elixir-autogen, elixir-format
 msgid "Reason:"
 msgstr "理由："
@@ -1176,28 +1179,28 @@ msgstr "通報を却下しました。"
 msgid "Report resolved."
 msgstr "通報を対処しました。"
 
-#: lib/baudrate_web/components/moderation_components.ex:257
+#: lib/baudrate_web/components/moderation_components.ex:259
 #, elixir-autogen, elixir-format
 msgid "Reported Actor:"
 msgstr "通報されたアクター："
 
-#: lib/baudrate_web/components/moderation_components.ex:139
+#: lib/baudrate_web/components/moderation_components.ex:141
 #, elixir-autogen, elixir-format
 msgid "Reported Article:"
 msgstr "通報された記事："
 
-#: lib/baudrate_web/components/moderation_components.ex:177
+#: lib/baudrate_web/components/moderation_components.ex:179
 #, elixir-autogen, elixir-format
 msgid "Reported Comment:"
 msgstr "通報されたコメント："
 
-#: lib/baudrate_web/components/moderation_components.ex:356
+#: lib/baudrate_web/components/moderation_components.ex:358
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:190
 #, elixir-autogen, elixir-format
 msgid "Resolution note (optional)"
 msgstr "対処メモ（任意）"
 
-#: lib/baudrate_web/components/moderation_components.ex:366
+#: lib/baudrate_web/components/moderation_components.ex:368
 #, elixir-autogen, elixir-format
 msgid "Resolve"
 msgstr "対処"
@@ -1207,12 +1210,12 @@ msgstr "対処"
 msgid "Resolved"
 msgstr "対処済み"
 
-#: lib/baudrate_web/components/moderation_components.ex:339
+#: lib/baudrate_web/components/moderation_components.ex:341
 #, elixir-autogen, elixir-format
 msgid "Send Flag to %{domain}"
 msgstr "%{domain} に通報を送信"
 
-#: lib/baudrate_web/components/moderation_components.ex:336
+#: lib/baudrate_web/components/moderation_components.ex:338
 #, elixir-autogen, elixir-format
 msgid "Send a Flag report to %{domain}?"
 msgstr "%{domain} に通報レポートを送信しますか？"
@@ -1223,7 +1226,7 @@ msgstr "%{domain} に通報レポートを送信しますか？"
 #: lib/baudrate_web/live/admin/federation_live.html.heex:49
 #: lib/baudrate_web/live/admin/instance_detail_live.html.heex:68
 #: lib/baudrate_web/live/admin/invites_live.html.heex:87
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:30
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:42
 #: lib/baudrate_web/live/admin/users_live.html.heex:188
 #: lib/baudrate_web/live/data_export_live.html.heex:214
 #: lib/baudrate_web/live/user_invites_live.html.heex:55
@@ -1625,8 +1628,8 @@ msgstr "ユーザーのBANを解除しました。"
 msgid "You cannot change your own role."
 msgstr "自分のロールは変更できません。"
 
-#: lib/baudrate_web/helpers.ex:755
-#: lib/baudrate_web/live/auth_hooks.ex:65
+#: lib/baudrate_web/helpers.ex:778
+#: lib/baudrate_web/live/auth_hooks.ex:70
 #, elixir-autogen, elixir-format
 msgid "Your account has been banned."
 msgstr "あなたのアカウントはBANされました。"
@@ -1714,7 +1717,7 @@ msgstr "システムテーマ"
 msgid "User not found."
 msgstr "ユーザーが見つかりません。"
 
-#: lib/baudrate_web/helpers.ex:301
+#: lib/baudrate_web/helpers.ex:313
 #: lib/baudrate_web/live/admin/user_detail_live.ex:498
 #, elixir-autogen, elixir-format
 msgid "active"
@@ -1725,7 +1728,7 @@ msgstr "有効"
 msgid "admin"
 msgstr "管理者"
 
-#: lib/baudrate_web/helpers.ex:303
+#: lib/baudrate_web/helpers.ex:315
 #, elixir-autogen, elixir-format
 msgid "banned"
 msgstr "BAN済み"
@@ -1740,8 +1743,8 @@ msgstr "ゲスト"
 msgid "moderator"
 msgstr "モデレーター"
 
-#: lib/baudrate_web/helpers.ex:302
-#: lib/baudrate_web/helpers.ex:389
+#: lib/baudrate_web/helpers.ex:314
+#: lib/baudrate_web/helpers.ex:402
 #, elixir-autogen, elixir-format
 msgid "pending"
 msgstr "保留中"
@@ -2155,6 +2158,7 @@ msgstr "これらのコードは、パスワードを忘れた場合にアカウ
 #: lib/baudrate_web/live/data_export_live.ex:270
 #: lib/baudrate_web/live/password_change_live.ex:121
 #: lib/baudrate_web/live/password_reset_live.ex:53
+#: lib/baudrate_web/live/profile_account_live.ex:173
 #: lib/baudrate_web/live/profile_security_live.ex:102
 #: lib/baudrate_web/live/profile_security_live.ex:135
 #: lib/baudrate_web/live/profile_security_live.ex:266
@@ -2709,17 +2713,17 @@ msgstr "%{editor} による編集"
 msgid "Markdown preview"
 msgstr "Markdown プレビュー"
 
-#: lib/baudrate_web/helpers.ex:939
+#: lib/baudrate_web/helpers.ex:967
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr "%{count}日前"
 
-#: lib/baudrate_web/helpers.ex:938
+#: lib/baudrate_web/helpers.ex:966
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr "%{count}時間前"
 
-#: lib/baudrate_web/helpers.ex:937
+#: lib/baudrate_web/helpers.ex:965
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr "%{count}分前"
@@ -2774,7 +2778,7 @@ msgstr "メッセージの送信に失敗しました。"
 msgid "Failed to update DM access setting."
 msgstr "DM アクセス設定の更新に失敗しました。"
 
-#: lib/baudrate_web/helpers.ex:313
+#: lib/baudrate_web/helpers.ex:326
 #: lib/baudrate_web/live/admin/boards_live.html.heex:108
 #: lib/baudrate_web/live/board_follows_live.html.heex:49
 #: lib/baudrate_web/live/profile_privacy_live.html.heex:21
@@ -2782,7 +2786,7 @@ msgstr "DM アクセス設定の更新に失敗しました。"
 msgid "Followers only"
 msgstr "フォロワーのみ"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:819
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:831
 #: lib/baudrate_web/live/conversation_live.html.heex:397
 #: lib/baudrate_web/live/user_profile_live.html.heex:99
 #, elixir-autogen, elixir-format
@@ -2867,7 +2871,7 @@ msgstr "自分のメッセージのみ削除できます。"
 msgid "You cannot send messages to this user."
 msgstr "このユーザーにメッセージを送信できません。"
 
-#: lib/baudrate_web/helpers.ex:936
+#: lib/baudrate_web/helpers.ex:964
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "たった今"
@@ -2918,7 +2922,7 @@ msgid "No login attempts recorded."
 msgstr "ログイン試行の記録はありません。"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:63
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:663
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:675
 #, elixir-autogen, elixir-format
 msgid "Result"
 msgstr "結果"
@@ -2933,7 +2937,7 @@ msgstr "成功"
 msgid "Cannot delete a protected system board."
 msgstr "保護されたシステム掲示板は削除できません。"
 
-#: lib/baudrate_web/live/user_profile_live.ex:202
+#: lib/baudrate_web/live/user_profile_live.ex:203
 #, elixir-autogen, elixir-format
 msgid "Failed to mute user."
 msgstr "ユーザーのミュートに失敗しました。"
@@ -2974,13 +2978,13 @@ msgstr "ミュート解除"
 msgid "Unmute %{username}"
 msgstr "%{username} のミュートを解除"
 
-#: lib/baudrate_web/live/user_profile_live.ex:199
+#: lib/baudrate_web/live/user_profile_live.ex:200
 #, elixir-autogen, elixir-format
 msgid "User muted."
 msgstr "ユーザーをミュートしました。"
 
 #: lib/baudrate_web/live/profile_privacy_live.ex:45
-#: lib/baudrate_web/live/user_profile_live.ex:222
+#: lib/baudrate_web/live/user_profile_live.ex:223
 #, elixir-autogen, elixir-format
 msgid "User unmuted."
 msgstr "ユーザーのミュートを解除しました。"
@@ -3029,45 +3033,45 @@ msgstr "メインメニュー"
 msgid "User menu"
 msgstr "ユーザーメニュー"
 
-#: lib/baudrate_web/components/core_components.ex:1111
+#: lib/baudrate_web/components/core_components.ex:1136
 #, elixir-autogen, elixir-format
 msgid "Fair"
 msgstr "普通"
 
-#: lib/baudrate_web/components/core_components.ex:1090
+#: lib/baudrate_web/components/core_components.ex:1115
 #, elixir-autogen, elixir-format
 msgid "Met:"
 msgstr "達成:"
 
-#: lib/baudrate_web/components/core_components.ex:812
-#: lib/baudrate_web/components/core_components.ex:820
+#: lib/baudrate_web/components/core_components.ex:837
+#: lib/baudrate_web/components/core_components.ex:845
 #, elixir-autogen, elixir-format
 msgid "Next page"
 msgstr "次のページ"
 
-#: lib/baudrate_web/components/core_components.ex:1090
+#: lib/baudrate_web/components/core_components.ex:1115
 #, elixir-autogen, elixir-format
 msgid "Not met:"
 msgstr "未達成:"
 
-#: lib/baudrate_web/components/core_components.ex:792
-#: lib/baudrate_web/components/core_components.ex:802
+#: lib/baudrate_web/components/core_components.ex:817
+#: lib/baudrate_web/components/core_components.ex:827
 #, elixir-autogen, elixir-format
 msgid "Page %{number}"
 msgstr "%{number}ページ"
 
-#: lib/baudrate_web/components/core_components.ex:765
+#: lib/baudrate_web/components/core_components.ex:790
 #, elixir-autogen, elixir-format
 msgid "Pagination"
 msgstr "ページネーション"
 
-#: lib/baudrate_web/components/core_components.ex:1107
+#: lib/baudrate_web/components/core_components.ex:1132
 #, elixir-autogen, elixir-format
 msgid "Password strength"
 msgstr "パスワード強度"
 
-#: lib/baudrate_web/components/core_components.ex:774
-#: lib/baudrate_web/components/core_components.ex:782
+#: lib/baudrate_web/components/core_components.ex:799
+#: lib/baudrate_web/components/core_components.ex:807
 #, elixir-autogen, elixir-format
 msgid "Previous page"
 msgstr "前のページ"
@@ -3077,12 +3081,12 @@ msgstr "前のページ"
 msgid "Select moderator"
 msgstr "モデレーターを選択"
 
-#: lib/baudrate_web/components/core_components.ex:1112
+#: lib/baudrate_web/components/core_components.ex:1137
 #, elixir-autogen, elixir-format
 msgid "Strong"
 msgstr "強い"
 
-#: lib/baudrate_web/components/core_components.ex:1110
+#: lib/baudrate_web/components/core_components.ex:1135
 #, elixir-autogen, elixir-format
 msgid "Weak"
 msgstr "弱い"
@@ -3149,17 +3153,17 @@ msgstr "ドメインのブロックを解除"
 msgid "Unblock User"
 msgstr "ユーザーのブロックを解除"
 
-#: lib/baudrate_web/helpers.ex:956
+#: lib/baudrate_web/helpers.ex:984
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr "%{n} B"
 
-#: lib/baudrate_web/helpers.ex:959
+#: lib/baudrate_web/helpers.ex:987
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr "%{n} KB"
 
-#: lib/baudrate_web/helpers.ex:962
+#: lib/baudrate_web/helpers.ex:990
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr "%{n} MB"
@@ -3208,6 +3212,7 @@ msgstr "リカバリーコードが無効です。もう一度お試しくださ
 
 #: lib/baudrate_web/controllers/session_controller.ex:115
 #: lib/baudrate_web/controllers/session_controller.ex:275
+#: lib/baudrate_web/controllers/session_controller.ex:661
 #, elixir-autogen, elixir-format
 msgid "Invalid session."
 msgstr "無効なセッションです。"
@@ -3257,27 +3262,27 @@ msgstr "TOTP設定エラーです。管理者にお問い合わせください�
 msgid "Too many failed attempts. Please log in again."
 msgstr "失敗回数が多すぎます。再度ログインしてください。"
 
-#: lib/baudrate_web/helpers.ex:390
+#: lib/baudrate_web/helpers.ex:403
 #, elixir-autogen, elixir-format
 msgid "delivered"
 msgstr "配信済み"
 
-#: lib/baudrate_web/helpers.ex:343
+#: lib/baudrate_web/helpers.ex:356
 #, elixir-autogen, elixir-format
 msgid "dismissed"
 msgstr "却下済み"
 
-#: lib/baudrate_web/helpers.ex:391
+#: lib/baudrate_web/helpers.ex:404
 #, elixir-autogen, elixir-format
 msgid "failed"
 msgstr "失敗"
 
-#: lib/baudrate_web/helpers.ex:341
+#: lib/baudrate_web/helpers.ex:354
 #, elixir-autogen, elixir-format
 msgid "open"
 msgstr "オープン"
 
-#: lib/baudrate_web/helpers.ex:342
+#: lib/baudrate_web/helpers.ex:355
 #, elixir-autogen, elixir-format
 msgid "resolved"
 msgstr "対処済み"
@@ -3365,7 +3370,7 @@ msgstr[0] "%{count} 件の通報を対処"
 msgid "Resolve Selected"
 msgstr "選択を対処"
 
-#: lib/baudrate_web/components/moderation_components.ex:363
+#: lib/baudrate_web/components/moderation_components.ex:365
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:211
 #, elixir-autogen, elixir-format
 msgid "Resolving..."
@@ -3454,8 +3459,8 @@ msgstr "アカウントが新しすぎるため、招待コードを生成でき
 #: lib/baudrate_web/live/article_live.ex:635
 #: lib/baudrate_web/live/article_live.ex:994
 #: lib/baudrate_web/live/safety_actions.ex:80
-#: lib/baudrate_web/live/user_profile_live.ex:189
-#: lib/baudrate_web/live/user_profile_live.ex:236
+#: lib/baudrate_web/live/user_profile_live.ex:190
+#: lib/baudrate_web/live/user_profile_live.ex:237
 #, elixir-autogen, elixir-format
 msgid "Too many actions. Please try again later."
 msgstr "操作が多すぎます。しばらくしてからもう一度お試しください。"
@@ -3482,7 +3487,7 @@ msgstr "編集が多すぎます。しばらくしてからもう一度お試し
 msgid "You are posting too frequently. Please try again later."
 msgstr "投稿が多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/components/core_components.ex:1386
+#: lib/baudrate_web/components/core_components.ex:1411
 #: lib/baudrate_web/live/admin/invites_live.html.heex:153
 #: lib/baudrate_web/live/profile_live.html.heex:112
 #: lib/baudrate_web/live/user_invites_live.html.heex:109
@@ -3553,7 +3558,7 @@ msgstr "フォロー"
 
 #: lib/baudrate_web/live/search_live.ex:245
 #: lib/baudrate_web/live/search_live.ex:311
-#: lib/baudrate_web/live/user_profile_live.ex:110
+#: lib/baudrate_web/live/user_profile_live.ex:111
 #, elixir-autogen, elixir-format
 msgid "Follow rate limit exceeded. Please try again later."
 msgstr "フォローのレート制限を超えました。しばらくしてからもう一度お試しください。"
@@ -3614,7 +3619,7 @@ msgstr "このアクターのフォローを解除しますか？"
 #: lib/baudrate_web/live/following_live.ex:61
 #: lib/baudrate_web/live/search_live.ex:275
 #: lib/baudrate_web/live/search_live.ex:344
-#: lib/baudrate_web/live/user_profile_live.ex:171
+#: lib/baudrate_web/live/user_profile_live.ex:172
 #, elixir-autogen, elixir-format
 msgid "Unfollowed successfully."
 msgstr "フォローを解除しました。"
@@ -3634,7 +3639,7 @@ msgid "You haven't followed anyone yet."
 msgstr "まだ誰もフォローしていません。"
 
 #: lib/baudrate_web/components/comment_components.ex:105
-#: lib/baudrate_web/components/moderation_components.ex:235
+#: lib/baudrate_web/components/moderation_components.ex:237
 #: lib/baudrate_web/live/article_live.html.heex:76
 #: lib/baudrate_web/live/article_live.html.heex:300
 #: lib/baudrate_web/live/board_live.html.heex:281
@@ -3647,12 +3652,12 @@ msgid "View original"
 msgstr "元の投稿を見る"
 
 #: lib/baudrate_web/live/search_live.ex:319
-#: lib/baudrate_web/live/user_profile_live.ex:149
+#: lib/baudrate_web/live/user_profile_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "Already following this user."
 msgstr "すでにこのユーザーをフォローしています。"
 
-#: lib/baudrate_web/helpers.ex:322
+#: lib/baudrate_web/helpers.ex:335
 #: lib/baudrate_web/live/held_posts_live.html.heex:58
 #: lib/baudrate_web/live/timeline_live.html.heex:894
 #, elixir-autogen, elixir-format
@@ -3666,7 +3671,7 @@ msgstr "ユーザーをフォローできませんでした。"
 
 #: lib/baudrate_web/live/following_live.ex:64
 #: lib/baudrate_web/live/search_live.ex:347
-#: lib/baudrate_web/live/user_profile_live.ex:174
+#: lib/baudrate_web/live/user_profile_live.ex:175
 #, elixir-autogen, elixir-format
 msgid "Could not unfollow user."
 msgstr "フォローを解除できませんでした。"
@@ -3677,7 +3682,7 @@ msgid "Follow %{username}"
 msgstr "%{username} をフォロー"
 
 #: lib/baudrate_web/live/search_live.ex:301
-#: lib/baudrate_web/live/user_profile_live.ex:121
+#: lib/baudrate_web/live/user_profile_live.ex:122
 #, elixir-autogen, elixir-format
 msgid "Followed successfully."
 msgstr "フォローしました。"
@@ -3719,7 +3724,7 @@ msgid "Users"
 msgstr "ユーザー"
 
 #: lib/baudrate_web/live/search_live.ex:304
-#: lib/baudrate_web/live/user_profile_live.ex:124
+#: lib/baudrate_web/live/user_profile_live.ex:125
 #, elixir-autogen, elixir-format
 msgid "You cannot follow yourself."
 msgstr "自分をフォローすることはできません。"
@@ -3954,7 +3959,7 @@ msgstr "記事が見つかりません。"
 msgid "Comment not found."
 msgstr "コメントが見つかりません。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:242
+#: lib/baudrate_web/live/auth_hooks.ex:247
 #: lib/baudrate_web/plugs/rate_limit.ex:117
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please try again later."
@@ -4012,7 +4017,7 @@ msgstr "板を検索…"
 msgid "You do not have permission to post in this board."
 msgstr "この板に投稿する権限がありません。"
 
-#: lib/baudrate_web/live/user_content_live.ex:53
+#: lib/baudrate_web/live/user_content_live.ex:54
 #, elixir-autogen, elixir-format
 msgid "Articles by %{username}"
 msgstr "%{username} の記事"
@@ -4022,7 +4027,7 @@ msgstr "%{username} の記事"
 msgid "Back to profile"
 msgstr "プロフィールに戻る"
 
-#: lib/baudrate_web/live/user_content_live.ex:69
+#: lib/baudrate_web/live/user_content_live.ex:70
 #, elixir-autogen, elixir-format
 msgid "Comments by %{username}"
 msgstr "%{username} のコメント"
@@ -4081,47 +4086,47 @@ msgstr "通知はまだありません。"
 msgid "You'll be notified when someone replies, mentions you, or follows you."
 msgstr "返信、メンション、フォローがあると通知されます。"
 
-#: lib/baudrate_web/helpers.ex:402
+#: lib/baudrate_web/helpers.ex:415
 #, elixir-autogen, elixir-format
 msgid "followed you"
 msgstr "あなたをフォローしました"
 
-#: lib/baudrate_web/helpers.ex:414
+#: lib/baudrate_web/helpers.ex:427
 #, elixir-autogen, elixir-format
 msgid "forwarded your article"
 msgstr "あなたの記事を転送しました"
 
-#: lib/baudrate_web/helpers.ex:410
+#: lib/baudrate_web/helpers.ex:423
 #, elixir-autogen, elixir-format
 msgid "liked your article"
 msgstr "あなたの記事にいいねしました"
 
-#: lib/baudrate_web/helpers.ex:401
+#: lib/baudrate_web/helpers.ex:414
 #, elixir-autogen, elixir-format
 msgid "mentioned you"
 msgstr "あなたをメンションしました"
 
-#: lib/baudrate_web/helpers.ex:416
+#: lib/baudrate_web/helpers.ex:429
 #, elixir-autogen, elixir-format
 msgid "posted an announcement"
 msgstr "お知らせを投稿しました"
 
-#: lib/baudrate_web/helpers.ex:399
+#: lib/baudrate_web/helpers.ex:412
 #, elixir-autogen, elixir-format
 msgid "replied to your article"
 msgstr "あなたの記事に返信しました"
 
-#: lib/baudrate_web/helpers.ex:400
+#: lib/baudrate_web/helpers.ex:413
 #, elixir-autogen, elixir-format
 msgid "replied to your comment"
 msgstr "あなたのコメントに返信しました"
 
-#: lib/baudrate_web/helpers.ex:559
+#: lib/baudrate_web/helpers.ex:581
 #, elixir-autogen, elixir-format
 msgid "sent you a notification"
 msgstr "通知を送りました"
 
-#: lib/baudrate_web/helpers.ex:415
+#: lib/baudrate_web/helpers.ex:428
 #, elixir-autogen, elixir-format
 msgid "submitted a moderation report"
 msgstr "モデレーション報告を提出しました"
@@ -4740,7 +4745,7 @@ msgstr "自分の記事にはいいねできません。"
 msgid "You cannot like your own comment."
 msgstr "自分のコメントにはいいねできません。"
 
-#: lib/baudrate_web/helpers.ex:411
+#: lib/baudrate_web/helpers.ex:424
 #, elixir-autogen, elixir-format
 msgid "liked your comment"
 msgstr "あなたのコメントにいいねしました"
@@ -4844,7 +4849,7 @@ msgstr "セットアップを続行するには、インストールキーを入
 #: lib/baudrate_web/live/article_live.ex:833
 #: lib/baudrate_web/live/article_live.ex:852
 #: lib/baudrate_web/live/safety_actions.ex:164
-#: lib/baudrate_web/live/user_profile_live.ex:351
+#: lib/baudrate_web/live/user_profile_live.ex:352
 #, elixir-autogen, elixir-format
 msgid "Failed to submit report."
 msgstr "通報の送信に失敗しました。"
@@ -4861,23 +4866,23 @@ msgstr "インストールキー"
 msgid "Invalid installation key."
 msgstr "インストールキーが無効です。"
 
-#: lib/baudrate_web/components/core_components.ex:942
+#: lib/baudrate_web/components/core_components.ex:967
 #, elixir-autogen, elixir-format
 msgid "Please describe the issue..."
 msgstr "問題の内容を記述してください..."
 
-#: lib/baudrate_web/components/core_components.ex:933
+#: lib/baudrate_web/components/core_components.ex:958
 #: lib/baudrate_web/live/admin/federation_live.html.heex:256
 #: lib/baudrate_web/live/admin/instance_detail_live.html.heex:153
 #: lib/baudrate_web/live/admin/ip_bans_live.html.heex:125
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:286
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:298
 #, elixir-autogen, elixir-format
 msgid "Reason"
 msgstr "理由"
 
 #: lib/baudrate_web/components/comment_components.ex:386
-#: lib/baudrate_web/components/core_components.ex:869
-#: lib/baudrate_web/components/core_components.ex:953
+#: lib/baudrate_web/components/core_components.ex:894
+#: lib/baudrate_web/components/core_components.ex:978
 #: lib/baudrate_web/live/article_live.html.heex:447
 #: lib/baudrate_web/live/conversation_live.html.heex:274
 #: lib/baudrate_web/live/user_profile_live.html.heex:172
@@ -4885,34 +4890,34 @@ msgstr "理由"
 msgid "Report"
 msgstr "通報"
 
-#: lib/baudrate_web/components/core_components.ex:863
+#: lib/baudrate_web/components/core_components.ex:888
 #, elixir-autogen, elixir-format
 msgid "Report Article"
 msgstr "記事を通報"
 
-#: lib/baudrate_web/components/core_components.ex:864
+#: lib/baudrate_web/components/core_components.ex:889
 #, elixir-autogen, elixir-format
 msgid "Report Comment"
 msgstr "コメントを通報"
 
-#: lib/baudrate_web/components/core_components.ex:865
+#: lib/baudrate_web/components/core_components.ex:890
 #, elixir-autogen, elixir-format
 msgid "Report User"
 msgstr "ユーザーを通報"
 
 #: lib/baudrate_web/live/article_live.ex:849
 #: lib/baudrate_web/live/safety_actions.ex:155
-#: lib/baudrate_web/live/user_profile_live.ex:348
+#: lib/baudrate_web/live/user_profile_live.ex:349
 #, elixir-autogen, elixir-format
 msgid "Report submitted. Thank you."
 msgstr "通報を送信しました。ありがとうございます。"
 
-#: lib/baudrate_web/components/moderation_components.ex:287
+#: lib/baudrate_web/components/moderation_components.ex:289
 #, elixir-autogen, elixir-format
 msgid "Reported User:"
 msgstr "通報されたユーザー："
 
-#: lib/baudrate_web/components/core_components.ex:951
+#: lib/baudrate_web/components/core_components.ex:976
 #, elixir-autogen, elixir-format
 msgid "Submitting..."
 msgstr "送信中..."
@@ -4924,7 +4929,7 @@ msgstr "試行回数が多すぎます。しばらくしてからもう一度お
 
 #: lib/baudrate_web/live/article_live.ex:821
 #: lib/baudrate_web/live/safety_actions.ex:158
-#: lib/baudrate_web/live/user_profile_live.ex:327
+#: lib/baudrate_web/live/user_profile_live.ex:328
 #, elixir-autogen, elixir-format
 msgid "Too many reports. Please try again later."
 msgstr "通報が多すぎます。しばらくしてからもう一度お試しください。"
@@ -4936,7 +4941,7 @@ msgstr "認証"
 
 #: lib/baudrate_web/live/article_live.ex:839
 #: lib/baudrate_web/live/safety_actions.ex:161
-#: lib/baudrate_web/live/user_profile_live.ex:336
+#: lib/baudrate_web/live/user_profile_live.ex:337
 #, elixir-autogen, elixir-format
 msgid "You have already reported this."
 msgstr "すでに通報済みです。"
@@ -4975,7 +4980,7 @@ msgstr "キャンセルしてホームに戻る"
 msgid "For security, please re-enter your TOTP code to access admin functions."
 msgstr "セキュリティのため、管理機能にアクセスするにはTOTPコードを再入力してください。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:275
+#: lib/baudrate_web/live/auth_hooks.ex:280
 #, elixir-autogen, elixir-format
 msgid "TOTP must be configured before accessing admin pages."
 msgstr "管理ページにアクセスする前にTOTPを設定する必要があります。"
@@ -5036,12 +5041,12 @@ msgstr "二要素認証が正常に有効化されました。"
 msgid "%{articles} articles, %{comments} comments"
 msgstr "記事 %{articles} 件、コメント %{comments} 件"
 
-#: lib/baudrate_web/components/core_components.ex:1242
+#: lib/baudrate_web/components/core_components.ex:1267
 #, elixir-autogen, elixir-format
 msgid "Link preview"
 msgstr "リンクプレビュー"
 
-#: lib/baudrate_web/components/core_components.ex:1259
+#: lib/baudrate_web/components/core_components.ex:1284
 #, elixir-autogen, elixir-format
 msgid "Link preview: %{title}"
 msgstr "リンクプレビュー：%{title}"
@@ -5079,12 +5084,12 @@ msgstr "自分の記事はブーストできません。"
 msgid "You cannot boost your own comment."
 msgstr "自分のコメントはブーストできません。"
 
-#: lib/baudrate_web/helpers.ex:412
+#: lib/baudrate_web/helpers.ex:425
 #, elixir-autogen, elixir-format
 msgid "boosted your article"
 msgstr "あなたの記事をブーストしました"
 
-#: lib/baudrate_web/helpers.ex:413
+#: lib/baudrate_web/helpers.ex:426
 #, elixir-autogen, elixir-format
 msgid "boosted your comment"
 msgstr "あなたのコメントをブーストしました"
@@ -5139,7 +5144,7 @@ msgstr "ブーストしました"
 msgid "Image attachment"
 msgstr "画像添付"
 
-#: lib/baudrate_web/components/core_components.ex:1193
+#: lib/baudrate_web/components/core_components.ex:1218
 #, elixir-autogen, elixir-format
 msgid "YouTube video"
 msgstr "YouTube 動画"
@@ -5164,13 +5169,13 @@ msgstr "転送に失敗しました。"
 msgid "Forwarded to board."
 msgstr "掲示板に転送しました。"
 
-#: lib/baudrate_web/helpers.ex:314
+#: lib/baudrate_web/helpers.ex:327
 #, elixir-autogen, elixir-format
 msgid "Direct"
 msgstr "ダイレクト"
 
 #: lib/baudrate_web/components/comment_components.ex:488
-#: lib/baudrate_web/helpers.ex:311
+#: lib/baudrate_web/helpers.ex:324
 #: lib/baudrate_web/live/article_edit_live.html.heex:211
 #: lib/baudrate_web/live/article_live.html.heex:631
 #: lib/baudrate_web/live/article_new_live.html.heex:412
@@ -5180,7 +5185,7 @@ msgid "Public"
 msgstr "公開"
 
 #: lib/baudrate_web/components/comment_components.ex:489
-#: lib/baudrate_web/helpers.ex:312
+#: lib/baudrate_web/helpers.ex:325
 #: lib/baudrate_web/live/article_edit_live.html.heex:212
 #: lib/baudrate_web/live/article_live.html.heex:632
 #: lib/baudrate_web/live/article_new_live.html.heex:413
@@ -5255,7 +5260,7 @@ msgstr "ブーストした記事とコメント"
 msgid "Copy profile URL"
 msgstr "プロフィールURLをコピー"
 
-#: lib/baudrate_web/components/core_components.ex:1264
+#: lib/baudrate_web/components/core_components.ex:1289
 #, elixir-autogen, elixir-format
 msgid "Preview image for %{title}"
 msgstr "%{title} のプレビュー画像"
@@ -5815,7 +5820,7 @@ msgstr "%{domain} をブロックリストに追加"
 msgid "Added:"
 msgstr "追加："
 
-#: lib/baudrate_web/helpers.ex:335
+#: lib/baudrate_web/helpers.ex:348
 #, elixir-autogen, elixir-format
 msgid "Application"
 msgstr "アプリケーション"
@@ -5866,12 +5871,12 @@ msgstr "招待リンクをコピー %{code}"
 msgid "Deactivate bot %{username}"
 msgstr "ボット %{username} を無効化"
 
-#: lib/baudrate_web/components/moderation_components.ex:167
+#: lib/baudrate_web/components/moderation_components.ex:169
 #, elixir-autogen, elixir-format
 msgid "Delete Article: %{title}"
 msgstr "記事を削除：%{title}"
 
-#: lib/baudrate_web/components/moderation_components.ex:206
+#: lib/baudrate_web/components/moderation_components.ex:208
 #, elixir-autogen, elixir-format
 msgid "Delete Comment from report #%{id}"
 msgstr "コメントを削除（通報 #%{id}）"
@@ -5891,7 +5896,7 @@ msgstr "ボット %{username} を削除"
 msgid "Disable federation for board %{board}"
 msgstr "掲示板 %{board} の連合を無効化"
 
-#: lib/baudrate_web/components/moderation_components.ex:374
+#: lib/baudrate_web/components/moderation_components.ex:376
 #, elixir-autogen, elixir-format
 msgid "Dismiss report #%{id}"
 msgstr "通報 #%{id} を却下"
@@ -5916,17 +5921,17 @@ msgstr "掲示板 %{board} の連合を有効化"
 msgid "Follows of board %{name}"
 msgstr "掲示板 %{name} のフォロー管理"
 
-#: lib/baudrate_web/helpers.ex:332
+#: lib/baudrate_web/helpers.ex:345
 #, elixir-autogen, elixir-format
 msgid "Group"
 msgstr "グループ"
 
-#: lib/baudrate_web/components/moderation_components.ex:325
+#: lib/baudrate_web/components/moderation_components.ex:327
 #, elixir-autogen, elixir-format
 msgid "Handled by %{name}"
 msgstr "対応者：%{name}"
 
-#: lib/baudrate_web/components/moderation_components.ex:321
+#: lib/baudrate_web/components/moderation_components.ex:323
 #, elixir-autogen, elixir-format
 msgid "Handled by %{name} — %{note}"
 msgstr "対応者：%{name} — %{note}"
@@ -5991,7 +5996,7 @@ msgid "New notification. %{count} unread notification"
 msgid_plural "New notification. %{count} unread notifications"
 msgstr[0] "新しい通知。未読の通知 %{count} 件"
 
-#: lib/baudrate_web/helpers.ex:321
+#: lib/baudrate_web/helpers.ex:334
 #, elixir-autogen, elixir-format
 msgid "Note"
 msgstr "投稿"
@@ -6002,12 +6007,12 @@ msgid "Notifications, %{count} unread"
 msgid_plural "Notifications, %{count} unread"
 msgstr[0] "通知、未読 %{count} 件"
 
-#: lib/baudrate_web/helpers.ex:333
+#: lib/baudrate_web/helpers.ex:346
 #, elixir-autogen, elixir-format
 msgid "Organization"
 msgstr "組織"
 
-#: lib/baudrate_web/helpers.ex:323
+#: lib/baudrate_web/helpers.ex:336
 #, elixir-autogen, elixir-format
 msgid "Page"
 msgstr "ページ"
@@ -6017,7 +6022,7 @@ msgstr "ページ"
 msgid "Pending — cancel follow request"
 msgstr "保留中 — フォローリクエストを取り消す"
 
-#: lib/baudrate_web/helpers.ex:331
+#: lib/baudrate_web/helpers.ex:344
 #, elixir-autogen, elixir-format
 msgid "Person"
 msgstr "個人"
@@ -6051,7 +6056,7 @@ msgstr "削除："
 msgid "Replies to %{author}"
 msgstr "%{author} さんへの返信"
 
-#: lib/baudrate_web/components/moderation_components.ex:96
+#: lib/baudrate_web/components/moderation_components.ex:98
 #, elixir-autogen, elixir-format
 msgid "Reported by %{name}"
 msgstr "通報者：%{name}"
@@ -6061,12 +6066,12 @@ msgstr "通報者：%{name}"
 msgid "Reset & Retry bot %{username}"
 msgstr "リセットして再試行（ボット %{username}）"
 
-#: lib/baudrate_web/components/moderation_components.ex:357
+#: lib/baudrate_web/components/moderation_components.ex:359
 #, elixir-autogen, elixir-format
 msgid "Resolution note for report #%{id}"
 msgstr "通報 #%{id} の対応メモ"
 
-#: lib/baudrate_web/components/moderation_components.ex:364
+#: lib/baudrate_web/components/moderation_components.ex:366
 #, elixir-autogen, elixir-format
 msgid "Resolve report #%{id}"
 msgstr "通報 #%{id} に対処"
@@ -6092,7 +6097,7 @@ msgstr "掲示板 %{board} のキーをローテーション"
 msgid "Save role for %{username}"
 msgstr "%{username} のロールを保存"
 
-#: lib/baudrate_web/helpers.ex:334
+#: lib/baudrate_web/helpers.ex:347
 #, elixir-autogen, elixir-format
 msgid "Service"
 msgstr "サービス"
@@ -6145,6 +6150,7 @@ msgstr "確認中..."
 #: lib/baudrate_web/live/account_migration_live.ex:102
 #: lib/baudrate_web/live/data_export_live.ex:274
 #: lib/baudrate_web/live/password_change_live.ex:129
+#: lib/baudrate_web/live/profile_account_live.ex:177
 #: lib/baudrate_web/live/profile_security_live.ex:109
 #: lib/baudrate_web/live/profile_security_live.ex:273
 #: lib/baudrate_web/live/totp_reset_live.ex:102
@@ -6177,47 +6183,47 @@ msgstr "OTP %{release}（ERTS %{erts}）"
 msgid "System Information"
 msgstr "システム情報"
 
-#: lib/baudrate_web/helpers.ex:469
+#: lib/baudrate_web/helpers.ex:482
 #, elixir-autogen, elixir-format
 msgid "A security key was added to your account."
 msgstr "アカウントにセキュリティキーが追加されました。"
 
-#: lib/baudrate_web/helpers.ex:472
+#: lib/baudrate_web/helpers.ex:485
 #, elixir-autogen, elixir-format
 msgid "A security key was removed from your account."
 msgstr "アカウントからセキュリティキーが削除されました。"
 
-#: lib/baudrate_web/live/notifications_live.ex:235
+#: lib/baudrate_web/live/notifications_live.ex:238
 #, elixir-autogen, elixir-format
 msgid "If you did not make this change, check your security settings right away and contact an administrator."
 msgstr "この変更に心当たりがない場合は、すぐにセキュリティ設定を確認し、管理者に連絡してください。"
 
-#: lib/baudrate_web/live/notifications_live.ex:220
+#: lib/baudrate_web/live/notifications_live.ex:223
 #, elixir-autogen, elixir-format
 msgid "Review your security settings"
 msgstr "セキュリティ設定を確認"
 
-#: lib/baudrate_web/live/notifications_live.ex:205
+#: lib/baudrate_web/live/notifications_live.ex:208
 #, elixir-autogen, elixir-format
 msgid "Security key: %{label}"
 msgstr "セキュリティキー：%{label}"
 
-#: lib/baudrate_web/helpers.ex:475
+#: lib/baudrate_web/helpers.ex:488
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication (TOTP) was set up on your account."
 msgstr "アカウントに二要素認証（TOTP）が設定されました。"
 
-#: lib/baudrate_web/helpers.ex:478
+#: lib/baudrate_web/helpers.ex:491
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication (TOTP) was turned off on your account."
 msgstr "アカウントの二要素認証（TOTP）が無効になりました。"
 
-#: lib/baudrate/notification/web_push.ex:397
+#: lib/baudrate/notification/web_push.ex:401
 #, elixir-autogen, elixir-format
 msgid "Someone"
 msgstr "誰か"
 
-#: lib/baudrate_web/helpers.ex:484
+#: lib/baudrate_web/helpers.ex:497
 #, elixir-autogen, elixir-format
 msgid "All other sessions on your account were signed out."
 msgstr "アカウントの他のすべてのセッションがログアウトされました。"
@@ -6267,12 +6273,12 @@ msgstr "新しいパスワードの問題を修正してください。"
 msgid "Sessions"
 msgstr "セッション"
 
-#: lib/baudrate_web/live/profile_security_live.html.heex:545
+#: lib/baudrate_web/live/profile_security_live.html.heex:547
 #, elixir-autogen, elixir-format
 msgid "Sign Out Everywhere Else"
 msgstr "他のすべての場所からログアウト"
 
-#: lib/baudrate_web/live/profile_security_live.html.heex:489
+#: lib/baudrate_web/live/profile_security_live.html.heex:491
 #, elixir-autogen, elixir-format
 msgid "Sign out of every other browser or device where your account is signed in. This one stays signed in."
 msgstr "このアカウントでログインしている他のすべてのブラウザや端末からログアウトします。このセッションはログインしたままです。"
@@ -6284,12 +6290,12 @@ msgid_plural "Signed out %{count} other sessions."
 msgstr[0] "他の %{count} 件のセッションをログアウトしました。"
 
 #: lib/baudrate_web/live/data_export_live.html.heex:184
-#: lib/baudrate_web/live/profile_security_live.html.heex:542
+#: lib/baudrate_web/live/profile_security_live.html.heex:544
 #, elixir-autogen, elixir-format
 msgid "Signing out..."
 msgstr "ログアウト中..."
 
-#: lib/baudrate_web/helpers.ex:481
+#: lib/baudrate_web/helpers.ex:494
 #, elixir-autogen, elixir-format
 msgid "Your account password was changed."
 msgstr "アカウントのパスワードが変更されました。"
@@ -6302,27 +6308,27 @@ msgstr "アカウントのパスワードが変更されました。"
 msgid "Your session has expired. Please sign in again."
 msgstr "セッションの有効期限が切れました。もう一度ログインしてください。"
 
-#: lib/baudrate_web/helpers.ex:521
+#: lib/baudrate_web/helpers.ex:543
 #, elixir-autogen, elixir-format
 msgid "A data export of your account was requested. It can be downloaded after 24 hours."
 msgstr "アカウントのデータエクスポートがリクエストされました。24 時間後にダウンロードできるようになります。"
 
-#: lib/baudrate_web/helpers.ex:530
+#: lib/baudrate_web/helpers.ex:552
 #, elixir-autogen, elixir-format
 msgid "A data export request on your account was cancelled."
 msgstr "アカウントのデータエクスポートのリクエストがキャンセルされました。"
 
-#: lib/baudrate_web/live/notifications_live.ex:216
+#: lib/baudrate_web/live/notifications_live.ex:219
 #, elixir-autogen, elixir-format
 msgid "Review your data exports"
 msgstr "データエクスポートを確認"
 
-#: lib/baudrate_web/helpers.ex:524
+#: lib/baudrate_web/helpers.ex:546
 #, elixir-autogen, elixir-format
 msgid "Your data export is ready and can be downloaded for 48 hours."
 msgstr "データエクスポートの準備ができました。48 時間ダウンロードできます。"
 
-#: lib/baudrate_web/helpers.ex:527
+#: lib/baudrate_web/helpers.ex:549
 #, elixir-autogen, elixir-format
 msgid "Your data export was downloaded."
 msgstr "データエクスポートがダウンロードされました。"
@@ -6487,6 +6493,7 @@ msgstr "データをエクスポートするには二要素認証（TOTP）を�
 #: lib/baudrate_web/live/data_export_live.ex:42
 #: lib/baudrate_web/live/data_export_live.html.heex:7
 #: lib/baudrate_web/live/profile_account_live.html.heex:182
+#: lib/baudrate_web/live/profile_account_live.html.heex:247
 #, elixir-autogen, elixir-format
 msgid "Export Your Data"
 msgstr "データのエクスポート"
@@ -6557,6 +6564,7 @@ msgid "Requested %{time}. If this was not you, cancel it now."
 msgstr "%{time} にリクエストされました。心当たりがない場合はすぐにキャンセルしてください。"
 
 #: lib/baudrate_web/live/data_export_live.html.heex:78
+#: lib/baudrate_web/live/profile_account_live.html.heex:332
 #, elixir-autogen, elixir-format
 msgid "Requesting..."
 msgstr "リクエスト中..."
@@ -6664,7 +6672,7 @@ msgstr "シスオペ"
 msgid "The 100 most recent data export requests. Users download their own data; there is no way to export another user's data from here."
 msgstr "直近 100 件のデータエクスポートのリクエストです。ユーザーは自分のデータのみをダウンロードでき、ここから他のユーザーのデータをエクスポートすることはできません。"
 
-#: lib/baudrate_web/live/notifications_live.ex:217
+#: lib/baudrate_web/live/notifications_live.ex:220
 #, elixir-autogen, elixir-format
 msgid "Change your password"
 msgstr "パスワードを変更"
@@ -6674,12 +6682,12 @@ msgstr "パスワードを変更"
 msgid "Check"
 msgstr "確認項目"
 
-#: lib/baudrate_web/components/core_components.ex:999
+#: lib/baudrate_web/components/core_components.ex:1024
 #, elixir-autogen, elixir-format
 msgid "Each code works only once. If you just used one, wait for the next code."
 msgstr "各コードは一度しか使えません。使ったばかりの場合は、次のコードに切り替わるまでお待ちください。"
 
-#: lib/baudrate_web/live/notifications_live.ex:229
+#: lib/baudrate_web/live/notifications_live.ex:232
 #, elixir-autogen, elixir-format
 msgid "If this was not you, your password is known to someone else. Change it right away and contact an administrator."
 msgstr "心当たりがない場合、パスワードが他人に知られています。すぐにパスワードを変更し、管理者に連絡してください。"
@@ -6689,7 +6697,7 @@ msgstr "心当たりがない場合、パスワードが他人に知られてい
 msgid "Re-authentication"
 msgstr "再認証"
 
-#: lib/baudrate_web/helpers.ex:488
+#: lib/baudrate_web/helpers.ex:501
 #, elixir-autogen, elixir-format
 msgid "Someone entered the correct password for your account but failed the two-factor code several times."
 msgstr "何者かがあなたのアカウントの正しいパスワードを入力しましたが、二要素認証コードの入力に何度も失敗しました。"
@@ -6739,7 +6747,7 @@ msgstr "エイリアスが見つかりません。"
 msgid "Alias removed."
 msgstr "エイリアスを削除しました。"
 
-#: lib/baudrate_web/live/notifications_live.ex:209
+#: lib/baudrate_web/live/notifications_live.ex:212
 #, elixir-autogen, elixir-format
 msgid "Alias: %{label}"
 msgstr "エイリアス：%{label}"
@@ -6759,12 +6767,12 @@ msgstr "エイリアスと移行"
 msgid "Aliases tell other servers that an account elsewhere is also yours. They are needed before an account can move."
 msgstr "エイリアスは、別の場所にあるアカウントもあなたのものであることを他のサーバーに伝えます。アカウントを移行する前に設定が必要です。"
 
-#: lib/baudrate_web/helpers.ex:493
+#: lib/baudrate_web/helpers.ex:506
 #, elixir-autogen, elixir-format
 msgid "An account alias was added to your account."
 msgstr "アカウントにエイリアスが追加されました。"
 
-#: lib/baudrate_web/helpers.ex:496
+#: lib/baudrate_web/helpers.ex:509
 #, elixir-autogen, elixir-format
 msgid "An account alias was removed from your account."
 msgstr "アカウントからエイリアスが削除されました。"
@@ -6860,12 +6868,12 @@ msgstr "このアカウントを別のサーバーへ移行するには、先に
 msgid "A move of this account is already pending."
 msgstr "このアカウントの移行はすでに保留中です。"
 
-#: lib/baudrate_web/helpers.ex:500
+#: lib/baudrate_web/helpers.ex:513
 #, elixir-autogen, elixir-format
 msgid "A move of your account to another server was requested. It will be sent after 24 hours unless you cancel it."
 msgstr "アカウントを別のサーバーへ移行する要求がありました。キャンセルしない限り、24時間後に送信されます。"
 
-#: lib/baudrate_web/helpers.ex:505
+#: lib/baudrate_web/helpers.ex:527
 #, elixir-autogen, elixir-format
 msgid "A pending move of your account was cancelled."
 msgstr "保留中のアカウント移行がキャンセルされました。"
@@ -6915,7 +6923,7 @@ msgstr "移行先"
 msgid "Destination account"
 msgstr "移行先のアカウント"
 
-#: lib/baudrate_web/live/notifications_live.ex:212
+#: lib/baudrate_web/live/notifications_live.ex:215
 #, elixir-autogen, elixir-format
 msgid "Destination: %{label}"
 msgstr "移行先：%{label}"
@@ -7047,12 +7055,12 @@ msgstr[0] "二要素認証を有効にしてから7日経つ必要がありま�
 msgid "Your account is about to move to %{account}"
 msgstr "アカウントがまもなく %{account} へ移行します"
 
-#: lib/baudrate_web/helpers.ex:508
+#: lib/baudrate_web/helpers.ex:530
 #, elixir-autogen, elixir-format
 msgid "A pending move of your account could not be sent and was stopped."
 msgstr "保留中のアカウント移行を送信できなかったため、中止しました。"
 
-#: lib/baudrate_web/live/notifications_live.ex:193
+#: lib/baudrate_web/live/notifications_live.ex:196
 #, elixir-autogen, elixir-format
 msgid "New account: %{label}"
 msgstr "新しいアカウント：%{label}"
@@ -7077,7 +7085,7 @@ msgstr "リダイレクトを解除すると、このアカウントで再び投
 msgid "Removing..."
 msgstr "解除中…"
 
-#: lib/baudrate_web/helpers.ex:517
+#: lib/baudrate_web/helpers.ex:539
 #, elixir-autogen, elixir-format
 msgid "The redirect of your moved account was removed. It can post again."
 msgstr "移行済みアカウントのリダイレクトが解除されました。再び投稿できます。"
@@ -7087,7 +7095,7 @@ msgstr "移行済みアカウントのリダイレクトが解除されました
 msgid "The redirect was removed. This account can post again."
 msgstr "リダイレクトを解除しました。このアカウントで再び投稿できます。"
 
-#: lib/baudrate_web/live/user_profile_live.ex:134
+#: lib/baudrate_web/live/user_profile_live.ex:135
 #, elixir-autogen, elixir-format
 msgid "This account has moved. Follow its new account instead."
 msgstr "このアカウントは移行済みです。新しいアカウントをフォローしてください。"
@@ -7098,7 +7106,7 @@ msgstr "このアカウントは移行済みです。新しいアカウントを
 msgid "This account has moved. New account:"
 msgstr "このアカウントは移行済みです。新しいアカウント："
 
-#: lib/baudrate_web/helpers.ex:563
+#: lib/baudrate_web/helpers.ex:585
 #, elixir-autogen, elixir-format
 msgid "Your account has moved and is read-only. Remove the redirect to post again."
 msgstr "アカウントは移行済みで、読み取り専用です。再び投稿するにはリダイレクトを解除してください。"
@@ -7108,7 +7116,7 @@ msgstr "アカウントは移行済みで、読み取り専用です。再び投
 msgid "Your account has moved and is read-only. You can still read, export your data and manage your account."
 msgstr "アカウントは移行済みで、読み取り専用です。閲覧、データのエクスポート、アカウントの管理は引き続き行えます。"
 
-#: lib/baudrate_web/helpers.ex:512
+#: lib/baudrate_web/helpers.ex:534
 #, elixir-autogen, elixir-format
 msgid "Your account has moved. Your followers were sent to your new account, and this account is now read-only."
 msgstr "アカウントを移行しました。フォロワーは新しいアカウントへ移され、このアカウントは読み取り専用になりました。"
@@ -7118,7 +7126,7 @@ msgstr "アカウントを移行しました。フォロワーは新しいアカ
 msgid "it could not be sent"
 msgstr "送信できませんでした"
 
-#: lib/baudrate_web/helpers.ex:405
+#: lib/baudrate_web/helpers.ex:418
 #, elixir-autogen, elixir-format
 msgid "moved to a new account, which you now follow"
 msgstr "新しいアカウントに移行しました。現在はそちらをフォローしています"
@@ -7143,12 +7151,12 @@ msgstr "移行先がこのアカウントをエイリアスに登録していま
 msgid "this account was no longer eligible"
 msgstr "このアカウントが移行の条件を満たさなくなりました"
 
-#: lib/baudrate_web/live/notifications_live.ex:198
+#: lib/baudrate_web/live/notifications_live.ex:201
 #, elixir-autogen, elixir-format
 msgid "New account: %{label}. Boards: %{boards}"
 msgstr "新しいアカウント：%{label}。掲示板：%{boards}"
 
-#: lib/baudrate_web/helpers.ex:408
+#: lib/baudrate_web/helpers.ex:421
 #, elixir-autogen, elixir-format
 msgid "moved to a new account. Boards that follow it were not switched over."
 msgstr "新しいアカウントに移行しました。このアカウントをフォローしている掲示板は切り替えられていません。"
@@ -7253,12 +7261,12 @@ msgstr "以前のメッセージを読み込む"
 msgid "Loading..."
 msgstr "読み込み中..."
 
-#: lib/baudrate_web/components/moderation_components.ex:130
+#: lib/baudrate_web/components/moderation_components.ex:132
 #, elixir-autogen, elixir-format
 msgid "No reason given."
 msgstr "理由は記載されていません。"
 
-#: lib/baudrate_web/components/moderation_components.ex:103
+#: lib/baudrate_web/components/moderation_components.ex:105
 #, elixir-autogen, elixir-format
 msgid "Reported from %{domain} by %{name}"
 msgstr "通報者：%{name}（%{domain}）"
@@ -7329,7 +7337,7 @@ msgstr "ブロックしたアカウントは、あなたへの返信、いいね
 msgid "Failed to block account."
 msgstr "アカウントのブロックに失敗しました。"
 
-#: lib/baudrate_web/live/user_profile_live.ex:248
+#: lib/baudrate_web/live/user_profile_live.ex:249
 #, elixir-autogen, elixir-format
 msgid "Failed to block user."
 msgstr "ユーザーのブロックに失敗しました。"
@@ -7359,7 +7367,7 @@ msgstr "アカウントをミュート"
 msgid "No blocked accounts."
 msgstr "ブロック中のアカウントはありません。"
 
-#: lib/baudrate_web/components/moderation_components.ex:249
+#: lib/baudrate_web/components/moderation_components.ex:251
 #, elixir-autogen, elixir-format
 msgid "Only this message was shared with moderators, not the conversation."
 msgstr "モデレーターに共有されたのはこのメッセージのみで、会話全体は共有されていません。"
@@ -7369,17 +7377,17 @@ msgstr "モデレーターに共有されたのはこのメッセージのみで
 msgid "Report %{handle}"
 msgstr "%{handle} を通報"
 
-#: lib/baudrate_web/components/core_components.ex:868
+#: lib/baudrate_web/components/core_components.ex:893
 #, elixir-autogen, elixir-format
 msgid "Report Account"
 msgstr "アカウントを通報"
 
-#: lib/baudrate_web/components/core_components.ex:867
+#: lib/baudrate_web/components/core_components.ex:892
 #, elixir-autogen, elixir-format
 msgid "Report Message"
 msgstr "メッセージを通報"
 
-#: lib/baudrate_web/components/core_components.ex:866
+#: lib/baudrate_web/components/core_components.ex:891
 #, elixir-autogen, elixir-format
 msgid "Report Post"
 msgstr "投稿を通報"
@@ -7399,7 +7407,7 @@ msgstr "投稿を通報"
 msgid "Report this message"
 msgstr "このメッセージを通報"
 
-#: lib/baudrate_web/components/moderation_components.ex:244
+#: lib/baudrate_web/components/moderation_components.ex:246
 #, elixir-autogen, elixir-format
 msgid "Reported Direct Message:"
 msgstr "通報されたダイレクトメッセージ："
@@ -7446,68 +7454,68 @@ msgstr "%{name} のミュートを解除"
 msgid "Unmute account"
 msgstr "アカウントのミュートを解除"
 
-#: lib/baudrate_web/live/user_profile_live.ex:244
+#: lib/baudrate_web/live/user_profile_live.ex:245
 #, elixir-autogen, elixir-format
 msgid "User blocked."
 msgstr "ユーザーをブロックしました。"
 
-#: lib/baudrate_web/live/user_profile_live.ex:266
+#: lib/baudrate_web/live/user_profile_live.ex:267
 #, elixir-autogen, elixir-format
 msgid "User unblocked."
 msgstr "ユーザーのブロックを解除しました。"
 
-#: lib/baudrate_web/helpers.ex:570
+#: lib/baudrate_web/helpers.ex:592
 #, elixir-autogen, elixir-format
 msgid "You cannot interact with this account."
 msgstr "このアカウントとはやり取りできません。"
 
-#: lib/baudrate_web/components/moderation_components.ex:84
+#: lib/baudrate_web/components/moderation_components.ex:86
 #, elixir-autogen, elixir-format
 msgid "%{count} other open report on this target"
 msgid_plural "%{count} other open reports on this target"
 msgstr[0] "この対象には他に %{count} 件の未対応の通報があります"
 
-#: lib/baudrate_web/helpers.ex:352
+#: lib/baudrate_web/helpers.ex:365
 #, elixir-autogen, elixir-format
 msgid "Breaks a rule"
 msgstr "ルール違反"
 
-#: lib/baudrate_web/components/core_components.ex:906
+#: lib/baudrate_web/components/core_components.ex:931
 #, elixir-autogen, elixir-format
 msgid "Choose a reason"
 msgstr "理由を選択してください"
 
-#: lib/baudrate_web/helpers.ex:350
+#: lib/baudrate_web/helpers.ex:363
 #, elixir-autogen, elixir-format
 msgid "Harassment"
 msgstr "嫌がらせ"
 
-#: lib/baudrate_web/helpers.ex:351
+#: lib/baudrate_web/helpers.ex:364
 #, elixir-autogen, elixir-format
 msgid "Illegal content"
 msgstr "違法なコンテンツ"
 
-#: lib/baudrate_web/helpers.ex:355
+#: lib/baudrate_web/helpers.ex:368
 #, elixir-autogen, elixir-format
 msgid "Not categorised"
 msgstr "未分類"
 
-#: lib/baudrate_web/helpers.ex:353
+#: lib/baudrate_web/helpers.ex:366
 #, elixir-autogen, elixir-format
 msgid "Other"
 msgstr "その他"
 
-#: lib/baudrate_web/helpers.ex:349
+#: lib/baudrate_web/helpers.ex:362
 #, elixir-autogen, elixir-format
 msgid "Spam"
 msgstr "スパム"
 
-#: lib/baudrate_web/components/moderation_components.ex:195
+#: lib/baudrate_web/components/moderation_components.ex:197
 #, elixir-autogen, elixir-format
 msgid "View in context"
 msgstr "元の場所で表示"
 
-#: lib/baudrate_web/components/core_components.ex:898
+#: lib/baudrate_web/components/core_components.ex:923
 #, elixir-autogen, elixir-format
 msgid "What is wrong?"
 msgstr "何が問題ですか？"
@@ -7538,7 +7546,7 @@ msgstr "あなたの掲示板への通報"
 msgid "You do not moderate any boards."
 msgstr "管理している掲示板がありません。"
 
-#: lib/baudrate_web/helpers.ex:425
+#: lib/baudrate_web/helpers.ex:438
 #, elixir-autogen, elixir-format
 msgid "A moderator removed your content."
 msgstr "モデレーターがあなたのコンテンツを削除しました。"
@@ -7548,28 +7556,28 @@ msgstr "モデレーターがあなたのコンテンツを削除しました。
 msgid "Reported as: %{category}"
 msgstr "通報の種類：%{category}"
 
-#: lib/baudrate_web/helpers.ex:422
+#: lib/baudrate_web/helpers.ex:435
 #, elixir-autogen, elixir-format
 msgid "Your report has been reviewed by the moderators."
 msgstr "あなたの通報はモデレーターが確認しました。"
 
-#: lib/baudrate_web/components/moderation_components.ex:155
-#: lib/baudrate_web/components/moderation_components.ex:186
+#: lib/baudrate_web/components/moderation_components.ex:157
+#: lib/baudrate_web/components/moderation_components.ex:188
 #, elixir-autogen, elixir-format
 msgid "Removed content, kept for 90 days:"
 msgstr "削除されたコンテンツ（90日間保持）："
 
-#: lib/baudrate_web/helpers.ex:459
+#: lib/baudrate_web/helpers.ex:472
 #, elixir-autogen, elixir-format
 msgid "A moderator took action on your account."
 msgstr "モデレーターがあなたのアカウントに対して処置を行いました。"
 
-#: lib/baudrate_web/helpers.ex:465
+#: lib/baudrate_web/helpers.ex:478
 #, elixir-autogen, elixir-format
 msgid "A restriction on your account has ended."
 msgstr "あなたのアカウントへの制限が期限切れで終了しました。"
 
-#: lib/baudrate_web/helpers.ex:462
+#: lib/baudrate_web/helpers.ex:475
 #, elixir-autogen, elixir-format
 msgid "A restriction on your account was lifted."
 msgstr "あなたのアカウントへの制限が解除されました。"
@@ -7580,7 +7588,7 @@ msgid "Failed to refuse the registration."
 msgstr "登録の拒否に失敗しました。"
 
 #: lib/baudrate_web/components/layouts.ex:770
-#: lib/baudrate_web/helpers.ex:789
+#: lib/baudrate_web/helpers.ex:815
 #, elixir-autogen, elixir-format
 msgid "It ends %{at}."
 msgstr "%{at} に終了します。"
@@ -7601,7 +7609,7 @@ msgid "Reason for refusing %{username}"
 msgstr "%{username} を拒否する理由"
 
 #: lib/baudrate_web/components/layouts.ex:767
-#: lib/baudrate_web/helpers.ex:788
+#: lib/baudrate_web/helpers.ex:814
 #, elixir-autogen, elixir-format
 msgid "Reason: %{reason}"
 msgstr "理由：%{reason}"
@@ -7656,7 +7664,7 @@ msgstr "操作が多すぎます。しばらくしてからもう一度お試し
 msgid "Warn User"
 msgstr "ユーザーに警告"
 
-#: lib/baudrate_web/helpers.ex:769
+#: lib/baudrate_web/helpers.ex:795
 #, elixir-autogen, elixir-format
 msgid "You cannot do that right now."
 msgstr "現在この操作は行えません。"
@@ -7669,20 +7677,20 @@ msgid "You cannot do that."
 msgstr "この操作を行う権限がありません。"
 
 #: lib/baudrate_web/components/layouts.ex:763
-#: lib/baudrate_web/helpers.ex:758
+#: lib/baudrate_web/helpers.ex:784
 #, elixir-autogen, elixir-format
 msgid "Your account is silenced and cannot post."
 msgstr "あなたのアカウントは発言停止中のため投稿できません。"
 
 #: lib/baudrate_web/components/layouts.ex:761
-#: lib/baudrate_web/helpers.ex:761
-#: lib/baudrate_web/helpers.ex:777
-#: lib/baudrate_web/live/auth_hooks.ex:74
+#: lib/baudrate_web/helpers.ex:787
+#: lib/baudrate_web/helpers.ex:803
+#: lib/baudrate_web/live/auth_hooks.ex:79
 #, elixir-autogen, elixir-format
 msgid "Your account is suspended."
 msgstr "あなたのアカウントは一時停止されています。"
 
-#: lib/baudrate_web/helpers.ex:428
+#: lib/baudrate_web/helpers.ex:441
 #, elixir-autogen, elixir-format
 msgid "registered and is waiting to be let in"
 msgstr "が登録し、承認を待っています"
@@ -7692,18 +7700,18 @@ msgstr "が登録し、承認を待っています"
 msgid "A suspension needs an end date."
 msgstr "一時停止には終了日時が必要です。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:448
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:460
 #, elixir-autogen, elixir-format
 msgid "Accounts this member invited"
 msgstr "このユーザーが招待したアカウント"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:645
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:657
 #, elixir-autogen, elixir-format
 msgid "Admins only. Moderators do not see IP addresses."
 msgstr "管理者のみ。モデレーターはIPアドレスを閲覧できません。"
 
 #: lib/baudrate_web/live/admin/ip_bans_live.html.heex:127
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:285
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:297
 #, elixir-autogen, elixir-format
 msgid "By"
 msgstr "実行者"
@@ -7715,74 +7723,74 @@ msgstr "%{days} 日以内の終了日時を選んでください。"
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:326
 #: lib/baudrate_web/live/admin/instance_detail_live.html.heex:167
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:238
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:250
 #, elixir-autogen, elixir-format
 msgid "Confirm"
 msgstr "確定"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:210
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:222
 #, elixir-autogen, elixir-format
 msgid "Days (leave empty for no end date)"
 msgstr "日数（空欄なら終了日なし）"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:208
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:220
 #, elixir-autogen, elixir-format
 msgid "Days (required)"
 msgstr "日数（必須）"
 
 #: lib/baudrate_web/live/admin/ip_bans_live.html.heex:126
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:284
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:296
 #, elixir-autogen, elixir-format
 msgid "Ends"
 msgstr "終了"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:662
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:674
 #, elixir-autogen, elixir-format
 msgid "IP address"
 msgstr "IPアドレス"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:46
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "Invited by"
 msgstr "招待者"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:36
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Joined"
 msgstr "登録日"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:151
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "Lift the silence"
 msgstr "発言停止を解除"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:160
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "Lift the suspension"
 msgstr "一時停止を解除"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:87
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "No restriction is in force."
 msgstr "現在有効な制限はありません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:648
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:660
 #, elixir-autogen, elixir-format
 msgid "None recorded."
 msgstr "記録はありません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:344
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:371
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:356
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:383
 #, elixir-autogen, elixir-format
 msgid "None."
 msgstr "なし。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:271
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:283
 #, elixir-autogen, elixir-format
 msgid "Nothing has ever been issued against this account."
 msgstr "このアカウントに対する処置はこれまでありません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:402
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:414
 #, elixir-autogen, elixir-format
 msgid "Nothing posted yet."
 msgstr "まだ投稿はありません。"
@@ -7792,54 +7800,54 @@ msgstr "まだ投稿はありません。"
 msgid "Open the record for %{username}"
 msgstr "%{username} の記録を開く"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:187
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:199
 #, elixir-autogen, elixir-format
 msgid "Reason (the member is told this)"
 msgstr "理由（本人に通知されます）"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:398
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:410
 #, elixir-autogen, elixir-format
 msgid "Recent content"
 msgstr "最近の投稿"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:639
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:651
 #, elixir-autogen, elixir-format
 msgid "Recent sign-in attempts"
 msgstr "最近のログイン試行"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:342
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:354
 #, elixir-autogen, elixir-format
 msgid "Reports about this account"
 msgstr "このアカウントへの通報"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:369
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:381
 #, elixir-autogen, elixir-format
 msgid "Reports made by this account"
 msgstr "このアカウントによる通報"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:263
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:275
 #, elixir-autogen, elixir-format
 msgid "Sanction history"
 msgstr "処置の履歴"
 
 #: lib/baudrate_web/live/admin/user_detail_live.ex:481
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:134
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Silence"
 msgstr "発言停止"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:79
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "Standing"
 msgstr "アカウントの状態"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:287
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:299
 #, elixir-autogen, elixir-format
 msgid "State"
 msgstr "状態"
 
 #: lib/baudrate_web/live/admin/instance_detail_live.html.heex:127
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:142
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:154
 #, elixir-autogen, elixir-format
 msgid "Suspend"
 msgstr "一時停止"
@@ -7885,7 +7893,7 @@ msgstr "制限を解除しました。"
 msgid "There was nothing to lift."
 msgstr "解除できる制限はありませんでした。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:64
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "This account moved to %{target}."
 msgstr "このアカウントは %{target} へ移行しました。"
@@ -7895,7 +7903,7 @@ msgstr "このアカウントは %{target} へ移行しました。"
 msgid "User: %{username}"
 msgstr "ユーザー：%{username}"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:126
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Warn"
 msgstr "警告"
@@ -7905,13 +7913,13 @@ msgstr "警告"
 msgid "Warning"
 msgstr "警告"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:282
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:294
 #, elixir-autogen, elixir-format
 msgid "What"
 msgstr "処置"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:283
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:661
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:295
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:673
 #, elixir-autogen, elixir-format
 msgid "When"
 msgstr "日時"
@@ -7926,12 +7934,12 @@ msgstr "自分と同等以上の権限を持つアカウントには操作でき
 msgid "You cannot do that to your own account."
 msgstr "自分のアカウントには実行できません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:169
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:181
 #, elixir-autogen, elixir-format
 msgid "You cannot take action on this account."
 msgstr "このアカウントには操作できません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:228
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:240
 #, elixir-autogen, elixir-format
 msgid "Your role can set an end up to 30 days away."
 msgstr "あなたの権限では終了日時を最大30日先まで設定できます。"
@@ -7941,7 +7949,7 @@ msgstr "あなたの権限では終了日時を最大30日先まで設定でき�
 msgid "ended"
 msgstr "終了"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:679
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:691
 #, elixir-autogen, elixir-format
 msgid "failure"
 msgstr "失敗"
@@ -7956,22 +7964,22 @@ msgstr "解除済み"
 msgid "recorded"
 msgstr "記録済み"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:679
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:691
 #, elixir-autogen, elixir-format
 msgid "success"
 msgstr "成功"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:311
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:323
 #, elixir-autogen, elixir-format
 msgid "system"
 msgstr "システム"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:105
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "until %{at}"
 msgstr "%{at} まで"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:108
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:120
 #, elixir-autogen, elixir-format
 msgid "with no end date"
 msgstr "終了日なし"
@@ -8019,7 +8027,7 @@ msgstr "%{domain} のブロックを解除しました。コンテンツが再�
 #: lib/baudrate_web/components/profile_components.ex:21
 #: lib/baudrate_web/live/admin/instance_detail_live.html.heex:66
 #: lib/baudrate_web/live/notifications_live.ex:142
-#: lib/baudrate_web/live/profile_account_live.ex:39
+#: lib/baudrate_web/live/profile_account_live.ex:52
 #: lib/baudrate_web/live/profile_account_live.html.heex:1
 #, elixir-autogen, elixir-format
 msgid "Account"
@@ -8131,7 +8139,7 @@ msgstr "このドメインをブロックする理由を入力してください
 msgid "Suspend %{actor}"
 msgstr "%{actor} を停止"
 
-#: lib/baudrate_web/components/moderation_components.ex:276
+#: lib/baudrate_web/components/moderation_components.ex:278
 #, elixir-autogen, elixir-format
 msgid "Suspend this account or block %{domain}"
 msgstr "このアカウントを停止、または %{domain} をブロック"
@@ -8330,7 +8338,7 @@ msgstr "保存できませんでした。もう一度お試しください。"
 msgid "The agreement was saved, but members were not asked to accept it again."
 msgstr "規約は保存されましたが、メンバーへの再同意の要求は行われませんでした。"
 
-#: lib/baudrate_web/helpers.ex:766
+#: lib/baudrate_web/helpers.ex:792
 #, elixir-autogen, elixir-format
 msgid "The terms have changed. Read and accept them to post again."
 msgstr "規約が変更されました。内容を読んで同意すると、再び投稿できます。"
@@ -8350,7 +8358,7 @@ msgstr "あなたが同意したあとに、この規約は変更されました
 msgid "You can keep reading, but posting is paused until you accept them."
 msgstr "閲覧は続けられますが、同意するまで投稿は一時停止されます。"
 
-#: lib/baudrate_web/components/core_components.ex:928
+#: lib/baudrate_web/components/core_components.ex:953
 #: lib/baudrate_web/live/admin/rules_live.html.heex:128
 #: lib/baudrate_web/live/policy_live.html.heex:25
 #, elixir-autogen, elixir-format
@@ -8413,7 +8421,7 @@ msgstr "%{title} を上へ移動"
 msgid "No rules yet. The /rules page says so, and reports cannot cite one."
 msgstr "ルールがまだありません。/rules ページにもその旨が表示され、通報でルールを指定することもできません。"
 
-#: lib/baudrate_web/components/core_components.ex:926
+#: lib/baudrate_web/components/core_components.ex:951
 #, elixir-autogen, elixir-format
 msgid "Not about a specific rule"
 msgstr "特定のルールについてではない"
@@ -8525,7 +8533,7 @@ msgstr "そのルールを保存できませんでした。"
 msgid "The rules are a numbered list rather than one document, so a report can point at the rule it says was broken."
 msgstr "ルールは一つの文書ではなく番号付きのリストなので、通報で破られたルールを指定できます。"
 
-#: lib/baudrate_web/components/core_components.ex:919
+#: lib/baudrate_web/components/core_components.ex:944
 #, elixir-autogen, elixir-format
 msgid "Which rule? (optional)"
 msgstr "どのルールですか？（任意）"
@@ -8541,7 +8549,7 @@ msgid "%{count} new timeline item"
 msgid_plural "%{count} new timeline items"
 msgstr[0] "%{count} 件の新しいタイムライン項目"
 
-#: lib/baudrate_web/components/moderation_components.ex:217
+#: lib/baudrate_web/components/moderation_components.ex:219
 #, elixir-autogen, elixir-format
 msgid "Reported Timeline Item:"
 msgstr "通報されたタイムライン項目："
@@ -8571,7 +8579,7 @@ msgid "%{count} earlier message loaded"
 msgid_plural "%{count} earlier messages loaded"
 msgstr[0] "以前のメッセージ %{count} 件を読み込みました"
 
-#: lib/baudrate_web/live/auth_hooks.ex:394
+#: lib/baudrate_web/live/auth_hooks.ex:399
 #, elixir-autogen, elixir-format
 msgid "Please verify your identity again to continue."
 msgstr "続行するには本人確認をやり直してください。"
@@ -8585,7 +8593,7 @@ msgstr "続行するには本人確認をやり直してください。"
 msgid "You are not allowed to do that."
 msgstr "この操作を行う権限がありません。"
 
-#: lib/baudrate_web/helpers.ex:456
+#: lib/baudrate_web/helpers.ex:469
 #, elixir-autogen, elixir-format
 msgid "Everything on this server is working again."
 msgstr "このサーバーは正常な状態に戻りました。"
@@ -8595,52 +8603,52 @@ msgstr "このサーバーは正常な状態に戻りました。"
 msgid "Needs attention: %{checks}"
 msgstr "対応が必要な項目：%{checks}"
 
-#: lib/baudrate_web/helpers.ex:453
+#: lib/baudrate_web/helpers.ex:466
 #, elixir-autogen, elixir-format
 msgid "Something on this server needs attention."
 msgstr "このサーバーに対応が必要な問題があります。"
 
-#: lib/baudrate_web/helpers.ex:368
+#: lib/baudrate_web/helpers.ex:381
 #, elixir-autogen, elixir-format
 msgid "a background worker"
 msgstr "バックグラウンドワーカー"
 
-#: lib/baudrate_web/helpers.ex:370
+#: lib/baudrate_web/helpers.ex:383
 #, elixir-autogen, elixir-format
 msgid "backups"
 msgstr "バックアップ"
 
-#: lib/baudrate_web/helpers.ex:369
+#: lib/baudrate_web/helpers.ex:382
 #, elixir-autogen, elixir-format
 msgid "free disk space"
 msgstr "ディスクの空き容量"
 
-#: lib/baudrate_web/helpers.ex:365
+#: lib/baudrate_web/helpers.ex:378
 #, elixir-autogen, elixir-format
 msgid "the database"
 msgstr "データベース"
 
-#: lib/baudrate_web/helpers.ex:371
+#: lib/baudrate_web/helpers.ex:384
 #, elixir-autogen, elixir-format
 msgid "the encryption keys"
 msgstr "暗号化鍵"
 
-#: lib/baudrate_web/helpers.ex:367
+#: lib/baudrate_web/helpers.ex:380
 #, elixir-autogen, elixir-format
 msgid "the incoming federation queue"
 msgstr "連合の受信キュー"
 
-#: lib/baudrate_web/helpers.ex:366
+#: lib/baudrate_web/helpers.ex:379
 #, elixir-autogen, elixir-format
 msgid "the outgoing federation queue"
 msgstr "連合の配信キュー"
 
-#: lib/baudrate_web/components/core_components.ex:1230
+#: lib/baudrate_web/components/core_components.ex:1255
 #, elixir-autogen, elixir-format
 msgid "Play the video. The player loads from YouTube."
 msgstr "動画を再生します。プレーヤーは YouTube から読み込まれます。"
 
-#: lib/baudrate_web/components/core_components.ex:1233
+#: lib/baudrate_web/components/core_components.ex:1258
 #, elixir-autogen, elixir-format
 msgid "Play “%{title}”. The player loads from YouTube."
 msgstr "「%{title}」を再生します。プレーヤーは YouTube から読み込まれます。"
@@ -8672,12 +8680,12 @@ msgstr "メディア添付"
 msgid "Optional — what should a reader know before opening this?"
 msgstr "任意 — 読者が開く前に知っておくべきことは？"
 
-#: lib/baudrate_web/components/core_components.ex:1035
+#: lib/baudrate_web/components/core_components.ex:1060
 #, elixir-autogen, elixir-format
 msgid "Sensitive content"
 msgstr "センシティブな内容"
 
-#: lib/baudrate_web/components/core_components.ex:1038
+#: lib/baudrate_web/components/core_components.ex:1063
 #, elixir-autogen, elixir-format
 msgid "Show"
 msgstr "表示"
@@ -8708,7 +8716,7 @@ msgstr "ブラウザの言語設定に合わせる"
 msgid "Site language"
 msgstr "サイトの言語"
 
-#: lib/baudrate_web/components/core_components.ex:1332
+#: lib/baudrate_web/components/core_components.ex:1357
 #: lib/baudrate_web/components/layouts.ex:505
 #, elixir-autogen, elixir-format
 msgid "Atom"
@@ -8719,7 +8727,7 @@ msgstr "Atom"
 msgid "Last active"
 msgstr "最終更新"
 
-#: lib/baudrate_web/components/core_components.ex:1322
+#: lib/baudrate_web/components/core_components.ex:1347
 #: lib/baudrate_web/components/layouts.ex:496
 #, elixir-autogen, elixir-format
 msgid "RSS"
@@ -8877,7 +8885,7 @@ msgid "%{count} unused code left."
 msgid_plural "%{count} unused codes left."
 msgstr[0] "未使用のリカバリーコードが %{count} 件残っています。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:735
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:747
 #: lib/baudrate_web/live/profile_security_live.html.heex:329
 #, elixir-autogen, elixir-format
 msgid "(unreadable)"
@@ -8899,12 +8907,12 @@ msgstr "%{admin} が発行したリセットリンクが %{expires} まで有効
 msgid "Account Recovery"
 msgstr "アカウントの回復"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:703
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:715
 #, elixir-autogen, elixir-format
 msgid "Account recovery"
 msgstr "アカウントの回復"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:894
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:906
 #, elixir-autogen, elixir-format
 msgid "Also remove this account's TOTP and security keys"
 msgstr "このアカウントの TOTP とセキュリティキーも削除する"
@@ -8945,7 +8953,7 @@ msgstr "表示名"
 msgid "Email address"
 msgstr "メールアドレス"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:917
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:929
 #, elixir-autogen, elixir-format
 msgid "I have copied it"
 msgstr "コピーしました"
@@ -8965,7 +8973,7 @@ msgstr "本人確認が完了しました。5分間、アカウントのセキ�
 msgid "If you lose your password and your recovery codes, this is the only way back. Register an email address and the OpenPGP public key you sign with; an admin verifies it by checking a signed message from you. Nothing is emailed from here — the check happens in the admin's own mail client."
 msgstr "パスワードとリカバリーコードの両方を失った場合、これが唯一の回復手段です。メールアドレスと、署名に使う OpenPGP 公開鍵を登録してください。管理者はあなたが送った署名付きメッセージを確認して検証します。このサイトからメールは一切送信されません——確認は管理者自身のメールソフトで行われます。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:865
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:877
 #, elixir-autogen, elixir-format
 msgid "Issue a reset link for this account? Only do this after verifying a signature."
 msgstr "このアカウントにリセットリンクを発行しますか？ 必ず署名を検証してから行ってください。"
@@ -8980,7 +8988,7 @@ msgstr "新しいコードを発行"
 msgid "Issue new codes? Every existing code stops working."
 msgstr "新しいリカバリーコードを発行しますか？ 既存のコードはすべて無効になります。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:871
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:883
 #, elixir-autogen, elixir-format
 msgid "Issue reset link"
 msgstr "リセットリンクを発行"
@@ -9000,7 +9008,7 @@ msgstr "ラベル（任意）"
 msgid "Link issued. Copy it now — it is not shown again, and it works once."
 msgstr "リンクを発行しました。今すぐコピーしてください——二度と表示されず、一度しか使えません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:845
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:857
 #, elixir-autogen, elixir-format
 msgid "Mark verified"
 msgstr "検証済みにする"
@@ -9025,12 +9033,12 @@ msgstr "回復用連絡先は登録されていません。"
 msgid "Not now"
 msgstr "あとで"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:750
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:762
 #, elixir-autogen, elixir-format
 msgid "Not verified"
 msgstr "未検証"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:756
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:768
 #: lib/baudrate_web/live/profile_security_live.html.heex:390
 #, elixir-autogen, elixir-format
 msgid "OpenPGP public key"
@@ -9046,7 +9054,7 @@ msgstr "画像"
 msgid "Please confirm your identity before changing account security settings."
 msgstr "アカウントのセキュリティ設定を変更する前に、本人確認を行ってください。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:431
+#: lib/baudrate_web/live/auth_hooks.ex:436
 #, elixir-autogen, elixir-format
 msgid "Please sign in to see that page."
 msgstr "そのページを表示するにはログインしてください。"
@@ -9096,7 +9104,7 @@ msgstr "この回復用連絡先を削除しますか？"
 msgid "Reset link revoked."
 msgstr "リセットリンクを無効化しました。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:943
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:955
 #, elixir-autogen, elixir-format
 msgid "Revoke it"
 msgstr "リンクを無効化"
@@ -9111,7 +9119,7 @@ msgstr "保存して続ける"
 msgid "Save these now — you will not be able to see them again."
 msgstr "今すぐ保存してください——二度と表示されません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:906
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:918
 #, elixir-autogen, elixir-format
 msgid "Send this link through the channel you verified. It is not shown again."
 msgstr "検証した経路でこのリンクを送ってください。二度と表示されません。"
@@ -9161,7 +9169,7 @@ msgstr "そのパスワードは受け付けられず、このリンクは使用
 msgid "This account has no verified recovery contact, so there is no proof of identity to act on."
 msgstr "このアカウントには検証済みの回復用連絡先がないため、判断の根拠となる本人確認がありません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:720
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:732
 #, elixir-autogen, elixir-format
 msgid "This account has registered no recovery contact, so it cannot be reset."
 msgstr "このアカウントは回復用連絡先を登録していないため、リセットできません。"
@@ -9186,7 +9194,7 @@ msgstr "アバターの変更回数が多すぎます。しばらくしてから
 msgid "Use your own recovery codes rather than issuing yourself a link."
 msgstr "自分にリンクを発行するのではなく、ご自身のリカバリーコードをお使いください。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:749
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:761
 #: lib/baudrate_web/live/profile_security_live.html.heex:335
 #, elixir-autogen, elixir-format
 msgid "Verified"
@@ -9207,7 +9215,7 @@ msgstr "ようこそ"
 msgid "Welcome! Save your recovery codes and you are in."
 msgstr "ようこそ！ リカバリーコードを保存すれば完了です。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:856
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:868
 #, elixir-autogen, elixir-format
 msgid "Withdraw verification"
 msgstr "検証を取り消す"
@@ -9257,37 +9265,37 @@ msgstr "リカバリーコードを使い切っており、検証済みの回復
 msgid "an admin"
 msgstr "管理者"
 
-#: lib/baudrate_web/helpers.ex:536
+#: lib/baudrate_web/helpers.ex:558
 #, elixir-autogen, elixir-format
 msgid "A recovery contact was added to your account. An admin has to verify it."
 msgstr "アカウントに回復用連絡先が追加されました。管理者の検証が必要です。"
 
-#: lib/baudrate_web/helpers.ex:539
+#: lib/baudrate_web/helpers.ex:561
 #, elixir-autogen, elixir-format
 msgid "A recovery contact was removed from your account."
 msgstr "アカウントから回復用連絡先が削除されました。"
 
-#: lib/baudrate_web/helpers.ex:542
+#: lib/baudrate_web/helpers.ex:564
 #, elixir-autogen, elixir-format
 msgid "An admin verified one of your recovery contacts."
 msgstr "管理者があなたの回復用連絡先を検証しました。"
 
-#: lib/baudrate_web/helpers.ex:552
+#: lib/baudrate_web/helpers.ex:574
 #, elixir-autogen, elixir-format
 msgid "An admin-issued recovery link was used on your account: the password was replaced and every session signed out."
 msgstr "管理者が発行した回復リンクがアカウントで使用されました。パスワードが変更され、すべてのセッションからログアウトされました。"
 
-#: lib/baudrate_web/helpers.ex:533
+#: lib/baudrate_web/helpers.ex:555
 #, elixir-autogen, elixir-format
 msgid "New recovery codes were issued. Every earlier code has stopped working."
 msgstr "新しいリカバリーコードが発行されました。以前のコードはすべて無効になっています。"
 
-#: lib/baudrate_web/helpers.ex:557
+#: lib/baudrate_web/helpers.ex:579
 #, elixir-autogen, elixir-format
 msgid "Your account was approved. You can post, comment and send messages now."
 msgstr "アカウントが承認されました。投稿・コメント・メッセージの送信ができます。"
 
-#: lib/baudrate_web/helpers.ex:546
+#: lib/baudrate_web/helpers.ex:568
 #, elixir-autogen, elixir-format
 msgid "An admin issued a recovery link for your account. If you did not ask for one, tell them now."
 msgstr "管理者があなたのアカウントに回復リンクを発行しました。心当たりがない場合は、すぐに管理者に伝えてください。"
@@ -9351,7 +9359,7 @@ msgstr "%{server} があなたの代わりに %{target} をフォローできま
 # Example value shown in a form placeholder, not prose. It is the same
 # in every language, so the translation is the value itself — an empty
 # msgstr here would be indistinguishable from an oversight.
-#: lib/baudrate_web/components/core_components.ex:1423
+#: lib/baudrate_web/components/core_components.ex:1448
 #, elixir-autogen, elixir-format
 msgid "@you@example.social"
 msgstr "@you@example.social"
@@ -9361,13 +9369,13 @@ msgstr "@you@example.social"
 msgid "Continue to %{server}"
 msgstr "%{server} へ進む"
 
-#: lib/baudrate_web/components/core_components.ex:1387
-#: lib/baudrate_web/components/core_components.ex:1388
+#: lib/baudrate_web/components/core_components.ex:1412
+#: lib/baudrate_web/components/core_components.ex:1413
 #, elixir-autogen, elixir-format
 msgid "Copy this handle"
 msgstr "このハンドルをコピー"
 
-#: lib/baudrate_web/components/core_components.ex:1373
+#: lib/baudrate_web/components/core_components.ex:1398
 #: lib/baudrate_web/controllers/remote_follow_controller.ex:66
 #: lib/baudrate_web/controllers/remote_follow_controller.ex:78
 #: lib/baudrate_web/controllers/remote_follow_html/show.html.heex:9
@@ -9375,17 +9383,17 @@ msgstr "このハンドルをコピー"
 msgid "Follow from your instance"
 msgstr "自分のサーバーからフォロー"
 
-#: lib/baudrate_web/components/core_components.ex:1432
+#: lib/baudrate_web/components/core_components.ex:1457
 #, elixir-autogen, elixir-format
 msgid "Go"
 msgstr "実行"
 
-#: lib/baudrate_web/components/core_components.ex:1413
+#: lib/baudrate_web/components/core_components.ex:1438
 #, elixir-autogen, elixir-format
 msgid "Or enter your own handle"
 msgstr "または自分のハンドルを入力"
 
-#: lib/baudrate_web/components/core_components.ex:1395
+#: lib/baudrate_web/components/core_components.ex:1420
 #, elixir-autogen, elixir-format
 msgid "Search for this handle on your own server to follow from there."
 msgstr "自分のサーバーでこのハンドルを検索すると、そちらからフォローできます。"
@@ -9601,7 +9609,7 @@ msgid "%{count} account banned."
 msgid_plural "%{count} accounts banned."
 msgstr[0] "%{count} 件のアカウントをBANしました。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:567
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:579
 #, elixir-autogen, elixir-format
 msgid "%{count} post"
 msgid_plural "%{count} posts"
@@ -9613,7 +9621,7 @@ msgstr[1] "投稿 %{count} 件"
 msgid "%{range} is banned."
 msgstr "%{range} をBANしました。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:541
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:553
 #, elixir-autogen, elixir-format
 msgid "(this member)"
 msgstr "（このメンバー）"
@@ -9628,13 +9636,13 @@ msgstr "BANされたアドレスや範囲からは登録もサインインもで
 msgid "Address or CIDR range"
 msgstr "アドレスまたは CIDR 範囲"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:609
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:621
 #, elixir-autogen, elixir-format
 msgid "Ban %{count} account? This signs them out everywhere."
 msgid_plural "Ban %{count} accounts? This signs them out everywhere."
 msgstr[0] "%{count} 件のアカウントをBANしますか？すべての端末からサインアウトされます。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:616
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:628
 #, elixir-autogen, elixir-format
 msgid "Ban %{count} selected account"
 msgid_plural "Ban %{count} selected accounts"
@@ -9645,12 +9653,12 @@ msgstr[0] "選択した %{count} 件のアカウントをBAN"
 msgid "Ban an address or range"
 msgstr "アドレスまたは範囲をBAN"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:481
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:493
 #, elixir-autogen, elixir-format
 msgid "Ban this member and accounts in their invite chain"
 msgstr "このメンバーと招待チェーン内のアカウントをBAN"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:468
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:480
 #, elixir-autogen, elixir-format
 msgid "Ban with invitees…"
 msgstr "招待したアカウントごとBAN…"
@@ -9713,7 +9721,7 @@ msgstr "%{range} のBANを解除しますか？"
 msgid "No address is banned."
 msgstr "BANされているアドレスはありません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:487
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:499
 #, elixir-autogen, elixir-format
 msgid "Nothing is selected. Tick each account you have looked at and mean to ban: an account invited by a spammer is sometimes a real member. Accounts already banned keep their original ban."
 msgstr "何も選択されていません。確認したうえでBANするつもりのアカウントを一つずつチェックしてください。スパムアカウントに招待されたアカウントが、実在のメンバーであることもあります。すでにBAN済みのアカウントは元のBANのまま残ります。"
@@ -9724,12 +9732,12 @@ msgid "Range"
 msgstr "範囲"
 
 #: lib/baudrate_web/live/admin/ip_bans_live.html.heex:57
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:586
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:598
 #, elixir-autogen, elixir-format
 msgid "Reason (recorded in the moderation log)"
 msgstr "理由（モデレーションログに記録されます）"
 
-#: lib/baudrate_web/helpers.ex:583
+#: lib/baudrate_web/helpers.ex:605
 #, elixir-autogen, elixir-format
 msgid "Registration and sign-in are not available from your network. If you think this is a mistake, please contact the site's administrators."
 msgstr "お使いのネットワークからは登録もサインインもできません。誤りだと思われる場合は、このサイトの管理者に連絡してください。"
@@ -9739,7 +9747,7 @@ msgstr "お使いのネットワークからは登録もサインインもでき
 msgid "Registration challenge difficulty"
 msgstr "登録時の確認の難易度"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:514
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:526
 #, elixir-autogen, elixir-format
 msgid "Select all"
 msgstr "すべて選択"
@@ -9749,7 +9757,7 @@ msgstr "すべて選択"
 msgid "Select at least one account to ban."
 msgstr "BANするアカウントを 1 件以上選択してください。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:522
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:534
 #, elixir-autogen, elixir-format
 msgid "Select none"
 msgstr "選択を解除"
@@ -9794,7 +9802,7 @@ msgstr "範囲が広すぎるためBANできません。"
 msgid "The ban was lifted."
 msgstr "BANを解除しました。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:496
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:508
 #, elixir-autogen, elixir-format
 msgid "The chain is longer than this list shows. Accounts further down can be reached from the detail pages of the accounts below."
 msgstr "招待チェーンはこの一覧より長く続いています。さらに下のアカウントは、下記の各アカウントの詳細ページからたどれます。"
@@ -9804,7 +9812,7 @@ msgstr "招待チェーンはこの一覧より長く続いています。さら
 msgid "You are not allowed to ban addresses."
 msgstr "アドレスをBANする権限がありません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:571
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:583
 #, elixir-autogen, elixir-format
 msgid "joined %{date}"
 msgstr "%{date} に参加"
@@ -9814,25 +9822,25 @@ msgstr "%{date} に参加"
 msgid "Days before a new account is trusted"
 msgstr "新規アカウントが信頼されるまでの日数"
 
-#: lib/baudrate_web/helpers.ex:684
+#: lib/baudrate_web/helpers.ex:707
 #, elixir-autogen, elixir-format
 msgid "New accounts can post at most %{count} time an hour. Please try again later."
 msgid_plural "New accounts can post at most %{count} times an hour. Please try again later."
 msgstr[0] "新規アカウントの投稿は 1 時間に %{count} 回までです。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/helpers.ex:674
+#: lib/baudrate_web/helpers.ex:697
 #, elixir-autogen, elixir-format
 msgid "New accounts can put at most %{count} image in a post."
 msgid_plural "New accounts can put at most %{count} images in a post."
 msgstr[0] "新規アカウントは 1 件の投稿に画像を %{count} 枚までしか載せられません。"
 
-#: lib/baudrate_web/helpers.ex:664
+#: lib/baudrate_web/helpers.ex:687
 #, elixir-autogen, elixir-format
 msgid "New accounts can put at most %{count} link in a post."
 msgid_plural "New accounts can put at most %{count} links in a post."
 msgstr[0] "新規アカウントは 1 件の投稿にリンクを %{count} 個までしか載せられません。"
 
-#: lib/baudrate_web/helpers.ex:699
+#: lib/baudrate_web/helpers.ex:722
 #, elixir-autogen, elixir-format
 msgid "New accounts can send direct messages only to people who follow them, people who have written to them first, and staff."
 msgstr "新規アカウントがダイレクトメッセージを送れるのは、自分をフォローしている人、先にメッセージをくれた人、管理者とモデレーターだけです。"
@@ -9847,18 +9855,18 @@ msgstr "新規アカウントが信頼されるまでの投稿数"
 msgid "The image could not be added."
 msgstr "画像を追加できませんでした。"
 
-#: lib/baudrate_web/helpers.ex:717
+#: lib/baudrate_web/helpers.ex:740
 #, elixir-autogen, elixir-format
 msgid "This lifts once %{date} has passed and you have written %{count} more post."
 msgid_plural "This lifts once %{date} has passed and you have written %{count} more posts."
 msgstr[0] "%{date} を過ぎ、さらに %{count} 件投稿すると、この制限は解除されます。"
 
-#: lib/baudrate_web/helpers.ex:725
+#: lib/baudrate_web/helpers.ex:748
 #, elixir-autogen, elixir-format
 msgid "This lifts once %{date} has passed."
 msgstr "%{date} を過ぎると、この制限は解除されます。"
 
-#: lib/baudrate_web/helpers.ex:730
+#: lib/baudrate_web/helpers.ex:753
 #, elixir-autogen, elixir-format
 msgid "This lifts once you have written %{count} more post."
 msgid_plural "This lifts once you have written %{count} more posts."
@@ -9884,7 +9892,7 @@ msgstr "表示名の更新に失敗しました。"
 msgid "Failed to update signature."
 msgstr "署名の更新に失敗しました。"
 
-#: lib/baudrate_web/helpers.ex:693
+#: lib/baudrate_web/helpers.ex:716
 #, elixir-autogen, elixir-format
 msgid "New accounts cannot add links or images to their signature, which is shown under every article they post."
 msgstr "新規アカウントは署名にリンクや画像を追加できません。署名は、そのアカウントが投稿するすべての記事の下に表示されるためです。"
@@ -9906,12 +9914,12 @@ msgstr "投稿者と返信先の相手のあいだに、現在ブロックがあ
 msgid "A filter checks every article, comment and timeline reply when it is posted and when it is edited, and what arrives from other servers. Direct messages are never checked. Someone refused by a filter is told that the site does not allow it, never which filter or word, so a spammer cannot rephrase until it passes."
 msgstr "フィルターは、記事・コメント・タイムラインへの返信を投稿時と編集時に、また他のサーバーから届く内容を確認します。ダイレクトメッセージは一切確認しません。フィルターに拒否された人には、このサイトでは許可されていないことだけが伝えられ、どのフィルターや語句に該当したかは伝えられません。そのため、スパム投稿者が通るまで言い換えを繰り返すことはできません。"
 
-#: lib/baudrate_web/helpers.ex:435
+#: lib/baudrate_web/helpers.ex:448
 #, elixir-autogen, elixir-format
 msgid "A moderator approved your post, and it is now published."
 msgstr "モデレーターがあなたの投稿を承認し、公開されました。"
 
-#: lib/baudrate_web/helpers.ex:438
+#: lib/baudrate_web/helpers.ex:451
 #, elixir-autogen, elixir-format
 msgid "A moderator declined to publish your post."
 msgstr "モデレーターがあなたの投稿を公開しないことにしました。"
@@ -9921,7 +9929,7 @@ msgstr "モデレーターがあなたの投稿を公開しないことにしま
 msgid "A moderator looks at these before anyone else can see them. You'll get a notification either way."
 msgstr "これらは、ほかの人が見られるようになる前にモデレーターが確認します。結果はどちらの場合も通知でお知らせします。"
 
-#: lib/baudrate_web/helpers.ex:432
+#: lib/baudrate_web/helpers.ex:445
 #, elixir-autogen, elixir-format
 msgid "A post is waiting for review."
 msgstr "審査待ちの投稿があります。"
@@ -10173,12 +10181,12 @@ msgstr "公開して通報"
 msgid "Read the article"
 msgstr "記事を読む"
 
-#: lib/baudrate_web/components/moderation_components.ex:117
+#: lib/baudrate_web/components/moderation_components.ex:119
 #, elixir-autogen, elixir-format
 msgid "Reported automatically: it matched the filter “%{pattern}”."
 msgstr "自動通報：フィルター「%{pattern}」に一致しました。"
 
-#: lib/baudrate_web/live/notifications_live.ex:214
+#: lib/baudrate_web/live/notifications_live.ex:217
 #, elixir-autogen, elixir-format
 msgid "Review held posts"
 msgstr "保留中の投稿を審査する"
@@ -10188,7 +10196,7 @@ msgstr "保留中の投稿を審査する"
 msgid "Review status"
 msgstr "審査ステータス"
 
-#: lib/baudrate_web/live/notifications_live.ex:215
+#: lib/baudrate_web/live/notifications_live.ex:218
 #, elixir-autogen, elixir-format
 msgid "See what you wrote"
 msgstr "書いた内容を見る"
@@ -10208,7 +10216,7 @@ msgstr "任意の位置の文字列"
 msgid "Text anywhere: matches inside words too — “casino” matches “onlinecasino”. A * stands for any letters inside one word, so “c*sino” matches “cassino”."
 msgstr "任意の位置の文字列：単語の内部にも一致します。「casino」は「onlinecasino」に一致します。* は一つの単語の中の任意の文字を表すので、「c*sino」は「cassino」に一致します。"
 
-#: lib/baudrate_web/helpers.ex:645
+#: lib/baudrate_web/helpers.ex:668
 #, elixir-autogen, elixir-format
 msgid "Thanks — your post will appear once a moderator has looked at it. Until then you can find it under Drafts."
 msgstr "ありがとうございます。投稿はモデレーターが確認したあとに表示されます。それまでは「下書き」で確認できます。"
@@ -10254,7 +10262,7 @@ msgstr "モデレーターからのメモ：%{note}"
 msgid "The post could not be published."
 msgstr "投稿を公開できませんでした。"
 
-#: lib/baudrate_web/components/moderation_components.ex:308
+#: lib/baudrate_web/components/moderation_components.ex:310
 #, elixir-autogen, elixir-format
 msgid "The reply that matched, kept for 90 days after this report is closed:"
 msgstr "一致した返信（この通報が閉じられてから 90 日間保存されます）："
@@ -10264,7 +10272,7 @@ msgstr "一致した返信（この通報が閉じられてから 90 日間保�
 msgid "There are no filters."
 msgstr "フィルターはありません。"
 
-#: lib/baudrate_web/helpers.ex:635
+#: lib/baudrate_web/helpers.ex:658
 #, elixir-autogen, elixir-format
 msgid "This can't be posted because it contains something this site doesn't allow. If you think this is a mistake, please contact the moderators."
 msgstr "このサイトで許可されていない内容が含まれているため、投稿できません。誤りだと思われる場合は、モデレーターに連絡してください。"
@@ -10375,7 +10383,7 @@ msgstr "投稿の取り込みが早すぎます。しばらくしてからもう
 msgid "Challenge issued. Send it to the member and ask for it back, signed."
 msgstr "確認用文字列を発行しました。利用者に送り、署名して返送するよう依頼してください。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:773
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:785
 #, elixir-autogen, elixir-format
 msgid "Challenge to be signed"
 msgstr "署名してもらう確認用文字列"
@@ -10390,27 +10398,27 @@ msgstr "確認用文字列を発行できませんでした。"
 msgid "Issue a challenge first, then act on the signature that answers it. Any earlier challenge has been superseded."
 msgstr "先に確認用文字列を発行し、それに応じた署名を確認してから操作してください。以前の確認用文字列はすべて無効です。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:834
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:846
 #, elixir-autogen, elixir-format
 msgid "Issue a new challenge"
 msgstr "新しい確認用文字列を発行"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:834
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:846
 #, elixir-autogen, elixir-format
 msgid "Issue challenge"
 msgstr "確認用文字列を発行"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:791
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:803
 #, elixir-autogen, elixir-format
 msgid "No challenge is waiting. Issue one before verifying or issuing a link."
 msgstr "応答待ちの確認用文字列はありません。検証やリンク発行の前に発行してください。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:783
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:795
 #, elixir-autogen, elixir-format
 msgid "Send this exact line and ask for it back, signed. Expires %{time}."
 msgstr "この一行をそのまま送り、署名して返送してもらってください。有効期限は %{time} です。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:710
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:722
 #, elixir-autogen, elixir-format
 msgid "Issue the challenge below, send it to the member, and check their signature over it against the key below — in your own mail client. Baudrate never checks a signature itself. An old signed message can be replayed, so only a signature over a challenge issued here counts."
 msgstr "下の確認用文字列を発行して利用者に送り、返ってきた署名を下の鍵で、ご自身のメールソフトで確認してください。Baudrate が署名を検証することはありません。古い署名付きメッセージは再送されうるため、ここで発行した文字列への署名だけが有効です。"
@@ -10435,7 +10443,7 @@ msgstr "%{username} さん、こんにちは。"
 msgid "It can be used once and stops working %{time}. If you did not ask for this, ignore this message and nothing changes."
 msgstr "この一行は一度だけ使え、%{time} に無効になります。心当たりがない場合は、このメールを無視してください。何も変わりません。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:805
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:817
 #, elixir-autogen, elixir-format
 msgid "Mail to send"
 msgstr "送信するメール"
@@ -10455,7 +10463,7 @@ msgstr "署名方法の一例：`gpg --clearsign` を実行し、その一行を
 msgid "Somebody asked us to recover your account on %{site}."
 msgstr "%{site} のあなたのアカウントを復旧したいという依頼がありました。"
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:815
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:827
 #, elixir-autogen, elixir-format
 msgid "Subject"
 msgstr "件名"
@@ -10465,7 +10473,7 @@ msgstr "件名"
 msgid "To show that it is you, reply with the line below, signed with the OpenPGP key on your profile:"
 msgstr "ご本人であることを示すため、プロフィールに登録された OpenPGP 鍵で下の一行に署名し、返信してください："
 
-#: lib/baudrate_web/live/admin/user_detail_live.html.heex:809
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:821
 #, elixir-autogen, elixir-format
 msgid "Written in this member's own language (%{language}). Edit it as you like — but keep the challenge line exactly as it is."
 msgstr "この利用者自身の言語（%{language}）で書かれています。自由に編集して構いませんが、確認用文字列の行はそのままにしてください。"
@@ -10497,7 +10505,7 @@ msgstr[0] "新しい投稿 %{count} 件を表示"
 msgid ", "
 msgstr "、"
 
-#: lib/baudrate_web/helpers.ex:443
+#: lib/baudrate_web/helpers.ex:456
 #, elixir-autogen, elixir-format
 msgid "A poll you wrote or voted in has closed."
 msgstr "あなたが作成または投票した投票が締め切られました。"
@@ -10711,12 +10719,12 @@ msgstr "ウォッチしている掲示板の新しいスレッドと、ウォッ
 msgid "Your followers"
 msgstr "あなたのフォロワー"
 
-#: lib/baudrate_web/helpers.ex:446
+#: lib/baudrate_web/helpers.ex:459
 #, elixir-autogen, elixir-format
 msgid "posted in a board you watch"
 msgstr "ウォッチ中の掲示板に投稿しました"
 
-#: lib/baudrate_web/helpers.ex:447
+#: lib/baudrate_web/helpers.ex:460
 #, elixir-autogen, elixir-format
 msgid "replied in a thread you watch"
 msgstr "ウォッチ中のスレッドにコメントしました"
@@ -10831,7 +10839,7 @@ msgstr "タイムゾーンを変更"
 msgid "Confirm your identity"
 msgstr "本人確認"
 
-#: lib/baudrate_web/live/profile_security_live.html.heex:484
+#: lib/baudrate_web/live/profile_security_live.html.heex:486
 #, elixir-autogen, elixir-format
 msgid "Confirm your identity above to see where each session signed in from and to sign one out."
 msgstr "各セッションのログイン元を表示したり、セッションをログアウトさせたりするには、上で本人確認を行ってください。"
@@ -10871,17 +10879,17 @@ msgstr "セキュリティ"
 msgid "Session signed out."
 msgstr "セッションをログアウトしました。"
 
-#: lib/baudrate_web/live/profile_security_live.html.heex:475
+#: lib/baudrate_web/live/profile_security_live.html.heex:477
 #, elixir-autogen, elixir-format
 msgid "Sign out"
 msgstr "ログアウト"
 
-#: lib/baudrate_web/live/profile_security_live.html.heex:473
+#: lib/baudrate_web/live/profile_security_live.html.heex:475
 #, elixir-autogen, elixir-format
 msgid "Sign out %{device}"
 msgstr "%{device} をログアウト"
 
-#: lib/baudrate_web/live/profile_security_live.html.heex:472
+#: lib/baudrate_web/live/profile_security_live.html.heex:474
 #, elixir-autogen, elixir-format
 msgid "Sign out this session?"
 msgstr "このセッションをログアウトしますか？"
@@ -10896,7 +10904,7 @@ msgstr "ログイン %{date}"
 msgid "Site default (%{zone})"
 msgstr "サイトの既定（%{zone}）"
 
-#: lib/baudrate_web/live/profile_account_live.ex:131
+#: lib/baudrate_web/live/profile_account_live.ex:218
 #, elixir-autogen, elixir-format
 msgid "That is not a time zone this site knows."
 msgstr "このサイトが認識できないタイムゾーンです。"
@@ -10906,7 +10914,7 @@ msgstr "このサイトが認識できないタイムゾーンです。"
 msgid "That session could not be signed out."
 msgstr "そのセッションをログアウトできませんでした。"
 
-#: lib/baudrate_web/live/profile_account_live.ex:64
+#: lib/baudrate_web/live/profile_account_live.ex:84
 #, elixir-autogen, elixir-format
 msgid "This device did not report a time zone this site knows. Choose one from the list."
 msgstr "この端末から、このサイトが認識できるタイムゾーンを取得できませんでした。一覧から選んでください。"
@@ -10931,7 +10939,7 @@ msgstr "タイムゾーン"
 msgid "Time zone"
 msgstr "タイムゾーン"
 
-#: lib/baudrate_web/live/profile_account_live.ex:128
+#: lib/baudrate_web/live/profile_account_live.ex:215
 #, elixir-autogen, elixir-format
 msgid "Time zone updated."
 msgstr "タイムゾーンを更新しました。"
@@ -10976,7 +10984,7 @@ msgstr "5分間ロックを解除しました。再読み込みするかこの�
 msgid "Use this device's time zone"
 msgstr "この端末のタイムゾーンを使う"
 
-#: lib/baudrate_web/live/profile_security_live.html.heex:461
+#: lib/baudrate_web/live/profile_security_live.html.heex:463
 #, elixir-autogen, elixir-format
 msgid "from %{ip}"
 msgstr "%{ip} から"
@@ -10985,3 +10993,128 @@ msgstr "%{ip} から"
 #, elixir-autogen, elixir-format
 msgid "the site's time zone (%{zone})"
 msgstr "サイトのタイムゾーン（%{zone}）"
+
+#: lib/baudrate_web/helpers.ex:524
+#, elixir-autogen, elixir-format
+msgid "A pending deletion of your account was cancelled."
+msgstr "保留中だったアカウントの削除が取り消されました。"
+
+#: lib/baudrate_web/live/profile_account_live.ex:192
+#, elixir-autogen, elixir-format
+msgid "Administrators and moderators cannot delete their account. Ask to be demoted first."
+msgstr "管理者とモデレーターは自分のアカウントを削除できません。先に役割を外してもらってください。"
+
+#: lib/baudrate_web/live/profile_account_live.html.heex:275
+#, elixir-autogen, elixir-format
+msgid "Also withdraw my articles and comments"
+msgstr "自分の記事とコメントも取り下げる"
+
+#: lib/baudrate_web/live/profile_account_live.ex:198
+#, elixir-autogen, elixir-format
+msgid "Board moderators cannot delete their account. Ask to be removed as a moderator first."
+msgstr "掲示板のモデレーターは自分のアカウントを削除できません。先にモデレーターから外してもらってください。"
+
+#: lib/baudrate_web/live/profile_account_live.ex:188
+#, elixir-autogen, elixir-format
+msgid "Bot accounts are deleted by an administrator."
+msgstr "ボットアカウントは管理者が削除します。"
+
+#: lib/baudrate_web/live/profile_account_live.html.heex:335
+#, elixir-autogen, elixir-format
+msgid "Delete My Account"
+msgstr "アカウントを削除する"
+
+#: lib/baudrate_web/live/profile_account_live.html.heex:211
+#, elixir-autogen, elixir-format
+msgid "Delete Your Account"
+msgstr "アカウントの削除"
+
+#: lib/baudrate_web/live/profile_account_live.html.heex:330
+#, elixir-autogen, elixir-format
+msgid "Delete your account in 7 days? Signing in again before then cancels it."
+msgstr "7日後にアカウントを削除しますか？それまでにもう一度ログインすれば取り消されます。"
+
+#: lib/baudrate_web/live/profile_account_live.ex:182
+#, elixir-autogen, elixir-format
+msgid "Deleting this account has already been requested."
+msgstr "このアカウントの削除はすでに申請されています。"
+
+#: lib/baudrate_web/helpers.ex:519
+#, elixir-autogen, elixir-format
+msgid "Deleting your account was requested. It will happen in 7 days unless you sign in again, which cancels it."
+msgstr "アカウントの削除が申請されました。7日後に実行されます。それまでにもう一度ログインすれば取り消されます。"
+
+#: lib/baudrate_web/live/profile_account_live.html.heex:224
+#, elixir-autogen, elixir-format
+msgid "It happens 7 days after you ask, and signing in again before then cancels it."
+msgstr "削除は申請から7日後に行われ、それまでにもう一度ログインすれば取り消されます。"
+
+#: lib/baudrate_web/live/profile_account_live.html.heex:234
+#, elixir-autogen, elixir-format
+msgid "Other servers are told the account is gone, and most of them then remove everything it posted there."
+msgstr "他のサーバーにはアカウントが削除されたことが通知され、多くのサーバーはそこでの投稿をすべて削除します。"
+
+#: lib/baudrate_web/live/profile_account_live.ex:202
+#, elixir-autogen, elixir-format
+msgid "This account cannot be deleted."
+msgstr "このアカウントは削除できません。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "This account deleted itself on %{date}. Its reports, sanctions and log entries are kept, and nothing here can bring it back."
+msgstr "このアカウントは %{date} に自ら削除されました。通報、制裁、ログの記録は保持され、ここから元に戻すことはできません。"
+
+#: lib/baudrate_web/helpers.ex:781
+#, elixir-autogen, elixir-format
+msgid "This account has been deleted."
+msgstr "このアカウントは削除されています。"
+
+#: lib/baudrate_web/controllers/session_controller.ex:666
+#, elixir-autogen, elixir-format
+msgid "This account is being deleted."
+msgstr "このアカウントは削除処理中です。"
+
+#: lib/baudrate_web/live/profile_account_live.html.heex:239
+#, elixir-autogen, elixir-format
+msgid "Want a copy first? Export your data and download it before you ask: asking cancels an export in progress."
+msgstr "先にコピーを残しますか？申請する前にデータをエクスポートしてダウンロードしてください。申請すると進行中のエクスポートは取り消されます。"
+
+#: lib/baudrate_web/live/profile_account_live.html.heex:281
+#, elixir-autogen, elixir-format
+msgid "Withdrawing an article also hides every reply to it, including other members'. After 90 days they are deleted for good."
+msgstr "記事を取り下げると、他のメンバーのものも含め、その記事へのすべての返信も非表示になります。90日後に完全に削除されます。"
+
+#: lib/baudrate_web/controllers/session_controller.ex:670
+#, elixir-autogen, elixir-format
+msgid "Your account deletion has been cancelled."
+msgstr "アカウントの削除は取り消されました。"
+
+#: lib/baudrate_web/controllers/session_controller.ex:600
+#, elixir-autogen, elixir-format
+msgid "Your account will be deleted on %{date}. Sign in before then to cancel."
+msgstr "アカウントは %{date} に削除されます。それまでにログインすれば取り消せます。"
+
+#: lib/baudrate_web/live/profile_account_live.html.heex:229
+#, elixir-autogen, elixir-format
+msgid "Your articles and comments stay, shown as \"deleted account\", unless you choose to withdraw them below. Your replies to posts from other servers stay either way."
+msgstr "下で取り下げを選ばない限り、記事とコメントは「削除されたアカウント」として残ります。他のサーバーの投稿への返信は、どちらの場合も残ります。"
+
+#: lib/baudrate_web/live/profile_account_live.html.heex:219
+#, elixir-autogen, elixir-format
+msgid "Your profile, security keys, sessions, drafts and the text of your direct messages are removed. Your username stays reserved and cannot be registered again."
+msgstr "プロフィール、セキュリティキー、セッション、下書き、ダイレクトメッセージの本文は削除されます。ユーザー名は予約されたまま残り、再登録はできません。"
+
+#: lib/baudrate_web/live/data_export_live.ex:322
+#, elixir-autogen, elixir-format
+msgid "account deletion requested"
+msgstr "アカウントの削除を申請"
+
+#: lib/baudrate_web/helpers.ex:316
+#, elixir-autogen, elixir-format
+msgid "deleted"
+msgstr "削除済み"
+
+#: lib/baudrate_web/helpers.ex:241
+#, elixir-autogen, elixir-format
+msgid "deleted account"
+msgstr "削除されたアカウント"
