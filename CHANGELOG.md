@@ -9,10 +9,13 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Stages 6E-1, the account controls, and 6E-2, deleting your own account. One
-new record, [ADR 0072](doc/adr/0072-a-deleted-account-leaves-a-tombstone.md).
-Three migrations: `users.time_zone`, `users.deleted_at`, and the
-`account_deletions` table.
+Stage 6E, which completes Phase 6: 6E-1, the account controls; 6E-2,
+deleting your own account; and 6E-3, privacy settings. Two new records,
+[ADR 0072](doc/adr/0072-a-deleted-account-leaves-a-tombstone.md) and
+[ADR 0073](doc/adr/0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md).
+Six migrations: `users.time_zone`, `users.deleted_at`, the
+`account_deletions` table, the `user_domain_mutes` table, three privacy
+columns on `users`, and a backfill of `followers.accepted_at`.
 
 **Operators:** members can now delete their own accounts, so the sample
 terms (`doc/eua.md`) and privacy policy no longer send them to you. If your
@@ -20,6 +23,24 @@ published terms or policy were copied from them, update the termination and
 deletion clauses; nothing else needs doing.
 
 ### Added
+
+- **Mute a whole server**, from `/profile/privacy`: everything from it leaves
+  your own views — boards, comments, search, the timeline, notifications —
+  and nobody is told. You can still reply to or message its accounts.
+- **Mute words.** Other people's posts containing them are folded away behind
+  "Hidden by your muted words — show", never removed, so every list keeps its
+  place and count. Matching works like the admin filters: whole words or text
+  anywhere, fullwidth and case folded. Your own posts and direct messages are
+  never folded, and the fold never says which word matched.
+- **Approve new followers yourself.** A follow request — from here or another
+  server — waits on `/followers` until you approve or decline it, and is no
+  follower anywhere until then: your posts are not delivered to it and it
+  does not count for who may message you. Turning the setting off approves
+  everyone waiting. Other servers see your account as locked.
+- **Opt out of search engines and the member search.** Your profile, articles
+  and feeds ask not to be indexed, the sitemap leaves them out, and the
+  `/search` Users tab does not list you. Your pages stay public, and people
+  who know your name can still mention or message you.
 
 - **Delete your own account**, from `/profile/account`, with your password
   (and TOTP code if you use one). It happens seven days later, and signing in
@@ -62,6 +83,14 @@ deletion clauses; nothing else needs doing.
   for UTC — off by the site's offset for everyone.
 
 ### Fixed
+
+- **Replies from other servers on your threads in the timeline** now get the
+  filters every other list applies. A reply addressed only to its author's
+  followers, or sent directly, was shown there, and so were replies from
+  blocked servers and from accounts you had blocked or muted.
+- **Site search no longer lists unlisted articles** — only their author finds
+  them — so `/ap/search` does not either. Unlisted already meant "not in the
+  sitemap, not indexed".
 
 - **The profile page no longer logs an error for every message or
   notification that arrives while it is open.** It had no catch-all for the

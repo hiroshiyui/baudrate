@@ -14,7 +14,7 @@ and discovery and onboarding. **All five are now closed** — Phase 0 in
 v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
 v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
 anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
-and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **6E-1 and 6E-2 are done and unreleased; 6E-3 is next.**
+and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **6E is done and unreleased, which completes Phase 6.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -398,15 +398,14 @@ This is the one fact that is still nowhere else.
 
 ---
 
-## Phase 6 — Member depth — 6A–6D **complete** (v1.35.0 – v1.41.0); 6E open
+## Phase 6 — Member depth — **complete** (v1.35.0 – unreleased)
 
-**Goal.** Members who stay find that the site keeps up with them: they can fix
-mistakes, follow what matters, and control their account.
+**The aim it served:** members who stay find that the site keeps up with
+them — they can fix mistakes, follow what matters, and control their account.
 
-Four of the five exit criteria are met — comments can be edited,
-notifications lead to the comment they are about, members can watch boards
-and threads, and DMs notify. The fifth, deleting one's account and managing
-sessions, is 6E.
+All five exit criteria are met: comments can be edited, notifications lead to
+the comment they are about, members can watch boards and threads, DMs
+notify, and members can delete their account and manage their sessions.
 
 ### Done
 
@@ -416,14 +415,19 @@ sessions, is 6E.
 | 6B | "New since your last visit" per comment with a jump across pages; a "N new posts" offer on boards; a sign-in prompt for guests; notifications that open the comment's page, group likes and boosts, filter by kind and announce a closed poll | v1.41.0 | [0069](adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md) (amends 0048), `comments_test.exs` (browser), `poll_anonymity_test.exs` |
 | 6C | Watching a board or a thread, only by the member's own toggle; `/followers`, with removal by `Reject(Follow)` | v1.41.0 | [0070](adr/0070-a-member-hears-about-what-they-chose.md), `watch_test.exs` |
 | 6D | A DM push naming only the sender, with no notification row; private images between members here, rationed before processing; search of one's own conversations | v1.41.0 | [0071](adr/0071-a-direct-message-stays-between-the-two-people-in-it.md), `dm_privacy_test.exs` |
+| 6E-1 | `/profile` as five pages; a session list with addresses and per-session sign-out behind the step-up unlock; the member's own time zone, and `<time datetime>` in UTC; eligibility dates on the export and move pages | unreleased | `session_list_test.exs`, `profile_pages_test.exs`, `profile_time_zone_test.exs` |
+| 6E-2 | Deleting one's own account: step-up re-authentication, a seven-day wait signing in cancels, a resumable sweep to a tombstone with `Delete(Person)` in the same transaction; banned accounts served bare over ActivityPub | unreleased | [0072](adr/0072-a-deleted-account-leaves-a-tombstone.md), `account_deletion_test.exs` |
+| 6E-3 | Muting a server and words (collapsed, never removed); approving followers manually (a request is a follower nowhere); opting out of discovery | unreleased | [0073](adr/0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md), `privacy_settings_test.exs` |
 
-**P6-D1** (editing comments: no time limit, every edit kept, a public
-history, the author alone) is [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md).
+**P6-D1** (editing comments) is [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md);
+**P6-D2** (what account deletion removes) is [0072](adr/0072-a-deleted-account-leaves-a-tombstone.md).
 Bugs the stages found on the way — every link to a comment pointing at page 1,
 remote replies dropped from notifications as duplicates, cross-posts
 announced to no board, the in-app switch discarding the push setting, a
-deleted DM keeping its link preview, and the reply-image sweep unlinking
-nothing after a deploy — are in `CHANGELOG.md`.
+deleted DM keeping its link preview, the reply-image sweep unlinking nothing
+after a deploy, CI jobs failing after their tests passed, remote non-public
+replies in the timeline's comment strand, and unlisted articles in search —
+are in `CHANGELOG.md`.
 
 ### Left standing
 
@@ -448,54 +452,12 @@ Deliberately not done, and recorded nowhere else:
   inline images; outgoing ones are refused rather than published at a public
   URL (ADR 0071, rejected alternative). Reporting an image-only message
   copies an empty text; the moderator sees the image through the report.
-
-### 6E — Account and privacy (L), in three releases
-
-Decided 2026-09-23 and 2026-09-24: 6E ships as **6E-1**, the controls;
-**6E-2**, account deletion; and **6E-3**, the privacy settings.
-
-**6E-1 is done and unreleased.** `/profile` is five pages — profile,
-security, notifications, privacy, account — instead of one 2,200-line page.
-`/profile/security` lists the member's sessions, with the addresses and a
-per-session sign-out behind the same step-up unlock as security keys.
-Timestamps are shown in the member's own time zone, with the zone named in
-the footer, and every `<time datetime>` is now UTC. The export and move
-pages give the date TOTP becomes old enough, and why the rule exists.
-
-**6E-2 is done and unreleased.** A member deletes their own account from
-`/profile/account`: step-up re-authentication, a seven-day wait that signing
-in cancels, then a resumable sweep that turns the row into a tombstone and
-queues `Delete(Person)` in the same transaction.
-[ADR 0072](adr/0072-a-deleted-account-leaves-a-tombstone.md) answers P6-D2.
-Banned accounts are now served bare over ActivityPub.
-
-Left standing: timeline replies (replies to posts on other servers) have no
-local withdrawal path and stay under "deleted account" either way.
-
-**6E-3**, next — decided 2026-09-24:
-
-- [ ] **Privacy settings:**
-  - opt out of search and indexing: `noindex` on the profile and articles,
-    left out of the sitemap and the `/search` Users tab, Mastodon's
-    `discoverable`/`indexable` false. The site's own article search is
-    unchanged. The pages stay public (ADR 0057);
-  - approve followers manually: a pending state in `followers` (all nine of
-    its readers must ignore pending rows) and `UserFollow`'s existing one,
-    `manuallyApprovesFollowers`, a requests list on `/followers`. Existing
-    followers stay; turning the setting off approves every waiting request;
-  - mute a domain, for oneself: a per-member subquery on
-    `remote_actors.domain`, in every per-viewer listing;
-  - mute keywords, for one's own views only and never DMs: a matching post is
-    **collapsed** behind "Hidden by your muted words — show", never removed,
-    so page counts stay right; matched with `ContentFilter`'s normalization.
-- [ ] **Gaps found on the way:** the timeline's comment strand applies no
-  per-viewer or instance filter to remote comments; site search lists local
-  *unlisted* articles.
-
-### Decisions needed
-
-- [x] **P6-D2. What account deletion removes.** Decided 2026-09-23;
-  recorded as [ADR 0072](adr/0072-a-deleted-account-leaves-a-tombstone.md).
+- **A deleted account's timeline replies stay** under "deleted account":
+  replies to posts on other servers have no local withdrawal path (ADR 0072).
+- **`search_comments` still lists comments on unlisted articles** — a
+  smaller gap than the articles themselves, accepted in ADR 0073.
+- **Muted words fold text, not images**, and titles-only lists (search, tag
+  pages) are not folded: they answer the member's own query.
 
 ---
 

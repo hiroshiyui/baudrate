@@ -78,6 +78,7 @@ This policy is provided in both 台灣漢語 (Taiwanese Mandarin) and English.
 - **內容**：文章、留言、回覆、按讚、轉發、書籤、投票，以及您上傳的圖片。
 - **私訊**：您收發的訊息，以純文字形式存放於資料庫。
 - **兩階段驗證**：若您啟用，會存放 TOTP 金鑰（加密儲存）或已註冊的安全金鑰。
+- **隱私設定**：靜音的站台與字詞、是否手動核准追蹤者、是否允許搜尋引擎與成員搜尋找到您。靜音只影響您自己看到的內容，不會通知任何人；關閉「允許被找到」時，您的個人檔案與文章會要求搜尋引擎不要索引，但仍對所有人公開。
 
 ### 您使用本站時自動記錄的
 
@@ -258,6 +259,11 @@ to other servers.
   reports that message), and are never sent to another server.
 - **Two-factor authentication**, if you enable it: a TOTP secret (encrypted at
   rest) or a registered security key.
+- **Privacy settings**: the servers and words you mute, whether you approve new
+  followers yourself, and whether search engines and the member search may
+  find you. Muting changes only what you see and tells nobody; turning
+  discovery off asks search engines not to index your profile and articles,
+  which stay public.
 
 ### What it records as you use the site
 

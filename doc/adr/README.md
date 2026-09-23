@@ -92,6 +92,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0070](0070-a-member-hears-about-what-they-chose.md) | A member hears about what they chose, and their followers are theirs | Accepted |
 | [0071](0071-a-direct-message-stays-between-the-two-people-in-it.md) | A direct message stays between the two people in it | Accepted |
 | [0072](0072-a-deleted-account-leaves-a-tombstone.md) | A deleted account leaves a tombstone, and its words stay unless the member takes them | Accepted |
+| [0073](0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md) | A member's privacy settings shape what they see and who finds them, never what others may read | Accepted |
 
 ## Writing a new ADR
 

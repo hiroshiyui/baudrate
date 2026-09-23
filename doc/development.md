@@ -84,6 +84,7 @@ lib/
 │   │   ├── totp_vault.ex        # TOTP secrets, encrypted with the :auth key
 │   │   ├── trust.ex             # Whether an account has outgrown the limits on new accounts (ADR 0064)
 │   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
+│   │   ├── user_domain_mute.ex  # A whole server muted for one member's own views (ADR 0073)
 │   │   ├── user_mute.ex         # UserMute schema (local-only soft-mute/ignore)
 │   │   ├── user_session.ex      # Ecto schema for server-side sessions
 │   │   ├── users.ex             # User CRUD, lookup, registration, approval and onboarding state
@@ -257,6 +258,7 @@ lib/
 │   │   ├── held_post.ex         # A submission waiting for a moderator — not an article or comment
 │   │   ├── held_posts.ex        # Holding, reviewing, approval as publication, withdrawal, purge
 │   │   ├── log.ex               # ModerationLog schema (audit trail of moderation actions)
+│   │   ├── pattern_matcher.ex   # The one word/substring/domain matcher: admin filters and muted words (ADR 0073)
 │   │   └── report.ex            # Report schema (article, comment, remote actor, user, timeline item, DM targets)
 │   ├── notification.ex          # Notification context: create, list, mark read, cleanup, admin announcements
 │   ├── notification/
@@ -2261,6 +2263,27 @@ rules; `/profile/move` (`AccountMigrationLive`) only collects input.
 | Read-only | `Auth.ensure_can_interact/1` at the context boundary ([ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)) refuses a moved account with `{:error, :account_moved}` next to bans, suspensions and silences, at every posting and interaction path: `Content.create_article/3` (Multi-shaped `{:error, :account, :account_moved, _}`; `forwarded_comment: true` exempts a comment forwarded by someone else), `update_article/3` (editor), `create_comment/2`, the create branch of article/comment like and boost toggles and timeline item like/boost, `create_timeline_item_reply/4`, `cast_vote/3`, `Messaging.can_send_dm?/2`, `Auth.can_generate_invite?/1`, and `can_create_content?/1` (so board posting and forwards). The follow paths pass `moved: :allow` — a move is a redirect, not a punishment — while `Federation.Follows` still refuses following a moved *target*, which is the one remaining `AccountMigration.ensure_not_moved/1` call site in `lib/`. Undoing, deleting, following and reading stay allowed |
 | After the move | `Layouts.account_moved_notice/1` for the owner; `/users/:name` shows "moved" with a link and no Follow/Message; `AccountMigration.remove_redirect/3` (step-up) clears the redirect, publishes an actor `Update`, sends `account_redirect_removed`; the move still counts toward 30 days |
 | Inbound `Move` | `AccountMigration.handle_inbound_move/2` (called by `InboxHandler`): alias check, `Undo(Follow)` + pending `Follow` per local follower (`follow_on_behalf/2`), `actor_moved` notices, timeline item migration, `board_actor_moved` to admins, 30-day bound per origin |
+
+### Privacy Settings
+
+`/profile/privacy` holds four settings that change only what the member sees
+and who finds them ([ADR 0073](adr/0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md)):
+
+| Setting | Stored in | Applied by |
+|---------|-----------|------------|
+| Muted servers | `user_domain_mutes` (≤ 100) | `Filters.hidden_filters/1` → `apply_hidden_filters/3` (`ra.domain not in ^domains`); the timeline and its count SQL; message search; DM push, notification creation and the conversations list in memory |
+| Muted words | `users.muted_keywords` (≤ 50, `word`/`substring`) | `<.muted_collapse>` on the board list, article page, comments, timeline, profile and content pages; `@muted_matchers` from `AuthHooks` |
+| Approve followers | `users.manually_approves_followers` | `InboxHandler` (pending row, no `Accept`), `create_local_follow/3` (pending), `/followers` requests; `manuallyApprovesFollowers` on the actor |
+| Discoverable | `users.discoverable` | `noindex` on profile, content and article pages and the feeds; `Content.Sitemap`; `search_users_page/2`; `discoverable`/`indexable` on the actor |
+
+`Baudrate.Moderation.PatternMatcher` is the one matcher behind the admin
+content filters and muted words: compiled once, one corpus per text, a few
+binary searches; `any_match?/2` never renders Markdown or parses links, so it
+runs per post on render. Every reader of `followers` ignores rows with
+`accepted_at IS NULL`; `resolve_follower_inboxes(actor, include_pending: true)`
+is only for `Delete(Person)`. The approval and discovery switches publish
+through `Federation.update_actor/3`, and turning approval off approves every
+waiting request in the same transaction.
 
 ### Account Deletion
 
