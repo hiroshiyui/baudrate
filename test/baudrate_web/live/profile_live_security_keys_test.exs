@@ -1,6 +1,6 @@
 defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
   @moduledoc """
-  Security key (WebAuthn) management on `/profile` requires step-up
+  Security key (WebAuthn) management on `/profile/security` requires step-up
   re-authentication. A session cookie alone must not be able to enrol or
   remove a second factor (ADR 0022).
   """
@@ -45,7 +45,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
   describe "while locked" do
     test "shows the re-authentication form instead of key controls", %{conn: conn, user: user} do
       cred = add_credential(user)
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
 
       assert has_element?(lv, "#profile-security-reauth-form")
       assert has_element?(lv, "#security_reauth_password")
@@ -57,7 +57,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
     end
 
     test "begin_registration is refused and issues no challenge", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
 
       html = render_click(lv, "begin_registration", %{})
 
@@ -67,7 +67,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
 
     test "delete_webauthn_credential is refused", %{conn: conn, user: user} do
       cred = add_credential(user)
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
 
       html = render_click(lv, "delete_webauthn_credential", %{"id" => to_string(cred.id)})
 
@@ -79,7 +79,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
 
   describe "re-authentication" do
     test "a wrong password keeps the section locked and is recorded", %{conn: conn, user: user} do
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
 
       html = reauth(lv, %{password: "wrong"})
 
@@ -93,7 +93,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
     end
 
     test "the correct password unlocks registration", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
 
       reauth(lv, %{password: @password})
 
@@ -107,7 +107,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
 
     test "unlocking allows removing a key", %{conn: conn, user: user} do
       cred = add_credential(user)
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
 
       reauth(lv, %{password: @password})
 
@@ -117,7 +117,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
     end
 
     test "a malformed credential id does not crash the LiveView", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
       reauth(lv, %{password: @password})
 
       html = render_click(lv, "delete_webauthn_credential", %{"id" => "not-a-number"})
@@ -127,17 +127,17 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
     end
 
     test "the unlock does not survive a reload", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
       reauth(lv, %{password: @password})
       assert has_element?(lv, "#profile-security-key-register")
 
-      {:ok, lv2, _html} = live(conn, "/profile")
+      {:ok, lv2, _html} = live(conn, "/profile/security")
       assert has_element?(lv2, "#profile-security-reauth-form")
       refute has_element?(lv2, "#profile-security-key-register")
     end
 
     test "an expired unlock is refused server-side", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
       reauth(lv, %{password: @password})
 
       # Move the deadline into the past without waiting five minutes.
@@ -161,7 +161,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
         _bucket, _scale, _limit -> {:allow, 1}
       end)
 
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
       html = reauth(lv, %{password: @password})
 
       assert html =~ "Too many attempts"
@@ -178,7 +178,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
 
     test "requires the password and keeps other sessions on failure", %{conn: conn, user: user} do
       {:ok, other_token, _} = Auth.create_user_session(user.id)
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
 
       html = sign_out(lv, %{password: "wrong"})
 
@@ -189,7 +189,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
     test "signs out other sessions, keeps this one, and notifies", %{conn: conn, user: user} do
       {:ok, other_token, _} = Auth.create_user_session(user.id)
       this_token = Plug.Conn.get_session(conn, :session_token)
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
 
       html = sign_out(lv, %{password: @password})
 
@@ -205,7 +205,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
     end
 
     test "links to the password change page", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
       assert has_element?(lv, "#profile-password-change[href='/profile/password']")
     end
   end
@@ -218,7 +218,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
     end
 
     test "require the current code", %{conn: conn, secret: secret} do
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
       assert has_element?(lv, "#security_reauth_code")
 
       html = reauth(lv, %{password: @password, code: "000000"})

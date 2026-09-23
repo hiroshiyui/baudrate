@@ -55,7 +55,7 @@ defmodule BaudrateWeb.SessionController do
 
   ## WebAuthn Registration
 
-  `webauthn_register/2` handles security key enrollment from `/profile`. The
+  `webauthn_register/2` handles security key enrollment from `/profile/security`. The
   LiveView begins the ceremony, the browser completes
   `navigator.credentials.create()`, and the attestation response is POSTed
   here for verification by `wax_` before persistence.
@@ -220,7 +220,7 @@ defmodule BaudrateWeb.SessionController do
             |> delete_session(:totp_setup_secret)
             |> delete_session(:totp_attempts)
             |> put_flash(:info, gettext("Two-factor authentication enabled successfully."))
-            |> establish_session(updated_user, "/profile")
+            |> establish_session(updated_user, "/profile/security")
 
           {:error, _changeset} ->
             Logger.error("auth.totp_enable_failed: user_id=#{user.id} ip=#{remote_ip(conn)}")
@@ -281,7 +281,7 @@ defmodule BaudrateWeb.SessionController do
 
         conn
         |> put_flash(:error, gettext("Invalid or expired token."))
-        |> redirect(to: "/profile")
+        |> redirect(to: "/profile/security")
     end
   end
 
@@ -361,7 +361,7 @@ defmodule BaudrateWeb.SessionController do
               :error,
               gettext("TOTP configuration error. Please contact an administrator.")
             )
-            |> redirect(to: "/profile")
+            |> redirect(to: "/profile/security")
 
           sudo_locked? or attempts >= @max_totp_attempts ->
             Logger.warning("auth.admin_totp_lockout: user_id=#{user.id} ip=#{remote_ip(conn)}")
@@ -407,10 +407,10 @@ defmodule BaudrateWeb.SessionController do
   @doc """
   Registers a WebAuthn security key for the currently authenticated user.
 
-  Called via form POST from `ProfileLive` after the browser completes the
+  Called via form POST from `ProfileSecurityLive` after the browser completes the
   `navigator.credentials.create()` ceremony. Verifies the attestation via
   `Auth.finish_registration/4`, persists the credential, and redirects to
-  `/profile` with a flash message.
+  `/profile/security` with a flash message.
   """
   def webauthn_register(conn, params) do
     %{
@@ -434,7 +434,7 @@ defmodule BaudrateWeb.SessionController do
 
           conn
           |> put_flash(:info, gettext("Security key registered successfully."))
-          |> redirect(to: "/profile")
+          |> redirect(to: "/profile/security")
         else
           error ->
             Logger.warning(
@@ -443,7 +443,7 @@ defmodule BaudrateWeb.SessionController do
 
             conn
             |> put_flash(:error, gettext("Security key registration failed. Please try again."))
-            |> redirect(to: "/profile")
+            |> redirect(to: "/profile/security")
         end
 
       _ ->

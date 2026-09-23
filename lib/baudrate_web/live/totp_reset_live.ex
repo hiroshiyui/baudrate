@@ -56,7 +56,7 @@ defmodule BaudrateWeb.TotpResetLive do
       socket =
         socket
         |> put_flash(:error, gettext("Too many failed attempts. Please try again later."))
-        |> redirect(to: "/profile")
+        |> redirect(to: "/profile/security")
 
       {:noreply, socket}
     else

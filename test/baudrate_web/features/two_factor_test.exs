@@ -29,7 +29,7 @@ defmodule BaudrateWeb.Features.TwoFactorTest do
     |> fill_in(Query.css("#totp_code"), with: NimbleTOTP.verification_code(secret))
     |> click(Query.css("#totp-setup-submit"))
     |> assert_has(Query.text("Two-factor authentication enabled successfully."))
-    |> wait_for_path("/profile")
+    |> wait_for_path("/profile/security")
 
     assert Repo.reload!(moderator).totp_enabled
   end

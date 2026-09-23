@@ -253,6 +253,73 @@ defmodule Baudrate.Auth.Sessions do
   end
 
   @doc """
+  Lists `user_id`'s live sessions for the member's own session list, most
+  recently refreshed first.
+
+  Each entry carries `:id`, `:inserted_at`, `:refreshed_at`, `:ip_address`,
+  and `:browser` and `:os` from `Baudrate.DataPortability.UserAgent.parts/1`.
+  **The raw User-Agent header never leaves this function**: it is more
+  identifying than anything the page needs to show.
+  """
+  @spec list_sessions(integer()) :: [map()]
+  def list_sessions(user_id) when is_integer(user_id) do
+    now = DateTime.utc_now()
+
+    from(s in UserSession,
+      where: s.user_id == ^user_id and s.expires_at > ^now,
+      order_by: [desc: s.refreshed_at, desc: s.id],
+      select: %{
+        id: s.id,
+        inserted_at: s.inserted_at,
+        refreshed_at: s.refreshed_at,
+        ip_address: s.ip_address,
+        user_agent: s.user_agent
+      }
+    )
+    |> Repo.all()
+    |> Enum.map(fn %{user_agent: ua} = row ->
+      {browser, os} = Baudrate.DataPortability.UserAgent.parts(ua)
+      row |> Map.delete(:user_agent) |> Map.merge(%{browser: browser, os: os})
+    end)
+  end
+
+  @doc """
+  Signs out one of `user_id`'s sessions, `session_id`, and disconnects its
+  LiveView sockets — never the session `current_session_id` making the
+  request.
+
+  Both refusals are in the query itself: another member's session id simply
+  matches nothing, and neither can the current session. A `nil` current id
+  (the session could not be resolved at mount) is refused outright, as
+  "sign out everywhere" refuses it, rather than trusted to exclude nothing.
+
+  **The caller must already hold a fresh step-up re-authentication**: without
+  it, a stolen cookie could sign the real member out and keep its own
+  session, the attack `sign_out_other_sessions/2` is guarded against.
+  Returns `:ok`, `{:error, :not_found}` or `{:error, :no_session}`.
+  """
+  @spec revoke_session(integer(), integer(), integer() | nil) ::
+          :ok | {:error, :not_found | :no_session}
+  def revoke_session(_user_id, _session_id, nil), do: {:error, :no_session}
+
+  def revoke_session(user_id, session_id, current_session_id)
+      when is_integer(user_id) and is_integer(session_id) and is_integer(current_session_id) do
+    query =
+      from(s in UserSession,
+        where: s.user_id == ^user_id and s.id == ^session_id and s.id != ^current_session_id
+      )
+
+    case revoke(query) do
+      0 ->
+        {:error, :not_found}
+
+      _ ->
+        Logger.info("auth.session_revoked: user_id=#{user_id} session_id=#{session_id}")
+        :ok
+    end
+  end
+
+  @doc """
   "Sign out everywhere": revokes every other session of `user` (closing their
   LiveView sockets), keeps the session row `keep_session_id`, cancels any
   active data export request and pending account move, and sends the

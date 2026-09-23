@@ -89,14 +89,32 @@ defmodule Baudrate.DataPortability do
     end
   end
 
-  defp totp_too_new(%User{totp_enabled_at: %DateTime{} = enabled_at}) do
-    eligible_at = DateTime.add(enabled_at, @min_totp_age_days * 86_400, :second)
-    remaining = max(DateTime.diff(eligible_at, DateTime.utc_now(), :second), 1)
-    {:error, {:totp_too_new, div(remaining + 86_399, 86_400)}}
-  end
+  @doc """
+  When TOTP will have been on for long enough to export or move: its
+  `totp_enabled_at` plus #{@min_totp_age_days} days, or `nil` when TOTP is off
+  or has no recorded start.
 
-  # TOTP on but no timestamp: fail closed with the full wait.
-  defp totp_too_new(_user), do: {:error, {:totp_too_new, @min_totp_age_days}}
+  The day count in `{:totp_too_new, days}` is computed from this too, so the
+  date a page shows and the count it states cannot disagree. `nil` shows no
+  date; the account still fails closed with the full wait.
+  """
+  @spec eligible_on(User.t()) :: DateTime.t() | nil
+  def eligible_on(%User{totp_enabled: true, totp_enabled_at: %DateTime{} = enabled_at}),
+    do: DateTime.add(enabled_at, @min_totp_age_days * 86_400, :second)
+
+  def eligible_on(_user), do: nil
+
+  defp totp_too_new(user) do
+    case eligible_on(user) do
+      # TOTP on but no timestamp: fail closed with the full wait.
+      nil ->
+        {:error, {:totp_too_new, @min_totp_age_days}}
+
+      eligible_at ->
+        remaining = max(DateTime.diff(eligible_at, DateTime.utc_now(), :second), 1)
+        {:error, {:totp_too_new, div(remaining + 86_399, 86_400)}}
+    end
+  end
 
   # ---------------------------------------------------------------------------
   # Requesting

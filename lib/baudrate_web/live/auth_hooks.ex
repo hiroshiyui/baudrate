@@ -274,7 +274,7 @@ defmodule BaudrateWeb.AuthHooks do
            :error,
            gettext("TOTP must be configured before accessing admin pages.")
          )
-         |> redirect(to: "/profile")}
+         |> redirect(to: "/profile/security")}
 
       true ->
         verified_at = session["admin_totp_verified_at"]
@@ -284,7 +284,7 @@ defmodule BaudrateWeb.AuthHooks do
           # The mount-time check was the only one: `on_mount` never runs again,
           # so a socket opened inside the window kept accepting admin events
           # for as long as it stayed connected — hours after the ten minutes
-          # expired. `ProfileLive` already guards its own unlock this way and
+          # expired. `ProfileSecurityLive` already guards its own unlock this way and
           # says why: events can be sent regardless of what is rendered.
           {:cont,
            socket
@@ -347,7 +347,13 @@ defmodule BaudrateWeb.AuthHooks do
   # without any sweep having to run (ADR 0029).
   defp suspended?(user), do: Auth.suspended?(user)
 
+  # Every hook that can render a page starts here, so this is also where the
+  # viewer's time zone is cleared: a LiveView process is fresh, but a dead
+  # render runs in a request process that may have served someone else.
+  # `resolve_user_locale/1` sets it again once the member is known.
   defp apply_session_locale(session) do
+    BaudrateWeb.TimeZone.put(nil)
+
     case session["locale"] do
       locale when is_binary(locale) ->
         Gettext.put_locale(locale)
@@ -359,6 +365,8 @@ defmodule BaudrateWeb.AuthHooks do
   end
 
   defp resolve_user_locale(user) do
+    BaudrateWeb.TimeZone.put(user.time_zone)
+
     case BaudrateWeb.Locale.resolve_from_preferences(user.preferred_locales) do
       nil ->
         Gettext.get_locale()

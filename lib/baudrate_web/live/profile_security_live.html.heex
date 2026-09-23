@@ -1,0 +1,551 @@
+<.profile_page current={:security} id="profile-security-page" title={gettext("Security")}>
+  <div id="profile-2fa">
+    <div class="profile-field-label text-sm text-base-content/70">
+      {gettext("Two-Factor Authentication")}
+    </div>
+    <div class="profile-field-value text-lg font-semibold flex items-center gap-2">
+      <%= if @current_user.totp_enabled do %>
+        <span class="profile-2fa-status badge badge-success">{gettext("Enabled")}</span>
+        <.link
+          id="profile-2fa-reset"
+          navigate="/profile/totp-reset"
+          class="btn btn-sm btn-outline"
+        >
+          {gettext("Reset Authenticator")}
+        </.link>
+      <% else %>
+        <span class="profile-2fa-status badge badge-warning">{gettext("Disabled")}</span>
+        <%= if @totp_policy == :optional do %>
+          <.link
+            id="profile-2fa-enable"
+            navigate="/profile/totp-reset"
+            class="btn btn-sm btn-primary"
+          >
+            {gettext("Enable TOTP")}
+          </.link>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <div id="profile-password">
+    <div class="profile-field-label text-sm text-base-content/70">
+      {gettext("Password")}
+    </div>
+    <div class="profile-field-value">
+      <.link
+        id="profile-password-change"
+        navigate={~p"/profile/password"}
+        class="profile-password-change btn btn-sm btn-outline"
+      >
+        {gettext("Change Password")}
+      </.link>
+    </div>
+  </div>
+
+  <section
+    id="profile-security-unlock"
+    class="profile-security-unlock"
+    aria-labelledby="profile-security-unlock-heading"
+  >
+    <h2
+      id="profile-security-unlock-heading"
+      class="profile-section-heading text-sm text-base-content/70 mb-2"
+    >
+      {gettext("Confirm your identity")}
+    </h2>
+    <p
+      :if={@security_reauth_until}
+      id="profile-security-unlocked"
+      class="profile-security-unlocked text-sm"
+    >
+      {gettext("Unlocked for 5 minutes. Reloading or leaving this page locks it again.")}
+    </p>
+    <.form
+      :if={is_nil(@security_reauth_until)}
+      for={@security_reauth_form}
+      id="profile-security-reauth-form"
+      class="profile-security-reauth-form space-y-3"
+      phx-submit="security_reauth"
+    >
+      <p
+        id="profile-security-reauth-hint"
+        class="profile-field-hint text-sm text-base-content/70"
+      >
+        <%= if @current_user.totp_enabled do %>
+          {gettext(
+            "To change your security keys, recovery codes, recovery contacts or sessions, confirm your password and current authenticator code."
+          )}
+        <% else %>
+          {gettext(
+            "To change your security keys, recovery codes, recovery contacts or sessions, confirm your password."
+          )}
+        <% end %>
+      </p>
+      <div class="form-control">
+        <label
+          id="security-reauth-password-label"
+          class="profile-security-reauth-label label"
+          for="security_reauth_password"
+        >
+          <span class="label-text">{gettext("Password")}</span>
+        </label>
+        <input
+          type="password"
+          id="security_reauth_password"
+          name="security_reauth[password]"
+          value={@security_reauth_form[:password].value}
+          class="profile-security-reauth-password input input-bordered input-sm w-full max-w-xs"
+          autocomplete="current-password"
+          required
+        />
+      </div>
+      <div :if={@current_user.totp_enabled} class="form-control">
+        <label
+          id="security-reauth-code-label"
+          class="profile-security-reauth-label label"
+          for="security_reauth_code"
+        >
+          <span class="label-text">{gettext("Current TOTP Code")}</span>
+        </label>
+        <input
+          type="text"
+          id="security_reauth_code"
+          name="security_reauth[code]"
+          value={@security_reauth_form[:code].value}
+          class="profile-security-reauth-code input input-bordered input-sm w-full max-w-xs tracking-widest"
+          inputmode="numeric"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          autocomplete="one-time-code"
+          required
+          aria-describedby="security-reauth-code-hint"
+        />
+        <.totp_code_hint id="security-reauth-code-hint" />
+      </div>
+      <button
+        id="profile-security-reauth-submit"
+        type="submit"
+        class="profile-security-reauth-submit btn btn-sm btn-outline"
+        phx-disable-with={gettext("Confirming...")}
+      >
+        <.icon name="hero-lock-open" class="w-4 h-4 mr-1" />
+        {gettext("Confirm Identity")}
+      </button>
+    </.form>
+  </section>
+
+  <%!-- Security Keys (WebAuthn) section --%>
+  <section
+    id="profile-security-keys"
+    aria-labelledby="security-keys-heading"
+    phx-hook="WebAuthnRegister"
+  >
+    <h2
+      id="security-keys-heading"
+      class="profile-section-heading text-sm text-base-content/70 mb-2"
+    >
+      {gettext("Security Keys")}
+    </h2>
+    <p class="profile-field-hint text-sm text-base-content/70 mb-3">
+      {gettext(
+        "Register a hardware security key or platform authenticator (e.g. Touch ID, Windows Hello) as a second factor."
+      )}
+    </p>
+
+    <div :if={@webauthn_credentials != []} class="space-y-2 mb-4">
+      <article
+        :for={cred <- @webauthn_credentials}
+        id={"security-key-#{cred.id}"}
+        class="security-key flex items-center gap-3 p-2 bg-base-200 rounded-lg"
+      >
+        <.icon name="hero-key" class="w-5 h-5 text-base-content/60 shrink-0" />
+        <div class="flex-1 min-w-0">
+          <div class="security-key-label font-semibold text-sm truncate">
+            {if cred.label != "", do: cred.label, else: gettext("Unnamed Key")}
+          </div>
+          <div class="security-key-meta text-xs text-base-content/60">
+            {gettext("Added %{date}",
+              date: format_date(cred.inserted_at)
+            )}
+            <%= if cred.last_used_at do %>
+              &middot; {gettext("Last used %{date}",
+                date: format_date(cred.last_used_at)
+              )}
+            <% end %>
+          </div>
+        </div>
+        <button
+          :if={@security_reauth_until}
+          id={"security-key-remove-#{cred.id}"}
+          type="button"
+          class="security-key-remove btn btn-sm btn-ghost btn-error"
+          phx-click="delete_webauthn_credential"
+          phx-value-id={cred.id}
+          data-confirm={gettext("Remove this security key?")}
+          aria-label={gettext("Remove security key %{label}", label: cred.label)}
+        >
+          {gettext("Remove")}
+        </button>
+      </article>
+    </div>
+
+    <div
+      :if={@webauthn_credentials == []}
+      class="profile-security-keys-empty text-sm text-base-content/70 italic mb-4"
+    >
+      {gettext("No security keys registered.")}
+    </div>
+
+    <button
+      :if={@security_reauth_until}
+      id="profile-security-key-register"
+      type="button"
+      class="profile-security-key-register btn btn-sm btn-outline"
+      phx-click="begin_registration"
+    >
+      <.icon name="hero-plus" class="w-4 h-4 mr-1" />
+      {gettext("Register New Key")}
+    </button>
+
+    <form
+      id="webauthn-register-form"
+      action="/auth/webauthn-register"
+      method="post"
+      class="hidden"
+    >
+      <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+      <input
+        type="hidden"
+        name="challenge_token"
+        value={@webauthn_challenge_token}
+      />
+      <input type="hidden" id="attestation_object" name="attestation_object" />
+      <input type="hidden" id="client_data_json" name="client_data_json" />
+      <input type="hidden" name="label" value={gettext("Security Key")} />
+    </form>
+  </section>
+
+  <%!--
+    Account recovery (ADR 0058). Both halves sit behind the same step-up
+    unlock as the security keys above: a printed recovery code is a
+    credential, and a recovery contact is what an admin will later trust.
+  --%>
+  <section
+    id="profile-recovery-codes"
+    class="profile-recovery-codes"
+    aria-labelledby="profile-recovery-codes-heading"
+  >
+    <h3
+      id="profile-recovery-codes-heading"
+      class="profile-recovery-codes-heading profile-field-label text-sm text-base-content/70"
+    >
+      {gettext("Recovery codes")}
+    </h3>
+
+    <p id="profile-recovery-codes-count" class="profile-recovery-codes-count text-sm mb-2">
+      {ngettext(
+        "%{count} unused code left.",
+        "%{count} unused codes left.",
+        @unused_recovery_codes,
+        count: @unused_recovery_codes
+      )}
+      <span class="text-base-content/70">
+        {gettext("This site sends no email, so these are how you get back in.")}
+      </span>
+    </p>
+
+    <%!-- Shown once, from assigns. Nothing can read them back. --%>
+    <div
+      :if={@fresh_recovery_codes}
+      id="profile-fresh-recovery-codes"
+      class="profile-fresh-recovery-codes alert alert-warning flex-col items-start gap-2 mb-3"
+      role="status"
+    >
+      <p class="profile-fresh-recovery-codes-warning font-semibold">
+        {gettext("Save these now — you will not be able to see them again.")}
+      </p>
+      <ol class="profile-fresh-recovery-codes-list grid grid-cols-2 gap-1.5 w-full font-mono text-sm">
+        <li
+          :for={code <- @fresh_recovery_codes}
+          id={"profile-fresh-recovery-code-#{code}"}
+          class="profile-fresh-recovery-code bg-base-300 rounded px-3 py-1.5 text-center"
+        >
+          {code}
+        </li>
+      </ol>
+      <button
+        type="button"
+        id="profile-fresh-recovery-codes-done"
+        phx-click="dismiss_recovery_codes"
+        class="profile-fresh-recovery-codes-done btn btn-sm"
+      >
+        {gettext("I have saved them")}
+      </button>
+    </div>
+
+    <button
+      :if={@security_reauth_until && is_nil(@fresh_recovery_codes)}
+      type="button"
+      id="profile-regenerate-recovery-codes"
+      phx-click="regenerate_recovery_codes"
+      data-confirm={gettext("Issue new codes? Every existing code stops working.")}
+      class="profile-regenerate-recovery-codes btn btn-sm btn-outline"
+    >
+      <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" />
+      {gettext("Issue new codes")}
+    </button>
+  </section>
+
+  <section
+    id="profile-recovery-contacts"
+    class="profile-recovery-contacts"
+    aria-labelledby="profile-recovery-contacts-heading"
+  >
+    <h3
+      id="profile-recovery-contacts-heading"
+      class="profile-recovery-contacts-heading profile-field-label text-sm text-base-content/70"
+    >
+      {gettext("Recovery contact")}
+    </h3>
+
+    <p id="profile-recovery-contacts-hint" class="profile-recovery-contacts-hint text-sm mb-3">
+      {gettext(
+        "If you lose your password and your recovery codes, this is the only way back. Register an email address and the OpenPGP public key you sign with; an admin verifies it by checking a signed message from you. Nothing is emailed from here — the check happens in the admin's own mail client."
+      )}
+    </p>
+
+    <ul
+      :if={@recovery_contacts != []}
+      id="profile-recovery-contact-list"
+      class="profile-recovery-contact-list space-y-2 mb-3"
+    >
+      <li
+        :for={contact <- @recovery_contacts}
+        id={"profile-recovery-contact-#{contact.id}"}
+        class="profile-recovery-contact flex flex-wrap items-center gap-2 bg-base-200 rounded p-3 min-w-0"
+      >
+        <span class="profile-recovery-contact-email font-mono text-sm break-all min-w-0 flex-1">
+          {contact.email || gettext("(unreadable)")}
+        </span>
+        <span
+          :if={contact.status == "verified"}
+          class="profile-recovery-contact-status badge badge-success badge-sm"
+        >
+          {gettext("Verified")}
+        </span>
+        <span
+          :if={contact.status == "pending"}
+          class="profile-recovery-contact-status badge badge-ghost badge-sm"
+        >
+          {gettext("Waiting for an admin")}
+        </span>
+        <button
+          :if={@security_reauth_until}
+          type="button"
+          id={"profile-recovery-contact-remove-#{contact.id}"}
+          phx-click="remove_recovery_contact"
+          phx-value-id={contact.id}
+          data-confirm={gettext("Remove this recovery contact?")}
+          class="profile-recovery-contact-remove btn btn-xs btn-ghost text-error"
+        >
+          {gettext("Remove")}
+        </button>
+      </li>
+    </ul>
+
+    <p
+      :if={@recovery_contacts == []}
+      id="profile-recovery-contacts-empty"
+      class="profile-recovery-contacts-empty text-sm text-base-content/70 italic mb-3"
+    >
+      {gettext("No recovery contact registered.")}
+    </p>
+
+    <.form
+      :if={
+        @security_reauth_until &&
+          length(@recovery_contacts) < Baudrate.Auth.max_recovery_contacts()
+      }
+      for={@contact_form}
+      id="profile-recovery-contact-form"
+      phx-change="validate_recovery_contact"
+      phx-submit="add_recovery_contact"
+      class="profile-recovery-contact-form space-y-2"
+    >
+      <div>
+        <label for="profile-recovery-contact-email" class="label label-text">
+          {gettext("Email address")}
+        </label>
+        <input
+          type="email"
+          id="profile-recovery-contact-email"
+          name="contact[email]"
+          value={@contact_form[:email].value}
+          class="profile-recovery-contact-email-input input input-bordered input-sm w-full max-w-sm"
+        />
+      </div>
+      <div>
+        <label for="profile-recovery-contact-key" class="label label-text">
+          {gettext("OpenPGP public key")}
+        </label>
+        <textarea
+          id="profile-recovery-contact-key"
+          name="contact[pgp_public_key]"
+          rows="5"
+          placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----"
+          class="profile-recovery-contact-key-input textarea textarea-bordered textarea-sm w-full font-mono text-xs"
+        >{@contact_form[:pgp_public_key].value}</textarea>
+      </div>
+      <div>
+        <label for="profile-recovery-contact-label" class="label label-text">
+          {gettext("Label (optional)")}
+        </label>
+        <input
+          type="text"
+          id="profile-recovery-contact-label"
+          name="contact[label]"
+          value={@contact_form[:label].value}
+          maxlength="64"
+          class="profile-recovery-contact-label-input input input-bordered input-sm w-full max-w-sm"
+        />
+      </div>
+      <p
+        :for={{field, msgs} <- @contact_form.errors |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))}
+        class="profile-recovery-contact-error text-error text-sm"
+      >
+        {to_string(field)}: {msgs |> Enum.map(&translate_error/1) |> Enum.join(", ")}
+      </p>
+      <button
+        type="submit"
+        id="profile-recovery-contact-submit"
+        class="profile-recovery-contact-submit btn btn-sm btn-outline"
+        phx-disable-with={gettext("Saving...")}
+      >
+        {gettext("Register contact")}
+      </button>
+    </.form>
+  </section>
+
+  <%!-- Sessions section --%>
+  <section id="profile-sessions" aria-labelledby="profile-sessions-heading">
+    <h2
+      id="profile-sessions-heading"
+      class="profile-section-heading text-sm text-base-content/70 mb-2"
+      tabindex="-1"
+    >
+      {gettext("Sessions")}
+    </h2>
+    <p id="profile-sessions-status" class="sr-only" role="status">{@sessions_status}</p>
+    <ul id="profile-session-list" class="profile-session-list space-y-2 mb-3">
+      <li
+        :for={s <- @sessions}
+        id={"profile-session-#{s.id}"}
+        class="profile-session flex flex-wrap items-center gap-2 bg-base-100 rounded p-3 min-w-0"
+      >
+        <div class="profile-session-details flex-1 min-w-0">
+          <div class="profile-session-device font-semibold text-sm break-words">
+            {session_device(s)}
+            <span
+              :if={s.id == @session_id}
+              id={"profile-session-current-#{s.id}"}
+              class="profile-session-current badge badge-primary badge-sm ml-1"
+            >
+              {gettext("This session")}
+            </span>
+          </div>
+          <div class="profile-session-meta text-xs text-base-content/70">
+            {gettext("Signed in %{date}", date: format_date(s.inserted_at))} &middot; {gettext(
+              "Last active %{date}",
+              date: format_date(s.refreshed_at)
+            )}
+            <span :if={@security_reauth_until && s.ip_address} class="profile-session-ip">
+              &middot; {gettext("from %{ip}", ip: s.ip_address)}
+            </span>
+          </div>
+        </div>
+        <button
+          :if={@security_reauth_until && s.id != @session_id}
+          id={"profile-session-revoke-#{s.id}"}
+          type="button"
+          class="profile-session-revoke btn btn-sm btn-ghost btn-error"
+          phx-click="revoke_session"
+          phx-value-id={s.id}
+          data-confirm={gettext("Sign out this session?")}
+          aria-label={gettext("Sign out %{device}", device: session_device(s))}
+        >
+          {gettext("Sign out")}
+        </button>
+      </li>
+    </ul>
+    <p
+      :if={is_nil(@security_reauth_until)}
+      id="profile-sessions-locked-hint"
+      class="profile-sessions-locked-hint profile-field-hint text-sm text-base-content/70 mb-3"
+    >
+      {gettext(
+        "Confirm your identity above to see where each session signed in from and to sign one out."
+      )}
+    </p>
+    <p id="profile-sessions-hint" class="profile-field-hint text-sm text-base-content/70 mb-3">
+      {gettext(
+        "Sign out of every other browser or device where your account is signed in. This one stays signed in."
+      )}
+    </p>
+    <.form
+      for={@sign_out_form}
+      id="profile-sign-out-everywhere-form"
+      class="profile-sign-out-everywhere-form space-y-3"
+      phx-submit="sign_out_everywhere"
+    >
+      <div class="form-control">
+        <label
+          id="sign-out-password-label"
+          class="profile-sign-out-label label"
+          for="sign_out_password"
+        >
+          <span class="label-text">{gettext("Password")}</span>
+        </label>
+        <input
+          type="password"
+          id="sign_out_password"
+          name="sign_out[password]"
+          class="profile-sign-out-password input input-bordered input-sm w-full max-w-xs"
+          autocomplete="current-password"
+          required
+        />
+      </div>
+      <div :if={@current_user.totp_enabled} class="form-control">
+        <label
+          id="sign-out-code-label"
+          class="profile-sign-out-label label"
+          for="sign_out_code"
+        >
+          <span class="label-text">{gettext("Current TOTP Code")}</span>
+        </label>
+        <input
+          type="text"
+          id="sign_out_code"
+          name="sign_out[code]"
+          class="profile-sign-out-code input input-bordered input-sm w-full max-w-xs tracking-widest"
+          inputmode="numeric"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          autocomplete="one-time-code"
+          required
+          aria-describedby="sign-out-code-hint"
+        />
+        <.totp_code_hint id="sign-out-code-hint" />
+      </div>
+      <button
+        id="profile-sign-out-everywhere-submit"
+        type="submit"
+        class="profile-sign-out-everywhere-submit btn btn-sm btn-outline btn-warning"
+        phx-disable-with={gettext("Signing out...")}
+      >
+        <.icon name="hero-arrow-right-start-on-rectangle" class="w-4 h-4 mr-1" />
+        {gettext("Sign Out Everywhere Else")}
+      </button>
+    </.form>
+  </section>
+</.profile_page>

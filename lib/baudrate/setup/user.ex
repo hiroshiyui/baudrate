@@ -126,6 +126,9 @@ defmodule Baudrate.Setup.User do
     field :signature, :string
     field :bio, :string
     field :dm_access, :string, default: "anyone"
+    # The zone this member's timestamps are shown in; nil means the site's
+    # setting (`BaudrateWeb.TimeZone`). Written only by `time_zone_changeset/2`.
+    field :time_zone, :string
     field :notification_preferences, :map, default: %{}
     field :is_bot, :boolean, default: false
     field :profile_fields, {:array, :map}, default: []
@@ -421,6 +424,17 @@ defmodule Baudrate.Setup.User do
     |> cast(attrs, [:dm_access])
     |> validate_required([:dm_access])
     |> validate_inclusion(:dm_access, ["anyone", "followers", "nobody"])
+  end
+
+  @doc """
+  Changeset for the member's own time zone: an IANA name the tz database
+  knows (`Baudrate.Timezone.identifiers/0`), or `nil`/`""` for the site's.
+  No other changeset casts `:time_zone`.
+  """
+  def time_zone_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:time_zone], empty_values: [""])
+    |> validate_inclusion(:time_zone, Baudrate.Timezone.identifiers())
   end
 
   @doc """

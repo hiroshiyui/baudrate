@@ -154,7 +154,7 @@ defmodule Baudrate.Notification.AccountSecurityNoticesTest do
   end
 
   describe "web push payload" do
-    test "links to /profile, carries the key label, and uses the recipient's locale",
+    test "links to /profile/security, carries the key label, and uses the recipient's locale",
          %{user: user} do
       {:ok, user} = Auth.update_preferred_locales(user, ["zh_TW"])
       {:ok, _} = Auth.create_webauthn_credential(user, credential_attrs("Pixel Passkey"))
@@ -168,7 +168,7 @@ defmodule Baudrate.Notification.AccountSecurityNoticesTest do
 
       assert payload.type == "security_key_added"
       assert payload.body == "Pixel Passkey"
-      assert payload.url == BaudrateWeb.Endpoint.url() <> "/profile"
+      assert payload.url == BaudrateWeb.Endpoint.url() <> "/profile/security"
 
       expected =
         Gettext.with_locale(BaudrateWeb.Gettext, "zh_TW", fn ->

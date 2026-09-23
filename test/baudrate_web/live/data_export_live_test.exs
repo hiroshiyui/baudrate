@@ -65,6 +65,30 @@ defmodule BaudrateWeb.DataExportLiveTest do
     assert has_element?(lv, "#data-export-ineligible-reason", "You can export in 7 days")
   end
 
+  test "while TOTP is too new, gives the date, the reason and the offline route", %{
+    conn: conn
+  } do
+    user = setup_user("user")
+    {:ok, _} = Auth.enable_totp(user, Auth.generate_totp_secret())
+    at = DateTime.utc_now() |> DateTime.add(-2 * 86_400) |> DateTime.truncate(:second)
+    Repo.update_all(from(u in User, where: u.id == ^user.id), set: [totp_enabled_at: at])
+    {:ok, user} = Auth.update_time_zone(Repo.reload!(user), "America/New_York")
+
+    {:ok, lv, _html} = live(log_in_user(conn, user), "/profile/export")
+
+    date =
+      at
+      |> DateTime.add(7 * 86_400)
+      |> DateTime.shift_zone!("America/New_York")
+      |> Calendar.strftime("%Y-%m-%d %H:%M")
+
+    assert has_element?(lv, "#data-export-eligible-on", date)
+    assert has_element?(lv, "#data-export-totp-why")
+    assert has_element?(lv, "#data-export-offline")
+    # Nothing to set up: TOTP is on, the member only has to wait.
+    refute has_element?(lv, "#data-export-enable-totp")
+  end
+
   test "requesting needs the password and TOTP code", %{conn: conn} do
     {conn, user, secret} = eligible(conn)
     {:ok, lv, _html} = live(conn, "/profile/export")

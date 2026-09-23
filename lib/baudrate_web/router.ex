@@ -81,6 +81,7 @@ defmodule BaudrateWeb.Router do
     }
 
     plug BaudrateWeb.Plugs.SetLocale
+    plug BaudrateWeb.Plugs.ClearTimeZone
     plug BaudrateWeb.Plugs.EnsureSetup
     plug BaudrateWeb.Plugs.SetTheme
     plug BaudrateWeb.Plugs.RefreshSession
@@ -393,6 +394,10 @@ defmodule BaudrateWeb.Router do
       live "/welcome", WelcomeLive
       live "/articles/:slug/edit", ArticleEditLive
       live "/profile", ProfileLive
+      live "/profile/security", ProfileSecurityLive
+      live "/profile/notifications", ProfileNotificationsLive
+      live "/profile/privacy", ProfilePrivacyLive
+      live "/profile/account", ProfileAccountLive
       live "/profile/totp-reset", TotpResetLive
       live "/profile/password", PasswordChangeLive
       live "/profile/export", DataExportLive

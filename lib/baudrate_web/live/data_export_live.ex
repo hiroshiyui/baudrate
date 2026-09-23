@@ -25,6 +25,8 @@ defmodule BaudrateWeb.DataExportLive do
 
   use BaudrateWeb, :live_view
 
+  import BaudrateWeb.ProfileComponents, only: [totp_wait_note: 1]
+
   alias Baudrate.{Auth, DataPortability}
   alias Baudrate.DataPortability.DownloadNonces
   alias BaudrateWeb.{ExportController, RateLimits}
@@ -246,6 +248,7 @@ defmodule BaudrateWeb.DataExportLive do
 
     socket
     |> assign(:eligibility, DataPortability.eligibility(fresh))
+    |> assign(:eligible_on, DataPortability.eligible_on(fresh))
     |> assign(:totp_enabled, fresh.totp_enabled)
     |> assign(:active, DataPortability.active_request(user_id))
     |> assign(:history, DataPortability.list_export_history(user_id))

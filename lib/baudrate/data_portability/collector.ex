@@ -189,6 +189,7 @@ defmodule Baudrate.DataPortability.Collector do
           %{"name" => f["name"], "value" => f["value"]}
         end),
       "preferred_locales" => user.preferred_locales || [],
+      "time_zone" => user.time_zone,
       "dm_access" => user.dm_access,
       "notification_preferences" => user.notification_preferences || %{},
       "role" => user.role.name,

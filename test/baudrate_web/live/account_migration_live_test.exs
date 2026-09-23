@@ -48,8 +48,8 @@ defmodule BaudrateWeb.AccountMigrationLiveTest do
     assert {:error, {:redirect, %{to: "/login" <> _}}} = live(build_conn(), "/profile/move")
   end
 
-  test "is linked from the profile page", %{conn: conn} do
-    {:ok, lv, _html} = live(conn, "/profile")
+  test "is linked from the account settings page", %{conn: conn} do
+    {:ok, lv, _html} = live(conn, "/profile/account")
     assert has_element?(lv, "#profile-account-migration-link[href='/profile/move']")
   end
 
@@ -159,7 +159,22 @@ defmodule BaudrateWeb.AccountMigrationLiveTest do
              )
 
       assert has_element?(lv, "#account-move-enable-totp[href='/profile/totp-reset']")
+      assert has_element?(lv, "#account-move-totp-why")
       refute has_element?(lv, "#account-move-form")
+    end
+
+    test "while TOTP is too new, gives the date the account may move", %{
+      conn: conn,
+      user: user
+    } do
+      {:ok, _} = Auth.enable_totp(user, Auth.generate_totp_secret())
+      {:ok, lv, _html} = live(conn, "/profile/move")
+
+      assert has_element?(lv, "#account-move-eligible-on")
+      assert has_element?(lv, "#account-move-totp-why")
+      # The offline route is an export, not a move.
+      refute has_element?(lv, "#account-move-offline")
+      refute has_element?(lv, "#account-move-enable-totp")
     end
 
     test "a request shows as pending with a site-wide banner, and can be cancelled",

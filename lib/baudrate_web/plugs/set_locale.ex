@@ -12,7 +12,7 @@ defmodule BaudrateWeb.Plugs.SetLocale do
     2. User's `preferred_locales` from the cookie session (stored at login).
        Resolved via `BaudrateWeb.Locale.resolve_from_preferences/1`. This copy
        is a **cache**: only a session write refreshes it, which is why a
-       language change on `/profile` posts to `LocaleController`.
+       language change on `/profile/account` posts to `LocaleController`.
     3. `Accept-Language` header — parsed, sorted by quality, matched against
        known Gettext locales (exact match first, then prefix fallback).
     4. Default Gettext locale (`"en"`).

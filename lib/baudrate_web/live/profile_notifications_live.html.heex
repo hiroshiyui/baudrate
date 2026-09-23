@@ -1,0 +1,148 @@
+<.profile_page
+  current={:notifications}
+  id="profile-notifications-page"
+  title={gettext("Notifications")}
+>
+  <%!-- Browser Push Notifications section --%>
+  <section
+    id="push-manager"
+    phx-hook="PushManagerHook"
+    aria-labelledby="push-notifications-heading"
+  >
+    <h2
+      id="push-notifications-heading"
+      class="profile-section-heading text-sm text-base-content/70 mb-2"
+    >
+      {gettext("Browser Push Notifications")}
+    </h2>
+    <%= if @push_supported do %>
+      <%= if @push_subscribed do %>
+        <button
+          id="profile-push-disable"
+          type="button"
+          class="btn btn-sm btn-outline btn-error"
+          phx-click={JS.dispatch("push:unsubscribe", to: "#push-manager")}
+        >
+          {gettext("Disable Push")}
+        </button>
+      <% else %>
+        <button
+          id="profile-push-enable"
+          type="button"
+          class="btn btn-sm btn-primary"
+          phx-click={JS.dispatch("push:subscribe", to: "#push-manager")}
+        >
+          {gettext("Enable Push")}
+        </button>
+      <% end %>
+    <% else %>
+      <p class="profile-push-unsupported text-sm text-base-content/70 italic">
+        {gettext("Push notifications are not supported by this browser.")}
+      </p>
+    <% end %>
+  </section>
+
+  <%!-- Notification Preferences section --%>
+  <section
+    id="profile-notification-prefs"
+    aria-labelledby="profile-notification-prefs-heading"
+  >
+    <h2
+      id="profile-notification-prefs-heading"
+      class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+    >
+      {gettext("Notification Preferences")}
+    </h2>
+    <p class="profile-field-hint text-sm text-base-content/70 mb-3">
+      {gettext("Choose which notifications you receive.")}
+    </p>
+    <div class="overflow-x-auto">
+      <table id="profile-notification-prefs-table" class="table table-sm">
+        <thead>
+          <tr>
+            <th>{gettext("Type")}</th>
+            <th class="text-center">{gettext("In-App")}</th>
+            <th :if={@push_subscribed} class="text-center">{gettext("Push")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            :for={type <- Baudrate.Notification.Notification.configurable_types()}
+            id={"profile-notification-pref-#{type}"}
+            class="profile-notification-pref-row"
+          >
+            <td class="profile-notification-pref-type text-sm">
+              {BaudrateWeb.Helpers.notification_text(type)}
+            </td>
+            <td class="text-center">
+              <label>
+                <input
+                  id={"profile-notification-in-app-#{type}"}
+                  type="checkbox"
+                  class="profile-notification-in-app-toggle toggle toggle-sm toggle-primary"
+                  checked={get_in(@notification_preferences, [type, "in_app"]) != false}
+                  phx-click="toggle_notification_pref"
+                  phx-value-type={type}
+                  aria-label={
+                    gettext("In-App: %{type}",
+                      type: BaudrateWeb.Helpers.notification_text(type)
+                    )
+                  }
+                />
+              </label>
+            </td>
+            <td :if={@push_subscribed} class="text-center">
+              <label>
+                <input
+                  id={"profile-notification-web-push-#{type}"}
+                  type="checkbox"
+                  class="profile-notification-web-push-toggle toggle toggle-sm toggle-primary"
+                  checked={get_in(@notification_preferences, [type, "web_push"]) != false}
+                  phx-click="toggle_web_push_pref"
+                  phx-value-type={type}
+                  aria-label={
+                    gettext("Push: %{type}",
+                      type: BaudrateWeb.Helpers.notification_text(type)
+                    )
+                  }
+                />
+              </label>
+            </td>
+          </tr>
+          <%!-- A direct message makes no row on /notifications, only a push
+               (ADR 0071), so its in-app cell has nothing to switch. --%>
+          <tr
+            :if={@push_subscribed}
+            id="profile-notification-pref-direct_message"
+            class="profile-notification-pref-row"
+          >
+            <td class="profile-notification-pref-type text-sm">
+              {gettext("sent you a direct message")}
+            </td>
+            <td class="text-center text-base-content/60">
+              <span aria-hidden="true">—</span>
+              <span class="sr-only">{gettext("Not shown on the notifications page")}</span>
+            </td>
+            <td class="text-center">
+              <label>
+                <input
+                  id="profile-notification-web-push-direct_message"
+                  type="checkbox"
+                  class="profile-notification-web-push-toggle toggle toggle-sm toggle-primary"
+                  checked={
+                    get_in(@notification_preferences, ["direct_message", "web_push"]) != false
+                  }
+                  phx-click="toggle_web_push_pref"
+                  phx-value-type="direct_message"
+                  aria-label={
+                    gettext("Push: %{type}", type: gettext("sent you a direct message"))
+                  }
+                />
+              </label>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</.profile_page>

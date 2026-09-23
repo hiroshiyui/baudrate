@@ -115,6 +115,19 @@ defmodule Baudrate.Auth.Profiles do
   end
 
   @doc """
+  Sets the time zone the member's timestamps are shown in; `nil` or `""`
+  returns them to the site's.
+
+  Deliberately outside `with_interaction/2`, like `update_dm_access/2`: it
+  changes nothing anyone else reads, so a sanction must not stop it.
+  """
+  def update_time_zone(user, zone) when is_binary(zone) or is_nil(zone) do
+    user
+    |> User.time_zone_changeset(%{time_zone: zone})
+    |> Repo.update()
+  end
+
+  @doc """
   Updates a user's notification preferences map.
 
   The `prefs` map has notification type keys (e.g. `"mention"`) with value

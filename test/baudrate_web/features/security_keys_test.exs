@@ -10,7 +10,7 @@ defmodule BaudrateWeb.Features.SecurityKeysTest do
     {session, _authenticator} = add_virtual_authenticator(session)
 
     session
-    |> visit("/profile")
+    |> visit("/profile/security")
     |> fill_in(Query.css("#security_reauth_password"), with: "Password123!x")
     |> fill_in(Query.css("#security_reauth_code"), with: totp_code(admin, secret))
     |> click(Query.css("#profile-security-reauth-submit"))

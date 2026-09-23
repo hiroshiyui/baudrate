@@ -36,7 +36,7 @@ defmodule BaudrateWeb.Features.SafetyTest do
     block = Repo.get_by!(UserBlock, user_id: member.id, blocked_user_id: other.id)
 
     session
-    |> visit("/profile")
+    |> visit("/profile/privacy")
     |> assert_has(Query.css("#blocked-account-#{block.id}", text: other.username))
     |> click(Query.css("#blocked-account-unblock-#{block.id}"))
     |> assert_has(Query.css("#profile-blocked-accounts-empty"))
@@ -66,7 +66,7 @@ defmodule BaudrateWeb.Features.SafetyTest do
     mute = Repo.get_by!(UserMute, user_id: member.id, muted_user_id: noisy.id)
 
     session
-    |> visit("/profile")
+    |> visit("/profile/privacy")
     |> click(Query.css("#muted-user-unmute-#{mute.id}"))
     |> refute_has(Query.css("#muted-user-#{mute.id}"))
     |> visit("/boards/#{board.slug}")

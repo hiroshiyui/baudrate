@@ -1,1197 +1,286 @@
-<div id="profile-page" class="profile-page card bg-base-200 shadow-sm">
-  <div class="card-body">
-    <h1 id="profile-heading" class="card-title text-2xl mb-4">{gettext("Profile")}</h1>
-
-    <div class="space-y-4">
-      <%!-- Avatar section --%>
-      <div id="profile-avatar-section" class="flex flex-wrap items-center gap-4">
-        <.avatar user={@current_user} size={120} />
-        <div :if={@can_upload_avatar} class="flex gap-2">
-          <button
-            id="profile-avatar-change"
-            type="button"
-            class="btn btn-sm btn-primary"
-            phx-click={JS.dispatch("avatar:open-picker", to: "#avatar-crop-hook")}
-          >
-            {gettext("Change Avatar")}
-          </button>
-          <button
-            :if={@current_user.avatar_id}
-            id="profile-avatar-remove"
-            type="button"
-            class="btn btn-sm btn-outline btn-error"
-            phx-click="remove_avatar"
-            data-confirm={gettext("Are you sure you want to remove your avatar?")}
-          >
-            {gettext("Remove Avatar")}
-          </button>
-        </div>
-        <span :if={!@is_active} class="profile-pending-notice text-sm text-base-content/70">
-          {gettext("Your account is pending approval.")}
-          {gettext("You can update your profile while you wait.")}
-        </span>
-      </div>
-
-      <%!-- Hidden file input for avatar upload --%>
-      <form
-        :if={@can_upload_avatar}
-        id="avatar-upload-form"
-        phx-change="validate_avatar"
-        class="hidden"
+<.profile_page current={:profile} id="profile-page" title={gettext("Profile")}>
+  <div id="profile-avatar-section" class="flex flex-wrap items-center gap-4">
+    <.avatar user={@current_user} size={120} />
+    <div :if={@can_upload_avatar} class="flex gap-2">
+      <button
+        id="profile-avatar-change"
+        type="button"
+        class="btn btn-sm btn-primary"
+        phx-click={JS.dispatch("avatar:open-picker", to: "#avatar-crop-hook")}
       >
-        <.live_file_input upload={@uploads.avatar} />
+        {gettext("Change Avatar")}
+      </button>
+      <button
+        :if={@current_user.avatar_id}
+        id="profile-avatar-remove"
+        type="button"
+        class="btn btn-sm btn-outline btn-error"
+        phx-click="remove_avatar"
+        data-confirm={gettext("Are you sure you want to remove your avatar?")}
+      >
+        {gettext("Remove Avatar")}
+      </button>
+    </div>
+    <span :if={!@is_active} class="profile-pending-notice text-sm text-base-content/70">
+      {gettext("Your account is pending approval.")}
+      {gettext("You can update your profile while you wait.")}
+    </span>
+  </div>
+
+  <%!-- Hidden file input for avatar upload --%>
+  <form
+    :if={@can_upload_avatar}
+    id="avatar-upload-form"
+    phx-change="validate_avatar"
+    class="hidden"
+  >
+    <.live_file_input upload={@uploads.avatar} />
+  </form>
+
+  <%!-- Upload errors --%>
+  <%= for entry <- @uploads.avatar.entries do %>
+    <%= for err <- upload_errors(@uploads.avatar, entry) do %>
+      <p
+        id={"profile-avatar-error-#{entry.ref}"}
+        class="profile-avatar-error text-sm text-error"
+        role="alert"
+      >
+        {upload_error_to_string(err)}
+      </p>
+    <% end %>
+  <% end %>
+
+  <%!-- Crop modal --%>
+  <div id="avatar-crop-hook" phx-hook="AvatarCropHook">
+    <dialog
+      id="crop-modal"
+      class="modal"
+      aria-labelledby="crop-modal-title"
+      aria-modal="true"
+      phx-hook="FocusTrapHook"
+      phx-window-keydown="cancel_crop"
+      phx-key="Escape"
+      {if @show_crop_modal, do: [open: true], else: []}
+    >
+      <div class="modal-box max-w-lg">
+        <h2 id="crop-modal-title" class="crop-modal-title text-lg font-bold mb-4">
+          {gettext("Crop Avatar")}
+        </h2>
+        <div id="avatar-crop-container" data-avatar-crop-container phx-update="ignore">
+          <div class="max-h-96 overflow-hidden">
+            <img
+              data-avatar-preview
+              src=""
+              alt={gettext("Avatar preview")}
+              class="max-w-full"
+            />
+          </div>
+          <div class="modal-action">
+            <button type="button" class="btn btn-ghost" phx-click="cancel_crop">
+              {gettext("Cancel")}
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              phx-click={JS.dispatch("avatar:save-crop", to: "#avatar-crop-hook")}
+            >
+              {gettext("Save")}
+            </button>
+          </div>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button phx-click="cancel_crop">{gettext("close")}</button>
       </form>
+    </dialog>
+  </div>
 
-      <%!-- Upload errors --%>
-      <%= for entry <- @uploads.avatar.entries do %>
-        <%= for err <- upload_errors(@uploads.avatar, entry) do %>
-          <p
-            id={"profile-avatar-error-#{entry.ref}"}
-            class="profile-avatar-error text-sm text-error"
-            role="alert"
-          >
-            {upload_error_to_string(err)}
-          </p>
-        <% end %>
-      <% end %>
-
-      <%!-- Crop modal --%>
-      <div id="avatar-crop-hook" phx-hook="AvatarCropHook">
-        <dialog
-          id="crop-modal"
-          class="modal"
-          aria-labelledby="crop-modal-title"
-          aria-modal="true"
-          phx-hook="FocusTrapHook"
-          phx-window-keydown="cancel_crop"
-          phx-key="Escape"
-          {if @show_crop_modal, do: [open: true], else: []}
-        >
-          <div class="modal-box max-w-lg">
-            <h2 id="crop-modal-title" class="crop-modal-title text-lg font-bold mb-4">
-              {gettext("Crop Avatar")}
-            </h2>
-            <div id="avatar-crop-container" data-avatar-crop-container phx-update="ignore">
-              <div class="max-h-96 overflow-hidden">
-                <img
-                  data-avatar-preview
-                  src=""
-                  alt={gettext("Avatar preview")}
-                  class="max-w-full"
-                />
-              </div>
-              <div class="modal-action">
-                <button type="button" class="btn btn-ghost" phx-click="cancel_crop">
-                  {gettext("Cancel")}
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-primary"
-                  phx-click={JS.dispatch("avatar:save-crop", to: "#avatar-crop-hook")}
-                >
-                  {gettext("Save")}
-                </button>
-              </div>
-            </div>
-          </div>
-          <form method="dialog" class="modal-backdrop">
-            <button phx-click="cancel_crop">{gettext("close")}</button>
-          </form>
-        </dialog>
-      </div>
-
-      <div id="profile-username">
-        <div class="profile-field-label text-sm text-base-content/70">{gettext("Username")}</div>
-        <div class="flex items-center gap-1">
-          <a
-            id="profile-username-link"
-            href={~p"/users/#{@current_user.username}"}
-            class="profile-field-value text-lg font-semibold link link-hover"
-          >
-            {@current_user.username}
-          </a>
-          <button
-            id="copy-profile-url"
-            phx-hook="CopyToClipboardHook"
-            data-copy-text={BaudrateWeb.Endpoint.url() <> ~p"/users/#{@current_user.username}"}
-            data-copied-label={gettext("Copied!")}
-            title={gettext("Copy profile URL")}
-            class="btn btn-ghost btn-xs"
-            aria-label={gettext("Copy profile URL")}
-          >
-            <.icon name="hero-clipboard-document" class="size-4 text-base-content/50" />
-          </button>
-        </div>
-      </div>
-
-      <%!-- Display Name section --%>
-      <div id="profile-display-name">
-        <.form
-          for={@display_name_form}
-          id="profile-display-name-form"
-          phx-change="validate_display_name"
-          phx-submit="save_display_name"
-          class="space-y-3"
-        >
-          <.input
-            field={@display_name_form[:display_name]}
-            type="text"
-            label={gettext("Display Name")}
-            label_class="profile-field-label text-sm text-base-content/70"
-            maxlength="64"
-            placeholder={gettext("Your display name (max 64 characters)")}
-          />
-          <button
-            id="profile-display-name-save"
-            type="submit"
-            class="btn btn-sm btn-primary"
-            phx-disable-with={gettext("Saving...")}
-          >
-            {gettext("Save Display Name")}
-          </button>
-        </.form>
-      </div>
-
-      <%!-- Bio section --%>
-      <div id="profile-bio-section">
-        <.form
-          for={@bio_form}
-          id="profile-bio-form"
-          phx-change="validate_bio"
-          phx-submit="save_bio"
-          class="space-y-3"
-        >
-          <.input
-            field={@bio_form[:bio]}
-            type="textarea"
-            label={gettext("Bio")}
-            label_class="profile-field-label text-sm text-base-content/70"
-            rows="4"
-            maxlength="500"
-            placeholder={gettext("Tell others about yourself (max 500 characters)")}
-          />
-          <button
-            id="profile-bio-save"
-            type="submit"
-            class="btn btn-sm btn-primary"
-            phx-disable-with={gettext("Saving...")}
-          >
-            {gettext("Save Bio")}
-          </button>
-        </.form>
-      </div>
-
-      <%!-- Profile Fields section --%>
-      <section id="profile-fields-section" aria-labelledby="profile-fields-heading">
-        <h2
-          id="profile-fields-heading"
-          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
-        >
-          {gettext("Profile Fields")}
-        </h2>
-        <p class="profile-field-hint text-sm text-base-content/70 mb-3">
-          {gettext("Add up to 4 custom fields to your profile (e.g. website, location).")}
-        </p>
-        <form id="profile-fields-form" phx-submit="save_profile_fields" class="space-y-3">
-          <div class="space-y-2">
-            <div
-              :for={{field, i} <- Enum.with_index(@profile_fields)}
-              id={"profile-field-row-#{i}"}
-              class="profile-field-row flex flex-wrap gap-2"
-            >
-              <input
-                id={"profile-field-name-#{i}"}
-                type="text"
-                name={"profile_fields[#{i}][name]"}
-                value={field["name"]}
-                placeholder={gettext("Label")}
-                maxlength="255"
-                class="profile-field-name-input input input-bordered input-sm w-36"
-                aria-label={gettext("Field %{n} label", n: i + 1)}
-              />
-              <input
-                id={"profile-field-value-#{i}"}
-                type="text"
-                name={"profile_fields[#{i}][value]"}
-                value={field["value"]}
-                placeholder={gettext("Content")}
-                maxlength="2048"
-                class="profile-field-value-input input input-bordered input-sm flex-1"
-                aria-label={gettext("Field %{n} content", n: i + 1)}
-              />
-            </div>
-          </div>
-          <button
-            id="profile-fields-save"
-            type="submit"
-            class="btn btn-sm btn-primary"
-            phx-disable-with={gettext("Saving...")}
-          >
-            {gettext("Save Fields")}
-          </button>
-        </form>
-      </section>
-
-      <%!-- Signature section --%>
-      <div id="profile-signature-section">
-        <.form
-          for={@signature_form}
-          id="profile-signature-form"
-          phx-change="validate_signature"
-          phx-submit="save_signature"
-          class="space-y-3"
-        >
-          <.input
-            field={@signature_form[:signature]}
-            type="textarea"
-            label={gettext("Signature")}
-            label_class="profile-field-label text-sm text-base-content/70"
-            rows="4"
-            maxlength="500"
-            toolbar
-            placeholder={gettext("Your signature (Markdown supported, max 500 characters)")}
-          />
-          <div :if={@signature_preview != ""} id="profile-signature-preview" class="space-y-1">
-            <p class="profile-field-label text-sm text-base-content/70">{gettext("Preview:")}</p>
-            <div class="profile-signature-preview-body prose prose-sm max-w-none bg-base-200 rounded-lg p-3 text-base-content/70">
-              {BaudrateWeb.SafeHTML.body_html(@signature_preview)}
-            </div>
-          </div>
-          <button
-            id="profile-signature-save"
-            type="submit"
-            class="btn btn-sm btn-primary"
-            phx-disable-with={gettext("Saving...")}
-          >
-            {gettext("Save Signature")}
-          </button>
-        </.form>
-      </div>
-
-      <div id="profile-role">
-        <div class="profile-field-label text-sm text-base-content/70">{gettext("Role")}</div>
-        <div class="profile-field-value text-lg font-semibold">
-          {translate_role(@current_user.role.name)}
-        </div>
-        <div class="profile-role-description text-sm text-base-content/70">
-          {@current_user.role.description}
-        </div>
-      </div>
-
-      <div id="profile-2fa">
-        <div class="profile-field-label text-sm text-base-content/70">
-          {gettext("Two-Factor Authentication")}
-        </div>
-        <div class="profile-field-value text-lg font-semibold flex items-center gap-2">
-          <%= if @current_user.totp_enabled do %>
-            <span class="profile-2fa-status badge badge-success">{gettext("Enabled")}</span>
-            <.link
-              id="profile-2fa-reset"
-              navigate="/profile/totp-reset"
-              class="btn btn-sm btn-outline"
-            >
-              {gettext("Reset Authenticator")}
-            </.link>
-          <% else %>
-            <span class="profile-2fa-status badge badge-warning">{gettext("Disabled")}</span>
-            <%= if @totp_policy == :optional do %>
-              <.link
-                id="profile-2fa-enable"
-                navigate="/profile/totp-reset"
-                class="btn btn-sm btn-primary"
-              >
-                {gettext("Enable TOTP")}
-              </.link>
-            <% end %>
-          <% end %>
-        </div>
-      </div>
-
-      <div id="profile-password">
-        <div class="profile-field-label text-sm text-base-content/70">
-          {gettext("Password")}
-        </div>
-        <div class="profile-field-value">
-          <.link
-            id="profile-password-change"
-            navigate={~p"/profile/password"}
-            class="profile-password-change btn btn-sm btn-outline"
-          >
-            {gettext("Change Password")}
-          </.link>
-        </div>
-      </div>
-
-      <%!-- Security Keys (WebAuthn) section --%>
-      <section
-        id="profile-security-keys"
-        aria-labelledby="security-keys-heading"
-        phx-hook="WebAuthnRegister"
+  <div id="profile-username">
+    <div class="profile-field-label text-sm text-base-content/70">{gettext("Username")}</div>
+    <div class="flex items-center gap-1">
+      <a
+        id="profile-username-link"
+        href={~p"/users/#{@current_user.username}"}
+        class="profile-field-value text-lg font-semibold link link-hover"
       >
-        <h2
-          id="security-keys-heading"
-          class="profile-section-heading text-sm text-base-content/70 mb-2"
-        >
-          {gettext("Security Keys")}
-        </h2>
-        <p class="profile-field-hint text-sm text-base-content/70 mb-3">
-          {gettext(
-            "Register a hardware security key or platform authenticator (e.g. Touch ID, Windows Hello) as a second factor."
-          )}
-        </p>
-
-        <div :if={@webauthn_credentials != []} class="space-y-2 mb-4">
-          <article
-            :for={cred <- @webauthn_credentials}
-            id={"security-key-#{cred.id}"}
-            class="security-key flex items-center gap-3 p-2 bg-base-200 rounded-lg"
-          >
-            <.icon name="hero-key" class="w-5 h-5 text-base-content/60 shrink-0" />
-            <div class="flex-1 min-w-0">
-              <div class="security-key-label font-semibold text-sm truncate">
-                {if cred.label != "", do: cred.label, else: gettext("Unnamed Key")}
-              </div>
-              <div class="security-key-meta text-xs text-base-content/60">
-                {gettext("Added %{date}",
-                  date: Calendar.strftime(cred.inserted_at, "%Y-%m-%d")
-                )}
-                <%= if cred.last_used_at do %>
-                  &middot; {gettext("Last used %{date}",
-                    date: Calendar.strftime(cred.last_used_at, "%Y-%m-%d")
-                  )}
-                <% end %>
-              </div>
-            </div>
-            <button
-              :if={@security_reauth_until}
-              id={"security-key-remove-#{cred.id}"}
-              type="button"
-              class="security-key-remove btn btn-sm btn-ghost btn-error"
-              phx-click="delete_webauthn_credential"
-              phx-value-id={cred.id}
-              data-confirm={gettext("Remove this security key?")}
-              aria-label={gettext("Remove security key %{label}", label: cred.label)}
-            >
-              {gettext("Remove")}
-            </button>
-          </article>
-        </div>
-
-        <div
-          :if={@webauthn_credentials == []}
-          class="profile-security-keys-empty text-sm text-base-content/70 italic mb-4"
-        >
-          {gettext("No security keys registered.")}
-        </div>
-
-        <.form
-          :if={is_nil(@security_reauth_until)}
-          for={@security_reauth_form}
-          id="profile-security-reauth-form"
-          class="profile-security-reauth-form space-y-3"
-          phx-submit="security_reauth"
-        >
-          <p
-            id="profile-security-reauth-hint"
-            class="profile-field-hint text-sm text-base-content/70"
-          >
-            <%= if @current_user.totp_enabled do %>
-              {gettext(
-                "To add or remove security keys, confirm your password and current authenticator code."
-              )}
-            <% else %>
-              {gettext("To add or remove security keys, confirm your password.")}
-            <% end %>
-          </p>
-          <div class="form-control">
-            <label
-              id="security-reauth-password-label"
-              class="profile-security-reauth-label label"
-              for="security_reauth_password"
-            >
-              <span class="label-text">{gettext("Password")}</span>
-            </label>
-            <input
-              type="password"
-              id="security_reauth_password"
-              name="security_reauth[password]"
-              value={@security_reauth_form[:password].value}
-              class="profile-security-reauth-password input input-bordered input-sm w-full max-w-xs"
-              autocomplete="current-password"
-              required
-            />
-          </div>
-          <div :if={@current_user.totp_enabled} class="form-control">
-            <label
-              id="security-reauth-code-label"
-              class="profile-security-reauth-label label"
-              for="security_reauth_code"
-            >
-              <span class="label-text">{gettext("Current TOTP Code")}</span>
-            </label>
-            <input
-              type="text"
-              id="security_reauth_code"
-              name="security_reauth[code]"
-              value={@security_reauth_form[:code].value}
-              class="profile-security-reauth-code input input-bordered input-sm w-full max-w-xs tracking-widest"
-              inputmode="numeric"
-              pattern="[0-9]{6}"
-              maxlength="6"
-              autocomplete="one-time-code"
-              required
-              aria-describedby="security-reauth-code-hint"
-            />
-            <.totp_code_hint id="security-reauth-code-hint" />
-          </div>
-          <button
-            id="profile-security-reauth-submit"
-            type="submit"
-            class="profile-security-reauth-submit btn btn-sm btn-outline"
-            phx-disable-with={gettext("Confirming...")}
-          >
-            <.icon name="hero-lock-open" class="w-4 h-4 mr-1" />
-            {gettext("Confirm Identity")}
-          </button>
-        </.form>
-
-        <button
-          :if={@security_reauth_until}
-          id="profile-security-key-register"
-          type="button"
-          class="profile-security-key-register btn btn-sm btn-outline"
-          phx-click="begin_registration"
-        >
-          <.icon name="hero-plus" class="w-4 h-4 mr-1" />
-          {gettext("Register New Key")}
-        </button>
-
-        <form
-          id="webauthn-register-form"
-          action="/auth/webauthn-register"
-          method="post"
-          class="hidden"
-        >
-          <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
-          <input
-            type="hidden"
-            name="challenge_token"
-            value={@webauthn_challenge_token}
-          />
-          <input type="hidden" id="attestation_object" name="attestation_object" />
-          <input type="hidden" id="client_data_json" name="client_data_json" />
-          <input type="hidden" name="label" value={gettext("Security Key")} />
-        </form>
-      </section>
-
-      <%!--
-        Account recovery (ADR 0058). Both halves sit behind the same step-up
-        unlock as the security keys above: a printed recovery code is a
-        credential, and a recovery contact is what an admin will later trust.
-      --%>
-      <section
-        id="profile-recovery-codes"
-        class="profile-recovery-codes"
-        aria-labelledby="profile-recovery-codes-heading"
+        {@current_user.username}
+      </a>
+      <button
+        id="copy-profile-url"
+        phx-hook="CopyToClipboardHook"
+        data-copy-text={BaudrateWeb.Endpoint.url() <> ~p"/users/#{@current_user.username}"}
+        data-copied-label={gettext("Copied!")}
+        title={gettext("Copy profile URL")}
+        class="btn btn-ghost btn-xs"
+        aria-label={gettext("Copy profile URL")}
       >
-        <h3
-          id="profile-recovery-codes-heading"
-          class="profile-recovery-codes-heading profile-field-label text-sm text-base-content/70"
-        >
-          {gettext("Recovery codes")}
-        </h3>
-
-        <p id="profile-recovery-codes-count" class="profile-recovery-codes-count text-sm mb-2">
-          {ngettext(
-            "%{count} unused code left.",
-            "%{count} unused codes left.",
-            @unused_recovery_codes,
-            count: @unused_recovery_codes
-          )}
-          <span class="text-base-content/70">
-            {gettext("This site sends no email, so these are how you get back in.")}
-          </span>
-        </p>
-
-        <%!-- Shown once, from assigns. Nothing can read them back. --%>
-        <div
-          :if={@fresh_recovery_codes}
-          id="profile-fresh-recovery-codes"
-          class="profile-fresh-recovery-codes alert alert-warning flex-col items-start gap-2 mb-3"
-          role="status"
-        >
-          <p class="profile-fresh-recovery-codes-warning font-semibold">
-            {gettext("Save these now — you will not be able to see them again.")}
-          </p>
-          <ol class="profile-fresh-recovery-codes-list grid grid-cols-2 gap-1.5 w-full font-mono text-sm">
-            <li
-              :for={code <- @fresh_recovery_codes}
-              id={"profile-fresh-recovery-code-#{code}"}
-              class="profile-fresh-recovery-code bg-base-300 rounded px-3 py-1.5 text-center"
-            >
-              {code}
-            </li>
-          </ol>
-          <button
-            type="button"
-            id="profile-fresh-recovery-codes-done"
-            phx-click="dismiss_recovery_codes"
-            class="profile-fresh-recovery-codes-done btn btn-sm"
-          >
-            {gettext("I have saved them")}
-          </button>
-        </div>
-
-        <button
-          :if={@security_reauth_until && is_nil(@fresh_recovery_codes)}
-          type="button"
-          id="profile-regenerate-recovery-codes"
-          phx-click="regenerate_recovery_codes"
-          data-confirm={gettext("Issue new codes? Every existing code stops working.")}
-          class="profile-regenerate-recovery-codes btn btn-sm btn-outline"
-        >
-          <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" />
-          {gettext("Issue new codes")}
-        </button>
-      </section>
-
-      <section
-        id="profile-recovery-contacts"
-        class="profile-recovery-contacts"
-        aria-labelledby="profile-recovery-contacts-heading"
-      >
-        <h3
-          id="profile-recovery-contacts-heading"
-          class="profile-recovery-contacts-heading profile-field-label text-sm text-base-content/70"
-        >
-          {gettext("Recovery contact")}
-        </h3>
-
-        <p id="profile-recovery-contacts-hint" class="profile-recovery-contacts-hint text-sm mb-3">
-          {gettext(
-            "If you lose your password and your recovery codes, this is the only way back. Register an email address and the OpenPGP public key you sign with; an admin verifies it by checking a signed message from you. Nothing is emailed from here — the check happens in the admin's own mail client."
-          )}
-        </p>
-
-        <ul
-          :if={@recovery_contacts != []}
-          id="profile-recovery-contact-list"
-          class="profile-recovery-contact-list space-y-2 mb-3"
-        >
-          <li
-            :for={contact <- @recovery_contacts}
-            id={"profile-recovery-contact-#{contact.id}"}
-            class="profile-recovery-contact flex flex-wrap items-center gap-2 bg-base-200 rounded p-3 min-w-0"
-          >
-            <span class="profile-recovery-contact-email font-mono text-sm break-all min-w-0 flex-1">
-              {contact.email || gettext("(unreadable)")}
-            </span>
-            <span
-              :if={contact.status == "verified"}
-              class="profile-recovery-contact-status badge badge-success badge-sm"
-            >
-              {gettext("Verified")}
-            </span>
-            <span
-              :if={contact.status == "pending"}
-              class="profile-recovery-contact-status badge badge-ghost badge-sm"
-            >
-              {gettext("Waiting for an admin")}
-            </span>
-            <button
-              :if={@security_reauth_until}
-              type="button"
-              id={"profile-recovery-contact-remove-#{contact.id}"}
-              phx-click="remove_recovery_contact"
-              phx-value-id={contact.id}
-              data-confirm={gettext("Remove this recovery contact?")}
-              class="profile-recovery-contact-remove btn btn-xs btn-ghost text-error"
-            >
-              {gettext("Remove")}
-            </button>
-          </li>
-        </ul>
-
-        <p
-          :if={@recovery_contacts == []}
-          id="profile-recovery-contacts-empty"
-          class="profile-recovery-contacts-empty text-sm text-base-content/70 italic mb-3"
-        >
-          {gettext("No recovery contact registered.")}
-        </p>
-
-        <.form
-          :if={
-            @security_reauth_until &&
-              length(@recovery_contacts) < Baudrate.Auth.max_recovery_contacts()
-          }
-          for={@contact_form}
-          id="profile-recovery-contact-form"
-          phx-change="validate_recovery_contact"
-          phx-submit="add_recovery_contact"
-          class="profile-recovery-contact-form space-y-2"
-        >
-          <div>
-            <label for="profile-recovery-contact-email" class="label label-text">
-              {gettext("Email address")}
-            </label>
-            <input
-              type="email"
-              id="profile-recovery-contact-email"
-              name="contact[email]"
-              value={@contact_form[:email].value}
-              class="profile-recovery-contact-email-input input input-bordered input-sm w-full max-w-sm"
-            />
-          </div>
-          <div>
-            <label for="profile-recovery-contact-key" class="label label-text">
-              {gettext("OpenPGP public key")}
-            </label>
-            <textarea
-              id="profile-recovery-contact-key"
-              name="contact[pgp_public_key]"
-              rows="5"
-              placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----"
-              class="profile-recovery-contact-key-input textarea textarea-bordered textarea-sm w-full font-mono text-xs"
-            >{@contact_form[:pgp_public_key].value}</textarea>
-          </div>
-          <div>
-            <label for="profile-recovery-contact-label" class="label label-text">
-              {gettext("Label (optional)")}
-            </label>
-            <input
-              type="text"
-              id="profile-recovery-contact-label"
-              name="contact[label]"
-              value={@contact_form[:label].value}
-              maxlength="64"
-              class="profile-recovery-contact-label-input input input-bordered input-sm w-full max-w-sm"
-            />
-          </div>
-          <p
-            :for={
-              {field, msgs} <- @contact_form.errors |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
-            }
-            class="profile-recovery-contact-error text-error text-sm"
-          >
-            {to_string(field)}: {msgs |> Enum.map(&translate_error/1) |> Enum.join(", ")}
-          </p>
-          <button
-            type="submit"
-            id="profile-recovery-contact-submit"
-            class="profile-recovery-contact-submit btn btn-sm btn-outline"
-            phx-disable-with={gettext("Saving...")}
-          >
-            {gettext("Register contact")}
-          </button>
-        </.form>
-      </section>
-
-      <div id="profile-data-export">
-        <div class="profile-field-label text-sm text-base-content/70">
-          {gettext("Your Data")}
-        </div>
-        <div class="profile-field-value">
-          <.link
-            id="profile-data-export-link"
-            navigate={~p"/profile/export"}
-            class="profile-data-export-link btn btn-sm btn-outline"
-          >
-            {gettext("Export Your Data")}
-          </.link>
-        </div>
-      </div>
-
-      <div id="profile-account-migration">
-        <div class="profile-field-label text-sm text-base-content/70">
-          {gettext("Account Migration")}
-        </div>
-        <div class="profile-field-value">
-          <.link
-            id="profile-account-migration-link"
-            navigate={~p"/profile/move"}
-            class="profile-account-migration-link btn btn-sm btn-outline"
-          >
-            {gettext("Aliases and Moving")}
-          </.link>
-        </div>
-      </div>
-
-      <%!-- Sessions section --%>
-      <section id="profile-sessions" aria-labelledby="profile-sessions-heading">
-        <h2
-          id="profile-sessions-heading"
-          class="profile-section-heading text-sm text-base-content/70 mb-2"
-        >
-          {gettext("Sessions")}
-        </h2>
-        <p id="profile-sessions-hint" class="profile-field-hint text-sm text-base-content/70 mb-3">
-          {gettext(
-            "Sign out of every other browser or device where your account is signed in. This one stays signed in."
-          )}
-        </p>
-        <.form
-          for={@sign_out_form}
-          id="profile-sign-out-everywhere-form"
-          class="profile-sign-out-everywhere-form space-y-3"
-          phx-submit="sign_out_everywhere"
-        >
-          <div class="form-control">
-            <label
-              id="sign-out-password-label"
-              class="profile-sign-out-label label"
-              for="sign_out_password"
-            >
-              <span class="label-text">{gettext("Password")}</span>
-            </label>
-            <input
-              type="password"
-              id="sign_out_password"
-              name="sign_out[password]"
-              class="profile-sign-out-password input input-bordered input-sm w-full max-w-xs"
-              autocomplete="current-password"
-              required
-            />
-          </div>
-          <div :if={@current_user.totp_enabled} class="form-control">
-            <label
-              id="sign-out-code-label"
-              class="profile-sign-out-label label"
-              for="sign_out_code"
-            >
-              <span class="label-text">{gettext("Current TOTP Code")}</span>
-            </label>
-            <input
-              type="text"
-              id="sign_out_code"
-              name="sign_out[code]"
-              class="profile-sign-out-code input input-bordered input-sm w-full max-w-xs tracking-widest"
-              inputmode="numeric"
-              pattern="[0-9]{6}"
-              maxlength="6"
-              autocomplete="one-time-code"
-              required
-              aria-describedby="sign-out-code-hint"
-            />
-            <.totp_code_hint id="sign-out-code-hint" />
-          </div>
-          <button
-            id="profile-sign-out-everywhere-submit"
-            type="submit"
-            class="profile-sign-out-everywhere-submit btn btn-sm btn-outline btn-warning"
-            phx-disable-with={gettext("Signing out...")}
-          >
-            <.icon name="hero-arrow-right-start-on-rectangle" class="w-4 h-4 mr-1" />
-            {gettext("Sign Out Everywhere Else")}
-          </button>
-        </.form>
-      </section>
-
-      <div id="profile-member-since">
-        <div class="profile-field-label text-sm text-base-content/70">
-          {gettext("Member Since")}
-        </div>
-        <div class="profile-field-value text-lg font-semibold">
-          <time datetime={format_date(@current_user.inserted_at)}>
-            {format_date(@current_user.inserted_at)}
-          </time>
-        </div>
-      </div>
-
-      <%!-- Preferred Languages section --%>
-      <section id="profile-languages" aria-labelledby="profile-languages-heading">
-        <h2
-          id="profile-languages-heading"
-          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
-        >
-          {gettext("Preferred Languages")}
-        </h2>
-        <%= if @preferred_locales == [] do %>
-          <div class="profile-languages-empty text-sm text-base-content/70 italic">
-            {gettext("Using browser language settings.")}
-          </div>
-        <% else %>
-          <div class="space-y-1">
-            <%= for {locale, idx} <- Enum.with_index(@preferred_locales) do %>
-              <div
-                id={"profile-locale-#{locale}"}
-                class="profile-locale-row flex items-center gap-2"
-              >
-                <span class="profile-locale-rank badge badge-sm badge-neutral">{idx + 1}</span>
-                <span class="profile-locale-name font-semibold">
-                  {BaudrateWeb.Locale.locale_display_name(locale)}
-                </span>
-                <span class="profile-locale-code text-sm text-base-content/70">{locale}</span>
-                <div class="ml-auto flex gap-1">
-                  <button
-                    :if={idx > 0}
-                    id={"profile-locale-up-#{locale}"}
-                    type="button"
-                    class="profile-locale-up btn btn-sm btn-ghost"
-                    phx-click="move_locale_up"
-                    phx-value-locale={locale}
-                    aria-label={gettext("Move %{locale} up", locale: locale)}
-                  >
-                    &uarr;
-                  </button>
-                  <button
-                    :if={idx < length(@preferred_locales) - 1}
-                    id={"profile-locale-down-#{locale}"}
-                    type="button"
-                    class="profile-locale-down btn btn-sm btn-ghost"
-                    phx-click="move_locale_down"
-                    phx-value-locale={locale}
-                    aria-label={gettext("Move %{locale} down", locale: locale)}
-                  >
-                    &darr;
-                  </button>
-                  <button
-                    id={"profile-locale-remove-#{locale}"}
-                    type="button"
-                    class="profile-locale-remove btn btn-sm btn-ghost btn-error"
-                    phx-click="remove_locale"
-                    phx-value-locale={locale}
-                    aria-label={gettext("Remove")}
-                  >
-                    &times;
-                  </button>
-                </div>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
-
-        <% unselected =
-          Enum.reject(@available_locales, fn {code, _} -> code in @preferred_locales end) %>
-        <%= if unselected != [] do %>
-          <div class="dropdown mt-2">
-            <button
-              id="profile-add-language"
-              type="button"
-              aria-haspopup="true"
-              aria-expanded="false"
-              class="profile-add-language btn btn-sm btn-outline"
-            >
-              {gettext("Add Language")}
-            </button>
-            <ul
-              id="profile-add-language-menu"
-              class="profile-add-language-menu dropdown-content menu bg-base-200 rounded-box z-10 w-52 p-2 shadow-sm"
-            >
-              <%= for {code, name} <- unselected do %>
-                <li>
-                  <button
-                    id={"profile-add-locale-#{code}"}
-                    class="profile-add-locale"
-                    type="button"
-                    phx-click="add_locale"
-                    phx-value-locale={code}
-                  >
-                    {name}
-                    <span class="text-sm text-base-content/70">{code}</span>
-                  </button>
-                </li>
-              <% end %>
-            </ul>
-          </div>
-        <% end %>
-
-        <%!-- The session write a LiveView cannot make. `SetLocale` reads a
-        member's language out of `session[:preferred_locales]`, written only at
-        login, so without this the next full page load renders its dead HTML —
-        and `<html lang>` — in the old language. Submitted only when the
-        effective locale actually moved (see `save_locales/2`). --%>
-        <form
-          id="locale-sync-form"
-          method="post"
-          action={~p"/locale"}
-          class="hidden"
-          phx-trigger-action={@trigger_locale_sync}
-        >
-          <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
-          <input type="hidden" name="locale" value={@locale_sync_value} />
-          <input type="hidden" name="return_to" value="/profile" />
-        </form>
-      </section>
-
-      <%!-- DM access setting --%>
-      <section id="profile-dm-access" aria-labelledby="profile-dm-access-heading">
-        <h2
-          id="profile-dm-access-heading"
-          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
-        >
-          {gettext("Direct Messages")}
-        </h2>
-        <select
-          id="profile-dm-access-select"
-          name="dm_access"
-          class="select select-bordered w-full max-w-xs"
-          phx-change="update_dm_access"
-          aria-label={gettext("Who can send you direct messages")}
-        >
-          <option value="anyone" selected={@current_user.dm_access == "anyone"}>
-            {gettext("Anyone")}
-          </option>
-          <option value="followers" selected={@current_user.dm_access == "followers"}>
-            {gettext("Followers only")}
-          </option>
-          <option value="nobody" selected={@current_user.dm_access == "nobody"}>
-            {gettext("Nobody")}
-          </option>
-        </select>
-        <p class="profile-field-hint text-sm text-base-content/70 mt-1">
-          {gettext("Controls who can send you direct messages.")}
-        </p>
-      </section>
-
-      <%!-- Browser Push Notifications section --%>
-      <section
-        id="push-manager"
-        phx-hook="PushManagerHook"
-        aria-labelledby="push-notifications-heading"
-      >
-        <h2
-          id="push-notifications-heading"
-          class="profile-section-heading text-sm text-base-content/70 mb-2"
-        >
-          {gettext("Browser Push Notifications")}
-        </h2>
-        <%= if @push_supported do %>
-          <%= if @push_subscribed do %>
-            <button
-              id="profile-push-disable"
-              type="button"
-              class="btn btn-sm btn-outline btn-error"
-              phx-click={JS.dispatch("push:unsubscribe", to: "#push-manager")}
-            >
-              {gettext("Disable Push")}
-            </button>
-          <% else %>
-            <button
-              id="profile-push-enable"
-              type="button"
-              class="btn btn-sm btn-primary"
-              phx-click={JS.dispatch("push:subscribe", to: "#push-manager")}
-            >
-              {gettext("Enable Push")}
-            </button>
-          <% end %>
-        <% else %>
-          <p class="profile-push-unsupported text-sm text-base-content/70 italic">
-            {gettext("Push notifications are not supported by this browser.")}
-          </p>
-        <% end %>
-      </section>
-
-      <%!-- Notification Preferences section --%>
-      <section
-        id="profile-notification-prefs"
-        aria-labelledby="profile-notification-prefs-heading"
-      >
-        <h2
-          id="profile-notification-prefs-heading"
-          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
-        >
-          {gettext("Notification Preferences")}
-        </h2>
-        <p class="profile-field-hint text-sm text-base-content/70 mb-3">
-          {gettext("Choose which notifications you receive.")}
-        </p>
-        <div class="overflow-x-auto">
-          <table id="profile-notification-prefs-table" class="table table-sm">
-            <thead>
-              <tr>
-                <th>{gettext("Type")}</th>
-                <th class="text-center">{gettext("In-App")}</th>
-                <th :if={@push_subscribed} class="text-center">{gettext("Push")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                :for={type <- Baudrate.Notification.Notification.configurable_types()}
-                id={"profile-notification-pref-#{type}"}
-                class="profile-notification-pref-row"
-              >
-                <td class="profile-notification-pref-type text-sm">
-                  {BaudrateWeb.Helpers.notification_text(type)}
-                </td>
-                <td class="text-center">
-                  <label>
-                    <input
-                      id={"profile-notification-in-app-#{type}"}
-                      type="checkbox"
-                      class="profile-notification-in-app-toggle toggle toggle-sm toggle-primary"
-                      checked={get_in(@notification_preferences, [type, "in_app"]) != false}
-                      phx-click="toggle_notification_pref"
-                      phx-value-type={type}
-                      aria-label={
-                        gettext("In-App: %{type}",
-                          type: BaudrateWeb.Helpers.notification_text(type)
-                        )
-                      }
-                    />
-                  </label>
-                </td>
-                <td :if={@push_subscribed} class="text-center">
-                  <label>
-                    <input
-                      id={"profile-notification-web-push-#{type}"}
-                      type="checkbox"
-                      class="profile-notification-web-push-toggle toggle toggle-sm toggle-primary"
-                      checked={get_in(@notification_preferences, [type, "web_push"]) != false}
-                      phx-click="toggle_web_push_pref"
-                      phx-value-type={type}
-                      aria-label={
-                        gettext("Push: %{type}",
-                          type: BaudrateWeb.Helpers.notification_text(type)
-                        )
-                      }
-                    />
-                  </label>
-                </td>
-              </tr>
-              <%!-- A direct message makes no row on /notifications, only a push
-                   (ADR 0071), so its in-app cell has nothing to switch. --%>
-              <tr
-                :if={@push_subscribed}
-                id="profile-notification-pref-direct_message"
-                class="profile-notification-pref-row"
-              >
-                <td class="profile-notification-pref-type text-sm">
-                  {gettext("sent you a direct message")}
-                </td>
-                <td class="text-center text-base-content/60">
-                  <span aria-hidden="true">—</span>
-                  <span class="sr-only">{gettext("Not shown on the notifications page")}</span>
-                </td>
-                <td class="text-center">
-                  <label>
-                    <input
-                      id="profile-notification-web-push-direct_message"
-                      type="checkbox"
-                      class="profile-notification-web-push-toggle toggle toggle-sm toggle-primary"
-                      checked={
-                        get_in(@notification_preferences, ["direct_message", "web_push"]) != false
-                      }
-                      phx-click="toggle_web_push_pref"
-                      phx-value-type="direct_message"
-                      aria-label={
-                        gettext("Push: %{type}", type: gettext("sent you a direct message"))
-                      }
-                    />
-                  </label>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <%!-- Blocked Accounts section --%>
-      <section id="profile-blocked-accounts" aria-labelledby="profile-blocked-accounts-heading">
-        <h2
-          id="profile-blocked-accounts-heading"
-          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
-          tabindex="-1"
-        >
-          {gettext("Blocked Accounts")}
-        </h2>
-        <p class="profile-blocked-accounts-help text-xs text-base-content/70 mb-2">
-          {gettext(
-            "Blocked accounts cannot reply to, like, boost, follow or message you, and their content is hidden from you."
-          )}
-        </p>
-        <div
-          :if={@blocks == []}
-          id="profile-blocked-accounts-empty"
-          class="profile-blocked-accounts-empty text-sm text-base-content/70 italic"
-        >
-          {gettext("No blocked accounts.")}
-        </div>
-        <ul :if={@blocks != []} id="profile-blocked-accounts-list" class="space-y-2">
-          <li
-            :for={block <- @blocks}
-            id={"blocked-account-#{block.id}"}
-            class="blocked-account flex items-center gap-3"
-          >
-            <.safety_list_account
-              user={block.blocked_user}
-              ap_id={block.blocked_actor_ap_id}
-              remote_actors={@safety_remote_actors}
-              name_class="blocked-account-name"
-            />
-            <button
-              id={"blocked-account-unblock-#{block.id}"}
-              type="button"
-              class="blocked-account-unblock btn btn-sm btn-ghost ml-auto"
-              phx-click="unblock"
-              phx-value-id={block.id}
-              aria-label={
-                gettext("Unblock %{name}",
-                  name:
-                    safety_list_name(
-                      block.blocked_user,
-                      block.blocked_actor_ap_id,
-                      @safety_remote_actors
-                    )
-                )
-              }
-            >
-              {gettext("Unblock")}
-            </button>
-          </li>
-        </ul>
-      </section>
-
-      <%!-- Muted Users section --%>
-      <section id="profile-muted-users" aria-labelledby="profile-muted-users-heading">
-        <h2
-          id="profile-muted-users-heading"
-          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
-          tabindex="-1"
-        >
-          {gettext("Muted Users")}
-        </h2>
-        <div
-          :if={@mutes == []}
-          class="profile-muted-users-empty text-sm text-base-content/70 italic"
-        >
-          {gettext("No muted users.")}
-        </div>
-        <div :if={@mutes != []} class="space-y-2">
-          <div
-            :for={mute <- @mutes}
-            id={"muted-user-#{mute.id}"}
-            class="muted-user flex items-center gap-3"
-          >
-            <.safety_list_account
-              user={mute.muted_user}
-              ap_id={mute.muted_actor_ap_id}
-              remote_actors={@safety_remote_actors}
-              name_class="muted-user-name"
-            />
-            <button
-              id={"muted-user-unmute-#{mute.id}"}
-              type="button"
-              class="muted-user-unmute btn btn-sm btn-ghost btn-error ml-auto"
-              phx-click="unmute"
-              phx-value-id={mute.id}
-              aria-label={
-                gettext("Unmute %{name}",
-                  name:
-                    safety_list_name(
-                      mute.muted_user,
-                      mute.muted_actor_ap_id,
-                      @safety_remote_actors
-                    )
-                )
-              }
-            >
-              {gettext("Unmute")}
-            </button>
-          </div>
-        </div>
-      </section>
+        <.icon name="hero-clipboard-document" class="size-4 text-base-content/50" />
+      </button>
     </div>
   </div>
-</div>
+
+  <%!-- Display Name section --%>
+  <div id="profile-display-name">
+    <.form
+      for={@display_name_form}
+      id="profile-display-name-form"
+      phx-change="validate_display_name"
+      phx-submit="save_display_name"
+      class="space-y-3"
+    >
+      <.input
+        field={@display_name_form[:display_name]}
+        type="text"
+        label={gettext("Display Name")}
+        label_class="profile-field-label text-sm text-base-content/70"
+        maxlength="64"
+        placeholder={gettext("Your display name (max 64 characters)")}
+      />
+      <button
+        id="profile-display-name-save"
+        type="submit"
+        class="btn btn-sm btn-primary"
+        phx-disable-with={gettext("Saving...")}
+      >
+        {gettext("Save Display Name")}
+      </button>
+    </.form>
+  </div>
+
+  <%!-- Bio section --%>
+  <div id="profile-bio-section">
+    <.form
+      for={@bio_form}
+      id="profile-bio-form"
+      phx-change="validate_bio"
+      phx-submit="save_bio"
+      class="space-y-3"
+    >
+      <.input
+        field={@bio_form[:bio]}
+        type="textarea"
+        label={gettext("Bio")}
+        label_class="profile-field-label text-sm text-base-content/70"
+        rows="4"
+        maxlength="500"
+        placeholder={gettext("Tell others about yourself (max 500 characters)")}
+      />
+      <button
+        id="profile-bio-save"
+        type="submit"
+        class="btn btn-sm btn-primary"
+        phx-disable-with={gettext("Saving...")}
+      >
+        {gettext("Save Bio")}
+      </button>
+    </.form>
+  </div>
+
+  <%!-- Profile Fields section --%>
+  <section id="profile-fields-section" aria-labelledby="profile-fields-heading">
+    <h2
+      id="profile-fields-heading"
+      class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+    >
+      {gettext("Profile Fields")}
+    </h2>
+    <p class="profile-field-hint text-sm text-base-content/70 mb-3">
+      {gettext("Add up to 4 custom fields to your profile (e.g. website, location).")}
+    </p>
+    <form id="profile-fields-form" phx-submit="save_profile_fields" class="space-y-3">
+      <div class="space-y-2">
+        <div
+          :for={{field, i} <- Enum.with_index(@profile_fields)}
+          id={"profile-field-row-#{i}"}
+          class="profile-field-row flex flex-wrap gap-2"
+        >
+          <input
+            id={"profile-field-name-#{i}"}
+            type="text"
+            name={"profile_fields[#{i}][name]"}
+            value={field["name"]}
+            placeholder={gettext("Label")}
+            maxlength="255"
+            class="profile-field-name-input input input-bordered input-sm w-36"
+            aria-label={gettext("Field %{n} label", n: i + 1)}
+          />
+          <input
+            id={"profile-field-value-#{i}"}
+            type="text"
+            name={"profile_fields[#{i}][value]"}
+            value={field["value"]}
+            placeholder={gettext("Content")}
+            maxlength="2048"
+            class="profile-field-value-input input input-bordered input-sm flex-1"
+            aria-label={gettext("Field %{n} content", n: i + 1)}
+          />
+        </div>
+      </div>
+      <button
+        id="profile-fields-save"
+        type="submit"
+        class="btn btn-sm btn-primary"
+        phx-disable-with={gettext("Saving...")}
+      >
+        {gettext("Save Fields")}
+      </button>
+    </form>
+  </section>
+
+  <%!-- Signature section --%>
+  <div id="profile-signature-section">
+    <.form
+      for={@signature_form}
+      id="profile-signature-form"
+      phx-change="validate_signature"
+      phx-submit="save_signature"
+      class="space-y-3"
+    >
+      <.input
+        field={@signature_form[:signature]}
+        type="textarea"
+        label={gettext("Signature")}
+        label_class="profile-field-label text-sm text-base-content/70"
+        rows="4"
+        maxlength="500"
+        toolbar
+        placeholder={gettext("Your signature (Markdown supported, max 500 characters)")}
+      />
+      <div :if={@signature_preview != ""} id="profile-signature-preview" class="space-y-1">
+        <p class="profile-field-label text-sm text-base-content/70">{gettext("Preview:")}</p>
+        <div class="profile-signature-preview-body prose prose-sm max-w-none bg-base-200 rounded-lg p-3 text-base-content/70">
+          {BaudrateWeb.SafeHTML.body_html(@signature_preview)}
+        </div>
+      </div>
+      <button
+        id="profile-signature-save"
+        type="submit"
+        class="btn btn-sm btn-primary"
+        phx-disable-with={gettext("Saving...")}
+      >
+        {gettext("Save Signature")}
+      </button>
+    </.form>
+  </div>
+
+  <div id="profile-role">
+    <div class="profile-field-label text-sm text-base-content/70">{gettext("Role")}</div>
+    <div class="profile-field-value text-lg font-semibold">
+      {translate_role(@current_user.role.name)}
+    </div>
+    <div class="profile-role-description text-sm text-base-content/70">
+      {@current_user.role.description}
+    </div>
+  </div>
+
+  <div id="profile-member-since">
+    <div class="profile-field-label text-sm text-base-content/70">
+      {gettext("Member Since")}
+    </div>
+    <div class="profile-field-value text-lg font-semibold">
+      <time datetime={format_date(@current_user.inserted_at)}>
+        {format_date(@current_user.inserted_at)}
+      </time>
+    </div>
+  </div>
+</.profile_page>

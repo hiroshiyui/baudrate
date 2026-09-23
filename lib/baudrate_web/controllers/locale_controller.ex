@@ -29,7 +29,7 @@ defmodule BaudrateWeb.LocaleController do
 
   `BaudrateWeb.Plugs.SetLocale` reads a member's language out of
   `session[:preferred_locales]`, which `SessionController` writes **at login
-  and nowhere else**. Changing languages on `/profile` writes the database, and
+  and nowhere else**. Changing languages on `/profile/account` writes the database, and
   a LiveView cannot write the session, so that copy went stale: every later
   full page load rendered its dead HTML — including `lang=` on `<html>` — in
   the old language, and kept doing it until the member signed in again. A
@@ -37,7 +37,7 @@ defmodule BaudrateWeb.LocaleController do
 
   So every request through here refreshes `session[:preferred_locales]` from
   the saved user, unconditionally, whatever the locale param said. That is the
-  fix, and `ProfileLive` posts here after a language change for exactly this.
+  fix, and `ProfileAccountLive` posts here after a language change for exactly this.
   """
 
   use BaudrateWeb, :controller
@@ -87,7 +87,7 @@ defmodule BaudrateWeb.LocaleController do
   end
 
   # A member's click is also a statement about their account, so the chosen
-  # language moves to the head of the ordered list `/profile` renders. Without
+  # language moves to the head of the ordered list `/profile/account` renders. Without
   # this the footer and the profile page would disagree, and the choice would
   # not survive to another device.
   defp apply_choice(conn, locale) do
@@ -127,7 +127,7 @@ defmodule BaudrateWeb.LocaleController do
 
   # Re-reads the account's list so the session copy `SetLocale` consults
   # matches the database again. Runs for every request, including the ones
-  # whose locale param was ignored, because `ProfileLive` posts here after a
+  # whose locale param was ignored, because `ProfileAccountLive` posts here after a
   # change the switcher itself did not make.
   defp sync_session_preferences(conn) do
     case current_user(conn) do

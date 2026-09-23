@@ -131,16 +131,16 @@
       </h2>
       <p id="welcome-recovery-text" class="welcome-recovery-text text-sm break-words">
         {gettext(
-          "This site sends no email, so those codes are how you get back in if you forget your password. You can replace them, or set up a recovery contact, in your profile."
+          "This site sends no email, so those codes are how you get back in if you forget your password. You can replace them, or set up a recovery contact, in your security settings."
         )}
       </p>
     </div>
     <.link
       id="welcome-recovery-link"
-      navigate={~p"/profile"}
+      navigate={~p"/profile/security"}
       class="welcome-recovery-link btn btn-sm"
     >
-      {gettext("Profile")}
+      {gettext("Security")}
     </.link>
   </aside>
 </section>

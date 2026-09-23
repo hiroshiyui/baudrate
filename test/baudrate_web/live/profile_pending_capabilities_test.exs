@@ -46,7 +46,7 @@ defmodule BaudrateWeb.ProfilePendingCapabilitiesTest do
   end
 
   test "pending user can update DM access", %{conn: conn, user: user} do
-    {:ok, lv, _html} = live(conn, "/profile")
+    {:ok, lv, _html} = live(conn, "/profile/privacy")
 
     lv
     |> element("select[name=\"dm_access\"]")
@@ -56,7 +56,7 @@ defmodule BaudrateWeb.ProfilePendingCapabilitiesTest do
   end
 
   test "pending user can update notification preferences", %{conn: conn, user: user} do
-    {:ok, lv, _html} = live(conn, "/profile")
+    {:ok, lv, _html} = live(conn, "/profile/notifications")
 
     lv
     |> element("input[phx-click=\"toggle_notification_pref\"][phx-value-type=\"mention\"]")

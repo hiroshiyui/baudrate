@@ -16,7 +16,7 @@ defmodule BaudrateWeb.Features.SignOutEverywhereTest do
 
     session
     |> log_in_via_browser(user)
-    |> visit("/profile")
+    |> visit("/profile/security")
     |> fill_in(Query.css("#sign_out_password"), with: "Password123!x")
     |> click(Query.css("#profile-sign-out-everywhere-submit"))
     |> assert_has(Query.text("Signed out 1 other session."))

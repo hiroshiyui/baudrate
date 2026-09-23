@@ -30,6 +30,8 @@ defmodule BaudrateWeb.AccountMigrationLive do
 
   use BaudrateWeb, :live_view
 
+  import BaudrateWeb.ProfileComponents, only: [totp_wait_note: 1]
+
   alias Baudrate.{AccountMigration, Auth}
   alias BaudrateWeb.{DataExportLive, RateLimits}
 
@@ -429,6 +431,7 @@ defmodule BaudrateWeb.AccountMigrationLive do
 
     socket
     |> assign(:move_eligibility, AccountMigration.move_eligibility(fresh))
+    |> assign(:eligible_on, Baudrate.DataPortability.eligible_on(fresh))
     |> assign(:moved_to, AccountMigration.moved_target(fresh))
     |> assign(:totp_enabled, fresh.totp_enabled)
     |> assign(:active_move, summary)

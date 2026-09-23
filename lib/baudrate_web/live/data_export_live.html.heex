@@ -36,6 +36,12 @@
       <p id="data-export-ineligible-reason" class="data-export-ineligible-reason">
         {error_message(elem(@eligibility, 1))}
       </p>
+      <.totp_wait_note
+        id_prefix="data-export"
+        reason={elem(@eligibility, 1)}
+        eligible_on={@eligible_on}
+        offline
+      />
       <.link
         :if={@eligibility == {:error, :totp_required}}
         id="data-export-enable-totp"
@@ -232,10 +238,10 @@
   <nav id="data-export-nav" aria-label={gettext("Data export navigation")}>
     <.link
       id="data-export-profile-link"
-      navigate={~p"/profile"}
+      navigate={~p"/profile/account"}
       class="data-export-profile-link link link-hover text-sm"
     >
-      {gettext("Back to Profile")}
+      {gettext("Back to Account")}
     </.link>
   </nav>
 </section>

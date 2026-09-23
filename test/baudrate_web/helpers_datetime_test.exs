@@ -49,20 +49,62 @@ defmodule BaudrateWeb.HelpersDatetimeTest do
   end
 
   describe "datetime_attr/1" do
-    test "returns ISO datetime string" do
+    test "returns ISO 8601 in UTC, ending in Z" do
       ndt = ~N[2026-03-15 14:30:45]
-      assert Helpers.datetime_attr(ndt) == "2026-03-15T14:30:45"
+      assert Helpers.datetime_attr(ndt) == "2026-03-15T14:30:45Z"
+    end
+
+    test "drops sub-second precision" do
+      assert Helpers.datetime_attr(~U[2026-03-15 14:30:45.123456Z]) == "2026-03-15T14:30:45Z"
     end
 
     test "returns empty string for nil" do
       assert Helpers.datetime_attr(nil) == ""
     end
 
-    test "converts to configured timezone" do
+    # The attribute is for machines: the site's or the viewer's zone would be
+    # wrong for everyone else, because it carried no offset.
+    test "stays in UTC whatever the site or the viewer's zone" do
       Setup.set_setting("timezone", "Asia/Taipei")
+      BaudrateWeb.TimeZone.put("America/New_York")
+      on_exit(fn -> BaudrateWeb.TimeZone.put(nil) end)
 
-      ndt = ~N[2026-03-15 02:30:45]
-      assert Helpers.datetime_attr(ndt) == "2026-03-15T10:30:45"
+      assert Helpers.datetime_attr(~N[2026-03-15 02:30:45]) == "2026-03-15T02:30:45Z"
+    end
+  end
+
+  describe "the viewer's time zone" do
+    setup do
+      Setup.set_setting("timezone", "Asia/Taipei")
+      on_exit(fn -> BaudrateWeb.TimeZone.put(nil) end)
+      :ok
+    end
+
+    test "a member's own zone wins over the site's" do
+      BaudrateWeb.TimeZone.put("America/New_York")
+
+      # 14:00 UTC is 10:00 in New York (EDT) on this date, 22:00 in Taipei.
+      assert Helpers.format_datetime(~N[2026-06-15 14:00:00]) == "2026-06-15 10:00"
+    end
+
+    test "clearing it falls back to the site's zone" do
+      BaudrateWeb.TimeZone.put("America/New_York")
+      BaudrateWeb.TimeZone.put(nil)
+
+      assert Helpers.format_datetime(~N[2026-06-15 14:00:00]) == "2026-06-15 22:00"
+    end
+
+    test "a zone the tz database does not know renders in the site's zone" do
+      BaudrateWeb.TimeZone.put("Mars/Olympus_Mons")
+
+      assert Helpers.format_datetime(~N[2026-06-15 14:00:00]) == "2026-06-15 22:00"
+    end
+
+    test "the label names the zone and its current offset" do
+      assert BaudrateWeb.TimeZone.label() == {"Asia/Taipei", "+08:00"}
+
+      BaudrateWeb.TimeZone.put("Asia/Kolkata")
+      assert BaudrateWeb.TimeZone.label() == {"Asia/Kolkata", "+05:30"}
     end
   end
 

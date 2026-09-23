@@ -122,7 +122,7 @@ defmodule BaudrateWeb.PasswordChangeLiveTest do
 
     submit(lv, %{current_password: @password, password: @new, password_confirmation: @new})
 
-    assert_redirect(lv, "/profile")
+    assert_redirect(lv, "/profile/security")
     assert Auth.verify_password(Repo.reload!(user), @new)
     assert {:ok, _} = Auth.get_user_by_session_token(this_token)
     assert {:error, :not_found} = Auth.get_user_by_session_token(other_token)
@@ -154,7 +154,7 @@ defmodule BaudrateWeb.PasswordChangeLiveTest do
       password_confirmation: @new
     })
 
-    assert_redirect(lv, "/profile")
+    assert_redirect(lv, "/profile/security")
   end
 
   test "is refused when the per-user re-authentication limit is exhausted", %{conn: conn} do

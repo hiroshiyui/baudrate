@@ -79,7 +79,7 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       assert html =~ "replied to your article"
     end
 
-    test "renders an account security notice with a link to the profile and a warning",
+    test "renders an account security notice with a link to the security settings and a warning",
          %{conn: conn, user: user} do
       {:ok, _cred} =
         Baudrate.Auth.create_webauthn_credential(user, %{
@@ -95,7 +95,13 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       {:ok, lv, _html} = live(conn, "/notifications")
 
       assert has_element?(lv, "#notification-#{notice.id}", "A security key was added")
-      assert has_element?(lv, "#notification-target-#{notice.id}[href='/profile']", "Office Key")
+
+      assert has_element?(
+               lv,
+               "#notification-target-#{notice.id}[href='/profile/security']",
+               "Office Key"
+             )
+
       assert has_element?(lv, "#notification-security-hint-#{notice.id}")
       # No actor is rendered for a security notice.
       refute has_element?(lv, "#notification-actor-#{notice.id}")

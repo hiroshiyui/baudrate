@@ -31,8 +31,8 @@ defmodule Baudrate.DataPortability.UserAgent do
   nothing is recognised.
   """
   @spec family(String.t() | nil) :: String.t() | nil
-  def family(ua) when is_binary(ua) do
-    case {match(@browsers, ua), match(@systems, ua)} do
+  def family(ua) do
+    case parts(ua) do
       {nil, nil} -> nil
       {browser, nil} -> browser
       {nil, os} -> os
@@ -40,7 +40,16 @@ defmodule Baudrate.DataPortability.UserAgent do
     end
   end
 
-  def family(_), do: nil
+  @doc """
+  Returns `{browser, os}`, either of which may be `nil`.
+
+  For a page that renders the pair itself: the joining word in `family/1`
+  is English, stored as it is in export and move requests, and a page must
+  translate it instead.
+  """
+  @spec parts(String.t() | nil) :: {String.t() | nil, String.t() | nil}
+  def parts(ua) when is_binary(ua), do: {match(@browsers, ua), match(@systems, ua)}
+  def parts(_), do: {nil, nil}
 
   defp match(patterns, ua) do
     Enum.find_value(patterns, fn {re, name} -> if Regex.match?(re, ua), do: name end)

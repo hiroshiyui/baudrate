@@ -508,6 +508,8 @@ defmodule BaudrateWeb.Layouts do
         </ul>
       </nav>
 
+      <.time_zone_label current_user={@current_user} />
+
       <.language_switcher current_locale={assigns[:locale]} current_path={assigns[:current_path]} />
     </footer>
 
@@ -689,7 +691,7 @@ defmodule BaudrateWeb.Layouts do
       <div class="recovery-notice-actions flex gap-2">
         <.link
           id="recovery-notice-link"
-          navigate={~p"/profile"}
+          navigate={~p"/profile/security"}
           class="recovery-notice-link btn btn-sm"
         >
           {gettext("Set it up")}
@@ -901,6 +903,39 @@ defmodule BaudrateWeb.Layouts do
     >
       <.icon name="hero-share" class="size-5" />
     </button>
+    """
+  end
+
+  @doc """
+  Renders the footer line naming the zone timestamps are shown in, with its
+  current UTC offset (`BaudrateWeb.TimeZone.label/0`).
+
+  One label for the page instead of one beside each of the 56 `<time>`
+  elements: every timestamp on a page is in the same zone. A signed-in member
+  gets a link to change it.
+  """
+  attr :current_user, :any, default: nil
+
+  def time_zone_label(assigns) do
+    {zone, offset} = BaudrateWeb.TimeZone.label()
+    assigns = assign(assigns, zone: zone, offset: offset)
+
+    ~H"""
+    <p
+      id="footer-time-zone"
+      class="footer-time-zone mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-4 text-center text-sm opacity-70"
+    >
+      {gettext("Times are shown in %{zone} (UTC%{offset}).", zone: @zone, offset: @offset)}
+      <.link
+        :if={@current_user}
+        id="footer-time-zone-link"
+        navigate={~p"/profile/account"}
+        class="footer-time-zone-link link link-hover"
+        aria-label={gettext("Change your time zone")}
+      >
+        {gettext("Change")}
+      </.link>
+    </p>
     """
   end
 

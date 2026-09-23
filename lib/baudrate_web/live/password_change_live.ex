@@ -112,7 +112,7 @@ defmodule BaudrateWeb.PasswordChangeLive do
              count: revoked
            )
          )
-         |> push_navigate(to: ~p"/profile")}
+         |> push_navigate(to: ~p"/profile/security")}
 
       {:error, :rate_limited} ->
         {:noreply,

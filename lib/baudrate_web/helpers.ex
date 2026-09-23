@@ -7,10 +7,12 @@ defmodule BaudrateWeb.Helpers do
   use Gettext, backend: BaudrateWeb.Gettext
 
   @doc """
-  Formats a NaiveDateTime/DateTime in the site's configured timezone.
+  Formats a NaiveDateTime/DateTime in the viewer's time zone.
 
-  Uses the `timezone` setting from `Baudrate.Setup`. Falls back to `"Etc/UTC"`
-  when the setting is not configured.
+  That is the member's own `time_zone` when they chose one, and otherwise the
+  site's `timezone` setting (`BaudrateWeb.TimeZone`); a zone the tz database
+  no longer knows falls back rather than raising. A `NaiveDateTime` is taken
+  as UTC, which is what every stored timestamp here is.
 
   ## Examples
 
@@ -25,32 +27,43 @@ defmodule BaudrateWeb.Helpers do
   def format_datetime(nil, _format), do: ""
 
   def format_datetime(%NaiveDateTime{} = ndt, format) do
-    tz = Baudrate.Setup.get_setting("timezone") || "Etc/UTC"
-
     ndt
     |> DateTime.from_naive!("Etc/UTC")
-    |> DateTime.shift_zone!(tz)
-    |> Calendar.strftime(format)
+    |> format_datetime(format)
   end
 
   def format_datetime(%DateTime{} = dt, format) do
-    tz = Baudrate.Setup.get_setting("timezone") || "Etc/UTC"
-
     dt
-    |> DateTime.shift_zone!(tz)
+    |> BaudrateWeb.TimeZone.shift()
     |> Calendar.strftime(format)
   end
 
   @doc """
-  Returns an ISO datetime string for the HTML `datetime` attribute.
+  Returns the value for an HTML `<time datetime>` attribute: ISO 8601 in UTC,
+  ending in `Z`, whoever is reading.
+
+  It used to be the site's local time with no offset, which a machine
+  reading the page could only take for UTC — wrong by the site's offset for
+  everyone.
 
   ## Examples
 
       iex> BaudrateWeb.Helpers.datetime_attr(~N[2026-01-15 08:30:00])
-      "2026-01-15T08:30:00"
+      "2026-01-15T08:30:00Z"
+
+      iex> BaudrateWeb.Helpers.datetime_attr(nil)
+      ""
   """
-  def datetime_attr(datetime) do
-    format_datetime(datetime, "%Y-%m-%dT%H:%M:%S")
+  def datetime_attr(nil), do: ""
+
+  def datetime_attr(%NaiveDateTime{} = ndt),
+    do: ndt |> DateTime.from_naive!("Etc/UTC") |> datetime_attr()
+
+  def datetime_attr(%DateTime{} = dt) do
+    dt
+    |> DateTime.shift_zone!("Etc/UTC")
+    |> DateTime.truncate(:second)
+    |> DateTime.to_iso8601()
   end
 
   @doc """

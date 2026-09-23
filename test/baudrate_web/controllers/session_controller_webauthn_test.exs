@@ -51,7 +51,7 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
           "label" => "My Key"
         })
 
-      assert redirected_to(conn) == "/profile"
+      assert redirected_to(conn) == "/profile/security"
       assert Phoenix.Flash.get(conn.assigns.flash, :error)
     end
 
@@ -66,7 +66,7 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
           "label" => "My Key"
         })
 
-      assert redirected_to(conn) == "/profile"
+      assert redirected_to(conn) == "/profile/security"
       assert Phoenix.Flash.get(conn.assigns.flash, :error)
     end
 
@@ -86,7 +86,7 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
           "label" => "My Key"
         })
 
-      assert redirected_to(conn) == "/profile"
+      assert redirected_to(conn) == "/profile/security"
       assert Phoenix.Flash.get(conn.assigns.flash, :error)
     end
 
@@ -108,7 +108,7 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
               "label" => "Attacker Key"
             })
 
-          assert redirected_to(conn) == "/profile"
+          assert redirected_to(conn) == "/profile/security"
           assert Phoenix.Flash.get(conn.assigns.flash, :error)
         end)
 

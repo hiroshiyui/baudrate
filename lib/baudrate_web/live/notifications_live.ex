@@ -183,7 +183,7 @@ defmodule BaudrateWeb.NotificationsLive do
   defp target_link(%{type: "data_export_" <> _}), do: ~p"/profile/export"
   defp target_link(%{type: "totp_login_failed"}), do: ~p"/profile/password"
   defp target_link(%{type: "account_" <> _}), do: ~p"/profile/move"
-  defp target_link(%{type: type}) when type in @security_types, do: ~p"/profile"
+  defp target_link(%{type: type}) when type in @security_types, do: ~p"/profile/security"
   defp target_link(_), do: nil
 
   defp target_title(%{article: %{title: title}}) when not is_nil(title), do: title

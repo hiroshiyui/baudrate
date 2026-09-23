@@ -81,6 +81,8 @@ defmodule Baudrate.Auth do
   defdelegate session_id_by_token(raw_token), to: Sessions
   defdelegate live_socket_id(session_id), to: Sessions
   defdelegate sign_out_other_sessions(user, keep_session_id), to: Sessions
+  defdelegate list_sessions(user_id), to: Sessions
+  defdelegate revoke_session(user_id, session_id, current_session_id), to: Sessions
   defdelegate purge_expired_sessions, to: Sessions
 
   defdelegate record_login_attempt(username, ip_address, success, factor \\ "password"),
@@ -226,6 +228,7 @@ defmodule Baudrate.Auth do
   defdelegate update_display_name(user, display_name), to: Profiles
   defdelegate update_bio(user, bio), to: Profiles
   defdelegate update_dm_access(user, value), to: Profiles
+  defdelegate update_time_zone(user, zone), to: Profiles
   defdelegate update_notification_preferences(user, prefs), to: Profiles
   defdelegate update_profile_fields(user, fields), to: Profiles
 

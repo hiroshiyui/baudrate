@@ -1,7 +1,7 @@
 defmodule BaudrateWeb.Features.AccountRecoveryTest do
   @moduledoc """
   The Phase 4D pages in a real browser: the first-visit step, and the
-  recovery-contact form on `/profile`.
+  recovery-contact form on `/profile/security`.
 
   Both are forms that re-render while being filled in, which is the class of
   bug only a browser catches — LiveView patches every input back to the value
@@ -49,7 +49,7 @@ defmodule BaudrateWeb.Features.AccountRecoveryTest do
 
     session
     |> log_in_via_browser(user)
-    |> visit("/profile")
+    |> visit("/profile/security")
     |> assert_has(Query.css("#profile-recovery-codes"))
     # The form is behind step-up re-authentication, so the fields are not
     # rendered until identity is confirmed — which is the point.

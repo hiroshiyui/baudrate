@@ -1,7 +1,7 @@
 defmodule BaudrateWeb.AccountRecoveryWebTest do
   @moduledoc """
   The pages Phase 4D added or changed: the first-visit step, the way a guest
-  is brought back to a private page, the recovery sections on `/profile`, the
+  is brought back to a private page, the recovery sections on `/profile/security`, the
   admin's side of a recovery request, and the link that redeems it.
 
   `Baudrate.Auth.AccountRecoveryTest` is the gate for the rules themselves —
@@ -160,7 +160,7 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
     end
   end
 
-  describe "/profile recovery sections" do
+  describe "/profile/security recovery sections" do
     setup do
       user = setup_user("user")
       Auth.generate_recovery_codes(user)
@@ -168,7 +168,7 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
     end
 
     test "show how many codes are left, but never the codes", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, "/profile")
+      {:ok, _lv, html} = live(conn, "/profile/security")
 
       assert html =~ ~s(id="profile-recovery-codes")
       assert html =~ "10 unused codes left"
@@ -176,7 +176,7 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
     end
 
     test "refuse to regenerate without step-up re-authentication", %{conn: conn, user: user} do
-      {:ok, lv, html} = live(conn, "/profile")
+      {:ok, lv, html} = live(conn, "/profile/security")
 
       # The button is not rendered, and the handler refuses anyway — hiding a
       # control is presentation, and the server is what decides (ADR 0022).
@@ -189,7 +189,7 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
     end
 
     test "refuse to register a contact without step-up", %{conn: conn, user: user} do
-      {:ok, lv, _html} = live(conn, "/profile")
+      {:ok, lv, _html} = live(conn, "/profile/security")
 
       render_click(lv, "add_recovery_contact", %{
         "contact" => %{"email" => "me@example.com", "pgp_public_key" => @key}
@@ -202,7 +202,7 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
       {:ok, _} =
         Auth.add_recovery_contact(user, %{"email" => "me@example.com", "pgp_public_key" => @key})
 
-      {:ok, _lv, html} = live(conn, "/profile")
+      {:ok, _lv, html} = live(conn, "/profile/security")
 
       assert html =~ ~s(id="profile-recovery-contacts")
       assert html =~ "me@example.com"

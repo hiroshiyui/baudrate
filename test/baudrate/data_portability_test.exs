@@ -122,6 +122,25 @@ defmodule Baudrate.DataPortabilityTest do
     end
   end
 
+  describe "eligible_on/1" do
+    test "is seven days of elapsed time after TOTP was turned on" do
+      at = ~U[2026-03-05 12:00:00Z]
+      user = %User{totp_enabled: true, totp_enabled_at: at}
+
+      # Across the US daylight-saving change on 2026-03-08 it is still exactly
+      # 7 × 24 hours; the page then shows it in the reader's own zone.
+      assert DataPortability.eligible_on(user) == ~U[2026-03-12 12:00:00Z]
+    end
+
+    test "is nil when TOTP is off or its start is unknown" do
+      assert DataPortability.eligible_on(%User{totp_enabled: false, totp_enabled_at: nil}) ==
+               nil
+
+      assert DataPortability.eligible_on(%User{totp_enabled: true, totp_enabled_at: nil}) ==
+               nil
+    end
+  end
+
   describe "request_export/3" do
     test "creates a pending request 24 h out, stores only the browser family, notifies",
          %{user: user, secret: secret} do
@@ -435,6 +454,14 @@ defmodule Baudrate.DataPortabilityTest do
 
       assert UserAgent.family("curl/8.0") == nil
       assert UserAgent.family(nil) == nil
+    end
+  end
+
+  describe "UserAgent.parts/1" do
+    test "returns the browser and system separately, for a page to translate" do
+      assert UserAgent.parts(@firefox) == {"Firefox", "Linux"}
+      assert UserAgent.parts("curl/8.0") == {nil, nil}
+      assert UserAgent.parts(nil) == {nil, nil}
     end
   end
 end

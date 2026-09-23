@@ -460,6 +460,12 @@ defmodule Baudrate.DataPortability.ArchiveTest do
     assert handle == other.username
   end
 
+  test "the profile carries the member's time zone", %{user: user} do
+    {:ok, user} = Auth.update_time_zone(user, "Asia/Tokyo")
+
+    assert %{"time_zone" => "Asia/Tokyo"} = user |> build!() |> json("profile.json")
+  end
+
   test "README is written in the user's preferred language", %{user: user} do
     {:ok, user} = Auth.update_preferred_locales(user, ["zh_TW"])
     readme = user |> build!() |> Map.fetch!("README.txt")

@@ -1,0 +1,201 @@
+<.profile_page current={:account} id="profile-account-page" title={gettext("Account")}>
+  <%!-- Preferred Languages section --%>
+  <section id="profile-languages" aria-labelledby="profile-languages-heading">
+    <h2
+      id="profile-languages-heading"
+      class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+    >
+      {gettext("Preferred Languages")}
+    </h2>
+    <%= if @preferred_locales == [] do %>
+      <div class="profile-languages-empty text-sm text-base-content/70 italic">
+        {gettext("Using browser language settings.")}
+      </div>
+    <% else %>
+      <div class="space-y-1">
+        <%= for {locale, idx} <- Enum.with_index(@preferred_locales) do %>
+          <div
+            id={"profile-locale-#{locale}"}
+            class="profile-locale-row flex items-center gap-2"
+          >
+            <span class="profile-locale-rank badge badge-sm badge-neutral">{idx + 1}</span>
+            <span class="profile-locale-name font-semibold">
+              {BaudrateWeb.Locale.locale_display_name(locale)}
+            </span>
+            <span class="profile-locale-code text-sm text-base-content/70">{locale}</span>
+            <div class="ml-auto flex gap-1">
+              <button
+                :if={idx > 0}
+                id={"profile-locale-up-#{locale}"}
+                type="button"
+                class="profile-locale-up btn btn-sm btn-ghost"
+                phx-click="move_locale_up"
+                phx-value-locale={locale}
+                aria-label={gettext("Move %{locale} up", locale: locale)}
+              >
+                &uarr;
+              </button>
+              <button
+                :if={idx < length(@preferred_locales) - 1}
+                id={"profile-locale-down-#{locale}"}
+                type="button"
+                class="profile-locale-down btn btn-sm btn-ghost"
+                phx-click="move_locale_down"
+                phx-value-locale={locale}
+                aria-label={gettext("Move %{locale} down", locale: locale)}
+              >
+                &darr;
+              </button>
+              <button
+                id={"profile-locale-remove-#{locale}"}
+                type="button"
+                class="profile-locale-remove btn btn-sm btn-ghost btn-error"
+                phx-click="remove_locale"
+                phx-value-locale={locale}
+                aria-label={gettext("Remove")}
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% unselected =
+      Enum.reject(@available_locales, fn {code, _} -> code in @preferred_locales end) %>
+    <%= if unselected != [] do %>
+      <div class="dropdown mt-2">
+        <button
+          id="profile-add-language"
+          type="button"
+          aria-haspopup="true"
+          aria-expanded="false"
+          class="profile-add-language btn btn-sm btn-outline"
+        >
+          {gettext("Add Language")}
+        </button>
+        <ul
+          id="profile-add-language-menu"
+          class="profile-add-language-menu dropdown-content menu bg-base-200 rounded-box z-10 w-52 p-2 shadow-sm"
+        >
+          <%= for {code, name} <- unselected do %>
+            <li>
+              <button
+                id={"profile-add-locale-#{code}"}
+                class="profile-add-locale"
+                type="button"
+                phx-click="add_locale"
+                phx-value-locale={code}
+              >
+                {name}
+                <span class="text-sm text-base-content/70">{code}</span>
+              </button>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <%!-- The session write a LiveView cannot make. `SetLocale` reads a
+    member's language out of `session[:preferred_locales]`, written only at
+    login, so without this the next full page load renders its dead HTML —
+    and `<html lang>` — in the old language. Submitted only when the
+    effective locale actually moved (see `save_locales/2`). --%>
+    <form
+      id="locale-sync-form"
+      method="post"
+      action={~p"/locale"}
+      class="hidden"
+      phx-trigger-action={@trigger_locale_sync}
+    >
+      <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+      <input type="hidden" name="locale" value={@locale_sync_value} />
+      <input type="hidden" name="return_to" value="/profile/account" />
+    </form>
+  </section>
+
+  <section id="profile-time-zone" aria-labelledby="profile-time-zone-heading">
+    <h2
+      id="profile-time-zone-heading"
+      class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+    >
+      {gettext("Time Zone")}
+    </h2>
+    <p id="profile-time-zone-current" class="profile-field-hint text-sm text-base-content/70 mb-2">
+      {gettext("Times on this site are shown to you in %{zone}.",
+        zone:
+          @current_user.time_zone || gettext("the site's time zone (%{zone})", zone: @site_zone)
+      )}
+    </p>
+    <.form
+      for={@time_zone_form}
+      id="profile-time-zone-form"
+      class="profile-time-zone-form flex flex-wrap items-end gap-2"
+      phx-change="validate_time_zone"
+      phx-submit="save_time_zone"
+    >
+      <div class="form-control">
+        <label id="profile-time-zone-label" class="label" for="profile-time-zone-select">
+          <span class="label-text">{gettext("Time zone")}</span>
+        </label>
+        <select
+          id="profile-time-zone-select"
+          name="time_zone[time_zone]"
+          class="profile-time-zone-select select select-bordered select-sm w-full max-w-xs"
+        >
+          {Phoenix.HTML.Form.options_for_select(
+            [{gettext("Site default (%{zone})", zone: @site_zone), ""} | @zones],
+            @time_zone_form[:time_zone].value || ""
+          )}
+        </select>
+      </div>
+      <button
+        id="profile-time-zone-save"
+        type="submit"
+        class="profile-time-zone-save btn btn-sm btn-primary"
+        phx-disable-with={gettext("Saving...")}
+      >
+        {gettext("Save Time Zone")}
+      </button>
+      <button
+        id="profile-time-zone-device"
+        type="button"
+        phx-hook="DeviceTimeZoneHook"
+        class="profile-time-zone-device btn btn-sm btn-outline"
+      >
+        {gettext("Use this device's time zone")}
+      </button>
+    </.form>
+  </section>
+
+  <div id="profile-data-export">
+    <div class="profile-field-label text-sm text-base-content/70">
+      {gettext("Your Data")}
+    </div>
+    <div class="profile-field-value">
+      <.link
+        id="profile-data-export-link"
+        navigate={~p"/profile/export"}
+        class="profile-data-export-link btn btn-sm btn-outline"
+      >
+        {gettext("Export Your Data")}
+      </.link>
+    </div>
+  </div>
+
+  <div id="profile-account-migration">
+    <div class="profile-field-label text-sm text-base-content/70">
+      {gettext("Account Migration")}
+    </div>
+    <div class="profile-field-value">
+      <.link
+        id="profile-account-migration-link"
+        navigate={~p"/profile/move"}
+        class="profile-account-migration-link btn btn-sm btn-outline"
+      >
+        {gettext("Aliases and Moving")}
+      </.link>
+    </div>
+  </div>
+</.profile_page>

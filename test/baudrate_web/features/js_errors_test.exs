@@ -223,11 +223,15 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
         "/articles/#{article.slug}/history",
         "/comments/#{comment.id}/history",
         "/tags/tag",
-        # /profile gained a recovery-contact form in Phase 4D, with a textarea
-        # for an armored key — exactly the shape this crawl catches being
-        # erased on re-render. (/welcome is not here: this crawl's member is
-        # established, and the first-visit step redirects once it is done.)
+        # /profile/security holds the recovery-contact form (Phase 4D), with a
+        # textarea for an armored key — exactly the shape this crawl catches
+        # being erased on re-render. (/welcome is not here: this crawl's member
+        # is established, and the first-visit step redirects once it is done.)
         "/profile",
+        "/profile/security",
+        "/profile/notifications",
+        "/profile/privacy",
+        "/profile/account",
         "/profile/password",
         "/profile/export",
         "/profile/move",

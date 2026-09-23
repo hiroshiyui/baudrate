@@ -374,6 +374,11 @@
           <p id="account-move-ineligible-reason" class="account-move-ineligible-reason">
             {move_error_message(elem(@move_eligibility, 1))}
           </p>
+          <.totp_wait_note
+            id_prefix="account-move"
+            reason={elem(@move_eligibility, 1)}
+            eligible_on={@eligible_on}
+          />
           <.link
             :if={@move_eligibility == {:error, :totp_required}}
             id="account-move-enable-totp"

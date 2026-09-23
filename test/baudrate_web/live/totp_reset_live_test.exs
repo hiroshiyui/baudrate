@@ -55,7 +55,7 @@ defmodule BaudrateWeb.TotpResetLiveTest do
     assert html =~ "Invalid credentials"
   end
 
-  test "lockout after 5 failed attempts redirects to /profile", %{conn: conn} do
+  test "lockout after 5 failed attempts redirects to /profile/security", %{conn: conn} do
     user = setup_user("user")
     conn = log_in_user(conn, user)
 
@@ -73,7 +73,7 @@ defmodule BaudrateWeb.TotpResetLiveTest do
     |> form("form[phx-submit]", totp_reset: %{password: "wrong"})
     |> render_submit()
 
-    assert_redirect(lv, "/profile")
+    assert_redirect(lv, "/profile/security")
   end
 
   test "failed attempts are recorded against the account", %{conn: conn} do

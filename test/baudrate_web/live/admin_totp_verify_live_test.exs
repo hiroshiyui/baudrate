@@ -168,7 +168,7 @@ defmodule BaudrateWeb.AdminTotpVerifyLiveTest do
 
       conn = log_in_user(conn, admin)
 
-      assert {:error, {:redirect, %{to: "/profile"}}} = live(conn, "/admin/settings")
+      assert {:error, {:redirect, %{to: "/profile/security"}}} = live(conn, "/admin/settings")
     end
   end
 end

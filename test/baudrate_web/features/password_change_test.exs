@@ -18,7 +18,7 @@ defmodule BaudrateWeb.Features.PasswordChangeTest do
     |> fill_in(Query.css("#password_change_password_confirmation"), with: @new_password)
     |> click(Query.css("#password-change-submit"))
     |> assert_has(Query.text("Password changed. 0 other sessions were signed out."))
-    |> wait_for_path("/profile")
+    |> wait_for_path("/profile/security")
     |> log_out_via_browser()
     |> submit_login_form(user, "Password123!x")
     |> assert_has(Query.text("Invalid username or password."))

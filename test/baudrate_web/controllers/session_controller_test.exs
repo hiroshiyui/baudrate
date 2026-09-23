@@ -209,7 +209,7 @@ defmodule BaudrateWeb.SessionControllerTest do
         |> Plug.Test.init_test_session(%{user_id: user.id, totp_setup_secret: secret})
         |> post("/auth/totp-enable", %{"code" => code})
 
-      assert redirected_to(conn) == "/profile"
+      assert redirected_to(conn) == "/profile/security"
       assert get_session(conn, :session_token) != nil
       assert get_session(conn, :refresh_token) != nil
       assert is_nil(get_session(conn, :user_id))
@@ -308,9 +308,9 @@ defmodule BaudrateWeb.SessionControllerTest do
       refute updated_user.totp_enabled
     end
 
-    test "invalid/expired token redirects to /profile with error", %{conn: conn} do
+    test "invalid/expired token redirects to /profile/security with error", %{conn: conn} do
       conn = post(conn, "/auth/totp-reset", %{"token" => "bad_token"})
-      assert redirected_to(conn) == "/profile"
+      assert redirected_to(conn) == "/profile/security"
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Invalid or expired token"
     end
 
@@ -636,9 +636,9 @@ defmodule BaudrateWeb.SessionControllerTest do
         })
         |> post("/auth/totp-enable", %{"code" => code})
 
-      # totp_enable passes "/profile" as redirect_to,
+      # totp_enable passes "/profile/security" as redirect_to,
       # so return_to should be ignored
-      assert redirected_to(conn) == "/profile"
+      assert redirected_to(conn) == "/profile/security"
     end
 
     test "sanitizes malicious return_to with double slashes", %{conn: conn} do
