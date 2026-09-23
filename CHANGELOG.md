@@ -9,6 +9,26 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.40.0] — 2026-09-23
+
+Account recovery stops depending on what anybody remembered to type. The
+instance now issues the one-line challenge a member signs, with a mail ready
+to paste, and a confirmed key shows on the member's profile as exactly what
+was checked
+([ADR 0067](doc/adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md),
+[ADR 0068](doc/adr/0068-a-profile-says-what-was-checked-not-that-someone-is-verified.md)).
+Baudrate still parses no OpenPGP and verifies no signature: it asks the
+question, and the admin's own client answers it.
+
+### Upgrading
+
+- **One migration** adds the `recovery_challenges` table. Nothing else
+  changes, and no setting needs touching.
+- **Verifying a recovery contact and issuing a reset link now need a
+  challenge.** Both refuse until one has been issued for that contact, so the
+  SysOp procedure gained a step it always described (`doc/sysop.md`).
+- Contacts verified before this release stay verified.
+
 ### Added
 
 - **Baudrate issues the challenge a member signs to recover an account**
