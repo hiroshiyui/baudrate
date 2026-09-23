@@ -34,7 +34,8 @@
   Checked against the code at v1.21.0. **Re-check when behaviour changes**,
   particularly: the sanction ladder and the guarantee that every sanction is
   notified (ADR 0029), that rules live at /rules and a report can cite one
-  (ADR 0032), and that there is still no self-service account deletion (6E).
+  (ADR 0032), and that a member can delete their own account, seven days after
+  asking (ADR 0072).
 
   Not legal advice. Have someone qualified read it before relying on it.
 -->
@@ -133,8 +134,8 @@ Even while restricted, you may still read, undo an earlier like or boost, delete
 
 ### 8. 終止 Termination
 
-* **由您終止：** 本站目前沒有自助刪除帳號的功能，請聯絡 **[CONTACT]** 辦理。您也可以先透過 `/profile/account` 匯出資料，或將追蹤者遷移至其他站台的帳號。
-    **By you:** There is currently no self-service account deletion; contact **[CONTACT]** to arrange it. You may first export your data from `/profile/account`, or migrate your followers to an account on another server.
+* **由您終止：** 您可以隨時於 `/profile/account` 刪除自己的帳號；刪除會在 7 天後執行，期間重新登入即可取消。您也可以先透過 `/profile/account` 匯出資料，或將追蹤者遷移至其他站台的帳號。
+    **By you:** You may delete your account at any time from `/profile/account`; it happens seven days later, and signing in before then cancels it. You may first export your data from `/profile/account`, or migrate your followers to an account on another server.
 * **由站方終止：** 我們保留隨時修改或停止本服務的權利。嚴重或重複違規者，帳號可能被永久封鎖。
     **By us:** We reserve the right to modify or discontinue the service at any time. Accounts may be permanently banned for serious or repeated violations.
 * 帳號終止後，已傳送至其他站台的副本不在本站控制範圍內，備份中的資料亦需一段時間才會輪替消失。

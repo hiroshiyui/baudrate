@@ -1755,6 +1755,30 @@ assumes the request may come from a compromised account:
   `federation.move_complete`, `move_rejected` and `move_ignored` (inbound).
   There is no admin UI to move someone else's account.
 
+### Account Deletion
+
+Members delete their own accounts from `/profile/account`
+([ADR 0072](adr/0072-a-deleted-account-leaves-a-tombstone.md)); there is
+nothing to run and nothing to configure.
+
+- **It waits seven days.** Asking needs the member's password (and TOTP code
+  if they use it) and signs out every other session. Signing in again at any
+  time before then cancels it, and the member is told so on the next page.
+- **Staff and board moderators cannot ask.** Remove the role first, as for an
+  account move. Bot accounts are deleted from `/admin/bots`.
+- **The hourly `SessionCleaner` step carries it out.** The user row is never
+  deleted: it becomes a tombstone with status `deleted`, its username stays
+  reserved, and posts kept under it read "deleted account". `/admin/users`
+  lists it with that status; its detail page says when, and refuses to ban or
+  unban it — a tombstone cannot be brought back.
+- **Reports, sanctions and the moderation log are kept**, so a case that was
+  open against the account can still be finished.
+- **Other servers get a `Delete(Person)`**; the account's signing key is kept
+  until those deliveries are done and cleared 30 days later.
+
+A member who asks the operator to delete their account can be pointed at the
+page. There is no admin action that deletes an account on someone's behalf.
+
 ### Content Security
 
 - **HTML sanitization** — all federated content sanitized via Ammonia (Rust NIF,

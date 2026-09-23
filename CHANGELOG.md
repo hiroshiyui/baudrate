@@ -9,9 +9,28 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Stage 6E-1, the account controls. One migration: `users.time_zone`.
+Stages 6E-1, the account controls, and 6E-2, deleting your own account. One
+new record, [ADR 0072](doc/adr/0072-a-deleted-account-leaves-a-tombstone.md).
+Three migrations: `users.time_zone`, `users.deleted_at`, and the
+`account_deletions` table.
+
+**Operators:** members can now delete their own accounts, so the sample
+terms (`doc/eua.md`) and privacy policy no longer send them to you. If your
+published terms or policy were copied from them, update the termination and
+deletion clauses; nothing else needs doing.
 
 ### Added
+
+- **Delete your own account**, from `/profile/account`, with your password
+  (and TOTP code if you use one). It happens seven days later, and signing in
+  before then cancels it — you are told so, and so is anyone who signed in
+  as you. Your profile, sign-in methods, sessions, drafts and the text of your
+  direct messages are removed; your username stays reserved so nobody can
+  take it. Your posts and comments stay, shown as "deleted account", so the
+  discussions you were part of still make sense — unless you choose to
+  withdraw them too. Other servers are told the account is gone, and most of
+  them then remove what it posted there. The account is never deleted as a
+  row: that would have deleted other members' replies with it.
 
 - **Your sessions, listed** on `/profile/security`: the browser and system
   each one signed in with, when, and when it was last active. After you
@@ -29,6 +48,11 @@ Stage 6E-1, the account controls. One migration: `users.time_zone`.
 
 ### Changed
 
+- **A banned account is no longer described to other servers.** Its
+  ActivityPub actor carries only its name on this server and its key — no
+  display name, bio, avatar or profile fields — and its outbox is empty, as
+  its profile page here already refused. It is not marked deleted, because a
+  ban can be lifted.
 - **`/profile` is five pages**: profile, security, notifications, privacy and
   account, with a menu between them. It had grown to one page of over 2,000
   lines. Security notices, TOTP setup, security-key registration and the

@@ -14,7 +14,7 @@ and discovery and onboarding. **All five are now closed** — Phase 0 in
 v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
 v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
 anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
-and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **6E-1 is done and unreleased; 6E-2 is next.**
+and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **6E-1 and 6E-2 are done and unreleased; 6E-3 is next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -449,10 +449,10 @@ Deliberately not done, and recorded nowhere else:
   URL (ADR 0071, rejected alternative). Reporting an image-only message
   copies an empty text; the moderator sees the image through the report.
 
-### 6E — Account and privacy (L), in two releases
+### 6E — Account and privacy (L), in three releases
 
-Decided 2026-09-23: 6E ships as **6E-1**, the controls, then **6E-2**,
-account deletion and the privacy settings.
+Decided 2026-09-23 and 2026-09-24: 6E ships as **6E-1**, the controls;
+**6E-2**, account deletion; and **6E-3**, the privacy settings.
 
 **6E-1 is done and unreleased.** `/profile` is five pages — profile,
 security, notifications, privacy, account — instead of one 2,200-line page.
@@ -462,33 +462,40 @@ Timestamps are shown in the member's own time zone, with the zone named in
 the footer, and every `<time datetime>` is now UTC. The export and move
 pages give the date TOTP becomes old enough, and why the rule exists.
 
-**6E-2**, next:
+**6E-2 is done and unreleased.** A member deletes their own account from
+`/profile/account`: step-up re-authentication, a seven-day wait that signing
+in cancels, then a resumable sweep that turns the row into a tombstone and
+queues `Delete(Person)` in the same transaction.
+[ADR 0072](adr/0072-a-deleted-account-leaves-a-tombstone.md) answers P6-D2.
+Banned accounts are now served bare over ActivityPub.
 
-- [ ] **Self-service account deletion** (ADR 0072, answering P6-D2).
-  - The row becomes a tombstone and is never deleted: `articles.user_id`
-    cascades to other members' comments, the DM check constraints refuse a
-    plain delete, and a queued `Delete(Person)` needs the signing key.
-  - Requested behind step-up re-authentication, with no TOTP requirement;
-    every session signed out at once; **signing in within 7 days cancels it**.
-  - `Delete(Person)` to followers; the actor and WebFinger answer 410;
-    `Undo(Follow)` to the accounts the member followed.
-  - Banned accounts are still served by the actor endpoint and WebFinger —
-    fix that alongside.
+Left standing: timeline replies (replies to posts on other servers) have no
+local withdrawal path and stay under "deleted account" either way.
+
+**6E-3**, next — decided 2026-09-24:
+
 - [ ] **Privacy settings:**
-  - opt out of search and indexing (`noindex`, left out of member search and
-    the sitemap; the pages stay public, ADR 0057);
-  - approve followers manually (a pending state for remote and local follows,
-    `manuallyApprovesFollowers`, a requests list on `/followers`);
-  - mute a domain, for oneself;
-  - mute keywords, for one's own views only and never DMs.
+  - opt out of search and indexing: `noindex` on the profile and articles,
+    left out of the sitemap and the `/search` Users tab, Mastodon's
+    `discoverable`/`indexable` false. The site's own article search is
+    unchanged. The pages stay public (ADR 0057);
+  - approve followers manually: a pending state in `followers` (all nine of
+    its readers must ignore pending rows) and `UserFollow`'s existing one,
+    `manuallyApprovesFollowers`, a requests list on `/followers`. Existing
+    followers stay; turning the setting off approves every waiting request;
+  - mute a domain, for oneself: a per-member subquery on
+    `remote_actors.domain`, in every per-viewer listing;
+  - mute keywords, for one's own views only and never DMs: a matching post is
+    **collapsed** behind "Hidden by your muted words — show", never removed,
+    so page counts stay right; matched with `ContentFilter`'s normalization.
+- [ ] **Gaps found on the way:** the timeline's comment strand applies no
+  per-viewer or instance filter to remote comments; site search lists local
+  *unlisted* articles.
 
 ### Decisions needed
 
-- [x] **P6-D2. What account deletion removes.** Decided 2026-09-23: the
-  profile, keys, sessions, drafts and the text of the member's DMs always go;
-  articles and comments are **anonymized by default** ("deleted account") and
-  **withdrawn if the member ticks that choice**; the deletion waits **7 days**
-  and signing in cancels it. To be recorded as ADR 0072 in 6E-2.
+- [x] **P6-D2. What account deletion removes.** Decided 2026-09-23;
+  recorded as [ADR 0072](adr/0072-a-deleted-account-leaves-a-tombstone.md).
 
 ---
 

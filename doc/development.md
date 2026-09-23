@@ -50,6 +50,9 @@ lib/
 │   ├── application.ex           # Supervision tree
 │   ├── repo.ex                  # Ecto repository + sanitize_like/1 helper
 │   ├── pagination.ex            # Shared pagination (paginate_opts/3, paginate_query/3)
+│   ├── account_deletion.ex      # AccountDeletion context: a member deleting their own account; the tombstone (ADR 0072)
+│   ├── account_deletion/
+│   │   └── deletion.ex          # A deletion request: pending → executing → completed, or cancelled
 │   ├── account_migration.ex     # AccountMigration context: aliases (alsoKnownAs) and moving with Move (ADR 0025)
 │   ├── account_migration/
 │   │   └── account_move.ex      # AccountMove schema: a pending move, its 24-hour delay and cancellation
@@ -2258,6 +2261,34 @@ rules; `/profile/move` (`AccountMigrationLive`) only collects input.
 | Read-only | `Auth.ensure_can_interact/1` at the context boundary ([ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)) refuses a moved account with `{:error, :account_moved}` next to bans, suspensions and silences, at every posting and interaction path: `Content.create_article/3` (Multi-shaped `{:error, :account, :account_moved, _}`; `forwarded_comment: true` exempts a comment forwarded by someone else), `update_article/3` (editor), `create_comment/2`, the create branch of article/comment like and boost toggles and timeline item like/boost, `create_timeline_item_reply/4`, `cast_vote/3`, `Messaging.can_send_dm?/2`, `Auth.can_generate_invite?/1`, and `can_create_content?/1` (so board posting and forwards). The follow paths pass `moved: :allow` — a move is a redirect, not a punishment — while `Federation.Follows` still refuses following a moved *target*, which is the one remaining `AccountMigration.ensure_not_moved/1` call site in `lib/`. Undoing, deleting, following and reading stay allowed |
 | After the move | `Layouts.account_moved_notice/1` for the owner; `/users/:name` shows "moved" with a link and no Follow/Message; `AccountMigration.remove_redirect/3` (step-up) clears the redirect, publishes an actor `Update`, sends `account_redirect_removed`; the move still counts toward 30 days |
 | Inbound `Move` | `AccountMigration.handle_inbound_move/2` (called by `InboxHandler`): alias check, `Undo(Follow)` + pending `Follow` per local follower (`follow_on_behalf/2`), `actor_moved` notices, timeline item migration, `board_actor_moved` to admins, 30-day bound per origin |
+
+### Account Deletion
+
+A member deletes their own account from `/profile/account`
+([ADR 0072](adr/0072-a-deleted-account-leaves-a-tombstone.md)).
+`Baudrate.AccountDeletion` owns every step; **no code deletes a user row**.
+
+| Stage | What happens |
+|-------|--------------|
+| Request | Step-up re-authentication inside the context (password, plus TOTP when on; TOTP itself not required). Staff, board moderators and bots are refused. Every other session is revoked, exports and moves are cancelled (`"account_deleted"`), invite codes revoked, `account_deletion_requested` sent. The page posts `account-deletion-signout-form` to `SessionController.deletion_requested/2`, which ends this session with a flash giving the date. |
+| Wait | Seven days. Nothing changes publicly. **Signing in cancels it**: `establish_session/3` calls `cancel_pending/2` after the IP-ban check and sends `account_deletion_cancelled`. |
+| Claim | The hourly `SessionCleaner` step claims due rows `pending → executing` and revokes every session. A sign-in against an `executing` row is refused. |
+| Withdraw | Only if the member ticked it: each live article and comment through the ordinary soft-delete path (`deleted_by: user.id`), in batches of 300 per run. |
+| Messages | Always: each live sent message through `Messaging.soft_delete_message/2`. |
+| Tombstone | One `federate/2` transaction: `Undo(Follow)` to each followed account, local follows and `followers` rows deleted, the member's own rows deleted (credentials, recovery codes and contacts, push subscriptions, drafts, watches, bookmarks, read markers, their blocks and mutes, notifications addressed to them, pending held posts, export requests), `User.tombstone_changeset/1`, `Delete(Person)` to followers ∪ followed ∪ correspondents ∪ authors replied to, row `completed`. The avatar files are unlinked after commit. |
+| Keys | `sweep_keys/0` clears both keys 30 days after completion once no pending or failed delivery job carries the actor. Until then the actor's `410 Tombstone` carries `publicKey`. |
+
+Every step selects only what is still live, so an `executing` row left by a
+crash is finished by the next run. What stays: the username (reserved), the
+role, the ban and terms fields, `moved_to`, `invited_by_id`; likes, boosts
+and poll votes; reports, the log, sanctions and filter matches.
+
+A tombstone renders as "deleted account" (`display_name/1`) with a neutral
+avatar mark, and `<.author_link>` renders its name as text. `/users/:name`,
+its content pages, feeds, handle redirect and remote-follow answer 404; the
+actor, its collections and WebFinger answer 410. Login answers
+`:invalid_credentials`, `ensure_can_interact/1` `:account_deleted`, and
+banning or unbanning a tombstone is refused.
 
 ### Bookmarks
 

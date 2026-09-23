@@ -22,7 +22,8 @@
   visitor's browser can reach. **Re-check them when that behaviour changes**,
   particularly: the YouTube embed auto-loads (4F would add a click-to-play
   gate), uploads are served with no access check, poll votes are attributable
-  in the database, and there is still no self-service account deletion (6E).
+  in the database, and that self-service deletion keeps posts under "deleted
+  account" unless the member withdraws them (ADR 0072).
 
   JURISDICTION: section 6 is not a fill-in-the-blank. It is built on the five
   rights the Taiwan 個人資料保護法 actually grants, so another jurisdiction
@@ -174,7 +175,7 @@ This policy is provided in both 台灣漢語 (Taiwanese Mandarin) and English.
 - **更正：** 直接編輯您的個人檔案與文章。
 - **搬家：** 於 `/profile/account` →「帳號遷移」可將您的追蹤者導向其他站台的帳號。
 - **匯出檔未包含的部分**——您的登入紀錄與 IP 位址、通知、檢舉、管理日誌、閱讀紀錄與推播註冊資料。請洽 **[CONTACT]** 索取。
-- **刪除：** 請洽 **[CONTACT]**。本站目前尚無自助刪除按鈕，需由人工處理，請預留一些時間。已送往其他站台的副本不在本站控制範圍內（見第一節），備份亦需約一個月才會輪替消失（見第五節）。
+- **刪除：** 於 `/profile/account` →「刪除您的帳號」自行辦理，需再次輸入密碼。刪除會在 7 天後執行，期間重新登入即可取消。您的個人檔案、登入方式、工作階段、草稿與私訊內容都會移除；帳號名稱會保留，不再開放註冊。您的文章與留言預設會保留並顯示為「已刪除的帳號」，您也可以選擇一併撤回。其他站台會收到帳號已刪除的通知，多數站台會隨之移除它們持有的副本，但本站無法強制（見第一節）；備份亦需約一個月才會輪替消失（見第五節）。
 
 若某項紀錄是維持站台安全所必需——例如一筆停權及其理由——縱使您請求刪除，仍可能予以保留，以免相同問題再度發生。
 
@@ -420,10 +421,14 @@ How to exercise them here:
 - **What the export does not include** — your sign-in history and IP addresses,
   notifications, reports, the moderation log, your reading history, and push
   registrations. Ask **[CONTACT]** and they will be provided.
-- **Deletion:** ask **[CONTACT]**. There is no self-service delete button yet,
-  so removal is carried out by hand; allow a little time. Copies already sent
-  to other servers are outside this site's control (section 1), and backups
-  age out over about a month (section 5).
+- **Deletion:** `/profile/account` → Delete your account, after entering your
+  password again. It happens seven days later, and signing in before then
+  cancels it. Your profile, sign-in methods, sessions, drafts and the text of
+  your direct messages are removed; your username is kept so nobody else can
+  take it. Your posts and comments stay, shown as "deleted account", unless you
+  choose to withdraw them too. Other servers are told the account is gone, and
+  most remove the copies they hold, but this site cannot make them (section 1);
+  backups age out over about a month (section 5).
 
 Where a record is needed to keep the site safe — a ban and its reason, for
 instance — it may be kept despite a deletion request, so that the same problem
