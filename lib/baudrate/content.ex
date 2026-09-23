@@ -93,6 +93,7 @@ defmodule Baudrate.Content do
   defdelegate board_moderator?(board, user), to: Permissions
   defdelegate can_moderate_article?(user, article), to: Permissions
   defdelegate can_comment_on_article?(user, article), to: Permissions
+  defdelegate member_could_comment?(article), to: Permissions
   defdelegate can_edit_article?(user, article), to: Permissions
   defdelegate can_delete_article?(user, article), to: Permissions
   defdelegate can_remove_from_board?(user, article, board), to: Permissions
@@ -132,6 +133,9 @@ defmodule Baudrate.Content do
 
   def paginate_articles_for_board(board, opts \\ []),
     do: Articles.paginate_articles_for_board(board, opts)
+
+  defdelegate board_arrival_cursor(board), to: Articles
+  defdelegate count_new_articles_for_board(board, cursor, viewer), to: Articles
 
   def create_article(attrs, board_ids),
     do: Articles.create_article(attrs, board_ids, [])
@@ -192,6 +196,9 @@ defmodule Baudrate.Content do
 
   def paginate_comments_for_article(article, current_user \\ nil, opts \\ []),
     do: Comments.paginate_comments_for_article(article, current_user, opts)
+
+  defdelegate comment_location(comment, viewer), to: Comments
+  defdelegate first_comment_since(article, viewer, since), to: Comments
 
   # --- Article Likes ---
 
@@ -373,6 +380,7 @@ defmodule Baudrate.Content do
   # --- Read Tracking ---
 
   defdelegate mark_article_read(user_id, article_id), to: ReadTracking
+  defdelegate last_read_at(user, article), to: ReadTracking
   defdelegate mark_board_read(user_id, board_id), to: ReadTracking
   defdelegate unread_article_ids(user, article_ids, board_id), to: ReadTracking
   defdelegate unread_board_ids(user, board_ids), to: ReadTracking

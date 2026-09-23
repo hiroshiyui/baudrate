@@ -66,6 +66,10 @@ defmodule BaudrateWeb.CommentHistoryLive do
      socket
      |> assign(:comment, comment)
      |> assign(:article, article)
+     |> assign(
+       :comment_path,
+       BaudrateWeb.Helpers.comment_link(article, comment, socket.assigns.current_user)
+     )
      |> assign(:versions, [current_version(comment) | revisions])
      |> assign(:selected_index, nil)
      |> assign(:noindex, true)

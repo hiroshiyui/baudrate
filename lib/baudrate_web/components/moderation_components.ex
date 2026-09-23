@@ -189,9 +189,7 @@ defmodule BaudrateWeb.ModerationComponents do
         <.link
           :if={@report.comment.article}
           id={"#{@prefix}-report-comment-link-#{@report.id}"}
-          navigate={
-            ~p"/articles/#{@report.comment.article.slug}" <> "#comment-#{@report.comment.id}"
-          }
+          navigate={BaudrateWeb.Helpers.comment_link(@report.comment.article, @report.comment, nil)}
           class="moderation-report-comment-link link link-primary text-sm"
         >
           {gettext("View in context")}

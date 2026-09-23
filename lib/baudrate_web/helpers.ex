@@ -424,6 +424,11 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("post_rejected"),
     do: gettext("A moderator declined to publish your post.")
 
+  # Actorless, and deliberately says nothing about the result or about who
+  # else voted (ADR 0069).
+  def notification_text("poll_closed"),
+    do: gettext("A poll you wrote or voted in has closed.")
+
   # Operational notices (ADR 0044). The check names follow on their own line,
   # translated by `translate_health_check/1`; the reasons stay in the detailed
   # health report, which is where an operator acts on them.
@@ -811,6 +816,7 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("held_post"), do: "hero-inbox-stack"
   def notification_icon("post_approved"), do: "hero-check-circle"
   def notification_icon("post_rejected"), do: "hero-x-circle"
+  def notification_icon("poll_closed"), do: "hero-chart-bar"
   def notification_icon("health_alert"), do: "hero-exclamation-triangle"
   def notification_icon("health_recovered"), do: "hero-check-badge"
   def notification_icon("sanction_applied"), do: "hero-exclamation-triangle"
@@ -935,6 +941,40 @@ defmodule BaudrateWeb.Helpers do
 
   def format_file_size(bytes),
     do: gettext("%{n} MB", n: Float.round(bytes / 1_048_576, 1))
+
+  @doc """
+  Builds the path to a comment on an article's page: `/articles/:slug`, with
+  `?page=N` when the comment is not on the first page, and `#comment-ID`.
+
+  Comments are paged, so a bare `#comment-ID` only works for a comment on
+  page 1. Take the page and anchor from `Baudrate.Content.comment_location/2`,
+  or use `comment_link/3`, which does.
+
+  ## Examples
+
+      iex> BaudrateWeb.Helpers.comment_path("hello", 1, "comment-7")
+      "/articles/hello#comment-7"
+
+      iex> BaudrateWeb.Helpers.comment_path("hello", 3, "comment-7")
+      "/articles/hello?page=3#comment-7"
+  """
+  def comment_path(%{slug: slug}, page, anchor), do: comment_path(slug, page, anchor)
+
+  def comment_path(slug, page, anchor) when is_binary(slug) do
+    base = if page > 1, do: ~p"/articles/#{slug}?page=#{page}", else: ~p"/articles/#{slug}"
+    base <> "#" <> anchor
+  end
+
+  @doc """
+  Returns the path to `comment` on `article`'s page as `viewer` would see it,
+  or the article's own path when the comment's thread is not visible to them.
+  """
+  def comment_link(article, comment, viewer) do
+    case Baudrate.Content.comment_location(comment, viewer) do
+      {page, anchor} -> comment_path(article, page, anchor)
+      nil -> ~p"/articles/#{article.slug}"
+    end
+  end
 
   @doc """
   Returns `path` when it is a safe same-origin path, otherwise `fallback`.

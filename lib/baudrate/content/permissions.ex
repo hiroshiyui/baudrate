@@ -189,6 +189,24 @@ defmodule Baudrate.Content.Permissions do
   end
 
   @doc """
+  Whether an ordinary signed-in member could comment on `article`.
+
+  This is what decides whether a guest is offered "sign in to comment": the
+  thread is not locked, and the article is either board-less or in at least
+  one board a plain member may post in. A prompt that leads to a page with
+  no comment form is worse than no prompt, so a board limited to moderators
+  offers none. It says nothing about any particular account — a sanctioned
+  or brand-new member is still refused by `can_comment_on_article?/2`.
+  """
+  def member_could_comment?(article) do
+    article = ensure_boards_loaded(article)
+
+    not article.locked and
+      (article.boards == [] or
+         Enum.any?(article.boards, &Setup.role_meets_minimum?("user", &1.min_role_to_post)))
+  end
+
+  @doc """
   Returns true if the user can comment on the article.
   Requires: user is authenticated, article is not locked, and user can post
   in at least one of the article's boards (or can create content if boardless).

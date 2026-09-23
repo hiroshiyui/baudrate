@@ -4369,7 +4369,9 @@ defmodule Baudrate.ContentTest do
       assert comment.ap_id =~ "/ap/comments/#{comment.id}"
       refute comment.ap_id =~ "#", "a fragment id is unresolvable (ADR 0050)"
       assert is_binary(comment.url)
-      assert comment.url =~ "#comment-#{comment.id}"
+      # The permalink, which redirects to the page the comment is on (6B).
+      assert comment.url =~ "/comments/#{comment.id}"
+      refute comment.url =~ "#"
 
       # DB row matches
       assert Repo.get!(Baudrate.Content.Comment, comment.id).ap_id == comment.ap_id

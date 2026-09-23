@@ -543,10 +543,27 @@
   >
     <h2 id="comments-heading" class="article-comments-heading text-lg font-semibold mb-4">
       {gettext("Comments")}
-      <span class="text-base-content/70 font-normal text-sm">
-        ({length(@comment_roots) + Enum.sum(Enum.map(Map.values(@children_map), &length/1))})
+      <span
+        id="comments-total"
+        class="article-comments-total text-base-content/70 font-normal text-sm"
+      >
+        ({@comment_total})
       </span>
     </h2>
+
+    <p
+      :if={@first_new_comment_path}
+      id="comments-new-since"
+      class="article-comments-new-since mb-4"
+    >
+      <.link
+        id="comments-first-new"
+        patch={@first_new_comment_path}
+        class="article-comments-first-new link link-primary"
+      >
+        {gettext("Jump to the first new comment")}
+      </.link>
+    </p>
 
     <%!-- Locked thread alert --%>
     <div
@@ -623,6 +640,32 @@
       </.form>
     </div>
 
+    <%!-- A guest is told how to join in, but only where a member could:
+         never on a locked thread or in a board limited to staff. --%>
+    <p
+      :if={is_nil(@current_user) && @member_could_comment}
+      id="comments-sign-in-prompt"
+      class="article-comments-sign-in-prompt mb-6"
+    >
+      <.link
+        id="comments-sign-in-link"
+        navigate={~p"/login?#{[return_to: ~p"/articles/#{@article.slug}"]}"}
+        class="article-comments-sign-in-link link link-primary"
+      >
+        {gettext("Sign in to comment")}
+      </.link>
+      <span :if={@guest_can_register} class="article-comments-register">
+        {gettext("or")}
+        <.link
+          id="comments-register-link"
+          navigate={~p"/register"}
+          class="article-comments-register-link link link-primary"
+        >
+          {gettext("create an account")}
+        </.link>
+      </span>
+    </p>
+
     <div
       :if={@comment_roots == [] && !@can_comment}
       class="article-comments-empty text-base-content/70 text-center py-4"
@@ -664,6 +707,7 @@
           editing={@editing}
           comment_edit_form={@comment_edit_form}
           revision_counts={@revision_counts}
+          new_comment_ids={@new_comment_ids}
         />
       <% end %>
     </div>

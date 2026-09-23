@@ -30,6 +30,7 @@ defmodule BaudrateWeb.CommentComponents do
   attr :editing, :any, default: nil
   attr :comment_edit_form, :any, default: nil
   attr :revision_counts, :map, default: %{}
+  attr :new_comment_ids, :any, default: MapSet.new()
 
   def comment_node(assigns) do
     %{comment: comment, current_user: current_user} = assigns
@@ -47,12 +48,17 @@ defmodule BaudrateWeb.CommentComponents do
       |> assign(:editing_this, assigns.editing == comment.id)
       |> assign(:revision_count, Map.get(assigns.revision_counts, comment.id, 0))
       |> assign(:remote_edited?, remote_edited?(comment))
+      |> assign(:new?, MapSet.member?(assigns.new_comment_ids, comment.id))
 
     ~H"""
     <div
       id={"comment-#{@comment.id}"}
       role="listitem"
-      class={["comment-item comment border-l-2 border-base-300 pl-4", @depth > 0 && "ml-4"]}
+      class={[
+        "comment-item comment border-l-2 pl-4",
+        if(@new?, do: "comment-new border-primary", else: "border-base-300"),
+        @depth > 0 && "ml-4"
+      ]}
     >
       <%!-- A deleted comment stays as a placeholder so its replies stay visible.
            Nothing about it is shown: not the author, body, date or actions. --%>
@@ -82,6 +88,13 @@ defmodule BaudrateWeb.CommentComponents do
           >
             {display_name(@comment.remote_actor)}@{@comment.remote_actor.domain}
           </a>
+          <span
+            :if={@new?}
+            id={"comment-new-#{@comment.id}"}
+            class="comment-new-badge badge badge-sm badge-primary"
+          >
+            {gettext("New")}
+          </span>
           <span class="comment-meta-separator" aria-hidden="true">&middot;</span>
           <a
             :if={@comment.remote_actor}
@@ -535,6 +548,7 @@ defmodule BaudrateWeb.CommentComponents do
             editing={@editing}
             comment_edit_form={@comment_edit_form}
             revision_counts={@revision_counts}
+            new_comment_ids={@new_comment_ids}
           />
         <% end %>
       </div>

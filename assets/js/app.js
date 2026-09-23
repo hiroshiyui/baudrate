@@ -288,6 +288,16 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 // moves focus into the list the page scrolled to, not the first focus target.
 let paginationFocusTarget = null
 
+// The element the URL's fragment names inside `main`, or null.
+function fragmentTarget(main) {
+  try {
+    const id = decodeURIComponent(window.location.hash.slice(1))
+    return id ? main.querySelector(`[id="${CSS.escape(id)}"]`) : null
+  } catch (_e) {
+    return null
+  }
+}
+
 // Auto-focus first content item after LiveView client-side navigation.
 // Skips initial page load and pages with autofocus inputs (e.g., search).
 ;(() => {
@@ -305,7 +315,12 @@ let paginationFocusTarget = null
     const main = document.getElementById("main-content")
     if (!main || (!paginated && main.querySelector("[autofocus]"))) return
 
-    const target = paginated || main.querySelector("[data-focus-target]")
+    // A link that names an element (`?page=3#comment-42`, from a notification
+    // or "jump to the first new comment") gets focus there. LiveView scrolls
+    // to the fragment itself; focus left on the list's first control would
+    // sit far above what the reader is looking at. Read here rather than in
+    // the scroll-to-top handler, which runs before the URL has changed.
+    const target = fragmentTarget(main) || paginated || main.querySelector("[data-focus-target]")
     if (!target) return
 
     const focusable = target.querySelector(

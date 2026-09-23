@@ -117,7 +117,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
       "@context" => Context.object(),
       "id" => comment.ap_id || actor_uri(:comment, comment.id),
       "type" => "Note",
-      "url" => comment.url || "#{base_url()}/articles/#{article.slug}#comment-#{comment.id}",
+      "url" => comment_url(comment),
       "content" => comment.body_html || comment.body || "",
       "mediaType" => "text/html",
       "attributedTo" => actor_uri,
@@ -169,6 +169,12 @@ defmodule Baudrate.Federation.ObjectBuilder do
       "cc" => board_uris
     })
   end
+
+  # A local comment's human address is its permalink, which redirects to the
+  # page the comment is on. The stored `url` of a comment written before that
+  # route existed is `/articles/:slug#comment-N`, which finds it only while it
+  # is on page 1, so it is not used — only local comments are published here.
+  defp comment_url(comment), do: "#{base_url()}/comments/#{comment.id}"
 
   @doc """
   The URI a comment replies to: its parent comment when it has one, otherwise

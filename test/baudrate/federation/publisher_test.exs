@@ -282,7 +282,7 @@ defmodule Baudrate.Federation.PublisherTest do
       {activity, _actor_uri} = Publisher.build_create_comment(comment, article)
 
       note = activity["object"]
-      assert note["url"] =~ "/articles/#{article.slug}#comment-#{comment.id}"
+      assert note["url"] =~ "/comments/#{comment.id}"
     end
   end
 

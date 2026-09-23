@@ -75,6 +75,12 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:children_map, %{})
         |> assign(:comment_page, 1)
         |> assign(:comment_total_pages, 1)
+        |> assign(:comment_total, 0)
+        |> assign(:unread_since, nil)
+        |> assign(:new_comment_ids, MapSet.new())
+        |> assign(:first_new_comment_path, nil)
+        |> assign(:member_could_comment, Content.member_could_comment?(article))
+        |> assign(:guest_can_register, Baudrate.Setup.registration_mode() != "invite_only")
         |> assign(:can_comment, can_comment)
         |> assign(:comment_form, to_form(comment_changeset, as: :comment))
         |> assign(:replying_to, nil)
@@ -151,13 +157,21 @@ defmodule BaudrateWeb.ArticleLive do
           socket
         end
 
-      if connected?(socket) do
-        ContentPubSub.subscribe_article(article.id)
+      # What counts as new is fixed for the whole visit: read the floor before
+      # this visit overwrites it, or every comment would already be read.
+      socket =
+        if connected?(socket) do
+          ContentPubSub.subscribe_article(article.id)
+          unread_since = Content.last_read_at(current_user, article)
 
-        if current_user do
-          Content.mark_article_read(current_user.id, article.id)
+          if current_user do
+            Content.mark_article_read(current_user.id, article.id)
+          end
+
+          assign(socket, :unread_since, unread_since)
+        else
+          socket
         end
-      end
 
       {:ok, socket}
     end
@@ -856,6 +870,12 @@ defmodule BaudrateWeb.ArticleLive do
 
   @impl true
   def handle_info({:comment_created, payload}, socket) do
+    # Seen live, so it is not new again on the next visit. It is still
+    # marked new on this one: `unread_since` is fixed at mount.
+    if user = socket.assigns.current_user do
+      Content.mark_article_read(user.id, socket.assigns.article.id)
+    end
+
     socket = load_comments(socket, socket.assigns.comment_page)
     {:noreply, announce_new_comment(socket, payload)}
   end
@@ -1231,6 +1251,20 @@ defmodule BaudrateWeb.ArticleLive do
 
     comment_boost_counts = Content.comment_boost_counts(all_comment_ids)
 
+    unread_since = socket.assigns.unread_since
+
+    new_comment_ids =
+      if current_user && unread_since do
+        for c <- comments,
+            is_nil(c.deleted_at),
+            c.user_id != current_user.id,
+            DateTime.compare(c.inserted_at, unread_since) == :gt,
+            into: MapSet.new(),
+            do: c.id
+      else
+        MapSet.new()
+      end
+
     comment_bookmarked_ids =
       if current_user do
         Content.comment_bookmarks_by_user(current_user.id, all_comment_ids)
@@ -1246,12 +1280,26 @@ defmodule BaudrateWeb.ArticleLive do
       revision_counts: Content.count_comment_revisions_for(all_comment_ids),
       comment_page: comment_page,
       comment_total_pages: comment_total_pages,
+      comment_total: Content.count_comments_for_article(article),
+      new_comment_ids: new_comment_ids,
+      first_new_comment_path: first_new_comment_path(article, current_user, unread_since),
       comment_liked_ids: comment_liked_ids,
       comment_like_counts: comment_like_counts,
       comment_boosted_ids: comment_boosted_ids,
       comment_boost_counts: comment_boost_counts,
       comment_bookmarked_ids: comment_bookmarked_ids
     )
+  end
+
+  # Where the earliest comment the viewer has not seen is, across pages.
+  defp first_new_comment_path(_article, nil, _since), do: nil
+  defp first_new_comment_path(_article, _user, nil), do: nil
+
+  defp first_new_comment_path(article, user, since) do
+    with %{} = comment <- Content.first_comment_since(article, user, since),
+         {page, anchor} <- Content.comment_location(comment, user) do
+      BaudrateWeb.Helpers.comment_path(article, page, anchor)
+    end
   end
 
   # Returns the ActivityPub `id` for the article when it lives in at least one

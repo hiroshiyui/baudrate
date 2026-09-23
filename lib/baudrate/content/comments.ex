@@ -618,38 +618,23 @@ defmodule Baudrate.Content.Comments do
     per_page = Keyword.get(opts, :per_page, @comments_per_page)
     offset = (page - 1) * per_page
 
-    {blocked_uids, blocked_ap_ids} = Filters.hidden_filters(current_user)
-    placeholder_ids = deleted_ancestor_ids(article_id, blocked_uids, blocked_ap_ids)
+    {roots_query, filters} = visible_roots_query(article_id, current_user)
 
-    # Count root comments
-    root_count_query =
-      from(c in Comment,
-        where: c.article_id == ^article_id and is_nil(c.parent_id),
-        where: is_nil(c.deleted_at) or c.id in ^placeholder_ids
-      )
-      |> exclude_unservable_remote()
-      |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
-
-    total_roots = Repo.one(from(q in root_count_query, select: count(q.id)))
+    total_roots = Repo.one(from(q in roots_query, select: count(q.id)))
 
     # Fetch a page of root comments
     root_query =
-      from(c in Comment,
-        where: c.article_id == ^article_id and is_nil(c.parent_id),
-        where: is_nil(c.deleted_at) or c.id in ^placeholder_ids,
+      from(c in roots_query,
         order_by: [asc: c.inserted_at, asc: c.id],
         offset: ^offset,
         limit: ^per_page,
         preload: [:user, :remote_actor, :link_preview, :images]
       )
-      |> exclude_unservable_remote()
-      |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
 
     roots = Repo.all(root_query)
 
     # Iteratively fetch all descendants (max 5 levels)
-    descendants =
-      fetch_descendants(article_id, roots, {blocked_uids, blocked_ap_ids, placeholder_ids}, 5)
+    descendants = fetch_descendants(article_id, roots, filters, 5)
 
     total_pages = max(ceil(total_roots / per_page), 1)
 
@@ -660,6 +645,65 @@ defmodule Baudrate.Content.Comments do
       per_page: per_page,
       total_pages: total_pages
     }
+  end
+
+  # The root comments a viewer sees on an article, in no particular order, and
+  # the filters their descendants are fetched with. The paginator and
+  # `comment_location/2` both start here, so they cannot disagree about what
+  # page 1 holds.
+  defp visible_roots_query(article_id, current_user) do
+    {blocked_uids, blocked_ap_ids} = Filters.hidden_filters(current_user)
+    placeholder_ids = deleted_ancestor_ids(article_id, blocked_uids, blocked_ap_ids)
+
+    query =
+      from(c in Comment,
+        where: c.article_id == ^article_id and is_nil(c.parent_id),
+        where: is_nil(c.deleted_at) or c.id in ^placeholder_ids
+      )
+      |> exclude_unservable_remote()
+      |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
+
+    {query, {blocked_uids, blocked_ap_ids, placeholder_ids}}
+  end
+
+  @doc """
+  Returns the page of `paginate_comments_for_article/3` a comment appears on
+  for `viewer`, and its fragment, as `{page, "comment-ID"}`.
+
+  Comments are paged by root, so the page is the one holding the comment's
+  root. The position is counted over the same query the paginator uses, with
+  the viewer's blocks and mutes, so a link built from this lands on the page
+  that actually shows the comment. Returns `nil` when the comment's thread is
+  not visible to the viewer.
+  """
+  def comment_location(%Comment{} = comment, viewer) do
+    with %Comment{} = root <- root_of(comment, 6) do
+      {roots_query, _filters} = visible_roots_query(root.article_id, viewer)
+
+      if Repo.exists?(from(c in roots_query, where: c.id == ^root.id)) do
+        before =
+          Repo.one(
+            from(c in roots_query,
+              where:
+                c.inserted_at < ^root.inserted_at or
+                  (c.inserted_at == ^root.inserted_at and c.id < ^root.id),
+              select: count(c.id)
+            )
+          )
+
+        {div(before, @comments_per_page) + 1, "comment-#{comment.id}"}
+      end
+    end
+  end
+
+  defp root_of(%Comment{parent_id: nil} = comment, _remaining), do: comment
+  defp root_of(_comment, 0), do: nil
+
+  defp root_of(%Comment{parent_id: parent_id}, remaining) do
+    case Repo.get(Comment, parent_id) do
+      nil -> nil
+      parent -> root_of(parent, remaining - 1)
+    end
   end
 
   defp fetch_descendants(_article_id, [], _filters, _remaining), do: []
@@ -819,6 +863,31 @@ defmodule Baudrate.Content.Comments do
   end
 
   @doc """
+  Returns the earliest comment on `article` that `viewer` has not seen: one
+  inserted after `since` (from `Content.last_read_at/2`), not written by the
+  viewer, and visible to them under the same filters as the comment list.
+
+  Returns `nil` when there is none, and always for a guest.
+  """
+  def first_comment_since(_article, nil, _since), do: nil
+  def first_comment_since(_article, _viewer, nil), do: nil
+
+  def first_comment_since(%Article{id: article_id}, %{id: viewer_id} = viewer, since) do
+    {blocked_uids, blocked_ap_ids} = Filters.hidden_filters(viewer)
+
+    from(c in Comment,
+      where: c.article_id == ^article_id and is_nil(c.deleted_at),
+      where: c.inserted_at > ^since,
+      where: is_nil(c.user_id) or c.user_id != ^viewer_id,
+      order_by: [asc: c.inserted_at, asc: c.id],
+      limit: 1
+    )
+    |> exclude_unservable_remote()
+    |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
+    |> Repo.one()
+  end
+
+  @doc """
   Returns the count of non-deleted comments for an article.
   """
   def count_comments_for_article(%Article{id: article_id}) do
@@ -898,9 +967,11 @@ defmodule Baudrate.Content.Comments do
     # still loaded, because a comment with no readable author is not stamped
     # at all — the same condition as before.
     with %{} = _user <- Repo.get(Baudrate.Setup.User, user_id),
-         %{} = article <- Repo.get(Article, comment.article_id) do
+         %{} = _article <- Repo.get(Article, comment.article_id) do
       ap_id = Baudrate.Federation.actor_uri(:comment, comment.id)
-      url = "#{Baudrate.Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
+      # The permalink, not `/articles/:slug#comment-N`: comments are paged, and
+      # that address only ever finds the comment while it is on page 1.
+      url = "#{Baudrate.Federation.base_url()}/comments/#{comment.id}"
 
       Ecto.Changeset.change(comment, ap_id: ap_id, url: url)
     else

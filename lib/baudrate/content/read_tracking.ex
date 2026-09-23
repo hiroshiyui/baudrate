@@ -38,6 +38,41 @@ defmodule Baudrate.Content.ReadTracking do
   end
 
   @doc """
+  Returns the moment up to which `user` has read `article`: the latest of
+  their last visit, a "mark all as read" in any board the article is in, and
+  their registration.
+
+  It is the same floor `unread_article_ids/3` compares `last_activity_at`
+  against, so a comment inserted after it is one the board list counted
+  as unread. Read it *before* `mark_article_read/2` overwrites the visit.
+  Returns `nil` for a guest.
+  """
+  def last_read_at(nil, _article), do: nil
+
+  def last_read_at(%{id: user_id, inserted_at: user_registered_at}, %Article{id: article_id}) do
+    article_read =
+      Repo.one(
+        from(ar in ArticleRead,
+          where: ar.user_id == ^user_id and ar.article_id == ^article_id,
+          select: ar.read_at
+        )
+      )
+
+    board_floor =
+      Repo.one(
+        from(br in BoardRead,
+          join: ba in BoardArticle,
+          on: ba.board_id == br.board_id,
+          where: br.user_id == ^user_id and ba.article_id == ^article_id,
+          select: max(br.read_at)
+        )
+      )
+
+    [article_read, board_floor]
+    |> Enum.reduce(user_registered_at, &latest_datetime(&1, &2))
+  end
+
+  @doc """
   Records that a user has marked all articles in a board as read.
 
   Sets the board-level floor timestamp so any article with
@@ -151,5 +186,6 @@ defmodule Baudrate.Content.ReadTracking do
   end
 
   defp latest_datetime(nil, b), do: b
+  defp latest_datetime(a, nil), do: a
   defp latest_datetime(a, b), do: if(DateTime.compare(a, b) == :gt, do: a, else: b)
 end

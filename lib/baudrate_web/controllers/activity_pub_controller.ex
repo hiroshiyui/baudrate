@@ -352,8 +352,9 @@ defmodule BaudrateWeb.ActivityPubController do
         |> put_resp_content_type(@activity_json)
         |> json(Federation.comment_object(comment))
       else
-        path = ~p"/articles/#{article.slug}"
-        redirect(conn, to: "#{path}#comment-#{comment.id}")
+        # The comment is paged, so the redirect names its page as well as
+        # its anchor. Counted for a guest: this endpoint is unauthenticated.
+        redirect(conn, to: BaudrateWeb.Helpers.comment_link(article, comment, nil))
       end
     else
       _ -> not_found(conn)

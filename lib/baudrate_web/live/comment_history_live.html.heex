@@ -6,7 +6,7 @@
   >
     <.link
       id="comment-history-back-link"
-      navigate={~p"/articles/#{@article.slug}" <> "#comment-#{@comment.id}"}
+      navigate={@comment_path}
       class="comment-history-back-link text-sm text-base-content/70 hover:text-base-content"
     >
       &larr; {gettext("Back to the comment")}

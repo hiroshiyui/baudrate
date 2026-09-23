@@ -239,8 +239,9 @@ defmodule Baudrate.Release do
     )
 
     stamped =
-      Enum.reduce(unstamped, 0, fn %{id: id, slug: slug}, acc ->
-        changes = [ap_id: comment_uri(base, id), url: "#{base}/articles/#{slug}#comment-#{id}"]
+      Enum.reduce(unstamped, 0, fn %{id: id}, acc ->
+        # The permalink, which redirects to the page the comment is on.
+        changes = [ap_id: comment_uri(base, id), url: "#{base}/comments/#{id}"]
         stamp_row(Comment, id, changes, "comment", dry_run, acc)
       end)
 
