@@ -179,6 +179,7 @@ GET /.well-known/webfinger?resource=acct:alice@example.com
 |--------|-----------|
 | 400 | Missing `resource` parameter or invalid format |
 | 404 | User/board not found, or the board is not federated — private (`min_role_to_view != "guest"`) **or** `ap_enabled == false` |
+| 410 | The account deleted itself (ADR 0072); its name stays reserved, so no board can answer for it |
 
 **`links` carries `self` and nothing else.** In particular Baudrate does not
 advertise an OStatus `subscribe` template, so another site's "follow from your
@@ -331,8 +332,14 @@ GET /ap/users/:username
     "https://www.w3.org/ns/activitystreams",
     "https://w3id.org/security/v1",
     {
-      "schema": "http://schema.org/",
       "PropertyValue": "schema:PropertyValue",
+      "as": "https://www.w3.org/ns/activitystreams#",
+      "baudrate": "https://github.com/hiroshiyui/baudrate/ns#",
+      "discoverable": "toot:discoverable",
+      "indexable": "toot:indexable",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "schema": "http://schema.org/",
+      "toot": "http://joinmastodon.org/ns#",
       "value": "schema:value"
     }
   ],
@@ -356,6 +363,9 @@ GET /ap/users/:username
     { "type": "PropertyValue", "name": "Website", "value": "https://alice.example" }
   ],
   "alsoKnownAs": ["https://other.example/users/alice"],
+  "manuallyApprovesFollowers": false,
+  "discoverable": true,
+  "indexable": true,
   "endpoints": {
     "sharedInbox": "https://example.com/ap/inbox"
   },
@@ -383,6 +393,13 @@ GET /ap/users/:username
 | `movedTo` | URI | The account this one moved to (optional, ADR 0025) |
 | `publicKey` | object | RSA-SHA256 public key for HTTP Signature verification |
 | `endpoints.sharedInbox` | URI | Shared inbox URL |
+| `manuallyApprovesFollowers` | boolean | The member approves each follower; a `Follow` is answered only when they do (ADR 0073) |
+| `discoverable`, `indexable` | boolean | `false` when the member opted out of discovery and search engines (ADR 0073) |
+
+A **banned** account is served with its identity, collections and
+`publicKey` only — no `name`, `summary`, `icon`, `attachment` or
+`alsoKnownAs` — and an empty outbox (ADR 0072). A ban can be lifted, so it is
+not a `Tombstone`.
 
 **Errors:**
 
@@ -390,6 +407,7 @@ GET /ap/users/:username
 |--------|-----------|
 | 401 | Authorized fetch enabled and no valid HTTP Signature |
 | 404 | User not found |
+| 410 | The account deleted itself (ADR 0072). The body is a `Tombstone` (`formerType: "Person"`, `deleted`) that still carries `publicKey` until the account's last deliveries are out. Its outbox, followers and following collections answer 410 too, and its inbox accepts and drops |
 
 ---
 

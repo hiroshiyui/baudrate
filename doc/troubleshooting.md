@@ -558,6 +558,15 @@ a `Delete` or `Like` it relays on behalf of some third instance's user is
 dropped, because the signature on the Announce proves only the community's own
 host. A `Create` is unaffected — its object is verified through its own origin.
 
+### A server says it follows a member but receives nothing
+
+The member probably approves followers manually (`users.manually_approves_followers`,
+ADR 0073). Their `Follow` is a **request**: a `followers` row with
+`accepted_at IS NULL`, no `Accept` sent, and no delivery until the member
+approves it on `/followers`. Every reader of the table ignores such rows —
+this is the setting working, not a queue problem. Turning the setting off
+approves everyone waiting.
+
 ### Federation kill switch
 
 Setting `ap_federation_enabled` to `false` (via `/admin/settings` or
@@ -690,6 +699,17 @@ Two related cases:
   renders the English source rather than failing, which is why the gap is
   silent; `test/baudrate_web/translation_coverage_test.exs` is what stops one
   reaching a release.
+
+### A member's account deletion did not happen
+
+A deletion waits seven days after it is asked for, and **signing in during
+those days cancels it** (ADR 0072) — the member is told on the next page, and
+an always-delivered `account_deletion_cancelled` notice records it. Check
+`account_deletions` for their row: `cancelled` with `cancel_reason` `signed_in`
+is this. A row still `executing` is being carried out and a crashed run is
+resumed by the next hourly `SessionCleaner` step. Staff and board moderators
+cannot ask at all, and one who gains a role while waiting is cancelled with
+reason `staff`.
 
 ### Session cleanup
 
