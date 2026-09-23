@@ -9,6 +9,27 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.40.1] — 2026-09-23
+
+Two layout fixes. Nothing an instance stores or federates has changed, and
+there is no migration.
+
+### Fixed
+
+- **The RSS and Atom links sit on one line again**, on every profile and
+  board page. The RSS link starts with an icon, and a flex box whose first
+  child has no text takes its baseline from its bottom edge, so "RSS" sat a
+  pixel above "Atom". The links are now items of a flex container instead of
+  inline boxes on a line, and a browser test measures the two.
+- **The action cells on `/admin/boards`, `/admin/users` and
+  `/admin/federation` are table cells again.** Each was itself a flex box,
+  which stops a `<td>` being a cell: the row wrapped it in an anonymous one,
+  its labels sat 1.35px off from the rest of the row, and it dropped out of
+  the table's column sizing. The flex now sits inside the cell.
+
+A sweep of every public page and 32 member and admin pages found no other
+case of either.
+
 ## [1.40.0] — 2026-09-23
 
 Account recovery stops depending on what anybody remembered to type. The
