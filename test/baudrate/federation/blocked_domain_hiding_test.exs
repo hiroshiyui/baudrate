@@ -138,6 +138,12 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
       block!()
       refute ctx.marker in titles(Content.list_articles_for_board(ctx.board))
     end
+
+    test "count_new_articles_for_board/3 does not count it", ctx do
+      assert Content.count_new_articles_for_board(ctx.board, 0, nil) == 2
+      block!()
+      assert Content.count_new_articles_for_board(ctx.board, 0, nil) == 1
+    end
   end
 
   describe "search" do

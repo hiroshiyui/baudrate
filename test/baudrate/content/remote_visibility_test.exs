@@ -156,6 +156,12 @@ defmodule Baudrate.Content.RemoteVisibilityTest do
     test "list_articles_for_board/1 hides it", ctx do
       refute ctx.marker in titles(Content.list_articles_for_board(ctx.board))
     end
+
+    # The board page's "N new posts" offer (6B) must not announce a post the
+    # list would then not show — or tell a reader that it exists at all.
+    test "count_new_articles_for_board/3 does not count it", ctx do
+      assert Content.count_new_articles_for_board(ctx.board, 0, nil) == 1
+    end
   end
 
   describe "search" do

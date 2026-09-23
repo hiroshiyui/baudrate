@@ -67,14 +67,7 @@ defmodule Baudrate.Content.Articles do
     offset = (page - 1) * per_page
     current_user = Keyword.get(opts, :user)
 
-    base_query =
-      from(a in Article,
-        join: ba in BoardArticle,
-        on: ba.article_id == a.id,
-        where: ba.board_id == ^board_id and is_nil(a.deleted_at)
-      )
-      |> Filters.apply_article_hidden_filters(current_user, board)
-      |> Filters.exclude_unservable_remote()
+    base_query = board_articles_query(board, current_user)
 
     total = Repo.one(from(q in base_query, select: count(q.id)))
 
@@ -115,6 +108,59 @@ defmodule Baudrate.Content.Articles do
       per_page: per_page,
       total_pages: total_pages
     }
+  end
+
+  @doc """
+  Returns a cursor for what has arrived in `board` so far: the highest
+  `board_articles` id, or 0. Pass it to `count_new_articles_for_board/3`.
+
+  An id rather than a time, because `inserted_at` has one-second precision
+  and a post placed in the same second as the page loaded would be neither
+  on the page nor counted as new.
+  """
+  def board_arrival_cursor(%Board{id: board_id}) do
+    Repo.one(from(ba in BoardArticle, where: ba.board_id == ^board_id, select: max(ba.id))) || 0
+  end
+
+  @doc """
+  Counts the articles placed in `board` after `cursor` (from
+  `board_arrival_cursor/1`) that `viewer` would see in its listing, not
+  counting the viewer's own.
+
+  This is what the board page offers as "N new posts" instead of reloading
+  the list under the reader. It starts from the same query as
+  `paginate_articles_for_board/2`, so it hides exactly what the listing
+  hides — blocked and muted authors, non-public remote articles and blocked
+  domains — and a count can never announce a post the list would not show.
+  An article counts from when it was placed in this board, so a cross-post
+  or a forward counts as new here.
+  """
+  def count_new_articles_for_board(%Board{} = board, cursor, viewer) when is_integer(cursor) do
+    query =
+      from([a, ba] in board_articles_query(board, viewer),
+        where: ba.id > ^cursor,
+        select: count(a.id)
+      )
+
+    query =
+      case viewer do
+        %{id: viewer_id} -> from(a in query, where: is_nil(a.user_id) or a.user_id != ^viewer_id)
+        nil -> query
+      end
+
+    Repo.one(query)
+  end
+
+  # Every article a viewer sees in a board's listing, unordered. The page and
+  # the "N new posts" count both start here.
+  defp board_articles_query(%Board{id: board_id} = board, viewer) do
+    from(a in Article,
+      join: ba in BoardArticle,
+      on: ba.article_id == a.id,
+      where: ba.board_id == ^board_id and is_nil(a.deleted_at)
+    )
+    |> Filters.apply_article_hidden_filters(viewer, board)
+    |> Filters.exclude_unservable_remote()
   end
 
   @doc """

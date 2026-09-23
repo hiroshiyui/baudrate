@@ -74,39 +74,19 @@ defmodule BaudrateWeb.BoardLive do
 
   @impl true
   def handle_params(params, _uri, socket) do
-    page = parse_page(params["page"])
+    {:noreply, load_articles(socket, parse_page(params["page"]))}
+  end
 
-    result =
-      Content.paginate_articles_for_board(socket.assigns.board,
-        page: page,
-        user: socket.assigns.current_user
-      )
-
-    current_user = socket.assigns.current_user
-    article_ids = Enum.map(result.articles, & &1.id)
-
-    {article_liked_ids, article_boosted_ids} =
-      if current_user do
-        {Content.article_likes_by_user(current_user.id, article_ids),
-         Content.article_boosts_by_user(current_user.id, article_ids)}
-      else
-        {MapSet.new(), MapSet.new()}
-      end
-
+  @impl true
+  def handle_event("show_new_articles", _params, socket) do
+    # From a later page, patch back to the first — `handle_params` loads it,
+    # and the URL loses its `?page=N`. On the first page, just reload it.
     socket =
-      assign(socket,
-        articles: result.articles,
-        comment_counts: result.comment_counts,
-        unread_article_ids: result.unread_article_ids,
-        page: result.page,
-        total_pages: result.total_pages,
-        article_liked_ids: article_liked_ids,
-        article_boosted_ids: article_boosted_ids,
-        article_like_counts: Content.article_like_counts(article_ids),
-        article_boost_counts: Content.article_boost_counts(article_ids)
-      )
+      if socket.assigns.page > 1,
+        do: push_patch(socket, to: ~p"/boards/#{socket.assigns.board.slug}"),
+        else: load_articles(socket, 1)
 
-    {:noreply, socket}
+    {:noreply, push_event(socket, "focus", %{id: "articles"})}
   end
 
   @impl true
@@ -116,20 +96,7 @@ defmodule BaudrateWeb.BoardLive do
 
     Content.mark_board_read(current_user.id, board.id)
 
-    result =
-      Content.paginate_articles_for_board(board,
-        page: socket.assigns.page,
-        user: current_user
-      )
-
-    {:noreply,
-     assign(socket,
-       articles: result.articles,
-       comment_counts: result.comment_counts,
-       unread_article_ids: result.unread_article_ids,
-       page: result.page,
-       total_pages: result.total_pages
-     )}
+    {:noreply, load_articles(socket, socket.assigns.page)}
   end
 
   @impl true
@@ -158,10 +125,37 @@ defmodule BaudrateWeb.BoardLive do
     )
   end
 
+  # A new post is offered, not inserted: reloading the list moved every
+  # article under the reader (and under a screen reader's cursor) whenever
+  # anybody posted. It counts only posts this viewer's listing would show.
+  @impl true
+  def handle_info({:article_created, _payload}, socket) do
+    %{board: board, arrival_cursor: cursor, current_user: viewer} = socket.assigns
+    count = Content.count_new_articles_for_board(board, cursor, viewer)
+
+    socket =
+      if count > 0 and count != socket.assigns.new_article_count do
+        assign(socket,
+          new_article_count: count,
+          new_articles_status:
+            ngettext(
+              "%{count} new post in this board.",
+              "%{count} new posts in this board.",
+              count
+            )
+        )
+      else
+        socket
+      end
+
+    {:noreply, socket}
+  end
+
+  # These change rows the reader already has — and a moderator's removal
+  # should leave the page at once — so they still reload in place.
   @impl true
   def handle_info({event, _payload}, socket)
       when event in [
-             :article_created,
              :article_deleted,
              :article_updated,
              :article_pinned,
@@ -169,13 +163,21 @@ defmodule BaudrateWeb.BoardLive do
              :article_locked,
              :article_unlocked
            ] do
-    result =
-      Content.paginate_articles_for_board(socket.assigns.board,
-        page: socket.assigns.page,
-        user: socket.assigns.current_user
-      )
+    {:noreply, load_articles(socket, socket.assigns.page)}
+  end
 
-    current_user = socket.assigns.current_user
+  # Ignore PubSub messages forwarded by the unread DM / notification count
+  # hooks (e.g. :dm_received, :notification_created) for logged-in viewers.
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
+  # Loads a page of the list. Anything already offered as new is on it now,
+  # so the offer resets; the cursor is taken first, so a post arriving in
+  # between is counted rather than lost.
+  defp load_articles(socket, page) do
+    %{board: board, current_user: current_user} = socket.assigns
+    cursor = Content.board_arrival_cursor(board)
+
+    result = Content.paginate_articles_for_board(board, page: page, user: current_user)
     article_ids = Enum.map(result.articles, & &1.id)
 
     {article_liked_ids, article_boosted_ids} =
@@ -186,23 +188,21 @@ defmodule BaudrateWeb.BoardLive do
         {MapSet.new(), MapSet.new()}
       end
 
-    {:noreply,
-     assign(socket,
-       articles: result.articles,
-       comment_counts: result.comment_counts,
-       unread_article_ids: result.unread_article_ids,
-       page: result.page,
-       total_pages: result.total_pages,
-       article_liked_ids: article_liked_ids,
-       article_boosted_ids: article_boosted_ids,
-       article_like_counts: Content.article_like_counts(article_ids),
-       article_boost_counts: Content.article_boost_counts(article_ids)
-     )}
+    assign(socket,
+      articles: result.articles,
+      comment_counts: result.comment_counts,
+      unread_article_ids: result.unread_article_ids,
+      page: result.page,
+      total_pages: result.total_pages,
+      article_liked_ids: article_liked_ids,
+      article_boosted_ids: article_boosted_ids,
+      article_like_counts: Content.article_like_counts(article_ids),
+      article_boost_counts: Content.article_boost_counts(article_ids),
+      arrival_cursor: cursor,
+      new_article_count: 0,
+      new_articles_status: ""
+    )
   end
-
-  # Ignore PubSub messages forwarded by the unread DM / notification count
-  # hooks (e.g. :dm_received, :notification_created) for logged-in viewers.
-  def handle_info(_msg, socket), do: {:noreply, socket}
 
   defp digest(nil), do: ""
 

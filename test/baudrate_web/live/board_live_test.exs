@@ -53,27 +53,80 @@ defmodule BaudrateWeb.BoardLiveTest do
     assert html =~ "join-item"
   end
 
-  test "updates article list when new article is created via PubSub", %{
-    conn: conn,
-    user: user,
-    board: board
-  } do
-    {:ok, lv, html} = live(conn, "/boards/general")
-    refute html =~ "PubSub Article"
+  describe "a new post while the board is open" do
+    # Reloading the list moved every article under the reader, so a new post
+    # is offered instead, and the list stays where it was until they ask.
+    test "is offered, not inserted under the reader", %{conn: conn, board: board} do
+      {:ok, lv, _html} = live(conn, "/boards/general")
+      other = setup_user("user")
 
-    # Create an article from another process (simulates another user)
-    Content.create_article(
-      %{
-        title: "PubSub Article",
-        body: "body",
-        slug: "pubsub-live-#{System.unique_integer([:positive])}",
-        user_id: user.id
-      },
-      [board.id]
-    )
+      post_article(board, other, "PubSub Article")
 
-    # The LiveView should re-render with the new article
-    assert render(lv) =~ "PubSub Article"
+      html = render(lv)
+      refute html =~ "PubSub Article"
+      assert has_element?(lv, "#board-new-articles-show", "1 new post. Show it")
+      assert has_element?(lv, "#board-new-articles-status", "1 new post in this board.")
+    end
+
+    test "is shown when the reader asks, and the offer goes away", %{conn: conn, board: board} do
+      {:ok, lv, _html} = live(conn, "/boards/general")
+      other = setup_user("user")
+
+      post_article(board, other, "First new")
+      post_article(board, other, "Second new")
+      render(lv)
+      assert has_element?(lv, "#board-new-articles-show", "2 new posts. Show them")
+
+      html = lv |> element("#board-new-articles-show") |> render_click()
+      assert html =~ "First new"
+      assert html =~ "Second new"
+      refute has_element?(lv, "#board-new-articles")
+      assert_push_event(lv, "focus", %{id: "articles"})
+    end
+
+    test "from a later page, showing them goes back to the first", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      for i <- 1..25, do: post_article(board, user, "Old #{i}")
+      {:ok, lv, _html} = live(conn, "/boards/general?page=2")
+
+      post_article(board, setup_user("user"), "Fresh one")
+      render(lv)
+
+      lv |> element("#board-new-articles-show") |> render_click()
+      assert_patch(lv, "/boards/general")
+      assert render(lv) =~ "Fresh one"
+    end
+
+    test "the reader's own post is not offered back to them", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      {:ok, lv, _html} = live(conn, "/boards/general")
+
+      post_article(board, user, "Mine")
+      render(lv)
+
+      refute has_element?(lv, "#board-new-articles")
+    end
+
+    test "a post by someone the reader blocked is not counted", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      blocked = setup_user("user")
+      {:ok, _} = Baudrate.Auth.block_user(user, blocked)
+      {:ok, lv, _html} = live(conn, "/boards/general")
+
+      post_article(board, blocked, "Hidden one")
+      render(lv)
+
+      refute has_element?(lv, "#board-new-articles")
+    end
   end
 
   test "board with children shows sub-board cards", %{conn: conn, board: board} do
@@ -409,5 +462,18 @@ defmodule BaudrateWeb.BoardLiveTest do
       assert html =~ ~s(target="_blank")
       assert html =~ ~s(rel="nofollow noopener noreferrer")
     end
+  end
+
+  defp post_article(board, user, title) do
+    {:ok, _} =
+      Content.create_article(
+        %{
+          title: title,
+          body: "body",
+          slug: "new-post-#{System.unique_integer([:positive])}",
+          user_id: user.id
+        },
+        [board.id]
+      )
   end
 end

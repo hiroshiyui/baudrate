@@ -147,6 +147,26 @@
   </div>
 </section>
 
+<p id="board-new-articles-status" class="board-new-articles-status sr-only" role="status">
+  {@new_articles_status}
+</p>
+
+<div :if={@new_article_count > 0} id="board-new-articles" class="board-new-articles mb-3">
+  <button
+    id="board-new-articles-show"
+    type="button"
+    phx-click="show_new_articles"
+    class="board-new-articles-show btn btn-sm btn-outline btn-primary w-full"
+  >
+    <.icon name="hero-arrow-up" class="size-4" />
+    {ngettext(
+      "%{count} new post. Show it",
+      "%{count} new posts. Show them",
+      @new_article_count
+    )}
+  </button>
+</div>
+
 <div :if={@articles == []} class="board-articles-empty text-base-content/70 text-center py-8">
   {gettext("No articles yet.")}
 </div>
