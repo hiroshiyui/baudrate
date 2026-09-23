@@ -175,7 +175,11 @@ lib/
 │   │   ├── conversation.ex      # Conversation schema (local-local and local-remote)
 │   │   ├── conversation_read_cursor.ex # Per-user read position tracking
 │   │   ├── direct_message.ex    # DirectMessage schema (local + remote, soft-delete)
-│   │   └── pubsub.ex            # PubSub helpers for real-time DM updates
+│   │   ├── dm_image.ex          # DmImage schema: a private image attached to a local message (ADR 0071)
+│   │   ├── images.ex            # DM image uploads, limits, access checks and sweeps (ADR 0071)
+│   │   ├── pubsub.ex            # PubSub helpers for real-time DM updates
+│   │   ├── push.ex              # Web push for a new DM: names the sender, carries no text (ADR 0071)
+│   │   └── search.ex            # Search within the member's own conversations (ADR 0071)
 │   ├── federation.ex            # Federation context facade: defdelegate to focused sub-modules
 │   ├── federation/
 │   │   ├── actor_renderer.ex    # JSON-LD rendering for Person/Group/Organization actors
@@ -299,6 +303,7 @@ lib/
 │   │   ├── activity_pub_controller.ex  # ActivityPub endpoints (content-negotiated)
 │   │   ├── error_html.ex        # HTML error pages
 │   │   ├── error_json.ex        # JSON error responses
+│   │   ├── dm_image_controller.ex # Serves a DM image after an access check, never as a static file (ADR 0071)
 │   │   ├── export_controller.ex # Serves a data export archive, built at download time (ADR 0023)
 │   │   ├── syndication_feed_controller.ex   # RSS 2.0 / Atom 1.0 syndication feeds
 │   │   ├── syndication_feed_xml.ex          # Feed XML rendering (EEx templates, helpers)
@@ -341,6 +346,7 @@ lib/
 │   │   ├── article_helpers.ex   # Pure helper logic extracted from ArticleLive
 │   │   ├── article_history_live.ex # Article edit history with inline diffs
 │   │   ├── comment_history_live.ex # A comment's edit history, public like the article's (ADR 0060)
+│   │   ├── comment_permalink_live.ex # /comments/:id — redirects to the page the comment is on
 │   │   ├── drafts_live.ex       # /drafts — a member's own unfinished articles (ADR 0062), and their posts waiting for review (ADR 0065)
 │   │   ├── article_live.ex      # Single article view with paginated comments
 │   │   ├── article_new_live.ex  # Article creation form
@@ -348,8 +354,8 @@ lib/
 │   │   ├── board_follows_live.ex # Board follows management (AP follow policy, search remote actors)
 │   │   ├── board_live.ex        # Board view with article listing
 │   │   ├── bookmarks_live.ex    # User bookmarks list (articles + comments, paginated)
-│   │   ├── conversation_live.ex # Single DM conversation thread view
-│   │   ├── conversations_live.ex # DM conversation list
+│   │   ├── conversation_live.ex # Single DM conversation: composer with private images, ?around= jump to a found message
+│   │   ├── conversations_live.ex # DM conversation list and search of one's own messages
 │   │   ├── data_export_live.ex  # Self-service data export request and download (ADR 0023)
 │   │   ├── timeline_live.ex          # Personal timeline (remote posts, local articles, comment activity)
 │   │   ├── followers_live.ex    # Your own followers, with removal (ADR 0070)
@@ -396,6 +402,7 @@ lib/
 │   │   ├── cache_body.ex        # Cache raw request body (for HTTP signature verification)
 │   │   ├── cache_body_reader.ex # Body reader caching the raw body in conn.assigns.raw_body
 │   │   ├── cors.ex              # CORS headers for AP GET endpoints (Allow-Origin: *)
+│   │   ├── deny_private_uploads.ex # 404 for /uploads/dm_images/*, ahead of Plug.Static (ADR 0071)
 │   │   ├── ensure_setup.ex      # Redirect to /setup until setup is done
 │   │   ├── rate_limit.ex        # IP-based rate limiting (Hammer)
 │   │   ├── rate_limit_domain.ex # Per-domain rate limiting for AP inboxes

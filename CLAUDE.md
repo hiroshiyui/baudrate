@@ -75,9 +75,9 @@ when the row drops an ADR number or a relationship verb the Status line uses.
 ### Contexts
 
 - **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, WebAuthn/FIDO2 security keys, sessions, password reset), account recovery (replaceable recovery codes, OpenPGP recovery contacts, admin-issued reset links — ADR 0058), user management (avatars, invite codes, blocks, mutes), registration defences and IP bans (ADR 0063), the limits on new accounts (ADR 0064)
-- **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, boosts, polls, permissions, board moderators, search, link previews, article drafts
+- **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, boosts, polls, permissions, board moderators, search, link previews, article drafts, watches (ADR 0070)
 - **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery, user outbound follows, timeline item replies, timeline item likes/boosts, mentions, actor updates, remote-follow handoff (ADR 0059's sibling in Phase 4E)
-- **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation
+- **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation, the new-message push, private image attachments and search of one's own conversations (ADR 0071)
 - **Setup** (`lib/baudrate/setup.ex`) — first-run wizard, RBAC seeding, settings, role level utilities
 - **Moderation** (`lib/baudrate/moderation.ex`) — reports (including member reports of timeline items, received DMs and remote accounts), resolve/dismiss, audit log, posts held for review and content filters (ADR 0065)
 - **Notification** (`lib/baudrate/notification.ex`) — in-app notifications, unread counts, mark read, cleanup, admin announcements, account security notices
