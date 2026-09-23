@@ -135,6 +135,15 @@ server {
         return 404;
     }
 
+    # --- Direct-message images (deny direct access) ---
+    # Private files (ADR 0071): readable only through /messages/images/:id,
+    # after the application checks the member takes part in the conversation.
+    # The directory is also 0700 and owned by the application's user, so this
+    # rule is the second refusal, not the only one. Must precede /uploads/.
+    location ^~ /uploads/dm_images/ {
+        return 404;
+    }
+
     # --- User uploads (avatars, article images) ---
     # Served directly by nginx. nosniff prevents MIME-type confusion attacks.
     location /uploads/ {

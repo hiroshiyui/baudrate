@@ -128,6 +128,15 @@
     - "{{ deploy_path }}/shared/uploads/media_cache"
     - "{{ deploy_path }}/env"
 
+# Direct-message images (ADR 0071) are private: 0700, so nothing but the
+# application's own user can read them — not nginx, which serves the rest of
+# uploads/ by path. They are read only through /messages/images/:id.
+- name: Create the private direct-message image directory
+  ansible.builtin.file:
+    path: "{{ deploy_path }}/shared/uploads/dm_images"
+    state: directory
+    mode: "0700"
+
 - name: Restrict env directory permissions
   ansible.builtin.file:
     path: "{{ deploy_path }}/env"

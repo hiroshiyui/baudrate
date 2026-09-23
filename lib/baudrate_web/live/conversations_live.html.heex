@@ -18,6 +18,103 @@
     </.link>
   </div>
 
+  <form
+    id="messages-search-form"
+    role="search"
+    phx-submit="search"
+    class="messages-search-form flex gap-2"
+  >
+    <input
+      id="messages-search-input"
+      type="search"
+      name="q"
+      value={@query}
+      class="messages-search-input input input-bordered input-sm flex-1"
+      placeholder={gettext("Search your messages")}
+      aria-label={gettext("Search your messages")}
+      maxlength="200"
+      autocomplete="off"
+    />
+    <button id="messages-search-submit" type="submit" class="messages-search-submit btn btn-sm">
+      <.icon name="hero-magnifying-glass" class="size-4" />
+      {gettext("Search")}
+    </button>
+    <.link
+      :if={@query != ""}
+      id="messages-search-clear"
+      patch={~p"/messages"}
+      class="btn btn-sm btn-ghost"
+    >
+      {gettext("Clear")}
+    </.link>
+  </form>
+
+  <p id="messages-search-status" class="messages-search-status sr-only" role="status">
+    {@search_status}
+  </p>
+
+  <section
+    :if={@results}
+    id="messages-search-results"
+    class="messages-search-results space-y-2"
+    aria-labelledby="messages-search-heading"
+  >
+    <h2 id="messages-search-heading" class="messages-search-heading text-lg font-semibold">
+      {gettext("Messages matching “%{query}”", query: @query)}
+    </h2>
+    <p
+      :if={@results.messages == []}
+      id="messages-search-empty"
+      class="messages-search-empty text-base-content/70"
+    >
+      {if String.length(@query) < Baudrate.Messaging.Search.min_length(),
+        do: gettext("Type at least two characters."),
+        else: gettext("No message matches.")}
+    </p>
+    <ul
+      :if={@results.messages != []}
+      id="messages-search-list"
+      class="space-y-2"
+      data-focus-target
+    >
+      <li
+        :for={msg <- @results.messages}
+        id={"messages-search-result-#{msg.id}"}
+        class="messages-search-result card bg-base-200 shadow-sm"
+      >
+        <.link
+          navigate={~p"/messages/#{msg.conversation_id}?#{[around: msg.id]}" <> "#message-#{msg.id}"}
+          class="card-body p-3 block min-w-0"
+        >
+          <span class="flex flex-wrap items-baseline gap-2 text-sm">
+            <span class="messages-search-with font-semibold">
+              {participant_name(other_participant(msg.conversation, @current_user))}
+            </span>
+            <span class="messages-search-sender text-base-content/70">
+              {sender_label(msg, @current_user)}
+            </span>
+            <time
+              class="messages-search-time text-xs text-base-content/70"
+              datetime={DateTime.to_iso8601(msg.inserted_at)}
+            >
+              {format_relative_time(msg.inserted_at)}
+            </time>
+          </span>
+          <span class="messages-search-excerpt block text-sm break-words mt-1">
+            {excerpt(msg.body, @query)}
+          </span>
+        </.link>
+      </li>
+    </ul>
+    <.pagination
+      :if={@results.messages != []}
+      page={@results.page}
+      total_pages={@results.total_pages}
+      path={~p"/messages"}
+      params={%{"q" => @query}}
+    />
+  </section>
+
   <p id="conversations-live-status" class="conversations-live-status sr-only" role="status">
     {@live_status}
   </p>

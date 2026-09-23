@@ -236,6 +236,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
         "/messages",
         "/messages/new",
         "/messages/#{conversation.id}",
+        "/messages?q=message",
         "/notifications",
         "/following",
         "/followers",

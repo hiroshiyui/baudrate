@@ -90,6 +90,7 @@ defmodule Baudrate.Auth.SessionCleaner do
       cleanup_orphan_article_images: &cleanup_orphan_article_images/0,
       cleanup_orphan_comment_images: &cleanup_orphan_comment_images/0,
       cleanup_orphan_reply_images: &cleanup_orphan_reply_images/0,
+      cleanup_orphan_dm_images: &cleanup_orphan_dm_images/0,
       cleanup_delivery_jobs: &cleanup_delivery_jobs/0,
       purge_inbound_activities: &purge_inbound_activities/0,
       refresh_stale_link_previews: &refresh_stale_link_previews/0,
@@ -353,5 +354,12 @@ defmodule Baudrate.Auth.SessionCleaner do
           Logger.warning("Failed to delete orphan reply image #{path}: #{reason}")
       end
     end
+  end
+
+  # Direct-message images uploaded in a composer and never sent (ADR 0071).
+  defp cleanup_orphan_dm_images do
+    count = Baudrate.Messaging.delete_orphan_dm_images(24)
+    if count > 0, do: Logger.info("dm_images.orphans_removed: count=#{count}")
+    :ok
   end
 end

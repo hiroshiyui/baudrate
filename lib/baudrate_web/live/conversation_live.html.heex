@@ -201,7 +201,8 @@
             id={"message-#{msg.id}"}
             class={[
               "message chat",
-              if(msg.sender_user_id == @current_user.id, do: "chat-end", else: "chat-start")
+              if(msg.sender_user_id == @current_user.id, do: "chat-end", else: "chat-start"),
+              msg.id == @found_message_id && "message-found"
             ]}
           >
             <div class="chat-header text-xs text-base-content/70 mb-1">
@@ -225,6 +226,33 @@
               <% else %>
                 <p class="whitespace-pre-wrap break-words">{msg.body}</p>
               <% end %>
+              <%!-- Private images (ADR 0071): each is served only after a
+                   participant check; the link carries the description and the
+                   image itself is alt="" so it is announced once (ADR 0061). --%>
+              <div
+                :if={msg.images != []}
+                id={"message-#{msg.id}-images"}
+                class="message-images flex flex-wrap gap-2 mt-2"
+              >
+                <a
+                  :for={img <- msg.images}
+                  id={"message-image-#{img.id}"}
+                  href={~p"/messages/images/#{img.id}"}
+                  target="_blank"
+                  rel="noopener"
+                  class="message-image-link"
+                  aria-label={image_link_label(img, msg.images)}
+                >
+                  <img
+                    src={~p"/messages/images/#{img.id}"}
+                    alt=""
+                    width={img.width}
+                    height={img.height}
+                    loading="lazy"
+                    class="message-image max-h-48 w-auto rounded"
+                  />
+                </a>
+              </div>
               <.link_preview
                 :if={msg.link_preview && msg.link_preview.status in ["fetched", "failed"]}
                 id={"message-#{msg.id}-link-preview"}
@@ -263,6 +291,92 @@
       </div>
 
       <div id="conversation-compose" class="conversation-compose border-t border-base-300 p-4">
+        <%!-- Images: only between members here (ADR 0071). --%>
+        <section
+          :if={@images_allowed}
+          id="conversation-images"
+          class="conversation-images mb-3"
+          aria-label={gettext("Attach images")}
+        >
+          <form
+            id="conversation-images-form"
+            phx-change="validate_dm_images"
+            class="conversation-images-form"
+          >
+            <label
+              for={@uploads.dm_images.ref}
+              class="conversation-images-label btn btn-sm btn-ghost"
+            >
+              <.icon name="hero-photo" class="size-4" />
+              {gettext("Attach images")}
+            </label>
+            <.live_file_input
+              upload={@uploads.dm_images}
+              class="conversation-images-input sr-only"
+            />
+          </form>
+
+          <div
+            :for={entry <- @uploads.dm_images.entries}
+            id={"conversation-image-entry-#{entry.ref}"}
+            class="conversation-image-entry flex items-center gap-2 text-sm mt-2"
+          >
+            <progress value={entry.progress} max="100" class="progress progress-primary w-32">
+              {entry.progress}%
+            </progress>
+            <span :for={err <- upload_errors(@uploads.dm_images, entry)} class="text-error">
+              {BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "8 MB", max_files: 4)}
+            </span>
+            <button
+              id={"conversation-image-cancel-#{entry.ref}"}
+              type="button"
+              phx-click="cancel_dm_image_upload"
+              phx-value-ref={entry.ref}
+              class="btn btn-ghost btn-xs"
+              aria-label={gettext("Cancel upload")}
+            >
+              <.icon name="hero-x-mark" class="size-4" />
+            </button>
+          </div>
+          <p
+            :for={err <- upload_errors(@uploads.dm_images)}
+            class="conversation-images-error text-error text-sm mt-1"
+          >
+            {BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "8 MB", max_files: 4)}
+          </p>
+
+          <ul
+            :if={@uploaded_dm_images != []}
+            id="conversation-uploaded-images"
+            class="space-y-2 mt-2"
+          >
+            <li
+              :for={img <- @uploaded_dm_images}
+              id={"conversation-uploaded-image-#{img.id}"}
+              class="conversation-uploaded-image flex items-start gap-3"
+            >
+              <img
+                src={~p"/messages/images/#{img.id}"}
+                alt={img.alt || gettext("Uploaded image")}
+                class="w-16 h-16 object-cover rounded"
+              />
+              <div class="flex-1 min-w-0">
+                <.image_alt_input image={img} event="save_dm_image_alt" />
+              </div>
+              <button
+                id={"conversation-uploaded-image-remove-#{img.id}"}
+                type="button"
+                phx-click="remove_dm_image"
+                phx-value-id={img.id}
+                class="btn btn-ghost btn-xs"
+                aria-label={gettext("Remove image")}
+              >
+                <.icon name="hero-trash" class="size-4" />
+              </button>
+            </li>
+          </ul>
+        </section>
+
         <.form
           for={@message_form}
           id="conversation-compose-form"

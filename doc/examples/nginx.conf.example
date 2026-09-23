@@ -145,6 +145,13 @@ server {
         return 404;
     }
 
+    # Direct-message images are private (ADR 0071): readable only through
+    # /messages/images/:id after the application's participant check. Must
+    # precede /uploads/.
+    location ^~ /uploads/dm_images/ {
+        return 404;
+    }
+
     # --- User uploads (avatars, article images) ---
     # Served directly by nginx. nosniff prevents MIME-type confusion attacks.
     location /uploads/ {

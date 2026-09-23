@@ -27,6 +27,9 @@ defmodule BaudrateWeb.RateLimits do
   | `check_search_by_ip/1`  | `search:ip:`       | 1 min   | 10    |
   | `check_avatar_change/1` | `avatar_change:`   | 1 hour  | 5     |
   | `check_dm_send/1`       | `dm_send:`         | 1 min   | 20    |
+  | `check_dm_image_upload/2` | `dm_image_upload:` | 1 hour | 20 (3 for a new account) |
+  | `check_dm_image_upload_daily/1` | `dm_image_upload_day:` | 1 day | 60 |
+  | `check_dm_image_view/1` | `dm_image_view:`   | 5 min   | 300   |
   | `check_outbound_follow/1`| `outbound_follow:` | 1 hour  | 10    |
   | `check_create_report/1` | `report_create:`   | 15 min  | 5     |
   | `check_mention_resolve/1` | `mention_resolve:` | 1 hour | 30   |
@@ -270,6 +273,34 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_dm_send(integer()) :: :ok | {:error, :rate_limited}
   def check_dm_send(user_id) do
     check("dm_send:#{user_id}", 60_000, 20, :dm_send)
+  end
+
+  @doc """
+  Attaching an image to a direct message: 20 per hour per member, and 3 for
+  an account still under the new-account limits (ADR 0064, ADR 0071).
+
+  Taken **before** the upload is processed: each one costs a libvips decode
+  and re-encode, and disk that the nightly backup carries.
+  """
+  @spec check_dm_image_upload(integer(), boolean()) :: :ok | {:error, :rate_limited}
+  def check_dm_image_upload(user_id, trusted?) do
+    limit = if trusted?, do: 20, else: 3
+    check("dm_image_upload:#{user_id}", 3_600_000, limit, :dm_image_upload)
+  end
+
+  @doc "Attaching an image to a direct message: 60 per day per member."
+  @spec check_dm_image_upload_daily(integer()) :: :ok | {:error, :rate_limited}
+  def check_dm_image_upload_daily(user_id) do
+    check("dm_image_upload_day:#{user_id}", 86_400_000, 60, :dm_image_upload_day)
+  end
+
+  @doc """
+  Viewing direct-message images: 300 per 5 minutes per member. Each view is
+  a `send_file` behind an access check, not a static file.
+  """
+  @spec check_dm_image_view(integer()) :: :ok | {:error, :rate_limited}
+  def check_dm_image_view(user_id) do
+    check("dm_image_view:#{user_id}", 300_000, 300, :dm_image_view)
   end
 
   @doc "Outbound follow: 10 per hour per user."

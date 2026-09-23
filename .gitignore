@@ -44,6 +44,7 @@ baudrate-*.tar
 # Uploaded files (keep the uploads directory itself via .gitkeep)
 /priv/static/uploads/avatars/
 /priv/static/uploads/article_images/
+/priv/static/uploads/dm_images/
 /priv/static/uploads/link_preview_images/
 /priv/static/uploads/media_cache/
 /priv/static/uploads/media_cache_test*/

@@ -46,9 +46,31 @@ defmodule Baudrate.Messaging do
   alias Baudrate.Content.Markdown
   alias Baudrate.Federation
   alias Baudrate.Federation.RemoteActor
-  alias Baudrate.Messaging.{Conversation, ConversationReadCursor, DirectMessage, PubSub}
+
+  alias Baudrate.Messaging.{
+    Conversation,
+    ConversationReadCursor,
+    DirectMessage,
+    Images,
+    Push,
+    PubSub
+  }
+
   alias Baudrate.Repo
   alias Baudrate.Setup.User
+
+  # --- Images (ADR 0071) ---
+
+  defdelegate create_dm_image(user, upload_path), to: Images, as: :create
+  defdelegate authorize_dm_image_upload(user), to: Images, as: :authorize_upload
+  defdelegate set_dm_image_alt(user, image_id, attrs), to: Images, as: :set_alt
+  defdelegate delete_unsent_dm_image(user, image_id), to: Images, as: :delete_unsent
+  defdelegate accessible_dm_image(viewer, image_id), to: Images, as: :accessible
+  defdelegate delete_orphan_dm_images(hours \\ 24), to: Images, as: :delete_orphans
+
+  # --- Search (ADR 0071) ---
+
+  defdelegate search_messages(user, query, opts \\ []), to: Baudrate.Messaging.Search
 
   # --- Access Control ---
 
@@ -322,11 +344,24 @@ defmodule Baudrate.Messaging do
   """
   @spec create_message(Conversation.t(), User.t(), map()) ::
           {:ok, DirectMessage.t()}
-          | {:error, :not_allowed | :new_account_dm | Ecto.Changeset.t()}
+          | {:error, :not_allowed | :new_account_dm | :dm_images_local_only | Ecto.Changeset.t()}
   def create_message(%Conversation{} = conversation, %User{} = sender, attrs) do
-    case authorize_send(conversation, sender) do
-      :ok -> do_create_message(conversation, sender, attrs)
-      {:error, _reason} = err -> err
+    image_ids = List.wrap(attrs[:image_ids] || attrs["image_ids"])
+
+    with :ok <- authorize_send(conversation, sender),
+         :ok <- images_allowed(conversation, sender, image_ids) do
+      do_create_message(conversation, sender, attrs, image_ids)
+    end
+  end
+
+  # Images travel only between members here (ADR 0071): another server would
+  # need a URL it can fetch without signing in, which is a public link.
+  defp images_allowed(_conversation, _sender, []), do: :ok
+
+  defp images_allowed(conversation, sender, _image_ids) do
+    case other_participant(conversation, sender) do
+      %User{} -> :ok
+      _ -> {:error, :dm_images_local_only}
     end
   end
 
@@ -375,18 +410,21 @@ defmodule Baudrate.Messaging do
       )
   end
 
-  defp do_create_message(%Conversation{} = conversation, %User{} = sender, attrs) do
+  defp do_create_message(%Conversation{} = conversation, %User{} = sender, attrs, image_ids) do
     body = attrs[:body] || attrs["body"] || ""
     body_html = Markdown.to_html(body)
 
     changeset =
       %DirectMessage{}
-      |> DirectMessage.changeset(%{
-        body: body,
-        body_html: body_html,
-        conversation_id: conversation.id,
-        sender_user_id: sender.id
-      })
+      |> DirectMessage.changeset(
+        %{
+          body: body,
+          body_html: body_html,
+          conversation_id: conversation.id,
+          sender_user_id: sender.id
+        },
+        with_images: image_ids != []
+      )
 
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -400,6 +438,9 @@ defmodule Baudrate.Messaging do
       # Stamp the canonical AP ID so remote instances can reference this DM
       |> Ecto.Multi.run(:stamped, fn _repo, %{message: message} ->
         {:ok, stamp_dm_ap_id(message, sender)}
+      end)
+      |> Ecto.Multi.run(:images, fn _repo, %{message: message} ->
+        {:ok, Images.attach(message.id, image_ids, sender.id)}
       end)
       # A remote participant's delivery job commits with the message (Phase 2C).
       |> Ecto.Multi.run(:federation, fn _repo, %{stamped: message} ->
@@ -420,6 +461,8 @@ defmodule Baudrate.Messaging do
           PubSub.broadcast_to_user(other_user_id, :dm_received, %{
             conversation_id: conversation.id
           })
+
+          Push.notify(other_user_id, sender, conversation.id)
         end
 
         Baudrate.Content.LinkPreview.Worker.schedule_preview_fetch(
@@ -472,6 +515,8 @@ defmodule Baudrate.Messaging do
           conversation_id: conversation.id
         })
 
+        Push.notify(local_user.id, remote_actor, conversation.id)
+
         body_html = attrs[:body_html] || attrs["body_html"]
 
         if body_html do
@@ -492,17 +537,46 @@ defmodule Baudrate.Messaging do
   @doc """
   Lists the **newest** messages in a conversation, returned oldest first.
 
-  Excludes soft-deleted messages. Preloads sender_user, sender_remote_actor
-  and link_preview.
+  Excludes soft-deleted messages. Preloads sender_user, sender_remote_actor,
+  link_preview and images.
 
   ## Options
 
     * `:limit` — how many messages (default 100)
     * `:before_id` — only messages older than this message id, to page back
       through history
+    * `:around_id` — a window that holds this message: `limit` messages up
+      to and including it, and every newer one (at most `:max`, default
+      1000), so a search result opens on the message it found
   """
   @spec list_messages(Conversation.t(), keyword()) :: [DirectMessage.t()]
-  def list_messages(%Conversation{id: conversation_id}, opts \\ []) do
+  def list_messages(conversation, opts \\ []) do
+    case Keyword.get(opts, :around_id) do
+      nil -> list_newest(conversation, opts)
+      around_id -> list_around(conversation, around_id, opts)
+    end
+  end
+
+  defp list_around(%Conversation{} = conversation, around_id, opts) do
+    limit = Keyword.get(opts, :limit, 50)
+    max = Keyword.get(opts, :max, 1_000)
+
+    older = list_newest(conversation, limit: limit, before_id: around_id + 1)
+
+    newer =
+      from(dm in DirectMessage,
+        where: dm.conversation_id == ^conversation.id,
+        where: is_nil(dm.deleted_at) and dm.id > ^around_id,
+        order_by: [asc: dm.id],
+        limit: ^max(max - length(older), 0),
+        preload: [:sender_user, :sender_remote_actor, :link_preview, :images]
+      )
+      |> Repo.all()
+
+    older ++ newer
+  end
+
+  defp list_newest(%Conversation{id: conversation_id}, opts) do
     limit = Keyword.get(opts, :limit, 100)
     before_id = Keyword.get(opts, :before_id)
 
@@ -515,7 +589,7 @@ defmodule Baudrate.Messaging do
         # past the limit never showed its newest messages.
         order_by: [desc: dm.id],
         limit: ^limit,
-        preload: [:sender_user, :sender_remote_actor, :link_preview]
+        preload: [:sender_user, :sender_remote_actor, :link_preview, :images]
       )
 
     query =
@@ -561,6 +635,8 @@ defmodule Baudrate.Messaging do
         )
 
       with {:ok, deleted_message} <- result do
+        Images.delete_for_message(message.id)
+
         PubSub.broadcast_to_conversation(message.conversation_id, :dm_message_deleted, %{
           message_id: message.id
         })
@@ -649,7 +725,7 @@ defmodule Baudrate.Messaging do
     Repo.one(
       from(dm in DirectMessage,
         where: dm.id == ^id,
-        preload: [:sender_user, :sender_remote_actor, :link_preview]
+        preload: [:sender_user, :sender_remote_actor, :link_preview, :images]
       )
     )
   end

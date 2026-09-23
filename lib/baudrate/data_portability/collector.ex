@@ -114,6 +114,14 @@ defmodule Baudrate.DataPortability.Collector do
           Enum.map(replies, & &1.id),
           user,
           "timeline_reply_images"
+        ) ++
+        image_media(
+          Baudrate.Messaging.DmImage,
+          :message_id,
+          own_sent_message_ids(user),
+          user,
+          "dm_images",
+          "dm_images"
         )
 
     {documents, media}
@@ -661,18 +669,35 @@ defmodule Baudrate.DataPortability.Collector do
             where:
               m.conversation_id == ^conv.id and m.sender_user_id == ^user.id and
                 is_nil(m.deleted_at),
-            order_by: [asc: m.inserted_at, asc: m.id]
+            order_by: [asc: m.inserted_at, asc: m.id],
+            preload: [images: ^from(i in Baudrate.Messaging.DmImage, order_by: i.id)]
           )
         )
 
+      # Only the member's own messages, and so only images they sent
+      # (ADR 0023: a received message is somebody else's data).
       %{
         "with" => counterpart(conv, user, base_url),
         "messages_sent" =>
           Enum.map(sent, fn m ->
-            %{"uri" => m.ap_id, "body" => m.body, "created_at" => iso(m.inserted_at)}
+            %{
+              "uri" => m.ap_id,
+              "body" => m.body,
+              "created_at" => iso(m.inserted_at),
+              "images" => Enum.map(m.images, &"media/dm_images/#{&1.id}.webp")
+            }
           end)
       }
     end)
+  end
+
+  defp own_sent_message_ids(user) do
+    Repo.all(
+      from(m in DirectMessage,
+        where: m.sender_user_id == ^user.id and is_nil(m.deleted_at),
+        select: m.id
+      )
+    )
   end
 
   defp counterpart(conv, user, base_url) do
@@ -737,9 +762,11 @@ defmodule Baudrate.DataPortability.Collector do
 
   # Images owned by the user and attached to records already in the export.
   # `storage_path` is ignored: the path is rebuilt from `filename` (see Files).
-  defp image_media(_schema, _fk, [], _user, _dir), do: []
+  defp image_media(schema, fk, parent_ids, user, dir, source_dir \\ "article_images")
 
-  defp image_media(schema, fk, parent_ids, user, dir) do
+  defp image_media(_schema, _fk, [], _user, _dir, _source_dir), do: []
+
+  defp image_media(schema, fk, parent_ids, user, dir, source_dir) do
     Repo.all(
       from(i in schema,
         where: field(i, ^fk) in ^parent_ids and i.user_id == ^user.id,
@@ -748,7 +775,7 @@ defmodule Baudrate.DataPortability.Collector do
       )
     )
     |> Enum.flat_map(fn {id, filename} ->
-      case Files.image_path("article_images", filename) do
+      case Files.image_path(source_dir, filename) do
         {:ok, path} -> [{"media/#{dir}/#{id}.webp", path}]
         :error -> []
       end

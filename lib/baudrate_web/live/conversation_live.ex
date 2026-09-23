@@ -34,7 +34,7 @@ defmodule BaudrateWeb.ConversationLive do
 
     case resolve_conversation(params, user) do
       {:ok, conversation, other} ->
-        mount_conversation(socket, user, conversation, other)
+        mount_conversation(socket, user, conversation, other, params)
 
       {:new, recipient} ->
         mount_new_conversation(socket, user, recipient)
@@ -50,12 +50,24 @@ defmodule BaudrateWeb.ConversationLive do
     end
   end
 
-  defp mount_conversation(socket, user, conversation, other) do
+  defp mount_conversation(socket, user, conversation, other, params) do
     if connected?(socket) do
       MessagingPubSub.subscribe_conversation(conversation.id)
     end
 
-    messages = Messaging.list_messages(conversation, limit: @page_size)
+    # `?around=<message id>` opens on a search result (6D). `list_messages`
+    # scopes the window to this conversation, so a foreign id finds nothing.
+    {messages, found_id} =
+      case parse_id(params["around"]) do
+        {:ok, around_id} ->
+          window = Messaging.list_messages(conversation, around_id: around_id, max: @max_loaded)
+          found = if Enum.any?(window, &(&1.id == around_id)), do: around_id
+          {window, found}
+
+        :error ->
+          {Messaging.list_messages(conversation, limit: @page_size), nil}
+      end
+
     mark_read(conversation, user, messages)
 
     socket =
@@ -68,10 +80,33 @@ defmodule BaudrateWeb.ConversationLive do
       |> assign(:page_title, participant_name(other))
       |> assign(:message_form, to_form(%{"body" => ""}, as: :message))
       |> assign(:history_announcement, "")
+      |> assign(:found_message_id, found_id)
       |> assign_other_safety_state()
       |> SafetyActions.assign_report_modal()
+      |> allow_dm_images(other)
 
     {:ok, socket}
+  end
+
+  # Images only between members here (ADR 0071): a conversation with an
+  # account on another server gets no upload at all.
+  defp allow_dm_images(socket, %Baudrate.Setup.User{}) do
+    socket
+    |> assign(:images_allowed, true)
+    |> assign(:uploaded_dm_images, [])
+    |> allow_upload(:dm_images,
+      accept: ~w(.jpg .jpeg .png .webp .gif),
+      max_entries: Baudrate.Messaging.DmImage.max_per_message(),
+      max_file_size: 8_000_000,
+      auto_upload: true,
+      progress: &handle_dm_image_progress/3
+    )
+  end
+
+  defp allow_dm_images(socket, _remote) do
+    socket
+    |> assign(:images_allowed, false)
+    |> assign(:uploaded_dm_images, [])
   end
 
   defp mount_new_conversation(socket, user, recipient) do
@@ -88,6 +123,8 @@ defmodule BaudrateWeb.ConversationLive do
           |> assign(:page_title, gettext("New Message"))
           |> assign(:message_form, to_form(%{"body" => ""}, as: :message))
           |> assign(:history_announcement, "")
+          |> assign(:found_message_id, nil)
+          |> allow_dm_images(recipient)
 
         {:ok, socket}
 
@@ -114,8 +151,11 @@ defmodule BaudrateWeb.ConversationLive do
   def handle_event("send_message", %{"message" => %{"body" => body}}, socket) do
     user = socket.assigns.current_user
     body = String.trim(body)
+    image_ids = Enum.map(socket.assigns.uploaded_dm_images, & &1.id)
 
-    if body == "" do
+    # A photo sent on its own is a whole message (ADR 0071); an empty
+    # composer with nothing attached is not.
+    if body == "" and image_ids == [] do
       {:noreply, assign(socket, :message_form, to_form(%{"body" => ""}, as: :message))}
     else
       socket = ensure_conversation(socket, user)
@@ -123,7 +163,7 @@ defmodule BaudrateWeb.ConversationLive do
 
       case RateLimits.check_dm_send(user.id) do
         :ok ->
-          case Messaging.create_message(conversation, user, %{body: body}) do
+          case Messaging.create_message(conversation, user, %{body: body, image_ids: image_ids}) do
             {:ok, message} ->
               messages =
                 (socket.assigns.messages ++ [Messaging.get_message(message.id)])
@@ -134,6 +174,7 @@ defmodule BaudrateWeb.ConversationLive do
               {:noreply,
                socket
                |> assign_messages(messages)
+               |> assign(:uploaded_dm_images, [])
                |> assign(:message_form, to_form(%{"body" => ""}, as: :message))
                |> assign(:history_announcement, "")}
 
@@ -149,6 +190,51 @@ defmodule BaudrateWeb.ConversationLive do
       end
     end
   end
+
+  # The description saves itself against the uploaded row, not with the form
+  # (ADR 0061); it is the uploader's own and is never screened (ADR 0065).
+  @impl true
+  def handle_event("save_dm_image_alt", %{"id" => id} = params, socket) do
+    with %{} = user <- socket.assigns.current_user,
+         {:ok, image_id} <- parse_id(id),
+         {:ok, image} <-
+           Messaging.set_dm_image_alt(user, image_id, %{"alt" => params["value"]}) do
+      images =
+        Enum.map(socket.assigns.uploaded_dm_images, fn i ->
+          if i.id == image.id, do: image, else: i
+        end)
+
+      {:noreply, assign(socket, :uploaded_dm_images, images)}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("remove_dm_image", %{"id" => id}, socket) do
+    user = socket.assigns.current_user
+
+    with {:ok, image_id} <- parse_id(id),
+         true <- Enum.any?(socket.assigns.uploaded_dm_images, &(&1.id == image_id)),
+         :ok <- Messaging.delete_unsent_dm_image(user, image_id) do
+      {:noreply,
+       assign(
+         socket,
+         :uploaded_dm_images,
+         Enum.reject(socket.assigns.uploaded_dm_images, &(&1.id == image_id))
+       )}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_dm_image_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :dm_images, ref)}
+  end
+
+  @impl true
+  def handle_event("validate_dm_images", _params, socket), do: {:noreply, socket}
 
   # Tracks the composer's in-progress text in the form assign so that the
   # reset after a successful send is a real diff ("typed text" -> "") and the
@@ -297,6 +383,40 @@ defmodule BaudrateWeb.ConversationLive do
 
   # --- Private helpers ---
 
+  # Each image is charged against the member's upload buckets *before* it is
+  # processed (`Messaging.create_dm_image/2`), so a refused upload costs no
+  # decode and no disk (ADR 0071).
+  defp handle_dm_image_progress(:dm_images, entry, socket) do
+    if entry.done? do
+      user = socket.assigns.current_user
+
+      result =
+        consume_uploaded_entry(socket, entry, fn %{path: path} ->
+          {:ok, Messaging.create_dm_image(user, path)}
+        end)
+
+      case result do
+        {:ok, image} ->
+          {:noreply,
+           assign(socket, :uploaded_dm_images, socket.assigns.uploaded_dm_images ++ [image])}
+
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, dm_image_refusal(reason))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp dm_image_refusal(:rate_limited),
+    do: gettext("You have attached as many images as you can for now. Try again later.")
+
+  defp dm_image_refusal(:too_many_pending),
+    do: gettext("Send or remove the images you have attached before adding more.")
+
+  defp dm_image_refusal(_),
+    do: gettext("That file could not be used as an image.")
+
   # Mute and block state for a remote participant, shown in the header menu.
   defp assign_other_safety_state(socket) do
     case socket.assigns.other_participant do
@@ -384,6 +504,12 @@ defmodule BaudrateWeb.ConversationLive do
     last = List.last(messages)
     if conversation && last, do: Messaging.mark_conversation_read(conversation, user, last)
   end
+
+  defp send_refusal(:dm_images_local_only, _user),
+    do:
+      gettext(
+        "Images can only be sent to members of this site, not to accounts on other servers."
+      )
 
   # A new account is told what its limit is and when it lifts (ADR 0064);
   # anything else keeps the neutral refusal, which never says who blocked whom.

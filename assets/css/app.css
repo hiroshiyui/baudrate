@@ -369,3 +369,11 @@ a:focus-visible {
 @import "./themes/aquaosx-dark.css";
 
 /* This file is for your main application CSS */
+
+/* A message opened from a search result (6D): marked by more than colour —
+   an outline shape as well — and on its semantic class (ADR 0018). */
+.message-found {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: var(--radius-box);
+}

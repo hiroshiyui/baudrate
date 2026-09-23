@@ -199,6 +199,7 @@ defmodule BaudrateWeb.Features.LayoutTest do
         "/profile",
         "/messages",
         "/messages/#{conversation.id}",
+        "/messages?q=message",
         "/notifications",
         "/invites",
         "/bookmarks",

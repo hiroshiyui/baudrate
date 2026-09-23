@@ -496,6 +496,53 @@ defmodule Baudrate.DataPortability.ArchiveTest do
     end
   end
 
+  # ADR 0071 with ADR 0023: a direct-message image is exported only when the
+  # member sent it. A received one is somebody else's data, and a hijacked
+  # session must not be able to carry it off in bulk.
+  test "a member's own DM images are exported and received ones are not", %{
+    user: user,
+    root: root
+  } do
+    other = create_user("user")
+    {:ok, conversation} = Baudrate.Messaging.find_or_create_conversation(user, other)
+    File.mkdir_p!(Path.join(root, "dm_images"))
+    File.write!(Path.join([root, "dm_images", "#{@hex_a}.webp"]), "MINE")
+    File.write!(Path.join([root, "dm_images", "#{@hex_b}.webp"]), "THEIRSDMIMAGE")
+
+    {:ok, mine} =
+      Baudrate.Messaging.create_message(conversation, user, %{body: "here is mine"})
+
+    {:ok, theirs} =
+      Baudrate.Messaging.create_message(conversation, other, %{body: "here is theirs"})
+
+    own_image =
+      Repo.insert!(%Baudrate.Messaging.DmImage{
+        user_id: user.id,
+        message_id: mine.id,
+        filename: "#{@hex_a}.webp",
+        width: 1,
+        height: 1
+      })
+
+    Repo.insert!(%Baudrate.Messaging.DmImage{
+      user_id: other.id,
+      message_id: theirs.id,
+      filename: "#{@hex_b}.webp",
+      width: 1,
+      height: 1
+    })
+
+    entries = build!(user)
+    blob = entries |> Map.values() |> IO.iodata_to_binary()
+
+    assert entries["media/dm_images/#{own_image.id}.webp"] == "MINE"
+    refute blob =~ "THEIRSDMIMAGE"
+
+    [conv] = json(entries, "messages.json")
+    assert [%{"images" => images}] = conv["messages_sent"]
+    assert images == ["media/dm_images/#{own_image.id}.webp"]
+  end
+
   # ---------------------------------------------------------------------------
   # Path confinement
   # ---------------------------------------------------------------------------

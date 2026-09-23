@@ -368,6 +368,14 @@ defmodule BaudrateWeb.Router do
     post "/:id/download", ExportController, :download
   end
 
+  # Direct-message images (ADR 0071): served only after a participant check
+  # in DmImageController, never by their path under /uploads.
+  scope "/messages/images", BaudrateWeb do
+    pipe_through :browser
+
+    get "/:id", DmImageController, :show
+  end
+
   # Authenticated routes (defined before public_browsable to ensure literal
   # paths like /articles/new match before wildcard /articles/:slug)
   scope "/", BaudrateWeb do

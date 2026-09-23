@@ -58,7 +58,7 @@ defmodule BaudrateWeb.ImageAltCoverageTest do
       # If a refactor renames the assign this scans for, the test above would
       # go green by finding nothing at all. Naming the surfaces is what stops
       # a silent pass; add to this list when a composer is added.
-      assert found == ["article_images", "comment_images", "reply_images"]
+      assert found == ["article_images", "comment_images", "dm_images", "reply_images"]
     end
   end
 

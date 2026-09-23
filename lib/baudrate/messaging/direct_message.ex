@@ -38,14 +38,31 @@ defmodule Baudrate.Messaging.DirectMessage do
     belongs_to :sender_remote_actor, RemoteActor
     belongs_to :link_preview, LinkPreview
 
+    has_many :images, Baudrate.Messaging.DmImage, foreign_key: :message_id
+
     timestamps(type: :utc_datetime)
   end
 
-  @doc "Changeset for creating a local user message."
-  def changeset(message, attrs) do
+  @doc """
+  Changeset for creating a local user message.
+
+  Pass `with_images: true` when the message carries images: its text may
+  then be empty (stored as `""`), because a photo sent on its own is a
+  whole message (ADR 0071).
+  """
+  def changeset(message, attrs, opts \\ []) do
+    {empty_values, required} =
+      if Keyword.get(opts, :with_images, false),
+        do: {[], [:conversation_id, :sender_user_id]},
+        else: {[""], [:body, :conversation_id, :sender_user_id]}
+
     message
-    |> cast(attrs, [:body, :body_html, :ap_id, :conversation_id, :sender_user_id, :ap_in_reply_to])
-    |> validate_required([:body, :conversation_id, :sender_user_id])
+    |> cast(
+      attrs,
+      [:body, :body_html, :ap_id, :conversation_id, :sender_user_id, :ap_in_reply_to],
+      empty_values: empty_values
+    )
+    |> validate_required(required)
     |> validate_length(:body, max: @max_body_length)
     |> foreign_key_constraint(:conversation_id)
     |> foreign_key_constraint(:sender_user_id)
@@ -77,6 +94,8 @@ defmodule Baudrate.Messaging.DirectMessage do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     message
-    |> change(deleted_at: now, body: "[deleted]", body_html: nil)
+    # The preview goes too: a withdrawn message keeps nothing its recipient
+    # could still open (ADR 0071). Its images are deleted by the caller.
+    |> change(deleted_at: now, body: "[deleted]", body_html: nil, link_preview_id: nil)
   end
 end

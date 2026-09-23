@@ -33,9 +33,17 @@ defmodule Baudrate.Content.ArticleImageStorage do
   stripped.
 
   Returns `{:ok, %{filename, storage_path, width, height}}` or `{:error, reason}`.
+
+  ## Options
+
+    * `:subdir` — the directory under `priv/static/uploads` to write into,
+      `"article_images"` by default. Direct-message images use `"dm_images"`,
+      which is never served by path (ADR 0071).
   """
   # sobelow_skip ["Traversal.FileModule"]
-  def process_upload(upload_path) do
+  def process_upload(upload_path, opts \\ []) do
+    dir = upload_dir(Keyword.get(opts, :subdir, "article_images"))
+
     with :ok <- validate_magic_bytes(upload_path),
          {:ok, image} <- Image.open(upload_path, access: :random),
          {:ok, {image, _meta}} <- Image.autorotate(image),
@@ -50,8 +58,8 @@ defmodule Baudrate.Content.ArticleImageStorage do
         end
 
       filename = generate_filename()
-      File.mkdir_p!(upload_dir())
-      dest = Path.join(upload_dir(), filename)
+      ensure_dir!(dir)
+      dest = Path.join(dir, filename)
 
       try do
         Image.write!(image, dest, strip_metadata: true)
@@ -122,8 +130,9 @@ defmodule Baudrate.Content.ArticleImageStorage do
   @doc """
   Returns the upload directory path.
   """
-  def upload_dir do
-    Application.app_dir(:baudrate, Path.join(["priv", "static", "uploads", "article_images"]))
+  def upload_dir(subdir \\ "article_images")
+      when subdir in ["article_images", "dm_images"] do
+    Application.app_dir(:baudrate, Path.join(["priv", "static", "uploads", subdir]))
   end
 
   # --- Private ---
@@ -169,6 +178,15 @@ defmodule Baudrate.Content.ArticleImageStorage do
     else
       {:error, :image_too_small}
     end
+  end
+
+  # Direct-message images are private (ADR 0071): their directory is 0700,
+  # readable by the application's user alone and not by the web server that
+  # serves the rest of uploads/ by path.
+  # sobelow_skip ["Traversal.FileModule"]
+  defp ensure_dir!(dir) do
+    File.mkdir_p!(dir)
+    if Path.basename(dir) == "dm_images", do: File.chmod!(dir, 0o700)
   end
 
   defp generate_filename do
