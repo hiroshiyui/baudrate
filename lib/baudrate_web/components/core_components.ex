@@ -1303,8 +1303,15 @@ defmodule BaudrateWeb.CoreComponents do
   def feed_links(assigns) do
     ~H"""
     <nav id={@id_prefix} aria-label={@label} class={["feed-links", @class]}>
+      <%!--
+        Each item is a flex container so its link is a flex item rather than an
+        inline box on a line. The RSS link's first child is the icon — a block
+        with no text and so no baseline — so as an inline-flex its baseline was
+        synthesized from its bottom edge, which made its `li` 22px against
+        Atom's 20 and left the two words a pixel apart (2026-09-23).
+      --%>
       <ul class="feed-link-list flex flex-wrap items-center gap-x-4 gap-y-1 text-sm opacity-70">
-        <li class="feed-link-item">
+        <li class="feed-link-item flex">
           <.link
             id={"#{@id_prefix}-rss"}
             href={@rss}
@@ -1315,7 +1322,7 @@ defmodule BaudrateWeb.CoreComponents do
             {gettext("RSS")}
           </.link>
         </li>
-        <li class="feed-link-item">
+        <li class="feed-link-item flex">
           <.link
             id={"#{@id_prefix}-atom"}
             href={@atom}

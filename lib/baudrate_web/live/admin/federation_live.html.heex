@@ -75,26 +75,28 @@
                 </td>
                 <td>{job.attempts}</td>
                 <td class="text-sm max-w-xs truncate opacity-70">{job.last_error || "—"}</td>
-                <td class="flex gap-1">
-                  <button
-                    :if={job.status == "failed"}
-                    id={"admin-federation-job-retry-#{job.id}"}
-                    phx-click="retry_job"
-                    phx-value-id={job.id}
-                    class="admin-federation-job-retry-btn btn btn-ghost btn-sm"
-                    aria-label={gettext("Retry delivery to %{inbox}", inbox: job.inbox_url)}
-                  >
-                    {gettext("Retry")}
-                  </button>
-                  <button
-                    id={"admin-federation-job-abandon-#{job.id}"}
-                    phx-click="abandon_job"
-                    phx-value-id={job.id}
-                    class="admin-federation-job-abandon-btn btn btn-ghost btn-sm text-error"
-                    aria-label={gettext("Abandon delivery to %{inbox}", inbox: job.inbox_url)}
-                  >
-                    {gettext("Abandon")}
-                  </button>
+                <td class="admin-federation-job-actions">
+                  <div class="flex gap-1">
+                    <button
+                      :if={job.status == "failed"}
+                      id={"admin-federation-job-retry-#{job.id}"}
+                      phx-click="retry_job"
+                      phx-value-id={job.id}
+                      class="admin-federation-job-retry-btn btn btn-ghost btn-sm"
+                      aria-label={gettext("Retry delivery to %{inbox}", inbox: job.inbox_url)}
+                    >
+                      {gettext("Retry")}
+                    </button>
+                    <button
+                      id={"admin-federation-job-abandon-#{job.id}"}
+                      phx-click="abandon_job"
+                      phx-value-id={job.id}
+                      class="admin-federation-job-abandon-btn btn btn-ghost btn-sm text-error"
+                      aria-label={gettext("Abandon delivery to %{inbox}", inbox: job.inbox_url)}
+                    >
+                      {gettext("Abandon")}
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>

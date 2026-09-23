@@ -265,37 +265,39 @@
               {format_datetime(user.inserted_at)}
             </time>
           </td>
-          <td class="admin-users-row-actions flex gap-1">
-            <button
-              :if={user.status == "pending"}
-              id={"admin-users-approve-#{user.id}"}
-              phx-click="approve"
-              phx-value-id={user.id}
-              aria-label={gettext("Approve %{username}", username: user.username)}
-              class="admin-users-approve-btn btn btn-sm btn-primary"
-            >
-              {gettext("Approve")}
-            </button>
-            <button
-              :if={user.status != "banned" && user.id != @current_user.id}
-              id={"admin-users-ban-#{user.id}"}
-              phx-click="show_ban_modal"
-              phx-value-id={user.id}
-              aria-label={gettext("Ban %{username}", username: user.username)}
-              class="admin-users-ban-btn btn btn-sm btn-error btn-outline"
-            >
-              {gettext("Ban")}
-            </button>
-            <button
-              :if={user.status == "banned"}
-              id={"admin-users-unban-#{user.id}"}
-              phx-click="unban"
-              phx-value-id={user.id}
-              aria-label={gettext("Unban %{username}", username: user.username)}
-              class="admin-users-unban-btn btn btn-sm btn-success btn-outline"
-            >
-              {gettext("Unban")}
-            </button>
+          <td class="admin-users-row-actions">
+            <div class="flex gap-1">
+              <button
+                :if={user.status == "pending"}
+                id={"admin-users-approve-#{user.id}"}
+                phx-click="approve"
+                phx-value-id={user.id}
+                aria-label={gettext("Approve %{username}", username: user.username)}
+                class="admin-users-approve-btn btn btn-sm btn-primary"
+              >
+                {gettext("Approve")}
+              </button>
+              <button
+                :if={user.status != "banned" && user.id != @current_user.id}
+                id={"admin-users-ban-#{user.id}"}
+                phx-click="show_ban_modal"
+                phx-value-id={user.id}
+                aria-label={gettext("Ban %{username}", username: user.username)}
+                class="admin-users-ban-btn btn btn-sm btn-error btn-outline"
+              >
+                {gettext("Ban")}
+              </button>
+              <button
+                :if={user.status == "banned"}
+                id={"admin-users-unban-#{user.id}"}
+                phx-click="unban"
+                phx-value-id={user.id}
+                aria-label={gettext("Unban %{username}", username: user.username)}
+                class="admin-users-unban-btn btn btn-sm btn-success btn-outline"
+              >
+                {gettext("Unban")}
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>

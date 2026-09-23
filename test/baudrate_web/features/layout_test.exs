@@ -214,6 +214,39 @@ defmodule BaudrateWeb.Features.LayoutTest do
     assert check_layout(session, paths) == []
   end
 
+  # A link whose first child is an icon must not ride a pixel higher than one
+  # that is only text. `inline-flex` takes its baseline from its first flex
+  # item, and the icon is a block with no text and so no baseline, so the
+  # browser synthesized one from the link's bottom edge: the RSS item's box
+  # came out 22px against Atom's 20, and the two words sat a pixel apart
+  # (2026-09-23). Measured rather than eyeballed, because one pixel is exactly
+  # what nobody sees in a screenshot and everybody sees on the page.
+  feature "the RSS and Atom links sit on the same line", %{session: session, user: user} do
+    session = visit(session, "/users/#{user.username}")
+
+    [rss, atom] =
+      js_value(session, """
+      const top = (id) => {
+        const el = document.getElementById(id);
+        for (const node of el.childNodes) {
+          if (node.nodeType === 3 && node.textContent.trim()) {
+            const range = document.createRange();
+            range.selectNode(node);
+            return Math.round(range.getBoundingClientRect().top * 100) / 100;
+          }
+        }
+        return null;
+      };
+      return [top('user-profile-feed-rss'), top('user-profile-feed-atom')];
+      """)
+
+    assert is_number(rss) and is_number(atom), "the feed links were not both rendered"
+
+    assert rss == atom,
+           "RSS text sits at #{rss} and Atom at #{atom}: the two feed links are off by " <>
+             "#{Float.round(abs(atom - rss) / 1, 2)}px"
+  end
+
   feature "admin pages fit the screen and their menus open fully, in both themes", %{
     session: session
   } do
