@@ -1635,6 +1635,7 @@ recipient in `to`, no `as:Public`, no followers collection).
 |-------|---------|
 | `conversations` | 1-on-1 conversations with canonical participant ordering |
 | `direct_messages` | Message bodies (local + remote), soft-delete via `deleted_at` |
+| `dm_images` | Private images attached to local messages (ADR 0071) |
 | `conversation_read_cursors` | Per-user read position tracking |
 
 **DM access control:**
@@ -1697,6 +1698,39 @@ to the user's DM PubSub topic via `attach_hook/4` and re-fetches the count on
 - DM deletion: `Publisher.build_delete_dm/3` sends `Delete(Tombstone)`
 
 **Rate limiting:** 20 messages per minute per user (via Hammer in LiveView).
+
+**Push** ([ADR 0071](adr/0071-a-direct-message-stays-between-the-two-people-in-it.md)):
+a new message makes **no row on `/notifications`** — the Messages badge is its
+notice. `Messaging.Push.notify/3` pushes "New message from …" with an empty
+body to the recipient's subscriptions, unless they muted or blocked the sender
+or switched off the push-only `"direct_message"` preference
+(`Notification.push_only_types/0`). Called after a local send and in
+`receive_remote_dm/3`; best-effort like every push.
+
+**Images** (`Messaging.Images`, table `dm_images`):
+
+- Private files in `uploads/dm_images` (0700), read only through
+  `/messages/images/:id` (`DmImageController`): a participant, the uploader of
+  an unsent image, or a moderator for a message an open report names. Every
+  other case is the same 404; `BaudrateWeb.Plugs.DenyPrivateUploads` and nginx
+  refuse the path itself. No `storage_path` column — paths come from
+  `DataPortability.Files.image_path("dm_images", filename)`.
+- Only between members here: a remote conversation gets no upload and
+  `create_message/3` returns `{:error, :dm_images_local_only}`.
+- `create_dm_image/2` charges the member's limits **before** processing:
+  `check_dm_image_upload/2` (20/h, 3/h for a new account),
+  `check_dm_image_upload_daily/1` (60/day), at most 4 unsent at once.
+- An image-only message is allowed (`DirectMessage.changeset/3`,
+  `with_images: true`). Deleting a message deletes its images and clears its
+  link preview; unsent uploads are swept after 24 h.
+- Export: only the member's own sent images, as `media/dm_images/<id>.webp`.
+
+**Search** (`Messaging.Search`): `search_messages/3` matches `ILIKE` (escaped)
+over the member's own conversations, using the trigram index on
+`direct_messages.body`, leaving out deleted messages and hidden senders. It is
+deliberately not in `Content.Search`, which also backs `/ap/search`. `/messages`
+takes `?q=`; a result opens `/messages/:id?around=<message id>`, served by
+`list_messages(conversation, around_id: …)`.
 
 **UI routes:**
 

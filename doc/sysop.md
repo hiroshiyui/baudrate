@@ -2299,7 +2299,35 @@ BEAM code, ERTS, the NIF `.so` files (Baudrate's own three, plus every NIF its d
   the shared `shared/uploads/` directory, making uploads persistent across
   deploys
 - Subdirectories (`avatars/`, `article_images/`, `link_preview_images/`,
-  `media_cache/`) are created automatically on first use via `File.mkdir_p!/1`
+  `media_cache/`, `dm_images/`) are created automatically on first use via
+  `File.mkdir_p!/1` (`dm_images/` with mode 0700)
+
+#### Direct-message images
+
+`uploads/dm_images/` holds images attached to direct messages (ADR 0071). They
+are **private**: the application serves each one only through
+`/messages/images/:id`, after checking the viewer takes part in the
+conversation, and never by its path.
+
+- The directory is created by the deploy with mode **0700**, so only the
+  application's own user can read it — not nginx, which serves the rest of
+  `uploads/` directly. Keep it that way if you create it by hand.
+- nginx must also **deny** `/uploads/dm_images/`. The Ansible nginx template
+  does from v1.41.0, but `deploy-baudrate.yml` does not run the nginx role:
+  re-apply it once with `setup-server.yml --tags nginx` (redirect its output
+  to a file, as with every playbook here). If you maintain nginx yourself, add
+  this **before** `location /uploads/`:
+
+  ```nginx
+  location ^~ /uploads/dm_images/ {
+      return 404;
+  }
+  ```
+
+- They are **backed up** with the rest of `uploads/`. Unlike `media_cache/`,
+  they are not a cache: a lost file is a lost image.
+- Unsent uploads are removed after 24 hours by the hourly cleaner; a deleted
+  message's images go with it at once.
 
 #### Media cache
 

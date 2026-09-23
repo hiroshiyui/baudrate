@@ -9,11 +9,19 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Stages 6B, reading and notifications, and 6C, watching and followers. Two new
-records: [ADR 0069](doc/adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md),
-which amends ADR 0048, and
-[ADR 0070](doc/adr/0070-a-member-hears-about-what-they-chose.md). One
-migration, which creates the `watches` table.
+Stages 6B, reading and notifications; 6C, watching and followers; and 6D,
+direct messages. Three new records:
+[ADR 0069](doc/adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md),
+which amends ADR 0048,
+[ADR 0070](doc/adr/0070-a-member-hears-about-what-they-chose.md) and
+[ADR 0071](doc/adr/0071-a-direct-message-stays-between-the-two-people-in-it.md).
+Three migrations: the `watches` and `dm_images` tables, and a search index on
+direct messages.
+
+**Operators:** re-apply the nginx role once (`setup-server.yml --tags nginx`,
+with its output redirected to a file) so nginx refuses `/uploads/dm_images/`.
+A deploy does not run that role. The directory is created 0700 by the deploy,
+so the images are unreadable to nginx in the meantime; see `doc/sysop.md`.
 
 ### Added
 
@@ -53,6 +61,19 @@ migration, which creates the `watches` table.
   servers, with a way to remove any of them: an account elsewhere is sent a
   `Reject(Follow)`, and nobody is told. The count is shown to you only.
 - **Your data export includes the boards and threads you watch.**
+- **A push when a direct message arrives**, if you have push notifications
+  on. It says who the message is from and never what it says, because a
+  phone shows it on the lock screen. A direct message adds nothing to
+  `/notifications`; the Messages badge is still where you find it. It can be
+  turned off on its own in the notification settings.
+- **Images in direct messages**, up to four per message, with descriptions,
+  and a message may be just a picture. They are shown only to the two people
+  in the conversation — and to a moderator if one of you reports that message
+  — never by a public link, and they cannot be sent to accounts on other
+  servers. Uploading is limited to 20 an hour and 60 a day (3 an hour for a
+  new account).
+- **Search your own messages** from `/messages`. A result opens the
+  conversation on the message it found, however far back it is.
 
 ### Fixed
 
@@ -71,6 +92,12 @@ migration, which creates the `watches` table.
 - **Turning a notification type off in the site no longer turns its push
   notifications back on.** The in-app switch on `/profile` replaced that
   type's settings instead of changing one of them.
+- **Deleting a direct message now removes its link preview too,** not only
+  its text.
+- **Unsent images from the timeline reply box are deleted from disk again.**
+  The hourly cleanup looked for them at the path they had when uploaded,
+  which a deploy removes, so after any deploy it deleted the rows and left
+  the files.
 
 ## [1.40.1] — 2026-09-23
 

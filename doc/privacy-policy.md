@@ -252,7 +252,9 @@ to other servers.
 - **Content**: articles, comments, replies, likes, boosts, bookmarks, poll
   votes, the boards and threads you watch, and any images you upload.
 - **Direct messages** you send and receive, stored as plain text in the
-  database.
+  database, and any images attached to them. Those images are shown only to
+  the two people in the conversation (and to a moderator if one of you
+  reports that message), and are never sent to another server.
 - **Two-factor authentication**, if you enable it: a TOTP secret (encrypted at
   rest) or a registered security key.
 
@@ -330,7 +332,9 @@ Two exceptions:
   address to send to. Notifications are **encrypted before they are handed
   over**, so the push service cannot read them; only your device can. It does
   learn that a notification was sent to you and when, which over time reveals
-  when you are active. Turning notifications off ends this.
+  when you are active. A notification about a direct message says only who
+  it is from — never what it says, because your device may show it on the
+  lock screen. Turning notifications off ends this.
 
 When you post a link, this server — not your browser — fetches the page once to
 build a preview. The linked site sees a request from this server, not from you.

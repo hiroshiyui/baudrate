@@ -14,7 +14,7 @@ and discovery and onboarding. **All five are now closed** — Phase 0 in
 v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
 v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
 anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
-and v1.36.0. 6B and 6C are done and unreleased. **Phase 6's remaining stages, 6D and 6E, are next.**
+and v1.36.0. 6B, 6C and 6D are done and unreleased. **Phase 6's last stage, 6E, is next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -466,11 +466,25 @@ Left standing: the ActivityPub followers collection still lists a member's
 remote followers to anyone while `ap_authorized_fetch` is off. That is a
 federation question, not a profile one, and 0070 leaves it to that setting.
 
-### 6D — Direct messages (M)
+### 6D — Direct messages (M) — **complete**
 
-- [ ] **Web push for new DMs.**
-- [ ] **Image attachments in DMs,** reusing the upload pipeline.
-- [ ] **Search your own conversations.**
+A push when a direct message arrives, naming the sender and never the text,
+and no row on `/notifications`; images in messages between members here,
+private files served only after a participant check and never sent to
+another server, with uploads rationed before they are processed; and a
+search of one's own conversations that opens on the message it found.
+[ADR 0071](adr/0071-a-direct-message-stays-between-the-two-people-in-it.md)
+records all three. Building it found a deleted message keeping its link
+preview, and the timeline reply-image sweep unlinking nothing after a
+deploy; both are fixed.
+
+Left standing:
+
+- Images to and from accounts on other servers. Incoming ones stay proxied
+  inline images, as before; outgoing ones are refused rather than published
+  at a public URL (0071, rejected alternative).
+- Reporting an image-only message copies an empty text; the moderator sees
+  the image through the report, as 0071 allows.
 
 ### 6E — Account and privacy (L)
 

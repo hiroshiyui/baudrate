@@ -90,6 +90,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0068](0068-a-profile-says-what-was-checked-not-that-someone-is-verified.md) | A profile says what was checked, not that someone is verified | Accepted |
 | [0069](0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md) | A voter is told the poll closed, and that is the only other reader | Accepted |
 | [0070](0070-a-member-hears-about-what-they-chose.md) | A member hears about what they chose, and their followers are theirs | Accepted |
+| [0071](0071-a-direct-message-stays-between-the-two-people-in-it.md) | A direct message stays between the two people in it | Accepted |
 
 ## Writing a new ADR
 
