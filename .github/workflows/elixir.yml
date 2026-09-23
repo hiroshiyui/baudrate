@@ -106,7 +106,7 @@ jobs:
           deps
           native/*/target
           /opt/cargo/registry
-        key: ${{ runner.os }}-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('**/mix.lock', 'native/*/Cargo.lock') }}
+        key: ${{ runner.os }}-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('mix.lock', 'native/*/Cargo.lock') }}
     - name: Install dependencies
       run: mix deps.get
     - name: Check formatting
@@ -154,7 +154,7 @@ jobs:
           deps
           native/*/target
           /opt/cargo/registry
-        key: ${{ runner.os }}-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('**/mix.lock', 'native/*/Cargo.lock') }}
+        key: ${{ runner.os }}-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('mix.lock', 'native/*/Cargo.lock') }}
     - name: Install dependencies
       run: mix deps.get
     - name: Sobelow
@@ -219,7 +219,7 @@ jobs:
           deps
           native/*/target
           /opt/cargo/registry
-        key: ${{ runner.os }}-release-${{ hashFiles('ci/image/build-image.lock') }}-${{ hashFiles('**/mix.lock', 'native/*/Cargo.lock') }}
+        key: ${{ runner.os }}-release-${{ hashFiles('ci/image/build-image.lock') }}-${{ hashFiles('mix.lock', 'native/*/Cargo.lock') }}
     - name: Build the release
       env:
         OUT_DIR: dist
@@ -278,7 +278,7 @@ jobs:
           deps
           native/*/target
           /opt/cargo/registry
-        key: ${{ runner.os }}-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('**/mix.lock', 'native/*/Cargo.lock') }}
+        key: ${{ runner.os }}-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('mix.lock', 'native/*/Cargo.lock') }}
     - name: Install dependencies
       run: mix deps.get
     # esbuild and Tailwind come from the image (MIX_ESBUILD_PATH, MIX_TAILWIND_PATH).
