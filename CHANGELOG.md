@@ -9,6 +9,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.41.0] — 2026-09-23
+
 Stages 6B, reading and notifications; 6C, watching and followers; and 6D,
 direct messages. Three new records:
 [ADR 0069](doc/adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md),
