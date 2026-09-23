@@ -287,6 +287,23 @@ defmodule BaudrateWeb.ProfileLiveTest do
       updated = Repo.get!(Baudrate.Setup.User, user.id)
       assert updated.notification_preferences["mention"]["in_app"] == true
     end
+
+    # The in-app toggle used to replace the type's settings wholesale, so it
+    # silently switched push back on for anyone who had turned it off.
+    test "toggling in-app keeps the web-push choice", %{conn: conn, user: user} do
+      {:ok, _} =
+        Auth.update_notification_preferences(user, %{"mention" => %{"web_push" => false}})
+
+      {:ok, lv, _html} = live(conn, "/profile")
+      render_click(lv, "toggle_notification_pref", %{"type" => "mention"})
+
+      updated = Repo.get!(Baudrate.Setup.User, user.id)
+
+      assert updated.notification_preferences["mention"] == %{
+               "in_app" => false,
+               "web_push" => false
+             }
+    end
   end
 
   describe "push notifications" do

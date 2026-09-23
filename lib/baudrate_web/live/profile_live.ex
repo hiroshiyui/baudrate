@@ -450,8 +450,11 @@ defmodule BaudrateWeb.ProfileLive do
     user = socket.assigns.current_user
     prefs = socket.assigns.notification_preferences
 
-    current_in_app = get_in(prefs, [type, "in_app"]) != false
-    new_prefs = Map.put(prefs, type, %{"in_app" => !current_in_app})
+    # Merged into the type's map, as `toggle_web_push_pref` does: replacing
+    # the map threw away a stored web-push choice every time in-app changed.
+    type_prefs = Map.get(prefs, type, %{})
+    current_in_app = Map.get(type_prefs, "in_app") != false
+    new_prefs = Map.put(prefs, type, Map.put(type_prefs, "in_app", !current_in_app))
 
     case Auth.update_notification_preferences(user, new_prefs) do
       {:ok, updated_user} ->
