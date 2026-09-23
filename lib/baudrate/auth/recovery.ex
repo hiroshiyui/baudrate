@@ -53,6 +53,7 @@ defmodule Baudrate.Auth.Recovery do
 
   alias Baudrate.Auth.{
     AccountReset,
+    RecoveryChallenge,
     RecoveryCode,
     RecoveryContact,
     SecondFactor,
@@ -187,18 +188,89 @@ defmodule Baudrate.Auth.Recovery do
   # --- Contacts: the admin's side ---
 
   @doc """
+  Issues the text the member is asked to sign for `contact` (ADR 0067).
+
+  Re-issuing supersedes by recency rather than by a column: `live_challenge/1`
+  reads the newest row and nothing older, so the phrase an admin sent before
+  this one stops being the answer they will accept — and does not come back
+  when this one is spent. Nothing is deleted — the row is the
+  record of what was asked, beside the log entry that names it.
+  """
+  @spec issue_challenge(User.t(), integer()) ::
+          {:ok, RecoveryChallenge.t()} | {:error, :unauthorized | :not_found | Ecto.Changeset.t()}
+  def issue_challenge(%User{} = admin, contact_id) do
+    with :ok <- authorize_verify(admin),
+         %RecoveryContact{} = contact <- Repo.get(RecoveryContact, contact_id),
+         %User{} = owner <- Repo.get(User, contact.user_id) do
+      contact
+      |> RecoveryChallenge.build(owner, admin, Setup.get_setting("site_name"))
+      |> Repo.insert()
+      |> case do
+        {:ok, challenge} ->
+          Baudrate.Moderation.log_action(admin.id, "issue_recovery_challenge",
+            target_type: "user",
+            target_id: owner.id,
+            details: %{"contact_id" => contact.id, "phrase" => challenge.phrase}
+          )
+
+          {:ok, challenge}
+
+        error ->
+          error
+      end
+    else
+      nil -> {:error, :not_found}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  The challenge `contact_id` is waiting on, or `nil`.
+
+  **Only the newest row is ever considered**, and only while it is unconsumed
+  and unexpired. Reading "the newest *live* row" instead would resurrect a
+  superseded challenge the moment its successor was spent — an admin would be
+  back to accepting a phrase they had already told the member to ignore, which
+  is the replay this whole mechanism closes.
+
+  Live is decided by the clock at read, never by a sweep (ADR 0029): an expired
+  row stays in the table and stops counting by itself.
+  """
+  @spec live_challenge(integer()) :: RecoveryChallenge.t() | nil
+  def live_challenge(contact_id) do
+    newest =
+      Repo.one(
+        from(c in RecoveryChallenge,
+          where: c.recovery_contact_id == ^contact_id,
+          order_by: [desc: c.id],
+          limit: 1
+        )
+      )
+
+    if newest && RecoveryChallenge.live?(newest, DateTime.utc_now(:second)), do: newest
+  end
+
+  @doc """
   Marks a contact verified, or puts it back to pending.
 
   An admin can only ever confirm a contact the member registered themselves —
   there is no function here that creates one on somebody else's account, and
   that absence is the point.
+
+  Verifying **consumes a live challenge** and refuses with
+  `:no_live_challenge` when there is none (ADR 0067). That does not prove the
+  admin checked anything; it does mean the text they asked for was this
+  instance's and was answerable once. Withdrawing a verification needs no
+  challenge: going back to `pending` is the safe direction, and a check that
+  can only be reached by issuing something is a check that stalls.
   """
   @spec set_verification(User.t(), integer(), String.t()) ::
           {:ok, RecoveryContact.t()} | {:error, :unauthorized | :not_found | Ecto.Changeset.t()}
   def set_verification(%User{} = admin, contact_id, status)
       when status in ["pending", "verified"] do
     with :ok <- authorize_verify(admin),
-         %RecoveryContact{} = contact <- Repo.get(RecoveryContact, contact_id) do
+         %RecoveryContact{} = contact <- Repo.get(RecoveryContact, contact_id),
+         :ok <- consume_challenge_for(status, contact, admin) do
       contact
       |> RecoveryContact.verification_changeset(status, admin)
       |> Repo.update()
@@ -233,8 +305,10 @@ defmodule Baudrate.Auth.Recovery do
   decision rested on rather than merely that one existed.
 
   Refuses with `:unauthorized` (no permission), `:self_action`,
-  `:role_too_high` (ADR 0029's rule) or `:no_verified_contact`. Any earlier
-  live link for the account is revoked, so there is never more than one.
+  `:role_too_high` (ADR 0029's rule), `:no_verified_contact`, or
+  `:no_live_challenge` when no challenge for that contact is waiting to be
+  answered (ADR 0067). Any earlier live link for the account is revoked, so
+  there is never more than one.
   """
   @spec issue(User.t(), User.t(), integer(), keyword()) ::
           {:ok, String.t(), AccountReset.t()} | {:error, atom() | Ecto.Changeset.t()}
@@ -242,7 +316,8 @@ defmodule Baudrate.Auth.Recovery do
     clear_second_factors? = Keyword.get(opts, :clear_second_factors, false)
 
     with :ok <- authorize_issue(admin, user),
-         %RecoveryContact{} = contact <- verified_contact(user, contact_id) do
+         %RecoveryContact{} = contact <- verified_contact(user, contact_id),
+         :ok <- consume_challenge(contact, admin) do
       revoke_live_resets(user)
       {token, changeset} = AccountReset.build(user, admin, contact, clear_second_factors?)
 
@@ -493,6 +568,34 @@ defmodule Baudrate.Auth.Recovery do
 
   defp authorize_verify(%User{} = admin) do
     if permitted?(admin), do: :ok, else: {:error, :unauthorized}
+  end
+
+  # Withdrawing a verification is always allowed; confirming one spends the
+  # challenge the member answered (ADR 0067).
+  defp consume_challenge_for("verified", contact, admin), do: consume_challenge(contact, admin)
+  defp consume_challenge_for(_status, _contact, _admin), do: :ok
+
+  # One conditional UPDATE, like `claim_download/2` and `HeldPosts.claim/2`:
+  # two admins acting on the same signature spend the same row, and the second
+  # one is told there is nothing live rather than both being waved through.
+  defp consume_challenge(%RecoveryContact{} = contact, %User{} = admin) do
+    now = DateTime.utc_now(:second)
+
+    case live_challenge(contact.id) do
+      nil ->
+        {:error, :no_live_challenge}
+
+      challenge ->
+        {count, _} =
+          Repo.update_all(
+            from(c in RecoveryChallenge,
+              where: c.id == ^challenge.id and is_nil(c.consumed_at) and c.expires_at > ^now
+            ),
+            set: [consumed_at: now, consumed_by_id: admin.id, updated_at: now]
+          )
+
+        if count == 1, do: :ok, else: {:error, :no_live_challenge}
+    end
   end
 
   defp authorize_issue(%User{} = admin, %User{} = user) do

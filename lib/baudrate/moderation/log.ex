@@ -23,7 +23,7 @@ defmodule Baudrate.Moderation.Log do
     pin_article unpin_article lock_article unlock_article
     create_board update_board delete_board toggle_board_federation update_board_accept_policy
     add_board_moderator remove_board_moderator
-    verify_recovery_contact unverify_recovery_contact
+    verify_recovery_contact unverify_recovery_contact issue_recovery_challenge
     issue_account_reset revoke_account_reset clear_second_factors
     block_user unblock_user block_domain unblock_domain rotate_keys
     ban_ip unban_ip ban_invite_chain

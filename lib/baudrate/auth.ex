@@ -109,6 +109,8 @@ defmodule Baudrate.Auth do
 
   # --- Account recovery (ADR 0058) ---
   defdelegate list_recovery_contacts(user), to: Recovery, as: :list_contacts
+  defdelegate issue_recovery_challenge(admin, contact_id), to: Recovery, as: :issue_challenge
+  defdelegate live_recovery_challenge(contact_id), to: Recovery, as: :live_challenge
   defdelegate add_recovery_contact(user, attrs), to: Recovery, as: :add_contact
   defdelegate update_recovery_contact(user, contact_id, attrs), to: Recovery, as: :update_contact
   defdelegate remove_recovery_contact(user, contact_id), to: Recovery, as: :remove_contact
