@@ -256,7 +256,7 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
       {:ok, contact} =
         Auth.add_recovery_contact(user, %{"email" => "a@b.co", "pgp_public_key" => @key})
 
-      {:ok, _} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
+      {:ok, _} = verify_with_challenge(admin, contact.id, "verified")
 
       {:ok, _lv, html} = live(log_in_user(build_conn(), user), "/")
       refute html =~ ~s(id="recovery-notice")
@@ -274,8 +274,8 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
           "pgp_public_key" => @key
         })
 
-      {:ok, contact} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
-      {:ok, token, _reset} = Auth.issue_account_reset(admin, user, contact.id)
+      {:ok, contact} = verify_with_challenge(admin, contact.id, "verified")
+      {:ok, token, _reset} = issue_with_challenge(admin, user, contact.id)
 
       %{admin: admin, user: user, token: token}
     end
@@ -411,8 +411,30 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
     } do
       {:ok, lv, _html} = live(conn, "/admin/users/#{user.id}")
 
+      # Nothing can be acted on until a challenge has been asked for and the
+      # signature over it checked elsewhere (ADR 0067).
+      html = lv |> element("#admin-user-detail-recovery-verify-#{contact.id}") |> render_click()
+      assert html =~ "Issue a challenge first"
+      refute html =~ ">Verified<"
+
+      html =
+        lv
+        |> element("#admin-user-detail-recovery-challenge-issue-#{contact.id}")
+        |> render_click()
+
+      assert html =~ "account recovery for @#{user.username}"
+
       html = lv |> element("#admin-user-detail-recovery-verify-#{contact.id}") |> render_click()
       assert html =~ "Verified"
+
+      # The verification spent it, so the link needs one of its own.
+      html = lv |> element("#admin-user-detail-recovery-issue-#{contact.id}") |> render_click()
+      assert html =~ "Issue a challenge first"
+      refute html =~ ~s(id="admin-user-detail-recovery-token")
+
+      lv
+      |> element("#admin-user-detail-recovery-challenge-issue-#{contact.id}")
+      |> render_click()
 
       html = lv |> element("#admin-user-detail-recovery-issue-#{contact.id}") |> render_click()
       assert html =~ ~s(id="admin-user-detail-recovery-token")
@@ -420,6 +442,58 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
 
       html = lv |> element("#admin-user-detail-recovery-token-done") |> render_click()
       refute html =~ ~s(id="admin-user-detail-recovery-token")
+    end
+
+    test "offers a mail to send, carrying the challenge and the warning", %{
+      conn: conn,
+      user: user,
+      contact: contact
+    } do
+      {:ok, lv, html} = live(conn, "/admin/users/#{user.id}")
+
+      # Nothing to send until something has been asked.
+      refute html =~ ~s(id="admin-user-detail-recovery-mail-#{contact.id}")
+
+      html =
+        lv
+        |> element("#admin-user-detail-recovery-challenge-issue-#{contact.id}")
+        |> render_click()
+
+      challenge = Auth.live_recovery_challenge(contact.id)
+
+      assert html =~ ~s(id="admin-user-detail-recovery-mail-#{contact.id}")
+      assert html =~ challenge.phrase
+
+      assert html =~ "Never send your private key",
+             """
+             Writing the message from scratch while somebody is locked out is
+             how this line gets left out, and `doc/sysop.md` says a member
+             under stress does offer their private key.
+             """
+    end
+
+    test "writes that mail in the member's own language", %{
+      conn: conn,
+      user: user,
+      contact: contact
+    } do
+      {:ok, _} = Auth.update_preferred_locales(user, ["ja_JP"])
+
+      {:ok, lv, _html} = live(conn, "/admin/users/#{user.id}")
+
+      html =
+        lv
+        |> element("#admin-user-detail-recovery-challenge-issue-#{contact.id}")
+        |> render_click()
+
+      assert html =~ "日本語",
+             "the admin is told which language they are about to send"
+
+      assert html =~ "秘密鍵",
+             """
+             The member is who reads this, so it is written in the language
+             they asked for — not the one the admin happens to be using.
+             """
     end
 
     test "a moderator sees no recovery contacts at all", %{user: user} do
@@ -454,7 +528,7 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
       {:ok, contact} =
         Auth.add_recovery_contact(peer, %{"email" => "peer@example.com", "pgp_public_key" => @key})
 
-      {:ok, _} = Auth.set_recovery_contact_verification(other, contact.id, "verified")
+      {:ok, _} = verify_with_challenge(other, contact.id, "verified")
 
       {:ok, _lv, html} = live(conn, "/admin/users/#{peer.id}")
 
@@ -469,5 +543,17 @@ defmodule BaudrateWeb.AccountRecoveryWebTest do
       # And the handler refuses too, not merely the template.
       assert {:error, :role_too_high} = Auth.issue_account_reset(admin, peer, contact.id)
     end
+  end
+
+  # ADR 0067: the admin issues the text the member signs, and marking a
+  # contact verified or issuing a link spends it.
+  defp verify_with_challenge(admin, contact_id, status) do
+    {:ok, _challenge} = Auth.issue_recovery_challenge(admin, contact_id)
+    Auth.set_recovery_contact_verification(admin, contact_id, status)
+  end
+
+  defp issue_with_challenge(admin, user, contact_id, opts \\ []) do
+    {:ok, _challenge} = Auth.issue_recovery_challenge(admin, contact_id)
+    Auth.issue_account_reset(admin, user, contact_id, opts)
   end
 end

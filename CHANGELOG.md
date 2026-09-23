@@ -9,6 +9,32 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Added
+
+- **Baudrate issues the challenge a member signs to recover an account**
+  ([ADR 0067](doc/adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md)).
+  `/admin/users/:id` shows a one-line phrase naming the instance, the account
+  and the date, with a random nonce; an admin sends it, checks the signature
+  over it in their own client as before, and only then marks the contact
+  verified or issues a reset link. Both actions now refuse unless a challenge
+  is waiting, and each spends it.
+- **A mail subject and message ready to paste**, beside the challenge on
+  `/admin/users/:id`, carrying the phrase, how to sign it and the warning
+  never to send a private key. It is written in the member's own language when
+  they have asked for one, and the page says which language that is.
+
+### Security
+
+- **A recovery request can no longer be answered with an old signature.** The
+  phrase was previously whatever the member or the admin composed — the SysOp
+  guide asked for `openssl rand -hex 16` by hand — so a signed message anyone
+  had once seen could be presented again. A challenge now works once, expires
+  after 72 hours, and re-issuing supersedes the one before it.
+- The moderation log records each challenge with the phrase that was asked, so
+  a disputed recovery can be reconstructed.
+- **Baudrate still parses no OpenPGP and verifies no signature.** Automating
+  the check was considered and refused; ADR 0067 records the reasoning.
+
 ## [1.39.1] — 2026-09-22
 
 A documentation release: nothing an instance runs has changed since v1.39.0.

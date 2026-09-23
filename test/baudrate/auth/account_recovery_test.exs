@@ -25,7 +25,7 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
   use Baudrate.DataCase
 
   alias Baudrate.Auth
-  alias Baudrate.Auth.{AccountReset, Recovery, RecoveryContact}
+  alias Baudrate.Auth.{AccountReset, Recovery, RecoveryChallenge, RecoveryContact}
   alias Baudrate.Moderation
   alias Baudrate.Setup
   alias Baudrate.Setup.{Role, User}
@@ -64,7 +64,7 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
     {:ok, contact} =
       Recovery.add_contact(user, %{"email" => "owner@example.com", "pgp_public_key" => @key})
 
-    {:ok, contact} = Recovery.set_verification(admin, contact.id, "verified")
+    {:ok, contact} = verify_with_challenge(admin, contact.id, "verified")
     contact
   end
 
@@ -200,6 +200,142 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
     end
   end
 
+  describe "the challenge the member signs (ADR 0067)" do
+    setup do
+      admin = create_user("admin")
+      user = create_user()
+
+      {:ok, contact} =
+        Recovery.add_contact(user, %{"email" => "me@example.com", "pgp_public_key" => @key})
+
+      %{admin: admin, user: user, contact: contact}
+    end
+
+    test "says what it authorizes, and is not two of the same", ctx do
+      {:ok, first} = Recovery.issue_challenge(ctx.admin, ctx.contact.id)
+      {:ok, second} = Recovery.issue_challenge(ctx.admin, ctx.contact.id)
+
+      assert first.phrase =~ "account recovery for @#{ctx.user.username}"
+      assert first.phrase =~ Date.to_iso8601(Date.utc_today())
+
+      assert first.phrase != second.phrase,
+             """
+             The nonce is the whole of the freshness. A phrase that repeated
+             would make an old signature answer a new question, which is the
+             replay this exists to close.
+             """
+
+      # One line of ASCII: it is copied out, signed byte for byte and compared
+      # by eye on another machine.
+      refute first.phrase =~ "\n"
+      assert first.phrase == for(<<c <- first.phrase>>, c in 0x20..0x7E, into: "", do: <<c>>)
+    end
+
+    test "cannot be issued by someone without the permission", ctx do
+      moderator = create_user("moderator")
+
+      assert {:error, :unauthorized} = Recovery.issue_challenge(moderator, ctx.contact.id)
+    end
+
+    test "is refused for a contact that does not exist", ctx do
+      assert {:error, :not_found} = Recovery.issue_challenge(ctx.admin, 0)
+    end
+
+    test "is what verifying spends, and it is spent once", ctx do
+      assert {:error, :no_live_challenge} =
+               Recovery.set_verification(ctx.admin, ctx.contact.id, "verified"),
+             """
+             Without this, an admin can mark a contact verified against a
+             message the member composed themselves — and one signed last year
+             cannot be told from one signed today.
+             """
+
+      {:ok, _} = Recovery.issue_challenge(ctx.admin, ctx.contact.id)
+      assert {:ok, contact} = Recovery.set_verification(ctx.admin, ctx.contact.id, "verified")
+      assert contact.status == "verified"
+
+      # A second admin acting on the same signature finds it spent.
+      assert {:error, :no_live_challenge} =
+               Recovery.set_verification(ctx.admin, ctx.contact.id, "verified")
+    end
+
+    test "is not needed to withdraw a verification", ctx do
+      {:ok, _} = Recovery.issue_challenge(ctx.admin, ctx.contact.id)
+      {:ok, _} = Recovery.set_verification(ctx.admin, ctx.contact.id, "verified")
+
+      assert {:ok, contact} = Recovery.set_verification(ctx.admin, ctx.contact.id, "pending"),
+             """
+             Going back to pending is the safe direction, and a check that can
+             only be reached by issuing something is a check that stalls.
+             """
+
+      assert contact.status == "pending"
+    end
+
+    test "is spent again by the link, and the verification's does not count", ctx do
+      {:ok, _} = Recovery.issue_challenge(ctx.admin, ctx.contact.id)
+      {:ok, _} = Recovery.set_verification(ctx.admin, ctx.contact.id, "verified")
+
+      assert {:error, :no_live_challenge} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id),
+             """
+             The verification may be months old. What authorizes the link is a
+             signature over something asked for now.
+             """
+
+      {:ok, _} = Recovery.issue_challenge(ctx.admin, ctx.contact.id)
+      assert {:ok, _token, _reset} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+    end
+
+    test "stops counting when it expires, without anything sweeping it", ctx do
+      {:ok, challenge} = Recovery.issue_challenge(ctx.admin, ctx.contact.id)
+
+      past = DateTime.utc_now(:second) |> DateTime.add(-60, :second)
+
+      Repo.update_all(from(c in RecoveryChallenge, where: c.id == ^challenge.id),
+        set: [expires_at: past]
+      )
+
+      assert is_nil(Recovery.live_challenge(ctx.contact.id))
+
+      assert {:error, :no_live_challenge} =
+               Recovery.set_verification(ctx.admin, ctx.contact.id, "verified")
+
+      # The row stays: it is the record of what was asked (ADR 0067).
+      assert Repo.get(RecoveryChallenge, challenge.id)
+    end
+
+    test "re-issuing supersedes the one before it", ctx do
+      {:ok, first} = Recovery.issue_challenge(ctx.admin, ctx.contact.id)
+      {:ok, second} = Recovery.issue_challenge(ctx.admin, ctx.contact.id)
+
+      assert Recovery.live_challenge(ctx.contact.id).id == second.id
+
+      {:ok, _} = Recovery.set_verification(ctx.admin, ctx.contact.id, "verified")
+
+      # The newest is what was spent; the superseded one is not left live.
+      assert Repo.get(RecoveryChallenge, second.id).consumed_at
+      assert is_nil(Recovery.live_challenge(ctx.contact.id))
+      assert is_nil(Repo.get(RecoveryChallenge, first.id).consumed_at)
+    end
+
+    test "is recorded with what was asked, for whom", ctx do
+      {:ok, challenge} = Recovery.issue_challenge(ctx.admin, ctx.contact.id)
+
+      entry =
+        Repo.one!(
+          from(l in Moderation.Log,
+            where: l.action == "issue_recovery_challenge",
+            order_by: [desc: l.id],
+            limit: 1
+          )
+        )
+
+      assert entry.target_id == ctx.user.id
+      assert entry.details["phrase"] == challenge.phrase
+      assert entry.details["contact_id"] == ctx.contact.id
+    end
+  end
+
   describe "issuing a reset" do
     test "is refused when the account has no contact at all" do
       admin = create_user("admin")
@@ -259,7 +395,7 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
       user = create_user()
       contact = verified_contact(user, admin)
 
-      assert {:ok, token, reset} = Recovery.issue(admin, user, contact.id)
+      assert {:ok, token, reset} = issue_with_challenge(admin, user, contact.id)
       assert is_binary(token)
       assert reset.contact_id == contact.id
       assert reset.issued_by_id == admin.id
@@ -271,7 +407,7 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
       user = create_user()
       contact = verified_contact(user, admin)
 
-      {:ok, token, reset} = Recovery.issue(admin, user, contact.id)
+      {:ok, token, reset} = issue_with_challenge(admin, user, contact.id)
       stored = Repo.get!(AccountReset, reset.id)
 
       refute stored.token_hash == token
@@ -283,8 +419,8 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
       user = create_user()
       contact = verified_contact(user, admin)
 
-      {:ok, first, _} = Recovery.issue(admin, user, contact.id)
-      {:ok, _second, _} = Recovery.issue(admin, user, contact.id)
+      {:ok, first, _} = issue_with_challenge(admin, user, contact.id)
+      {:ok, _second, _} = issue_with_challenge(admin, user, contact.id)
 
       assert {:error, :invalid} = Recovery.redeem(first, "NewPassword123!x", "NewPassword123!x")
     end
@@ -294,7 +430,7 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
       user = create_user()
       contact = verified_contact(user, admin)
 
-      {:ok, _token, _} = Recovery.issue(admin, user, contact.id)
+      {:ok, _token, _} = issue_with_challenge(admin, user, contact.id)
 
       types =
         Repo.all(
@@ -318,11 +454,19 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
       user = create_user()
       contact = verified_contact(user, admin)
 
-      {:ok, _token, _} = Recovery.issue(admin, user, contact.id)
-      # `verify_recovery_contact` is the setup's; the reset adds one line.
-      assert actions_for(user) == ["verify_recovery_contact", "issue_account_reset"]
+      {:ok, _token, _} = issue_with_challenge(admin, user, contact.id)
 
-      {:ok, _token, _} = Recovery.issue(admin, user, contact.id, clear_second_factors: true)
+      # Each act of the procedure is its own line, in the order it happened:
+      # the challenge the member answered to be verified, the verification,
+      # the challenge they answered to recover, the link (ADR 0067).
+      assert actions_for(user) == [
+               "issue_recovery_challenge",
+               "verify_recovery_contact",
+               "issue_recovery_challenge",
+               "issue_account_reset"
+             ]
+
+      {:ok, _token, _} = issue_with_challenge(admin, user, contact.id, clear_second_factors: true)
 
       assert "clear_second_factors" in actions_for(user),
              """
@@ -342,7 +486,7 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
     end
 
     test "sets the password and returns fresh recovery codes", ctx do
-      {:ok, token, _} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+      {:ok, token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
 
       assert {:ok, user, codes} = Recovery.redeem(token, "BrandNew123!xy", "BrandNew123!xy")
       assert user.id == ctx.user.id
@@ -351,14 +495,14 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
     end
 
     test "works exactly once", ctx do
-      {:ok, token, _} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+      {:ok, token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
 
       assert {:ok, _, _} = Recovery.redeem(token, "BrandNew123!xy", "BrandNew123!xy")
       assert {:error, :invalid} = Recovery.redeem(token, "Another123!xyz", "Another123!xyz")
     end
 
     test "only one of two simultaneous redemptions wins", ctx do
-      {:ok, token, _} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+      {:ok, token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
 
       results =
         [1, 2]
@@ -376,7 +520,7 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
     end
 
     test "an expired link is refused", ctx do
-      {:ok, token, reset} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+      {:ok, token, reset} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
 
       Repo.update_all(
         from(r in AccountReset, where: r.id == ^reset.id),
@@ -387,7 +531,7 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
     end
 
     test "a revoked link is refused", ctx do
-      {:ok, token, _} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+      {:ok, token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
       {:ok, 1} = Recovery.revoke(ctx.admin, ctx.user)
 
       assert {:error, :invalid} = Recovery.redeem(token, "BrandNew123!xy", "BrandNew123!xy")
@@ -398,7 +542,7 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
     end
 
     test "a link for an account banned since it was issued is refused", ctx do
-      {:ok, token, _} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+      {:ok, token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
 
       Repo.update!(Ecto.Changeset.change(ctx.user, status: "banned"))
 
@@ -418,11 +562,11 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
     end
 
     test "revokes every session, and cancels exports and moves", ctx do
-      {:ok, _token, _} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+      {:ok, _token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
       {:ok, session_token, _refresh} = Auth.create_user_session(ctx.user.id)
       assert {:ok, _} = Auth.get_user_by_session_token(session_token)
 
-      {:ok, token, _} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+      {:ok, token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
       {:ok, _, _} = Recovery.redeem(token, "BrandNew123!xy", "BrandNew123!xy")
 
       assert {:error, :not_found} = Auth.get_user_by_session_token(session_token)
@@ -430,7 +574,7 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
 
     test "leaves second factors alone unless the admin ticked the box", ctx do
       {:ok, _} = Auth.enable_totp(ctx.user, Auth.generate_totp_secret())
-      {:ok, token, _} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+      {:ok, token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
       {:ok, user, _} = Recovery.redeem(token, "BrandNew123!xy", "BrandNew123!xy")
 
       assert user.totp_enabled,
@@ -444,14 +588,14 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
       {:ok, _} = Auth.enable_totp(ctx.user, Auth.generate_totp_secret())
 
       {:ok, token, _} =
-        Recovery.issue(ctx.admin, ctx.user, ctx.contact.id, clear_second_factors: true)
+        issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id, clear_second_factors: true)
 
       {:ok, user, _} = Recovery.redeem(token, "BrandNew123!xy", "BrandNew123!xy")
       refute user.totp_enabled
     end
 
     test "a weak password is refused and does not hand the link back", ctx do
-      {:ok, token, _} = Recovery.issue(ctx.admin, ctx.user, ctx.contact.id)
+      {:ok, token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
 
       assert {:error, %Ecto.Changeset{}} = Recovery.redeem(token, "short", "short")
 
@@ -508,5 +652,19 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
         select: l.action
       )
     )
+  end
+
+  # ADR 0067: the admin issues the text the member signs, and marking a
+  # contact verified or issuing a link spends it. These helpers do the round
+  # trip the procedure describes, so every test below reads as the flow an
+  # admin actually follows.
+  defp verify_with_challenge(admin, contact_id, status) do
+    {:ok, _challenge} = Recovery.issue_challenge(admin, contact_id)
+    Recovery.set_verification(admin, contact_id, status)
+  end
+
+  defp issue_with_challenge(admin, user, contact_id, opts \\ []) do
+    {:ok, _challenge} = Recovery.issue_challenge(admin, contact_id)
+    Recovery.issue(admin, user, contact_id, opts)
   end
 end

@@ -1,6 +1,7 @@
 # 0058 — Account recovery is anchored outside the instance
 
-- **Status:** Accepted
+- **Status:** Accepted; the challenge the member signs is issued by the
+  instance since [0067](0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md), which refines it and changes no decision
 - **Date:** 2026-09-21
 - **Deciders:** Baudrate maintainers
 - **Related:** applies [0022](0022-step-up-reauthentication-for-second-factor-changes.md)

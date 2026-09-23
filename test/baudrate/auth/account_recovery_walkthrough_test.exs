@@ -34,7 +34,7 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
   use Baudrate.DataCase
 
   alias Baudrate.Auth
-  alias Baudrate.Auth.{AccountReset, Recovery, RecoveryContact}
+  alias Baudrate.Auth.{AccountReset, RecoveryContact}
   alias Baudrate.Moderation
   alias Baudrate.Notification.Notification
   alias Baudrate.Setup
@@ -132,7 +132,7 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
       assert {:ok, "rita@example.org"} =
                RecoveryContact.email(Repo.get!(RecoveryContact, contact.id), rita)
 
-      {:ok, contact} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
+      {:ok, contact} = verify_with_challenge(admin, contact.id, "verified")
 
       assert contact.status == "verified"
       assert contact.verified_by_id == admin.id
@@ -166,7 +166,7 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
       {:ok, phone_session, _refresh} = Auth.create_user_session(rita.id)
 
       {:ok, token, reset} =
-        Auth.issue_account_reset(admin, rita, contact.id, clear_second_factors: false)
+        issue_with_challenge(admin, rita, contact.id, clear_second_factors: false)
 
       assert reset.contact_id == contact.id, "the log says which anchor the decision rested on"
       refute reset.clear_second_factors
@@ -229,7 +229,7 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
           "pgp_public_key" => @rita_key
         })
 
-      {:ok, _} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
+      {:ok, _} = verify_with_challenge(admin, contact.id, "verified")
 
       # Somebody with a stolen session points the anchor at their own key.
       {:ok, changed} =
@@ -276,7 +276,7 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
           "pgp_public_key" => @rita_key
         })
 
-      {:ok, _} = Auth.set_recovery_contact_verification(other, contact.id, "verified")
+      {:ok, _} = verify_with_challenge(other, contact.id, "verified")
 
       assert {:error, :role_too_high} = Auth.issue_account_reset(admin, peer, contact.id)
       refute Auth.can_issue_account_reset?(admin, peer)
@@ -297,11 +297,11 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
           "pgp_public_key" => @rita_key
         })
 
-      {:ok, contact} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
+      {:ok, contact} = verify_with_challenge(admin, contact.id, "verified")
       {:ok, _} = Auth.enable_totp(rita, Auth.generate_totp_secret())
 
       {:ok, token, _} =
-        Auth.issue_account_reset(admin, rita, contact.id, clear_second_factors: true)
+        issue_with_challenge(admin, rita, contact.id, clear_second_factors: true)
 
       assert "clear_second_factors" in audit_actions(rita),
              "\"take my 2FA off\" is the ask a social engineer makes; the log must say it was made"
@@ -318,8 +318,8 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
           "pgp_public_key" => @rita_key
         })
 
-      {:ok, contact} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
-      {:ok, token, _} = Auth.issue_account_reset(admin, rita, contact.id)
+      {:ok, contact} = verify_with_challenge(admin, contact.id, "verified")
+      {:ok, token, _} = issue_with_challenge(admin, rita, contact.id)
 
       Repo.update!(Ecto.Changeset.change(rita, status: "banned"))
 
@@ -338,8 +338,8 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
           "pgp_public_key" => @rita_key
         })
 
-      {:ok, contact} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
-      {:ok, token, _} = Auth.issue_account_reset(admin, rita, contact.id)
+      {:ok, contact} = verify_with_challenge(admin, contact.id, "verified")
+      {:ok, token, _} = issue_with_challenge(admin, rita, contact.id)
 
       assert {:ok, 1} = Auth.revoke_account_reset(admin, rita)
       assert "revoke_account_reset" in audit_actions(rita)
@@ -357,8 +357,8 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
           "pgp_public_key" => @rita_key
         })
 
-      {:ok, contact} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
-      {:ok, token, reset} = Auth.issue_account_reset(admin, rita, contact.id)
+      {:ok, contact} = verify_with_challenge(admin, contact.id, "verified")
+      {:ok, token, reset} = issue_with_challenge(admin, rita, contact.id)
 
       Repo.update_all(
         from(r in AccountReset, where: r.id == ^reset.id),
@@ -381,8 +381,8 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
           "pgp_public_key" => @rita_key
         })
 
-      {:ok, contact} = Auth.set_recovery_contact_verification(admin, contact.id, "verified")
-      {:ok, token, _} = Auth.issue_account_reset(admin, rita, contact.id)
+      {:ok, contact} = verify_with_challenge(admin, contact.id, "verified")
+      {:ok, token, _} = issue_with_challenge(admin, rita, contact.id)
       {:ok, _, _} = Auth.redeem_account_reset(token, "RitasNewPass1!", "RitasNewPass1!")
 
       assert notice_types(rita) == [
@@ -397,5 +397,17 @@ defmodule Baudrate.Auth.AccountRecoveryWalkthroughTest do
       always = Notification.always_delivered_types()
       for type <- notice_types(rita), do: assert(type in always)
     end
+  end
+
+  # ADR 0067: the admin issues the text the member signs, and marking a
+  # contact verified or issuing a link spends it.
+  defp verify_with_challenge(admin, contact_id, status) do
+    {:ok, _challenge} = Auth.issue_recovery_challenge(admin, contact_id)
+    Auth.set_recovery_contact_verification(admin, contact_id, status)
+  end
+
+  defp issue_with_challenge(admin, user, contact_id, opts \\ []) do
+    {:ok, _challenge} = Auth.issue_recovery_challenge(admin, contact_id)
+    Auth.issue_account_reset(admin, user, contact_id, opts)
   end
 end

@@ -77,7 +77,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0055](0055-unanswered-is-a-river-and-tags-is-a-ranking.md) | `/unanswered` is a river, `/tags` is a ranking | Accepted |
 | [0056](0056-boring-but-friendly.md) | Boring but friendly | Accepted |
 | [0057](0057-a-sitemap-invites-only-what-a-guest-sees.md) | A sitemap is an invitation, and it invites only what a guest sees | Accepted |
-| [0058](0058-account-recovery-is-anchored-outside-the-instance.md) | Account recovery is anchored outside the instance | Accepted |
+| [0058](0058-account-recovery-is-anchored-outside-the-instance.md) | Account recovery is anchored outside the instance | Accepted; refined by [0067](0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md) |
 | [0059](0059-the-service-worker-caches-the-shell-and-never-content.md) | The service worker caches the shell and never content | Accepted |
 | [0060](0060-an-edit-is-kept-and-the-history-is-public.md) | An edit is kept, and the history is public | Accepted |
 | [0061](0061-an-image-description-is-not-a-form-field.md) | An image description is not a form field | Accepted |
@@ -86,6 +86,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0064](0064-a-new-account-is-slowed-down-not-shut-out.md) | A new account is slowed down, not shut out | Accepted |
 | [0065](0065-what-waits-for-review-is-not-content-yet.md) | What waits for review is not content yet | Accepted, except decisions 8 and 13, amended by [0066](0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md) |
 | [0066](0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md) | A filter reads what is stored, not what the object claims | Accepted |
+| [0067](0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md) | The instance issues the challenge; the admin still verifies it | Accepted |
 
 ## Writing a new ADR
 

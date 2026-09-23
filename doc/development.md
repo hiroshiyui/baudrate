@@ -69,6 +69,7 @@ lib/
 │   │   ├── reauthentication.ex  # Step-up re-authentication (password + TOTP) for factor changes
 │   │   ├── account_reset.ex     # Admin-issued single-use reset link; only its hash is stored (ADR 0058)
 │   │   ├── recovery.ex          # Account recovery: the out-of-band anchor and the reset link on it (ADR 0058)
+│   │   ├── recovery_challenge.ex # The one-line phrase a member signs, issued here and spent once (ADR 0067)
 │   │   ├── recovery_contact.ex  # A member's recovery address + OpenPGP public key; editing drops it to pending
 │   │   ├── recovery_contact_vault.ex # Recovery addresses, encrypted with the :auth key
 │   │   ├── reserved_handle.ex   # Reserved username/handle list (system, sysop, admin, etc.)
@@ -899,9 +900,28 @@ what stops a stolen session becoming a permanent takeover, and
 `account_recovery_test.exs` is the gate. There is deliberately no function
 anywhere that creates a contact on somebody else's account.
 
+**The challenge.** The text a member signs is issued here, not composed by
+whoever is asking
+([ADR 0067](adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md)).
+`Recovery.issue_challenge/2` writes a `recovery_challenges` row for one
+contact — a one-line ASCII phrase naming the instance, the account and the
+date, plus 16 random bytes — live for 72 h by the clock. **Only the newest row
+for a contact counts**, and only while it is unconsumed and unexpired, so
+re-issuing supersedes without a column saying so and a superseded phrase never
+comes back. Marking a contact verified and issuing a reset link each spend one
+with a conditional `UPDATE` and refuse with `:no_live_challenge` otherwise;
+withdrawing a verification does not. The page renders a **subject and message
+ready to paste** beside the phrase (`UserDetailLive.recovery_mail/2`), built in
+the *member's* preferred locale and falling back to the admin's — the member is
+who reads it, and a template is how the warning against sending a private key
+stops depending on whoever is typing. Rows are never purged — they are the
+record of what was asked, beside the `issue_recovery_challenge` audit entry
+that carries the phrase.
+
 **The reset link.** `Recovery.issue/4` refuses without `admin.manage_users`, for
 the issuer's own account, for an account at or above the issuer's role level
-(ADR 0029's rule) and without a **verified** contact. Only the SHA-256 of the
+(ADR 0029's rule), without a **verified** contact, and without a live
+challenge. Only the SHA-256 of the
 32-byte token is stored; it is shown once, expires in 24 h, and is claimed with
 one conditional `UPDATE`. `Recovery.redeem/3` sets the password, revokes every
 session, cancels exports and moves with the `account_reset` reason, issues
@@ -916,7 +936,9 @@ oracle; the path is `noindex` because the token is in it.
 **Baudrate parses no OpenPGP and depends on no library for it.** The stored key
 is shape-checked (armor header and footer, 16 KB) so a member notices a paste
 error while looking at the form — not validated. Every signature check happens
-in the admin's own mail client, and `doc/sysop.md` carries that procedure.
+in the admin's own mail client, and `doc/sysop.md` carries that procedure. The
+instance issues the challenge and records the verdict; it verifies nothing,
+and ADR 0067 records why automating the check was refused.
 
 **The notice.** `recovery_notice` renders sitewide when an account has no
 unused codes *and* no verified contact, driven by `:recovery_pending` from both
