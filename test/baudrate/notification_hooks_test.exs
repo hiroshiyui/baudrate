@@ -172,15 +172,17 @@ defmodule Baudrate.Notification.HooksTest do
     end
   end
 
-  describe "notify_remote_comment_created/3" do
-    test "sends reply_to_article to article author", %{article: article} do
+  describe "notify_remote_comment_created/4" do
+    test "sends reply_to_article to article author, naming the comment", %{article: article} do
       remote = create_remote_actor()
+      comment = create_remote_comment(article, remote)
 
-      Hooks.notify_remote_comment_created(article.id, nil, remote.id)
+      Hooks.notify_remote_comment_created(article.id, nil, remote.id, comment.id)
 
       assert [notif] = list_notifications_for(article.user_id, "reply_to_article")
       assert notif.actor_remote_actor_id == remote.id
       assert notif.article_id == article.id
+      assert notif.comment_id == comment.id
     end
 
     test "sends reply_to_comment to parent author when parent_id given", %{
@@ -189,11 +191,27 @@ defmodule Baudrate.Notification.HooksTest do
     } do
       remote = create_remote_actor()
       parent = create_comment(article, user, "Parent")
+      comment = create_remote_comment(article, remote)
 
-      Hooks.notify_remote_comment_created(article.id, parent.id, remote.id)
+      Hooks.notify_remote_comment_created(article.id, parent.id, remote.id, comment.id)
 
       assert [notif] = list_notifications_for(user.id, "reply_to_comment")
       assert notif.actor_remote_actor_id == remote.id
+      assert notif.comment_id == comment.id
+    end
+
+    # With no comment on the row, the duplicate check saw the second reply as
+    # the first one again, and the author was never told about it.
+    test "a second reply from the same remote account is not dropped", %{article: article} do
+      remote = create_remote_actor()
+      first = create_remote_comment(article, remote)
+      second = create_remote_comment(article, remote)
+
+      Hooks.notify_remote_comment_created(article.id, nil, remote.id, first.id)
+      Hooks.notify_remote_comment_created(article.id, nil, remote.id, second.id)
+
+      notified = list_notifications_for(article.user_id, "reply_to_article")
+      assert Enum.sort(Enum.map(notified, & &1.comment_id)) == Enum.sort([first.id, second.id])
     end
   end
 
@@ -471,6 +489,19 @@ defmodule Baudrate.Notification.HooksTest do
         "parent_id" => parent_id
       })
       |> Repo.insert()
+
+    comment
+  end
+
+  defp create_remote_comment(article, remote) do
+    {:ok, comment} =
+      Baudrate.Content.create_remote_comment(%{
+        body: "from elsewhere",
+        body_html: "<p>from elsewhere</p>",
+        ap_id: "https://remote.example/notes/#{System.unique_integer([:positive])}",
+        article_id: article.id,
+        remote_actor_id: remote.id
+      })
 
     comment
   end

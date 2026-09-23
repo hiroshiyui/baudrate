@@ -22,7 +22,7 @@ defmodule Baudrate.Notification.Hooks do
     * `notify_article_forwarded/2` — article_forwarded
     * `notify_local_follow/2` — new_follower
     * `notify_remote_follow/2` — new_follower (remote actor)
-    * `notify_remote_comment_created/3` — reply_to_article, reply_to_comment
+    * `notify_remote_comment_created/4` — reply_to_article, reply_to_comment
     * `notify_report_created/1` — moderation_report (all admins)
     * `notify_post_held/1` — held_post (whoever can review it, ADR 0065)
     * `notify_post_approved/2` / `notify_post_rejected/1` — post_approved,
@@ -226,8 +226,13 @@ defmodule Baudrate.Notification.Hooks do
   @doc """
   Notifies the article author and parent comment author when a remote comment
   is created on a local article.
+
+  The notification carries the comment, as a local reply's does: it is what
+  the link on the notifications page points at, and it is part of the
+  duplicate check — without it a second reply from the same remote account
+  on the same article looked like the first one and was dropped.
   """
-  def notify_remote_comment_created(article_id, parent_comment_id, remote_actor_id) do
+  def notify_remote_comment_created(article_id, parent_comment_id, remote_actor_id, comment_id) do
     article = Repo.get(Article, article_id)
 
     # Notify article author
@@ -236,7 +241,8 @@ defmodule Baudrate.Notification.Hooks do
         type: "reply_to_article",
         user_id: article.user_id,
         actor_remote_actor_id: remote_actor_id,
-        article_id: article.id
+        article_id: article.id,
+        comment_id: comment_id
       })
     end
 
@@ -249,10 +255,38 @@ defmodule Baudrate.Notification.Hooks do
           type: "reply_to_comment",
           user_id: parent.user_id,
           actor_remote_actor_id: remote_actor_id,
-          article_id: article_id
+          article_id: article_id,
+          comment_id: comment_id
         })
       end
     end
+  end
+
+  @doc """
+  Tells the author and the local voters of a poll that it has closed
+  (ADR 0069). Called once per poll, by `Content.sweep_closed_polls/0`.
+
+  The row carries the article and nothing else — no option, no count and no
+  vote — so each recipient learns only that a poll they wrote or voted in is
+  over. Anyone who can no longer open the article is skipped, as a mention
+  is, and nobody is told twice.
+  """
+  def notify_poll_closed(%Article{} = article, user_ids) when is_list(user_ids) do
+    article = Repo.preload(article, :boards)
+
+    user_ids
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+    |> Enum.each(fn user_id ->
+      with %{} = user <- Auth.get_user(user_id),
+           true <- ArticleHelpers.user_can_view_article?(article, user) do
+        Notification.create_notification(%{
+          type: "poll_closed",
+          user_id: user_id,
+          article_id: article.id
+        })
+      end
+    end)
   end
 
   @doc """

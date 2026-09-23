@@ -901,13 +901,14 @@ defmodule Baudrate.Federation.InboxHandler do
             )
 
           case Content.create_remote_comment(attrs) do
-            {:ok, _comment} ->
+            {:ok, comment} ->
               Logger.info("federation.activity: type=Create(Note) ap_id=#{ap_id}")
 
               Baudrate.Notification.Hooks.notify_remote_comment_created(
                 article.id,
                 parent_id,
-                remote_actor.id
+                remote_actor.id,
+                comment.id
               )
 
               :ok
