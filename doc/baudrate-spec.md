@@ -191,6 +191,8 @@ What this instance does not disclose — to other members, to remote instances, 
 | A tag is listed only when a guest-viewable article carries it, so it signals no private board | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) | `Baudrate.Content.Sitemap.public_tags/0` | [`sitemap_test.exs`](../test/baudrate/content/sitemap_test.exs) |
 | The only read path for a poll's voter is get_user_poll_votes/2, called with the viewer's own id | [0048](adr/0048-a-poll-records-who-voted-and-nothing-reads-it-back.md) | `Baudrate.Content.Polls.get_user_poll_votes/2` | [`poll_anonymity_test.exs`](../test/baudrate/content/poll_anonymity_test.exs) |
 | A published Question carries totalItems and votersCount and no items collection | [0048](adr/0048-a-poll-records-who-voted-and-nothing-reads-it-back.md) | `Baudrate.Federation.ObjectBuilder.article_object/1` | [`poll_anonymity_test.exs`](../test/baudrate/content/poll_anonymity_test.exs) |
+| The one other reader of a poll's voters is the closed-poll sweep, privately, to tell each local voter the poll closed | [0069](adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md) | `Baudrate.Content.Polls.sweep_closed_polls/0` | [`poll_anonymity_test.exs`](../test/baudrate/content/poll_anonymity_test.exs) |
+| A poll_closed notification carries the article and no option, count, vote or actor, and is sent once | [0069](adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md) | `Baudrate.Notification.Hooks.notify_poll_closed/2` | [`poll_anonymity_test.exs`](../test/baudrate/content/poll_anonymity_test.exs) |
 
 ## Content
 

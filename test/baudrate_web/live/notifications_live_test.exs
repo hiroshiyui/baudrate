@@ -355,6 +355,156 @@ defmodule BaudrateWeb.NotificationsLiveTest do
     end
   end
 
+  describe "grouping, filtering and comment links (6B)" do
+    setup %{conn: conn, user: user} do
+      board = create_board("grouping-#{System.unique_integer([:positive])}")
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_article(
+          %{
+            "title" => "Grouped Article",
+            "body" => "Content here",
+            "slug" => "grouped-#{System.unique_integer([:positive])}",
+            "user_id" => user.id
+          },
+          [board.id]
+        )
+
+      {:ok, conn: log_in_user(conn, user), article: article}
+    end
+
+    test "likes of one article are one entry naming two people and the rest", %{
+      conn: conn,
+      user: user,
+      article: article
+    } do
+      for _ <- 1..4 do
+        {:ok, _} =
+          Notification.create_notification(%{
+            type: "article_liked",
+            user_id: user.id,
+            actor_user_id: setup_user("user").id,
+            article_id: article.id
+          })
+      end
+
+      {:ok, lv, _html} = live(conn, "/notifications")
+
+      assert [_] = Regex.scan(~r/id="notification-\d+"/, render(lv))
+      assert has_element?(lv, ".notification-group")
+      assert has_element?(lv, ".notification-others", "and 2 others")
+      assert has_element?(lv, ".notification-text", "liked your article")
+    end
+
+    test "two people are named with \"and\"", %{conn: conn, user: user, article: article} do
+      for _ <- 1..2 do
+        Notification.create_notification(%{
+          type: "article_liked",
+          user_id: user.id,
+          actor_user_id: setup_user("user").id,
+          article_id: article.id
+        })
+      end
+
+      {:ok, lv, _html} = live(conn, "/notifications")
+      assert has_element?(lv, ".notification-actor-separator", "and")
+      refute has_element?(lv, ".notification-others")
+    end
+
+    test "marking a group read marks all of it", %{conn: conn, user: user, article: article} do
+      for _ <- 1..3 do
+        Notification.create_notification(%{
+          type: "article_liked",
+          user_id: user.id,
+          actor_user_id: setup_user("user").id,
+          article_id: article.id
+        })
+      end
+
+      {:ok, lv, _html} = live(conn, "/notifications")
+      lv |> element(".notification-mark-read") |> render_click()
+
+      assert Notification.unread_count(user.id) == 0
+    end
+
+    test "the filter shows one category and keeps it across pages", %{
+      conn: conn,
+      user: user,
+      article: article
+    } do
+      other = setup_user("user")
+
+      Notification.create_notification(%{
+        type: "mention",
+        user_id: user.id,
+        actor_user_id: other.id,
+        article_id: article.id
+      })
+
+      Notification.create_notification(%{
+        type: "new_follower",
+        user_id: user.id,
+        actor_user_id: other.id
+      })
+
+      {:ok, lv, _html} = live(conn, "/notifications?filter=follows")
+
+      assert has_element?(lv, ".notification-text", "followed you")
+      refute has_element?(lv, ".notification-text", "mentioned you")
+      assert has_element?(lv, ~s|#notifications-filter-follows a[aria-current="page"]|)
+
+      {:ok, lv, _html} = live(conn, "/notifications?filter=bogus")
+      assert has_element?(lv, ".notification-text", "followed you")
+      assert has_element?(lv, ".notification-text", "mentioned you")
+      assert has_element?(lv, ~s|#notifications-filter-all a[aria-current="page"]|)
+    end
+
+    test "a reply on a later page links to that page and the comment", %{
+      conn: conn,
+      user: user,
+      article: article
+    } do
+      other = setup_user("user")
+
+      comments =
+        for i <- 1..21 do
+          {:ok, comment} =
+            Baudrate.Content.create_comment(%{
+              "body" => "reply #{i}",
+              "article_id" => article.id,
+              "user_id" => other.id
+            })
+
+          Repo.update_all(
+            from(c in Baudrate.Content.Comment, where: c.id == ^comment.id),
+            set: [inserted_at: DateTime.add(~U[2026-01-01 00:00:00Z], i, :second)]
+          )
+
+          comment
+        end
+
+      last = List.last(comments)
+
+      Repo.delete_all(from(n in Baudrate.Notification.Notification, where: n.user_id == ^user.id))
+
+      {:ok, _} =
+        Notification.create_notification(%{
+          type: "reply_to_article",
+          user_id: user.id,
+          actor_user_id: other.id,
+          article_id: article.id,
+          comment_id: last.id
+        })
+
+      {:ok, lv, _html} = live(conn, "/notifications")
+
+      assert has_element?(
+               lv,
+               ~s|.notification-target[href="/articles/#{article.slug}?page=2#comment-#{last.id}"]|
+             )
+    end
+  end
+
   describe "admin announcement" do
     test "shows announcement message in notification", %{conn: conn, user: user} do
       admin = setup_user("admin")

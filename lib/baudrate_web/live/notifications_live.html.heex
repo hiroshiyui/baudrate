@@ -6,7 +6,7 @@
   <div class="flex items-center justify-between">
     <h1 id="notifications-heading" class="text-2xl font-bold">{gettext("Notifications")}</h1>
     <button
-      :if={@notifications != [] && Enum.any?(@notifications, &(!&1.read))}
+      :if={Enum.any?(@groups, & &1.unread)}
       id="notifications-mark-all-read"
       type="button"
       phx-click="mark_all_read"
@@ -17,12 +17,37 @@
     </button>
   </div>
 
+  <nav
+    id="notifications-filter"
+    class="notifications-filter"
+    aria-label={gettext("Filter notifications")}
+  >
+    <ul class="flex flex-wrap gap-2">
+      <li
+        :for={{key, label} <- filters()}
+        id={"notifications-filter-#{key || "all"}"}
+        class="notifications-filter-item"
+      >
+        <.link
+          patch={filter_path(key)}
+          class={[
+            "notifications-filter-link btn btn-xs",
+            if(@filter == key, do: "btn-primary", else: "btn-ghost")
+          ]}
+          aria-current={if @filter == key, do: "page"}
+        >
+          {label}
+        </.link>
+      </li>
+    </ul>
+  </nav>
+
   <p id="notifications-live-status" class="notifications-live-status sr-only" role="status">
     {@live_status}
   </p>
 
   <div
-    :if={@notifications == []}
+    :if={@groups == []}
     id="notifications-empty"
     class="notifications-empty text-center py-12 text-base-content/70"
   >
@@ -34,17 +59,18 @@
   </div>
 
   <div
-    :if={@notifications != []}
+    :if={@groups != []}
     id="notifications"
     class="space-y-2"
     data-focus-target
   >
     <div
-      :for={notif <- @notifications}
+      :for={%{notification: notif} = group <- @groups}
       id={"notification-#{notif.id}"}
       class={[
         "notification card shadow-sm transition-colors",
-        if(notif.read,
+        group.count > 1 && "notification-group",
+        if(!group.unread,
           do: "bg-base-200 opacity-75",
           else: "bg-base-200 border-l-4 border-primary"
         )
@@ -54,13 +80,13 @@
         <%!-- Type icon --%>
         <div class={[
           "flex-shrink-0 rounded-full p-2",
-          if(notif.read, do: "bg-base-300", else: "bg-primary/10")
+          if(!group.unread, do: "bg-base-300", else: "bg-primary/10")
         ]}>
           <.icon
             name={notification_icon(notif.type)}
             class={[
               "size-5",
-              if(notif.read, do: "text-base-content/70", else: "text-primary")
+              if(!group.unread, do: "text-base-content/70", else: "text-primary")
             ]}
           />
         </div>
@@ -70,25 +96,45 @@
           <div class="flex items-start justify-between gap-2">
             <p class="text-sm">
               <span
-                :if={!notif.read}
+                :if={group.unread}
                 id={"notification-unread-label-#{notif.id}"}
                 class="notification-unread-label badge badge-primary badge-xs mr-1"
               >
                 {gettext("Unread")}
               </span>
-              <.link
-                :if={actor_link(notif)}
-                id={"notification-actor-#{notif.id}"}
-                navigate={actor_link(notif)}
-                class="notification-actor font-semibold link link-hover"
-              >
-                {actor_name(notif)}
-              </.link>
+              <%= for {actor, index} <- Enum.with_index(shown_actors(group)) do %>
+                <span
+                  :if={index > 0 && other_count(group) > 0}
+                  class="notification-actor-separator"
+                >{gettext(", ")}</span>
+                <span
+                  :if={index > 0 && other_count(group) == 0}
+                  class="notification-actor-separator"
+                >
+                  {gettext("and")}
+                </span>
+                <.link
+                  :if={actor_link(actor)}
+                  id={"notification-actor-#{actor.id}"}
+                  navigate={actor_link(actor)}
+                  class="notification-actor font-semibold link link-hover"
+                >
+                  {actor_name(actor)}
+                </.link>
+                <span
+                  :if={!actor_link(actor) && actor_name(actor)}
+                  id={"notification-actor-#{actor.id}"}
+                  class="notification-actor font-semibold"
+                >
+                  {actor_name(actor)}
+                </span>
+              <% end %>
               <span
-                :if={!actor_link(notif) && actor_name(notif)}
-                class="notification-actor font-semibold"
+                :if={other_count(group) > 0}
+                id={"notification-others-#{notif.id}"}
+                class="notification-others font-semibold"
               >
-                {actor_name(notif)}
+                {ngettext("and %{count} other", "and %{count} others", other_count(group))}
               </span>
               <span class="notification-text text-base-content/70">{notification_text(notif.type)}</span>
             </p>
@@ -127,15 +173,15 @@
 
           <%!-- Target link (article title or announcement message) --%>
           <.link
-            :if={target_link(notif) && target_title(notif)}
+            :if={target_link(notif, @current_user) && target_title(notif)}
             id={"notification-target-#{notif.id}"}
-            navigate={target_link(notif)}
+            navigate={target_link(notif, @current_user)}
             class="notification-target text-sm link link-hover text-base-content/80 truncate block mt-1"
           >
             {target_title(notif)}
           </.link>
           <p
-            :if={!target_link(notif) && target_title(notif)}
+            :if={!target_link(notif, @current_user) && target_title(notif)}
             class="notification-target text-sm text-base-content/80 truncate mt-1"
           >
             {target_title(notif)}
@@ -151,7 +197,7 @@
 
         <%!-- Mark read button --%>
         <button
-          :if={!notif.read}
+          :if={group.unread}
           id={"notification-mark-read-#{notif.id}"}
           phx-click="mark_read"
           phx-value-id={notif.id}
@@ -166,9 +212,10 @@
   </div>
 
   <.pagination
-    :if={@notifications != []}
+    :if={@groups != []}
     page={@page}
     total_pages={@total_pages}
     path={~p"/notifications"}
+    params={page_params(@filter)}
   />
 </section>

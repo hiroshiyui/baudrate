@@ -40,28 +40,28 @@ defmodule BaudrateWeb.NotificationsLive do
 
   @impl true
   def handle_params(params, _uri, socket) do
-    user = socket.assigns.current_user
-    page = parse_page(params["page"])
-    result = Notification.list_notifications(user.id, page: page)
+    # An unknown filter is ignored rather than refused: it is a bookmark or a
+    # hand-edited URL, and showing everything is the harmless answer.
+    filter =
+      if Notification.Notification.category_types(params["filter"]),
+        do: params["filter"]
 
-    {:noreply,
-     socket
-     |> assign(:notifications, result.notifications)
-     |> assign(:page, result.page)
-     |> assign(:total_pages, result.total_pages)}
+    socket =
+      socket
+      |> assign(:filter, filter)
+      |> load_groups(parse_page(params["page"]))
+
+    {:noreply, socket}
   end
 
   @impl true
   def handle_info({event, _payload}, socket)
       when event in [:notification_created, :notification_read, :notifications_all_read] do
     user = socket.assigns.current_user
-    page = socket.assigns.page
-    result = Notification.list_notifications(user.id, page: page)
 
     {:noreply,
      socket
-     |> assign(:notifications, result.notifications)
-     |> assign(:total_pages, result.total_pages)
+     |> load_groups(socket.assigns.page)
      |> maybe_announce(event, user.id)}
   end
 
@@ -80,9 +80,11 @@ defmodule BaudrateWeb.NotificationsLive do
         :error -> nil
       end
 
+    # A like or boost stands for its whole group on the page, so marking it
+    # marks the group — worked out from the stored row, not from the client.
     case notification do
       %{user_id: ^user_id} = notif ->
-        Notification.mark_as_read(notif)
+        Notification.mark_group_as_read(notif)
 
       _ ->
         :ok
@@ -116,6 +118,44 @@ defmodule BaudrateWeb.NotificationsLive do
 
   defp maybe_announce(socket, _event, _user_id), do: socket
 
+  defp load_groups(socket, page) do
+    user = socket.assigns.current_user
+
+    types =
+      socket.assigns.filter && Notification.Notification.category_types(socket.assigns.filter)
+
+    result = Notification.list_notification_groups(user.id, page: page, types: types)
+
+    socket
+    |> assign(:groups, result.groups)
+    |> assign(:page, result.page)
+    |> assign(:total_pages, result.total_pages)
+  end
+
+  defp filters do
+    [
+      {nil, gettext("All")},
+      {"discussion", gettext("Replies and mentions")},
+      {"reactions", gettext("Likes and boosts")},
+      {"follows", gettext("Follow activity")},
+      {"moderation", gettext("Moderation and site")},
+      {"account", gettext("Account")}
+    ]
+  end
+
+  defp filter_path(nil), do: ~p"/notifications"
+  defp filter_path(key), do: ~p"/notifications?#{[filter: key]}"
+
+  defp page_params(nil), do: %{}
+  defp page_params(filter), do: %{"filter" => filter}
+
+  # The actors named in a group's line: all of them when there are one or
+  # two, otherwise the two newest and a count of the rest.
+  defp shown_actors(%{count: count, actors: actors}) when count <= 2, do: actors
+  defp shown_actors(%{actors: actors}), do: Enum.take(actors, 2)
+
+  defp other_count(group), do: group.count - length(shown_actors(group))
+
   defp actor_name(%{actor_user: %{username: _} = user}),
     do: BaudrateWeb.Helpers.display_name(user)
 
@@ -124,6 +164,18 @@ defmodule BaudrateWeb.NotificationsLive do
 
   defp actor_link(%{actor_user: %{username: username}}), do: ~p"/users/#{username}"
   defp actor_link(_), do: nil
+
+  # A comment is linked on the page it is on, for this reader — a bare
+  # `#comment-N` only works when the comment is on page 1.
+  defp target_link(%{article: %{slug: slug} = article, comment: %{} = comment}, viewer)
+       when not is_nil(slug),
+       do: BaudrateWeb.Helpers.comment_link(article, comment, viewer)
+
+  defp target_link(%{type: "poll_closed", article: %{slug: slug}}, _viewer)
+       when not is_nil(slug),
+       do: ~p"/articles/#{slug}" <> "#article-poll"
+
+  defp target_link(notif, _viewer), do: target_link(notif)
 
   defp target_link(%{article: %{slug: slug}}) when not is_nil(slug), do: ~p"/articles/#{slug}"
   defp target_link(%{type: "held_post"}), do: ~p"/moderation/held"

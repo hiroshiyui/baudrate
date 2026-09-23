@@ -1,6 +1,6 @@
 # 0048 — A poll records who voted, and nothing reads it back
 
-- **Status:** Accepted
+- **Status:** Accepted; decision 1 amended by [0069](0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md)
 - **Date:** 2026-09-19
 - **Deciders:** Baudrate maintainers
 - **Related:** the promise is a member-facing one, so it lives next to the

@@ -355,7 +355,7 @@ defmodule Baudrate.NotificationTest do
         a = create_user("bulk_#{i}")
 
         Notification.create_notification(%{
-          type: "article_liked",
+          type: "new_follower",
           user_id: user.id,
           actor_user_id: a.id
         })

@@ -78,17 +78,149 @@ defmodule Baudrate.Notification do
     end
   end
 
+  # The group a notification is listed under (6B). Likes and boosts of one
+  # thing share a key whoever sent them; every other notification is its own
+  # group. `unread_count/1` and `list_notification_groups/2` both use it, so
+  # the badge counts what the page shows.
+  defmacrop group_key(n) do
+    quote do
+      fragment(
+        "CASE WHEN ? = ANY(?) THEN ? || ':' || coalesce(?, 0) || ':' || coalesce(?, 0) ELSE 'n:' || ? END",
+        unquote(n).type,
+        type(^Notification.groupable_types(), {:array, :string}),
+        unquote(n).type,
+        unquote(n).article_id,
+        unquote(n).comment_id,
+        unquote(n).id
+      )
+    end
+  end
+
   @doc """
-  Returns the count of unread notifications for a user.
+  Returns the count of unread notifications for a user, counting a group of
+  likes or boosts of one thing as one — the way the notifications page lists
+  them.
   """
   @spec unread_count(integer()) :: non_neg_integer()
   def unread_count(user_id) do
     Repo.one(
       from(n in Notification,
         where: n.user_id == ^user_id and n.read == false,
-        select: count(n.id)
+        select: count(group_key(n), :distinct)
       )
     ) || 0
+  end
+
+  @doc """
+  Lists a user's notifications as groups, newest first: likes and boosts of
+  one article or comment are one entry, and everything else is an entry of
+  its own. Pages count groups, so a group never splits across two pages.
+
+  ## Options
+
+    * `:page`, `:per_page` — as `list_notifications/2`
+    * `:types` — only these types (a category from
+      `Notification.category_types/1`); `nil` for all
+
+  Returns `%{groups: [group], total:, page:, per_page:, total_pages:}`, where a
+  group is `%{notification: newest, actors: [up to three newest, preloaded],
+  count: n, ids: [every id in the group], unread: boolean}`.
+  """
+  @spec list_notification_groups(integer(), keyword()) :: map()
+  def list_notification_groups(user_id, opts \\ []) do
+    {page, per_page, offset} =
+      Baudrate.Pagination.paginate_opts(opts, @per_page, max_per_page: @max_per_page)
+
+    base =
+      case Keyword.get(opts, :types) do
+        nil -> from(n in Notification, where: n.user_id == ^user_id)
+        types -> from(n in Notification, where: n.user_id == ^user_id and n.type in ^types)
+      end
+
+    grouped =
+      from(n in base,
+        group_by: group_key(n),
+        select: %{
+          last_at: max(n.inserted_at),
+          last_id: max(n.id),
+          unread: fragment("bool_or(NOT ?)", n.read),
+          count: count(n.id),
+          ids: fragment("array_agg(? ORDER BY ? DESC, ? DESC)", n.id, n.inserted_at, n.id)
+        }
+      )
+
+    total = Repo.one(from(g in subquery(grouped), select: count()))
+
+    rows =
+      Repo.all(
+        from(g in subquery(grouped),
+          order_by: [desc: g.last_at, desc: g.last_id],
+          offset: ^offset,
+          limit: ^per_page
+        )
+      )
+
+    shown_ids = Enum.flat_map(rows, &Enum.take(&1.ids, 3))
+
+    by_id =
+      from(n in Notification,
+        where: n.id in ^shown_ids,
+        preload: [:actor_user, :actor_remote_actor, :article, :comment]
+      )
+      |> Repo.all()
+      |> Map.new(&{&1.id, &1})
+
+    groups =
+      Enum.map(rows, fn row ->
+        members = row.ids |> Enum.take(3) |> Enum.map(&Map.fetch!(by_id, &1))
+
+        %{
+          notification: hd(members),
+          actors: members,
+          count: row.count,
+          ids: row.ids,
+          unread: row.unread
+        }
+      end)
+
+    %{
+      groups: groups,
+      total: total,
+      page: page,
+      per_page: per_page,
+      total_pages: max(ceil(total / per_page), 1)
+    }
+  end
+
+  @doc """
+  Marks read the group `notification` is listed in (see
+  `list_notification_groups/2`): for a like or boost, every unread one of
+  that type on the same article and comment; otherwise just this one.
+
+  The group is recomputed here from the stored row, never taken as a list of
+  ids from the client. Broadcasts `:notification_read` once when anything
+  changed, and returns how many rows it marked.
+  """
+  @spec mark_group_as_read(Notification.t()) :: non_neg_integer()
+  def mark_group_as_read(%Notification{user_id: user_id} = notification) do
+    query =
+      if notification.type in Notification.groupable_types() do
+        from(n in Notification,
+          where: n.user_id == ^user_id and n.type == ^notification.type and n.read == false,
+          where: coalesce(n.article_id, 0) == ^(notification.article_id || 0),
+          where: coalesce(n.comment_id, 0) == ^(notification.comment_id || 0)
+        )
+      else
+        from(n in Notification, where: n.id == ^notification.id and n.read == false)
+      end
+
+    {count, _} = Repo.update_all(query, set: [read: true])
+
+    if count > 0 do
+      PubSub.broadcast_to_user(user_id, :notification_read, %{notification_id: notification.id})
+    end
+
+    count
   end
 
   @doc """

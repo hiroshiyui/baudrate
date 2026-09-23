@@ -141,6 +141,134 @@ defmodule Baudrate.Content.PollAnonymityTest do
     end
   end
 
+  describe "a closed poll tells its author and voters, and nothing more (ADR 0069)" do
+    alias Baudrate.Notification.Notification, as: NotificationRow
+
+    test "each local voter and the author are told once", ctx do
+      close!(ctx.poll)
+
+      assert Content.sweep_closed_polls() == 1
+      assert Content.sweep_closed_polls() == 0
+
+      recipients = poll_closed_rows() |> Enum.map(& &1.user_id) |> Enum.sort()
+      assert recipients == Enum.sort([ctx.article.user_id, ctx.alice.id, ctx.bob.id])
+    end
+
+    test "the notice carries the article and nothing about any vote", ctx do
+      close!(ctx.poll)
+      Content.sweep_closed_polls()
+
+      for row <- poll_closed_rows() do
+        assert row.article_id == ctx.article.id
+        assert row.comment_id == nil
+        assert row.actor_user_id == nil
+        assert row.actor_remote_actor_id == nil
+
+        assert row.data == %{},
+               "ADR 0069: a poll_closed notification names no option, count or vote"
+      end
+    end
+
+    test "a voter who can no longer open the article is not told", ctx do
+      [board] = Repo.preload(ctx.article, :boards).boards
+
+      Repo.update_all(from(b in Board, where: b.id == ^board.id),
+        set: [min_role_to_view: "admin"]
+      )
+
+      Baudrate.Content.BoardCache.refresh()
+
+      close!(ctx.poll)
+      Content.sweep_closed_polls()
+
+      refute ctx.alice.id in Enum.map(poll_closed_rows(), & &1.user_id)
+    end
+
+    # ADR 0069 amends ADR 0048 by exactly one reader. A third function that
+    # selects a voter's id out of `poll_votes` reopens the decision; it does
+    # not extend it.
+    test "only local_voter_ids/1 selects voters out of poll_votes" do
+      selecting =
+        "lib/baudrate/content/polls.ex"
+        |> File.read!()
+        |> Code.string_to_quoted!()
+        |> functions_selecting(:user_id)
+
+      assert selecting == [:local_voter_ids]
+      refute {:local_voter_ids, 1} in Baudrate.Content.Polls.__info__(:functions)
+    end
+
+    test "no module outside the poll schemas, Polls and the member's own export touches votes" do
+      allowed = ~w(
+        lib/baudrate/content/poll.ex
+        lib/baudrate/content/poll_option.ex
+        lib/baudrate/content/poll_vote.ex
+        lib/baudrate/content/polls.ex
+        lib/baudrate/data_portability/collector.ex
+      )
+
+      offenders =
+        for path <- Path.wildcard("lib/**/*.ex"),
+            path not in allowed,
+            path |> File.read!() |> Code.string_to_quoted!() |> mentions_poll_vote?(),
+            do: path
+
+      assert offenders == []
+    end
+
+    defp close!(poll) do
+      past = DateTime.utc_now() |> DateTime.add(-60) |> DateTime.truncate(:second)
+      Repo.update_all(from(p in Content.Poll, where: p.id == ^poll.id), set: [closes_at: past])
+    end
+
+    defp poll_closed_rows do
+      Repo.all(from(n in NotificationRow, where: n.type == "poll_closed"))
+    end
+
+    defp functions_selecting(ast, field) do
+      {_, found} =
+        Macro.prewalk(ast, [], fn
+          {kind, _, [{name, _, _} | _]} = node, acc when kind in [:def, :defp] ->
+            if selects?(node, field), do: {node, [name | acc]}, else: {node, acc}
+
+          node, acc ->
+            {node, acc}
+        end)
+
+      found |> Enum.uniq() |> Enum.sort()
+    end
+
+    defp selects?(ast, field) do
+      {_, found} =
+        Macro.prewalk(ast, false, fn
+          {:select, value} = node, acc -> {node, acc or references?(value, field)}
+          node, acc -> {node, acc}
+        end)
+
+      found
+    end
+
+    defp references?(ast, field) do
+      {_, found} =
+        Macro.prewalk(ast, false, fn
+          {{:., _, [_, ^field]}, _, _} = node, _acc -> {node, true}
+          node, acc -> {node, acc}
+        end)
+
+      found
+    end
+
+    defp mentions_poll_vote?(ast) do
+      {_, found} =
+        Macro.prewalk(ast, false, fn
+          {:__aliases__, _, parts} = node, acc -> {node, acc or List.last(parts) == :PollVote}
+          node, acc -> {node, acc}
+        end)
+
+      found
+    end
+  end
+
   defp create_user do
     role = Repo.one!(from(r in Setup.Role, where: r.name == "user"))
 

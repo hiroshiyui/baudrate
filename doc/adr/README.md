@@ -67,7 +67,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0045](0045-the-video-player-loads-on-a-click.md) | The video player loads on a click, and nothing else is embedded | Accepted |
 | [0046](0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md) | Every identity claim is bound to the host that can prove it | Accepted |
 | [0047](0047-the-facade-lists-every-way-a-context-changes-the-world.md) | The facade lists every way a context changes the world | Accepted |
-| [0048](0048-a-poll-records-who-voted-and-nothing-reads-it-back.md) | A poll records who voted, and nothing reads it back | Accepted |
+| [0048](0048-a-poll-records-who-voted-and-nothing-reads-it-back.md) | A poll records who voted, and nothing reads it back | Accepted; decision 1 amended by [0069](0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md) |
 | [0049](0049-user-facing-changesets-are-allow-lists.md) | User-facing changesets are allow-lists | Accepted |
 | [0050](0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md) | A comment and a poll are objects with their own URI | Accepted |
 | [0051](0051-a-mention-addresses-and-the-board-gate-still-decides.md) | A mention addresses, and the board gate still decides | Accepted |
@@ -88,6 +88,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0066](0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md) | A filter reads what is stored, not what the object claims | Accepted |
 | [0067](0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md) | The instance issues the challenge; the admin still verifies it | Accepted |
 | [0068](0068-a-profile-says-what-was-checked-not-that-someone-is-verified.md) | A profile says what was checked, not that someone is verified | Accepted |
+| [0069](0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md) | A voter is told the poll closed, and that is the only other reader | Accepted |
 
 ## Writing a new ADR
 

@@ -96,6 +96,20 @@ defmodule Baudrate.Notification.Notification do
     * `post_rejected` — a moderator declined to publish a held post
       (`data.kind`); the text and any note stay on `/drafts`
 
+  ### Polls
+
+    * `poll_closed` — a poll the recipient wrote or voted in has closed
+      (`article_id` only — no option, count or vote; ADR 0069). Sent once,
+      by `Content.sweep_closed_polls/0`, in the transaction that records the
+      closing. Can be turned off like the other engagement types.
+
+  ## Grouping
+
+  Likes and boosts (`groupable_types/0`) are listed as one entry per type,
+  article and comment, whoever sent them; `Baudrate.Notification.list_notifications/2`
+  pages over those groups and `unread_count/1` counts them, so the badge and
+  the page agree.
+
   ## Deduplication
 
   Unique indexes on `(user_id, type, actor_*, article_id, comment_id)` prevent
@@ -160,6 +174,7 @@ defmodule Baudrate.Notification.Notification do
     held_post
     post_approved
     post_rejected
+    poll_closed
   )
 
   @security_types ~w(
@@ -202,6 +217,25 @@ defmodule Baudrate.Notification.Notification do
   # by accident is not an alert.
   @operational_notice_types ~w(health_alert health_recovered pending_registration held_post)
 
+  # Likes and boosts of one thing are one notification on the page, however
+  # many people sent them (6B). Everything else stands alone: a reply or a
+  # mention carries its own text, and a notice is about one event.
+  @groupable_types ~w(article_liked comment_liked article_boosted comment_boosted)
+
+  # The filter on `/notifications`. Every valid type is in exactly one
+  # category — `notification_test.exs` fails when a new type is in none.
+  @categories [
+    {"discussion", ~w(reply_to_article reply_to_comment mention poll_closed)},
+    {"reactions",
+     ~w(article_liked comment_liked article_boosted comment_boosted article_forwarded)},
+    {"follows", ~w(new_follower actor_moved board_actor_moved)},
+    {"moderation",
+     ~w(moderation_report report_reviewed content_removed admin_announcement sanction_applied
+        sanction_lifted sanction_ended pending_registration health_alert health_recovered held_post
+        post_approved post_rejected)},
+    {"account", @security_types}
+  ]
+
   @doc "Returns the list of valid notification type strings."
   def valid_types, do: @valid_types
 
@@ -229,6 +263,23 @@ defmodule Baudrate.Notification.Notification do
   page offered toggles the changeset rejected.
   """
   def configurable_types, do: @valid_types -- always_delivered_types()
+
+  @doc """
+  Types whose notifications are grouped on the notifications page, by type,
+  article and comment: "Alice, Bob and 3 others liked your article".
+  """
+  def groupable_types, do: @groupable_types
+
+  @doc """
+  The categories the notifications page can be filtered by, in display order,
+  as `{key, types}`. Every valid type belongs to exactly one.
+  """
+  def categories, do: @categories
+
+  @doc "Returns the types in category `key`, or `nil` for an unknown key."
+  def category_types(key) do
+    Enum.find_value(@categories, fn {k, types} -> if k == key, do: types end)
+  end
 
   schema "notifications" do
     field :type, :string
