@@ -7,6 +7,7 @@ defmodule Baudrate.Federation.ReplyImages do
   """
 
   import Ecto.Query
+  require Logger
   alias Baudrate.Repo
   alias Baudrate.Content.ArticleImageStorage
   alias Baudrate.Federation.TimelineItemReplyImage
@@ -149,22 +150,34 @@ defmodule Baudrate.Federation.ReplyImages do
 
   @doc """
   Deletes orphan reply images older than the given cutoff.
-  Returns the list of storage paths that were deleted from the database
-  (caller should delete the files from disk).
+  Returns the paths of their files (the caller deletes them from disk).
+
+  The paths are rebuilt from `filename` through `DataPortability.Files`, as
+  every other sweep does (ADR 0040). This one returned `storage_path`, an
+  absolute path into the release current at upload time — which the deploy
+  deletes, so after any deploy the file was never unlinked.
   """
   def delete_orphan_reply_images(cutoff) do
     query =
       from(ri in TimelineItemReplyImage,
-        where: is_nil(ri.reply_id) and ri.inserted_at < ^cutoff,
-        select: ri.storage_path
+        where: is_nil(ri.reply_id) and ri.inserted_at < ^cutoff
       )
 
-    paths = Repo.all(query)
+    paths =
+      from(ri in query, select: ri.filename)
+      |> Repo.all()
+      |> Enum.flat_map(fn filename ->
+        case Baudrate.DataPortability.Files.image_path("article_images", filename) do
+          {:ok, path} ->
+            [path]
 
-    from(ri in TimelineItemReplyImage,
-      where: is_nil(ri.reply_id) and ri.inserted_at < ^cutoff
-    )
-    |> Repo.delete_all()
+          :error ->
+            Logger.info("images.orphan_path_unresolvable: filename=#{inspect(filename)}")
+            []
+        end
+      end)
+
+    Repo.delete_all(query)
 
     paths
   end
