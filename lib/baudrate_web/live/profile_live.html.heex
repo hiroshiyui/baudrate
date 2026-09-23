@@ -1050,6 +1050,38 @@
                   </label>
                 </td>
               </tr>
+              <%!-- A direct message makes no row on /notifications, only a push
+                   (ADR 0071), so its in-app cell has nothing to switch. --%>
+              <tr
+                :if={@push_subscribed}
+                id="profile-notification-pref-direct_message"
+                class="profile-notification-pref-row"
+              >
+                <td class="profile-notification-pref-type text-sm">
+                  {gettext("sent you a direct message")}
+                </td>
+                <td class="text-center text-base-content/60">
+                  <span aria-hidden="true">—</span>
+                  <span class="sr-only">{gettext("Not shown on the notifications page")}</span>
+                </td>
+                <td class="text-center">
+                  <label>
+                    <input
+                      id="profile-notification-web-push-direct_message"
+                      type="checkbox"
+                      class="profile-notification-web-push-toggle toggle toggle-sm toggle-primary"
+                      checked={
+                        get_in(@notification_preferences, ["direct_message", "web_push"]) != false
+                      }
+                      phx-click="toggle_web_push_pref"
+                      phx-value-type="direct_message"
+                      aria-label={
+                        gettext("Push: %{type}", type: gettext("sent you a direct message"))
+                      }
+                    />
+                  </label>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

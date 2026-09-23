@@ -173,6 +173,68 @@ defmodule Baudrate.Notification.WebPush do
     end
   end
 
+  @doc """
+  Pushes "New message from …" to every subscription `recipient` holds
+  (ADR 0071).
+
+  **The payload carries no message text.** It is encrypted on its way through
+  the browser vendor's push service, but a phone shows it on the lock screen
+  to whoever is holding it, and a direct message is the private channel. The
+  `type` is `"dm-<conversation_id>"`, which the service worker uses as the
+  notification `tag`, so a burst from one conversation replaces itself
+  instead of stacking.
+
+  `sender` is a local `%User{}` or a `%RemoteActor{}`. Whether to send at all
+  is `Baudrate.Messaging.Push`'s decision.
+  """
+  def deliver_direct_message(%Baudrate.Setup.User{} = recipient, sender, conversation_id) do
+    subscriptions =
+      from(s in PushSubscription, where: s.user_id == ^recipient.id)
+      |> Repo.all()
+
+    if subscriptions != [] do
+      payload_json = recipient |> build_dm_payload(sender, conversation_id) |> Jason.encode!()
+
+      Enum.each(subscriptions, fn sub ->
+        case send_push(sub, payload_json) do
+          :ok -> :ok
+          {:error, :gone} -> Logger.debug("Removed stale push subscription #{sub.endpoint}")
+          {:error, reason} -> Logger.warning("Push delivery failed: #{inspect(reason)}")
+        end
+      end)
+    end
+
+    :ok
+  end
+
+  @doc """
+  The payload `deliver_direct_message/3` sends: a title naming the sender in
+  the recipient's language, an **empty body**, the conversation's URL, a
+  per-conversation `type` and the sender's avatar.
+  """
+  def build_dm_payload(%Baudrate.Setup.User{} = recipient, sender, conversation_id) do
+    title =
+      with_recipient_locale(%{user: recipient}, fn ->
+        gettext("New message from %{name}", name: dm_sender_name(sender))
+      end)
+
+    %{
+      title: title,
+      body: "",
+      url: BaudrateWeb.Endpoint.url() <> "/messages/#{conversation_id}",
+      type: "dm-#{conversation_id}",
+      icon: dm_sender_icon(sender)
+    }
+  end
+
+  defp dm_sender_name(%Baudrate.Setup.User{} = user), do: BaudrateWeb.Helpers.display_name(user)
+  defp dm_sender_name(%{username: username, domain: domain}), do: "#{username}@#{domain}"
+
+  defp dm_sender_icon(%Baudrate.Setup.User{avatar_id: avatar_id}) when not is_nil(avatar_id),
+    do: BaudrateWeb.Endpoint.url() <> Baudrate.Avatar.avatar_url(avatar_id, 120)
+
+  defp dm_sender_icon(_sender), do: nil
+
   # --- Private helpers ---
 
   defp load_vapid_keys do

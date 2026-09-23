@@ -279,6 +279,14 @@ defmodule Baudrate.Notification.Notification do
   def configurable_types, do: @valid_types -- always_delivered_types()
 
   @doc """
+  Preference keys that control a push and never a row (ADR 0071). A direct
+  message is noticed by the Messages badge and, if wanted, a push — never
+  by an entry on `/notifications` — so `"direct_message"` is not a valid
+  notification type, and only its `"web_push"` setting means anything.
+  """
+  def push_only_types, do: ~w(direct_message)
+
+  @doc """
   Types whose notifications are grouped on the notifications page, by type,
   article and comment: "Alice, Bob and 3 others liked your article".
   """

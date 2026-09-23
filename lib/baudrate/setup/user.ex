@@ -427,14 +427,19 @@ defmodule Baudrate.Setup.User do
   Changeset for updating notification preferences.
 
   Accepts a map of `%{"type" => %{"in_app" => boolean}}`. Only types from
-  `Baudrate.Notification.Notification.configurable_types/0` are allowed;
-  unknown keys and account security notice types are rejected.
+  `Baudrate.Notification.Notification.configurable_types/0` and the push-only
+  `push_only_types/0` (`"direct_message"`) are allowed; unknown keys and
+  account security notice types are rejected.
   """
   def notification_preferences_changeset(user, attrs) do
     user
     |> cast(attrs, [:notification_preferences])
     |> validate_change(:notification_preferences, fn :notification_preferences, prefs ->
-      invalid_types = Map.keys(prefs) -- Baudrate.Notification.Notification.configurable_types()
+      allowed =
+        Baudrate.Notification.Notification.configurable_types() ++
+          Baudrate.Notification.Notification.push_only_types()
+
+      invalid_types = Map.keys(prefs) -- allowed
 
       if invalid_types == [] do
         []

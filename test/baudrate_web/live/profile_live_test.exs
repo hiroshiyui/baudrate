@@ -288,6 +288,17 @@ defmodule BaudrateWeb.ProfileLiveTest do
       assert updated.notification_preferences["mention"]["in_app"] == true
     end
 
+    # A direct message makes no notification row (ADR 0071); its one
+    # preference is whether to push, stored under a push-only key.
+    test "direct-message pushes can be switched off", %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, "/profile")
+      html = render_click(lv, "toggle_web_push_pref", %{"type" => "direct_message"})
+
+      refute html =~ "Failed to update notification preferences."
+      updated = Repo.get!(Baudrate.Setup.User, user.id)
+      assert updated.notification_preferences["direct_message"] == %{"web_push" => false}
+    end
+
     # The in-app toggle used to replace the type's settings wholesale, so it
     # silently switched push back on for anyone who had turned it off.
     test "toggling in-app keeps the web-push choice", %{conn: conn, user: user} do
