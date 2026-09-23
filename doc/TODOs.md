@@ -7,7 +7,7 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.41.0, released 2026-09-23; production runs v1.40.1).**
+**Current state (v1.41.0, released 2026-09-23; production runs v1.41.0).**
 The review named five gaps: broken promises (the UI or docs saying something
 happens when it does not), moderation reach, operability, federation reach,
 and discovery and onboarding. **All five are now closed** — Phase 0 in
