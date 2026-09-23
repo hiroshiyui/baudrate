@@ -7,14 +7,14 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.40.1, released 2026-09-23; production runs v1.40.1).**
+**Current state (v1.41.0, released 2026-09-23; production runs v1.40.1).**
 The review named five gaps: broken promises (the UI or docs saying something
 happens when it does not), moderation reach, operability, federation reach,
 and discovery and onboarding. **All five are now closed** — Phase 0 in
 v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
 v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
 anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
-and v1.36.0. 6B, 6C and 6D are done and unreleased. **Phase 6's last stage, 6E, is next.**
+and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **Phase 6's last stage, 6E, is next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -398,93 +398,56 @@ This is the one fact that is still nowhere else.
 
 ---
 
-## Phase 6 — Member depth (scope)
+## Phase 6 — Member depth — 6A–6D **complete** (v1.35.0 – v1.41.0); 6E open
 
-**Goal.** Members who stay find that the site keeps up with them: they can fix mistakes, follow what matters, and control their account.
+**Goal.** Members who stay find that the site keeps up with them: they can fix
+mistakes, follow what matters, and control their account.
 
-**Done when:**
-- comments can be edited;
-- notifications lead straight to the comment they are about;
-- members can watch boards and threads;
-- DMs notify;
-- members can delete their account and manage their sessions.
+Four of the five exit criteria are met — comments can be edited,
+notifications lead to the comment they are about, members can watch boards
+and threads, and DMs notify. The fifth, deleting one's account and managing
+sessions, is 6E.
 
-### 6A — Comments and composer (M) — **complete**
+### Done
 
-Comment editing with a public history
-([ADR 0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md)) and image
-descriptions ([ADR 0061](adr/0061-an-image-description-is-not-a-form-field.md))
-shipped in v1.35.0. Server-side drafts
-([ADR 0062](adr/0062-a-draft-is-kept-in-two-places-on-purpose.md)) shipped in
-v1.36.0: articles only, beside the localStorage autosave rather than
-instead of it, because the two fail in opposite directions.
+| Stage | What | Released | Recorded in |
+|-------|------|----------|-------------|
+| 6A | Comment editing with a public history; image descriptions; server-side article drafts beside the localStorage autosave | v1.35.0, v1.36.0 | [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md), [0061](adr/0061-an-image-description-is-not-a-form-field.md), [0062](adr/0062-a-draft-is-kept-in-two-places-on-purpose.md) |
+| 6B | "New since your last visit" per comment with a jump across pages; a "N new posts" offer on boards; a sign-in prompt for guests; notifications that open the comment's page, group likes and boosts, filter by kind and announce a closed poll | v1.41.0 | [0069](adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md) (amends 0048), `comments_test.exs` (browser), `poll_anonymity_test.exs` |
+| 6C | Watching a board or a thread, only by the member's own toggle; `/followers`, with removal by `Reject(Follow)` | v1.41.0 | [0070](adr/0070-a-member-hears-about-what-they-chose.md), `watch_test.exs` |
+| 6D | A DM push naming only the sender, with no notification row; private images between members here, rationed before processing; search of one's own conversations | v1.41.0 | [0071](adr/0071-a-direct-message-stays-between-the-two-people-in-it.md), `dm_privacy_test.exs` |
 
-Two things this stage deliberately left standing:
+**P6-D1** (editing comments: no time limit, every edit kept, a public
+history, the author alone) is [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md).
+Bugs the stages found on the way — every link to a comment pointing at page 1,
+remote replies dropped from notifications as duplicates, cross-posts
+announced to no board, the in-app switch discarding the push setting, a
+deleted DM keeping its link preview, and the reply-image sweep unlinking
+nothing after a deploy — are in `CHANGELOG.md`.
 
-- `/articles/:slug/history` still cannot show what the **most recent** edit
-  changed, because a revision holds the state *before* a change.
-  `CommentHistoryLive` renders the live text as a version to close that; the
-  article page was left alone.
-- The article **edit** composer has no server draft. An unsaved rewrite is
-  still covered by the localStorage hook and the published text is never at
-  risk, so this is deferred rather than refused — it needs a draft that
-  belongs to an article, and a rule for what happens when that article is
-  edited from elsewhere in between (ADR 0062's rejected alternatives).
+### Left standing
 
-### 6B — Reading and notifications (M) — **complete**
+Deliberately not done, and recorded nowhere else:
 
-Per-comment "new since your last visit" with a jump across pages, the total
-in the comments heading, a sign-in prompt for guests, a "N new posts" offer
-on board pages instead of a re-render, and notifications that link to the
-comment's page, group likes and boosts, filter by category and announce a
-closed poll. The poll notice reads who voted, which ADR 0048 had said would
-reopen it: [ADR 0069](adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md)
-records the amendment. Building it found every link to a comment pointing at
-page 1, and remote replies dropped from notifications as duplicates; both are
-fixed.
-
-Left standing:
-
-- A poll on **another instance** that a member voted in sends no notice when
-  it closes — there is no local sweep for remote polls (ADR 0069 decision 3).
-- A local comment written before `/comments/:id` existed keeps its stored
-  `url`; `ObjectBuilder` publishes the permalink for every local comment, so
-  it matters only if the stored column is read somewhere new.
-
-### 6C — Watching and followers (M) — **complete**
-
-Watching a board (new threads) or a thread (new comments), only ever by the
-member's own toggle, with `/watching` to manage it; and `/followers`, a
-member's own followers with a way to remove one (`Reject(Follow)` for an
-account elsewhere). [ADR 0070](adr/0070-a-member-hears-about-what-they-chose.md)
-records why nothing is watched on a member's behalf and why the follower
-count is private. Building it found the inbox's cross-posts announcing
-nothing to a board page, and the in-app notification switch discarding the
-push setting; both are fixed.
-
-Left standing: the ActivityPub followers collection still lists a member's
-remote followers to anyone while `ap_authorized_fetch` is off. That is a
-federation question, not a profile one, and 0070 leaves it to that setting.
-
-### 6D — Direct messages (M) — **complete**
-
-A push when a direct message arrives, naming the sender and never the text,
-and no row on `/notifications`; images in messages between members here,
-private files served only after a participant check and never sent to
-another server, with uploads rationed before they are processed; and a
-search of one's own conversations that opens on the message it found.
-[ADR 0071](adr/0071-a-direct-message-stays-between-the-two-people-in-it.md)
-records all three. Building it found a deleted message keeping its link
-preview, and the timeline reply-image sweep unlinking nothing after a
-deploy; both are fixed.
-
-Left standing:
-
-- Images to and from accounts on other servers. Incoming ones stay proxied
-  inline images, as before; outgoing ones are refused rather than published
-  at a public URL (0071, rejected alternative).
-- Reporting an image-only message copies an empty text; the moderator sees
-  the image through the report, as 0071 allows.
+- **The article history cannot show the most recent edit** — a revision
+  holds the state *before* a change. `CommentHistoryLive` renders the live
+  text as a version to close that; the article page was left alone.
+- **The article edit composer has no server draft.** The localStorage hook
+  covers it and the published text is never at risk, so this is deferred
+  rather than refused: it needs a draft that belongs to an article and a rule
+  for a concurrent edit (ADR 0062's rejected alternatives).
+- **A remote poll a member voted in sends no notice when it closes** — there
+  is no local sweep for remote polls (ADR 0069 decision 3).
+- **Local comments from before `/comments/:id` keep their stored `url`.**
+  `ObjectBuilder` publishes the permalink for every local comment, so this
+  matters only if the column is read somewhere new.
+- **The AP followers collection still lists remote followers to anyone**
+  while `ap_authorized_fetch` is off — a federation setting, which ADR 0070
+  leaves it to.
+- **No images to or from other servers in DMs.** Incoming ones stay proxied
+  inline images; outgoing ones are refused rather than published at a public
+  URL (ADR 0071, rejected alternative). Reporting an image-only message
+  copies an empty text; the moderator sees the image through the report.
 
 ### 6E — Account and privacy (L)
 
@@ -506,7 +469,6 @@ Left standing:
 
 ### Decisions needed
 
-- [x] **P6-D1. Editing comments.** Decided 2026-09-21: no time limit, every edit kept, **the history is public** (not just moderators — the reader who was replied to is who needs it), and **the author alone may edit** — an admin edit would rewrite attributed speech. [ADR 0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md).
 - [ ] **P6-D2. What account deletion removes.** [Profile, DMs and keys are deleted. Articles and comments are anonymized ("deleted user") by default, or deleted if the member chooses.]
 
 ---
