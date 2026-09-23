@@ -1311,7 +1311,7 @@ msgstr "留言"
 #: lib/baudrate_web/live/admin/bots_live.html.heex:324
 #: lib/baudrate_web/live/admin/filters_live.html.heex:219
 #: lib/baudrate_web/live/article_live.html.heex:472
-#: lib/baudrate_web/live/conversation_live.html.heex:258
+#: lib/baudrate_web/live/conversation_live.html.heex:286
 #: lib/baudrate_web/live/drafts_live.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -1385,6 +1385,7 @@ msgstr "儲存變更"
 #: lib/baudrate_web/components/layouts.ex:1160
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:26
 #: lib/baudrate_web/live/board_follows_live.html.heex:99
+#: lib/baudrate_web/live/conversations_live.html.heex:40
 #: lib/baudrate_web/live/search_live.ex:84
 #: lib/baudrate_web/live/search_live.html.heex:2
 #: lib/baudrate_web/live/search_live.html.heex:24
@@ -1713,7 +1714,7 @@ msgstr "系統主題"
 #: lib/baudrate_web/live/admin/users_live.ex:187
 #: lib/baudrate_web/live/admin/users_live.ex:392
 #: lib/baudrate_web/live/admin/users_live.ex:430
-#: lib/baudrate_web/live/conversation_live.ex:399
+#: lib/baudrate_web/live/conversation_live.ex:525
 #, elixir-autogen, elixir-format
 msgid "User not found."
 msgstr "找不到使用者。"
@@ -2497,6 +2498,7 @@ msgstr "最多 %{count} 張圖片，每張上限 %{size} MB。圖片將顯示在
 #: lib/baudrate_web/components/comment_components.ex:722
 #: lib/baudrate_web/live/article_edit_live.html.heex:79
 #: lib/baudrate_web/live/article_new_live.html.heex:145
+#: lib/baudrate_web/live/conversation_live.html.heex:369
 #: lib/baudrate_web/live/timeline_live.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Remove image"
@@ -2615,6 +2617,7 @@ msgstr "搜尋結果"
 #: lib/baudrate_web/components/comment_components.ex:715
 #: lib/baudrate_web/live/article_edit_live.html.heex:72
 #: lib/baudrate_web/live/article_new_live.html.heex:138
+#: lib/baudrate_web/live/conversation_live.html.heex:357
 #: lib/baudrate_web/live/timeline_live.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Uploaded image"
@@ -2624,6 +2627,7 @@ msgstr "已上傳的圖片"
 #: lib/baudrate_web/components/comment_components.ex:744
 #: lib/baudrate_web/live/article_edit_live.html.heex:132
 #: lib/baudrate_web/live/article_new_live.html.heex:176
+#: lib/baudrate_web/live/conversation_live.html.heex:333
 #: lib/baudrate_web/live/timeline_live.html.heex:126
 #, elixir-autogen, elixir-format
 msgid "Cancel upload"
@@ -2735,7 +2739,7 @@ msgstr "任何人"
 msgid "Controls who can send you direct messages."
 msgstr "設定誰可以傳送私訊給您。"
 
-#: lib/baudrate_web/live/conversation_live.ex:398
+#: lib/baudrate_web/live/conversation_live.ex:524
 #, elixir-autogen, elixir-format
 msgid "Conversation not found."
 msgstr "找不到對話。"
@@ -2745,7 +2749,7 @@ msgstr "找不到對話。"
 msgid "DM access setting updated."
 msgstr "私訊權限設定已更新。"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:256
+#: lib/baudrate_web/live/conversation_live.html.heex:284
 #, elixir-autogen, elixir-format
 msgid "Delete this message?"
 msgstr "刪除此訊息？"
@@ -2760,12 +2764,12 @@ msgstr "私訊"
 msgid "Direct messages are not end-to-end encrypted. Do not share sensitive information."
 msgstr "私訊未經端對端加密，請勿分享敏感資訊。"
 
-#: lib/baudrate_web/live/conversation_live.ex:266
+#: lib/baudrate_web/live/conversation_live.ex:352
 #, elixir-autogen, elixir-format
 msgid "Failed to delete message."
 msgstr "刪除訊息失敗。"
 
-#: lib/baudrate_web/live/conversation_live.ex:144
+#: lib/baudrate_web/live/conversation_live.ex:185
 #, elixir-autogen, elixir-format
 msgid "Failed to send message."
 msgstr "傳送訊息失敗。"
@@ -2784,7 +2788,7 @@ msgid "Followers only"
 msgstr "僅追蹤者"
 
 #: lib/baudrate_web/live/admin/user_detail_live.html.heex:819
-#: lib/baudrate_web/live/conversation_live.html.heex:283
+#: lib/baudrate_web/live/conversation_live.html.heex:394
 #: lib/baudrate_web/live/user_profile_live.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "Message"
@@ -2793,21 +2797,21 @@ msgstr "訊息"
 #: lib/baudrate_web/components/layouts.ex:234
 #: lib/baudrate_web/components/layouts.ex:1103
 #: lib/baudrate_web/live/conversation_live.html.heex:163
-#: lib/baudrate_web/live/conversations_live.ex:35
+#: lib/baudrate_web/live/conversations_live.ex:41
 #: lib/baudrate_web/live/conversations_live.html.heex:9
 #, elixir-autogen, elixir-format
 msgid "Messages"
 msgstr "訊息"
 
-#: lib/baudrate_web/live/conversation_live.ex:88
-#: lib/baudrate_web/live/conversation_live.ex:108
+#: lib/baudrate_web/live/conversation_live.ex:123
+#: lib/baudrate_web/live/conversation_live.ex:145
 #: lib/baudrate_web/live/conversation_live.html.heex:16
 #: lib/baudrate_web/live/conversations_live.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "New Message"
 msgstr "新訊息"
 
-#: lib/baudrate_web/live/conversations_live.html.heex:31
+#: lib/baudrate_web/live/conversations_live.html.heex:128
 #, elixir-autogen, elixir-format
 msgid "No messages yet."
 msgstr "尚無訊息。"
@@ -2822,27 +2826,27 @@ msgstr "尚無訊息，傳送第一則吧！"
 msgid "Nobody"
 msgstr "不允許任何人"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:289
+#: lib/baudrate_web/live/conversation_live.html.heex:400
 #, elixir-autogen, elixir-format
 msgid "Send"
 msgstr "傳送"
 
-#: lib/baudrate_web/live/conversation_live.ex:400
+#: lib/baudrate_web/live/conversation_live.ex:526
 #, elixir-autogen, elixir-format
 msgid "Something went wrong."
 msgstr "發生錯誤。"
 
-#: lib/baudrate_web/live/conversations_live.html.heex:32
+#: lib/baudrate_web/live/conversations_live.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Start a conversation from a user's profile page."
 msgstr "從使用者的個人頁面開始對話。"
 
-#: lib/baudrate_web/live/conversation_live.ex:148
+#: lib/baudrate_web/live/conversation_live.ex:189
 #, elixir-autogen, elixir-format
 msgid "Too many messages. Please slow down."
 msgstr "訊息傳送過於頻繁，請稍後再試。"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:278
+#: lib/baudrate_web/live/conversation_live.html.heex:389
 #, elixir-autogen, elixir-format
 msgid "Type a message..."
 msgstr "輸入訊息⋯⋯"
@@ -2852,17 +2856,18 @@ msgstr "輸入訊息⋯⋯"
 msgid "Who can send you direct messages"
 msgstr "誰可以傳送私訊給您"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:209
+#: lib/baudrate_web/live/conversation_live.html.heex:210
+#: lib/baudrate_web/live/conversations_live.ex:166
 #, elixir-autogen, elixir-format
 msgid "You"
 msgstr "您"
 
-#: lib/baudrate_web/live/conversation_live.ex:263
+#: lib/baudrate_web/live/conversation_live.ex:349
 #, elixir-autogen, elixir-format
 msgid "You can only delete your own messages."
 msgstr "您只能刪除自己的訊息。"
 
-#: lib/baudrate_web/live/conversation_live.ex:395
+#: lib/baudrate_web/live/conversation_live.ex:521
 #, elixir-autogen, elixir-format
 msgid "You cannot send messages to this user."
 msgstr "您無法傳送訊息給此使用者。"
@@ -2885,6 +2890,7 @@ msgid "Admin Login Attempts"
 msgstr "管理登入嘗試"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:34
+#: lib/baudrate_web/live/conversations_live.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "清除"
@@ -2952,17 +2958,17 @@ msgstr "靜音 %{username}"
 msgid "Mute this user? Their content will be hidden from your view."
 msgstr "確定要靜音此使用者？其發佈的內容將會從您的檢視中隱藏。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:1121
+#: lib/baudrate_web/live/profile_live.html.heex:1153
 #, elixir-autogen, elixir-format
 msgid "Muted Users"
 msgstr "已靜音的使用者"
 
-#: lib/baudrate_web/live/profile_live.html.heex:1127
+#: lib/baudrate_web/live/profile_live.html.heex:1159
 #, elixir-autogen, elixir-format
 msgid "No muted users."
 msgstr "沒有已靜音的使用者。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:1158
+#: lib/baudrate_web/live/profile_live.html.heex:1190
 #: lib/baudrate_web/live/user_profile_live.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Unmute"
@@ -3510,8 +3516,8 @@ msgid "Show QR code"
 msgstr "顯示 QR 碼"
 
 #: lib/baudrate_web/components/layouts.ex:246
-#: lib/baudrate_web/live/conversations_live.ex:68
-#: lib/baudrate_web/live/conversations_live.html.heex:86
+#: lib/baudrate_web/live/conversations_live.ex:120
+#: lib/baudrate_web/live/conversations_live.html.heex:183
 #, elixir-autogen, elixir-format
 msgid "%{count} unread message"
 msgid_plural "%{count} unread messages"
@@ -4875,7 +4881,7 @@ msgstr "原因"
 #: lib/baudrate_web/components/core_components.ex:869
 #: lib/baudrate_web/components/core_components.ex:953
 #: lib/baudrate_web/live/article_live.html.heex:447
-#: lib/baudrate_web/live/conversation_live.html.heex:246
+#: lib/baudrate_web/live/conversation_live.html.heex:274
 #: lib/baudrate_web/live/user_profile_live.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "Report"
@@ -5966,7 +5972,7 @@ msgstr[0] "訊息，%{count} 則未讀"
 msgid "Moderators of board %{name}"
 msgstr "看板 %{name} 的版主"
 
-#: lib/baudrate_web/live/conversations_live.html.heex:72
+#: lib/baudrate_web/live/conversations_live.html.heex:169
 #, elixir-autogen, elixir-format
 msgid "Muted"
 msgstr "已靜音"
@@ -6019,6 +6025,7 @@ msgid "Person"
 msgstr "個人"
 
 #: lib/baudrate_web/live/profile_live.html.heex:1045
+#: lib/baudrate_web/live/profile_live.html.heex:1079
 #, elixir-autogen, elixir-format
 msgid "Push: %{type}"
 msgstr "推播：%{type}"
@@ -6217,7 +6224,7 @@ msgstr "您的帳號已設定雙因素驗證（TOTP）。"
 msgid "Two-factor authentication (TOTP) was turned off on your account."
 msgstr "您的帳號已關閉雙因素驗證（TOTP）。"
 
-#: lib/baudrate/notification/web_push.ex:335
+#: lib/baudrate/notification/web_push.ex:397
 #, elixir-autogen, elixir-format
 msgid "Someone"
 msgstr "有人"
@@ -7318,12 +7325,12 @@ msgstr "封鎖帳號"
 msgid "Block this user? You will stop following each other, and neither of you can reply to, like, boost, follow or message the other."
 msgstr "確定要封鎖此使用者？雙方將互相取消追蹤，且都無法再回覆、按讚、轉發、追蹤對方或傳送訊息給對方。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:1065
+#: lib/baudrate_web/live/profile_live.html.heex:1097
 #, elixir-autogen, elixir-format
 msgid "Blocked Accounts"
 msgstr "已封鎖的帳號"
 
-#: lib/baudrate_web/live/profile_live.html.heex:1068
+#: lib/baudrate_web/live/profile_live.html.heex:1100
 #, elixir-autogen, elixir-format
 msgid "Blocked accounts cannot reply to, like, boost, follow or message you, and their content is hidden from you."
 msgstr "已封鎖的帳號無法回覆、按讚、轉發、追蹤您或傳送訊息給您，其發佈的內容也會對您隱藏。"
@@ -7358,7 +7365,7 @@ msgstr "確定要靜音 %{handle}？其發佈的內容將會對您隱藏。"
 msgid "Mute account"
 msgstr "靜音帳號"
 
-#: lib/baudrate_web/live/profile_live.html.heex:1077
+#: lib/baudrate_web/live/profile_live.html.heex:1109
 #, elixir-autogen, elixir-format
 msgid "No blocked accounts."
 msgstr "沒有已封鎖的帳號。"
@@ -7398,7 +7405,7 @@ msgstr "檢舉帳號"
 msgid "Report post"
 msgstr "檢舉貼文"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:243
+#: lib/baudrate_web/live/conversation_live.html.heex:271
 #, elixir-autogen, elixir-format
 msgid "Report this message"
 msgstr "檢舉此訊息"
@@ -7409,7 +7416,7 @@ msgid "Reported Direct Message:"
 msgstr "被檢舉的私訊："
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:297
-#: lib/baudrate_web/live/profile_live.html.heex:1108
+#: lib/baudrate_web/live/profile_live.html.heex:1140
 #: lib/baudrate_web/live/user_profile_live.html.heex:199
 #, elixir-autogen, elixir-format
 msgid "Unblock"
@@ -7420,7 +7427,7 @@ msgstr "解除封鎖"
 msgid "Unblock %{handle}"
 msgstr "解除封鎖 %{handle}"
 
-#: lib/baudrate_web/live/profile_live.html.heex:1098
+#: lib/baudrate_web/live/profile_live.html.heex:1130
 #, elixir-autogen, elixir-format
 msgid "Unblock %{name}"
 msgstr "解除封鎖 %{name}"
@@ -7440,7 +7447,7 @@ msgstr "解除封鎖帳號"
 msgid "Unmute %{handle}"
 msgstr "取消靜音 %{handle}"
 
-#: lib/baudrate_web/live/profile_live.html.heex:1148
+#: lib/baudrate_web/live/profile_live.html.heex:1180
 #, elixir-autogen, elixir-format
 msgid "Unmute %{name}"
 msgstr "取消靜音 %{name}"
@@ -8566,7 +8573,7 @@ msgstr "找不到時間軸項目。"
 msgid "Your timeline is empty."
 msgstr "您的時間軸是空的。"
 
-#: lib/baudrate_web/live/conversation_live.ex:195
+#: lib/baudrate_web/live/conversation_live.ex:281
 #, elixir-autogen, elixir-format
 msgid "%{count} earlier message loaded"
 msgid_plural "%{count} earlier messages loaded"
@@ -10725,5 +10732,79 @@ msgstr "在您關注的看板發表了文章"
 #: lib/baudrate_web/helpers.ex:434
 #, elixir-autogen, elixir-format
 msgid "replied in a thread you watch"
-
 msgstr "在您關注的討論串留言"
+
+#: lib/baudrate_web/live/conversations_live.ex:81
+#, elixir-autogen, elixir-format
+msgid "%{count} message found"
+msgid_plural "%{count} messages found"
+msgstr[0] "找到 %{count} 則訊息"
+
+#: lib/baudrate_web/live/conversation_live.html.heex:299
+#: lib/baudrate_web/live/conversation_live.html.heex:311
+#, elixir-autogen, elixir-format
+msgid "Attach images"
+msgstr "附加圖片"
+
+#: lib/baudrate_web/live/conversation_live.ex:510
+#, elixir-autogen, elixir-format
+msgid "Images can only be sent to members of this site, not to accounts on other servers."
+msgstr "圖片只能傳給本站成員，無法傳給其他伺服器上的帳號。"
+
+#: lib/baudrate_web/live/conversations_live.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Messages matching “%{query}”"
+msgstr "符合「%{query}」的訊息"
+
+#: lib/baudrate/notification/web_push.ex:218
+#, elixir-autogen, elixir-format
+msgid "New message from %{name}"
+msgstr "%{name} 傳來新訊息"
+
+#: lib/baudrate_web/live/conversations_live.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "No message matches."
+msgstr "沒有符合的訊息。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:1065
+#, elixir-autogen, elixir-format
+msgid "Not shown on the notifications page"
+msgstr "不會顯示在通知頁面"
+
+#: lib/baudrate_web/live/conversations_live.html.heex:33
+#: lib/baudrate_web/live/conversations_live.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Search your messages"
+msgstr "搜尋您的訊息"
+
+#: lib/baudrate_web/live/conversation_live.ex:415
+#, elixir-autogen, elixir-format
+msgid "Send or remove the images you have attached before adding more."
+msgstr "請先送出或移除已附加的圖片，再加入更多圖片。"
+
+#: lib/baudrate_web/live/conversation_live.ex:418
+#, elixir-autogen, elixir-format
+msgid "That file could not be used as an image."
+msgstr "這個檔案無法作為圖片使用。"
+
+#: lib/baudrate_web/live/conversations_live.ex:69
+#, elixir-autogen, elixir-format
+msgid "Too many searches. Please wait a moment and try again."
+msgstr "搜尋次數太多，請稍候再試。"
+
+#: lib/baudrate_web/live/conversations_live.html.heex:71
+#, elixir-autogen, elixir-format
+msgid "Type at least two characters."
+msgstr "請至少輸入兩個字元。"
+
+#: lib/baudrate_web/live/conversation_live.ex:412
+#, elixir-autogen, elixir-format
+msgid "You have attached as many images as you can for now. Try again later."
+msgstr "您目前已達可附加圖片的上限，請稍後再試。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:1061
+#: lib/baudrate_web/live/profile_live.html.heex:1079
+#, elixir-autogen, elixir-format
+msgid "sent you a direct message"
+
+msgstr "傳了私訊給您"
