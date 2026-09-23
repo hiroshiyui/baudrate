@@ -10,7 +10,7 @@ defmodule Baudrate.Federation.Follows do
     local users (stored in `user_follows`; local follows auto-accept, remote
     follows are pending until an `Accept` activity arrives).
   - **Board follows (outbound)** — local boards following remote actors
-    (stored in `user_follows` with a `board_id` discriminator via `BoardFollow`).
+    (stored in their own `board_follows` table via `BoardFollow`).
   - **Local follows** — user-to-user follows on the same instance, auto-accepted
     with no AP delivery required.
   """
@@ -316,6 +316,93 @@ defmodule Baudrate.Federation.Follows do
       end)
 
     :ok
+  end
+
+  @doc """
+  A member's own followers (ADR 0070): `%{local: [%User{}], remote:
+  [%Follower{}]}`, newest first, with each remote row's `remote_actor`
+  preloaded. Shown to the member on `/followers` and nowhere else.
+  """
+  def list_followers_of_user(%{id: user_id, username: username}) do
+    local =
+      from(uf in UserFollow,
+        join: u in assoc(uf, :user),
+        where: uf.followed_user_id == ^user_id and uf.state == @state_accepted,
+        order_by: [desc: uf.inserted_at, desc: uf.id],
+        select: u
+      )
+      |> Repo.all()
+      |> Repo.preload(:role)
+
+    actor_uri = Baudrate.Federation.actor_uri(:user, username)
+
+    remote =
+      from(f in Follower,
+        where: f.actor_uri == ^actor_uri,
+        order_by: [desc: f.inserted_at, desc: f.id],
+        preload: :remote_actor
+      )
+      |> Repo.all()
+
+    %{local: local, remote: remote}
+  end
+
+  @doc """
+  Removes a member of this instance from `user`'s followers. The follower's
+  id comes from the client, so the row is matched on `user` as the one
+  followed, in the query. Nothing is sent and nobody is told, as with the
+  local half of a block. Returns `{:ok, follow}` or `{:error, :not_found}`.
+  """
+  def remove_local_follower(%{id: user_id}, follower_user_id) do
+    case Repo.one(
+           from(uf in UserFollow,
+             where: uf.followed_user_id == ^user_id and uf.user_id == ^follower_user_id
+           )
+         ) do
+      nil -> {:error, :not_found}
+      follow -> Repo.delete(follow)
+    end
+  end
+
+  @doc """
+  Removes an account on another server from `user`'s followers: the
+  `followers` row is deleted and a `Reject(Follow)` naming the Follow it
+  accepted is queued in the same transaction (ADR 0034). `Reject(Follow)` is
+  the standard way to remove a follower and says nothing about why
+  (ADR 0026). The row id comes from the client, so it is matched on the
+  member's own actor URI in the query. Returns `:ok` or `{:error, :not_found}`.
+
+  They may follow again; stopping that is what a block is for.
+  """
+  def remove_remote_follower(user, follower_row_id) do
+    alias Baudrate.Federation.{KeyStore, Publisher}
+
+    actor_uri = Baudrate.Federation.actor_uri(:user, user.username)
+
+    case Repo.one(
+           from(f in Follower,
+             where: f.id == ^follower_row_id and f.actor_uri == ^actor_uri,
+             preload: :remote_actor
+           )
+         ) do
+      nil ->
+        {:error, :not_found}
+
+      %Follower{remote_actor: remote_actor} = follower ->
+        signer =
+          case KeyStore.ensure_user_keypair(user) do
+            {:ok, user} -> user
+            _ -> nil
+          end
+
+        {:ok, _} =
+          Repo.transaction(fn ->
+            notify_remote(signer, remote_actor, &Publisher.build_reject_follow(&1, follower))
+            Repo.delete(follower, allow_stale: true)
+          end)
+
+        :ok
+    end
   end
 
   @doc """

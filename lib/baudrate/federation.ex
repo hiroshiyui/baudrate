@@ -201,6 +201,9 @@ defmodule Baudrate.Federation do
   defdelegate reject_user_follow(follow_ap_id, signer \\ nil), to: Follows
   defdelegate delete_user_follow(user, remote_actor), to: Follows
   defdelegate sever_remote_follows(user, remote_actor), to: Follows
+  defdelegate list_followers_of_user(user), to: Follows
+  defdelegate remove_local_follower(user, follower_user_id), to: Follows
+  defdelegate remove_remote_follower(user, follower_row_id), to: Follows
   defdelegate get_user_follow(user_id, remote_actor_id), to: Follows
   defdelegate get_user_follow_with_actor(user_id, remote_actor_id), to: Follows
   defdelegate get_user_follow_by_ap_id(ap_id), to: Follows

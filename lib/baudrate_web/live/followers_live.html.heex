@@ -1,0 +1,136 @@
+<section
+  id="followers-page"
+  aria-labelledby="followers-heading"
+  class="followers-page space-y-6"
+  data-focus-target
+>
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <h1 id="followers-heading" class="followers-heading text-2xl font-bold">
+      {gettext("Followers")}
+    </h1>
+    <.link
+      id="followers-following-link"
+      navigate={~p"/following"}
+      class="link link-primary text-sm"
+    >
+      {gettext("Who you follow")}
+    </.link>
+  </div>
+
+  <p id="followers-explainer" class="followers-explainer text-sm text-base-content/70">
+    {gettext(
+      "Only you can see this list. Removing a follower does not tell them, and does not stop them following you again — blocking does."
+    )}
+  </p>
+
+  <section
+    id="followers-local"
+    class="followers-local space-y-2"
+    aria-labelledby="followers-local-heading"
+  >
+    <h2 id="followers-local-heading" class="followers-local-heading text-lg font-semibold">
+      {gettext("Members here")}
+      <span class="followers-local-count badge badge-neutral ml-1">{length(@local_followers)}</span>
+    </h2>
+    <p
+      :if={@local_followers == []}
+      id="followers-local-empty"
+      class="followers-empty text-base-content/70"
+    >
+      {gettext("No member of this site follows you.")}
+    </p>
+    <div
+      :for={follower <- @local_followers}
+      id={"follower-local-#{follower.id}"}
+      class="follower follower-local card bg-base-200 shadow-sm"
+    >
+      <div class="card-body p-4 flex flex-row items-center gap-4">
+        <.avatar user={follower} size={48} />
+        <div class="flex-1 min-w-0">
+          <.link
+            id={"follower-local-link-#{follower.id}"}
+            navigate={~p"/users/#{follower.username}"}
+            class="follower-name font-bold truncate link link-hover block"
+          >
+            {display_name(follower)}
+          </.link>
+          <span class="badge badge-outline badge-xs">{translate_role(follower.role.name)}</span>
+        </div>
+        <button
+          id={"follower-local-remove-#{follower.id}"}
+          type="button"
+          phx-click="remove_local"
+          phx-value-id={follower.id}
+          data-confirm={gettext("Remove this follower?")}
+          class="follower-remove btn btn-sm btn-ghost text-error"
+          aria-label={gettext("Remove %{name} from your followers", name: display_name(follower))}
+        >
+          {gettext("Remove")}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="followers-remote"
+    class="followers-remote space-y-2"
+    aria-labelledby="followers-remote-heading"
+  >
+    <h2 id="followers-remote-heading" class="followers-remote-heading text-lg font-semibold">
+      {gettext("Accounts on other servers")}
+      <span class="followers-remote-count badge badge-neutral ml-1">{length(@remote_followers)}</span>
+    </h2>
+    <p
+      :if={@remote_followers == []}
+      id="followers-remote-empty"
+      class="followers-empty text-base-content/70"
+    >
+      {gettext("No account on another server follows you.")}
+    </p>
+    <div
+      :for={follower <- @remote_followers}
+      id={"follower-remote-#{follower.id}"}
+      class="follower follower-remote card bg-base-200 shadow-sm"
+    >
+      <div class="card-body p-4 flex flex-row items-center gap-4">
+        <div class="flex-1 min-w-0">
+          <a
+            :if={follower.remote_actor}
+            id={"follower-remote-link-#{follower.id}"}
+            href={remote_actor_profile_url(follower.remote_actor)}
+            target="_blank"
+            rel="nofollow noopener noreferrer"
+            class="follower-name link link-hover block min-w-0"
+          >
+            <span class="font-bold truncate block">{display_name(follower.remote_actor)}</span>
+            <span class="text-sm text-base-content/70 truncate block break-all">
+              @{follower.remote_actor.username}@{follower.remote_actor.domain}
+            </span>
+          </a>
+          <span :if={!follower.remote_actor} class="follower-name break-all">
+            {follower.follower_uri}
+          </span>
+        </div>
+        <button
+          id={"follower-remote-remove-#{follower.id}"}
+          type="button"
+          phx-click="remove_remote"
+          phx-value-id={follower.id}
+          data-confirm={gettext("Remove this follower?")}
+          class="follower-remove btn btn-sm btn-ghost text-error"
+          aria-label={
+            gettext("Remove %{name} from your followers",
+              name:
+                if(follower.remote_actor,
+                  do: "@#{follower.remote_actor.username}@#{follower.remote_actor.domain}",
+                  else: follower.follower_uri
+                )
+            )
+          }
+        >
+          {gettext("Remove")}
+        </button>
+      </div>
+    </div>
+  </section>
+</section>

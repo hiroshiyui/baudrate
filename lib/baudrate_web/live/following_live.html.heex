@@ -4,7 +4,7 @@
   class="following-page space-y-6"
   data-focus-target
 >
-  <div class="flex items-center justify-between">
+  <div class="flex flex-wrap items-center justify-between gap-2">
     <h1 id="following-heading" class="following-heading text-2xl font-bold">
       {gettext("Following")}
       <span
@@ -12,6 +12,13 @@
         class="following-count badge badge-neutral ml-2"
       >{length(@follows)}</span>
     </h1>
+    <.link
+      id="following-followers-link"
+      navigate={~p"/followers"}
+      class="link link-primary text-sm"
+    >
+      {gettext("Your followers")}
+    </.link>
   </div>
 
   <div
