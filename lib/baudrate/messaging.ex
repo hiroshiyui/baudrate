@@ -34,6 +34,19 @@ defmodule Baudrate.Messaging do
   with restricted addressing (recipient in `to`, no public/followers).
   Incoming DMs are received via the inbox handler and routed here.
 
+  ## Privacy (ADR 0071)
+
+  A direct message stays between the two people in it:
+
+    * a new message makes no notification row; `Baudrate.Messaging.Push`
+      sends a web push naming the sender with an empty body
+    * images (`Baudrate.Messaging.Images`) are private files served only
+      through `/messages/images/:id` after an access check, charged against
+      the upload limits before they are processed, and never attached to a
+      message to another server (`{:error, :dm_images_local_only}`)
+    * search (`Baudrate.Messaging.Search`) reaches only the member's own
+      conversations and is never part of `Baudrate.Content.Search`
+
   ## Real-time Updates
 
   PubSub notifications are broadcast after mutations. Only IDs are
