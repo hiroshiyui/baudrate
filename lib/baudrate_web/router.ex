@@ -398,6 +398,8 @@ defmodule BaudrateWeb.Router do
       live "/messages/:id", ConversationLive
       live "/notifications", NotificationsLive
       live "/following", FollowingLive
+      live "/followers", FollowersLive
+      live "/watching", WatchingLive
       live "/timeline", TimelineLive
       live "/bookmarks", BookmarksLive
       # Board moderators are ordinary members, so their report queue lives

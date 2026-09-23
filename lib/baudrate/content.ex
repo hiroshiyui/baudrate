@@ -114,6 +114,8 @@ defmodule Baudrate.Content do
   # The composers' way in: may hold the post for a moderator (ADR 0065).
   defdelegate submit_article(attrs, board_ids, opts \\ []), to: Articles
   defdelegate add_article_to_board(article, board_id), to: Articles
+  defdelegate announce_arrival(article, board_ids), to: Articles
+  defdelegate cross_post_article(article, board_ids), to: Articles
   defdelegate forward_article_to_board(article, board, user), to: Articles
   defdelegate forward_timeline_item_to_board(timeline_item, board, user), to: Articles
   defdelegate forward_comment_to_board(comment, board, user), to: Articles
@@ -199,6 +201,15 @@ defmodule Baudrate.Content do
 
   defdelegate comment_location(comment, viewer), to: Comments
   defdelegate first_comment_since(article, viewer, since), to: Comments
+
+  # --- Watches (ADR 0070) ---
+
+  defdelegate toggle_board_watch(user, board_id), to: Baudrate.Content.Watches
+  defdelegate toggle_article_watch(user, article_id), to: Baudrate.Content.Watches
+  defdelegate board_watched?(user, board_id), to: Baudrate.Content.Watches
+  defdelegate article_watched?(user, article_id), to: Baudrate.Content.Watches
+  defdelegate list_watches(user), to: Baudrate.Content.Watches
+  defdelegate delete_watch(user, watch_id), to: Baudrate.Content.Watches
 
   # --- Article Likes ---
 

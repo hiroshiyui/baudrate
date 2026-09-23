@@ -199,6 +199,54 @@ defmodule Baudrate.Notification.WebPushTest do
       end
     end
 
+    # A push about a comment opens the comment, on its page, not the top of
+    # the thread (6B, 6C).
+    test "a notice about a comment links to the comment", %{user: user, actor: actor} do
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Push",
+          slug: "push-#{System.unique_integer([:positive])}"
+        })
+        |> Repo.insert!()
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_article(
+          %{
+            title: "Pushed",
+            body: "Body",
+            slug: "pushed-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Baudrate.Content.create_comment(%{
+          "body" => "reply",
+          "article_id" => article.id,
+          "user_id" => actor.id
+        })
+
+      {:ok, notification} =
+        %Baudrate.Notification.Notification{}
+        |> Baudrate.Notification.Notification.changeset(%{
+          type: "watched_thread_reply",
+          user_id: user.id,
+          actor_user_id: actor.id,
+          article_id: article.id,
+          comment_id: comment.id
+        })
+        |> Repo.insert()
+
+      payload =
+        notification
+        |> Repo.preload([:user, :actor_user, :actor_remote_actor, :article, :comment])
+        |> WebPush.build_payload()
+
+      assert payload.url =~ ~r|/articles/#{article.slug}#comment-#{comment.id}$|
+    end
+
     test "renders the title in the recipient's preferred locale", %{user: user, actor: actor} do
       {:ok, user} = Baudrate.Auth.update_preferred_locales(user, ["ja_JP"])
 

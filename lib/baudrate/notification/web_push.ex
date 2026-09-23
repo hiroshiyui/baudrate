@@ -149,7 +149,7 @@ defmodule Baudrate.Notification.WebPush do
   """
   def deliver_notification(%Baudrate.Notification.Notification{} = notification) do
     notification =
-      Repo.preload(notification, [:user, :actor_user, :actor_remote_actor, :article])
+      Repo.preload(notification, [:user, :actor_user, :actor_remote_actor, :article, :comment])
 
     subscriptions =
       from(s in PushSubscription, where: s.user_id == ^notification.user_id)
@@ -198,8 +198,9 @@ defmodule Baudrate.Notification.WebPush do
 
   @doc """
   Builds the push payload map (`title`, `body`, `url`, `type`, `icon`) for a
-  notification whose `:user`, `:actor_user`, `:actor_remote_actor` and
-  `:article` associations are preloaded.
+  notification whose `:user`, `:actor_user`, `:actor_remote_actor`,
+  `:article` and `:comment` associations are preloaded. A notification about
+  a comment links to the page of the thread it is on.
 
   Account security notices (`Notification.security_types/0`) are rendered in
   the recipient's preferred locale and link to `/profile`, where the security
@@ -280,6 +281,17 @@ defmodule Baudrate.Notification.WebPush do
     base = BaudrateWeb.Endpoint.url()
 
     cond do
+      # A comment is linked on the page it is on, for the recipient — a bare
+      # `#comment-N` only finds it on page 1.
+      notification.article && is_nil(notification.article.deleted_at) &&
+          match?(%Baudrate.Content.Comment{}, notification.comment) ->
+        base <>
+          BaudrateWeb.Helpers.comment_link(
+            notification.article,
+            notification.comment,
+            notification.user
+          )
+
       notification.article && is_nil(notification.article.deleted_at) ->
         "#{base}/articles/#{notification.article.slug}"
 

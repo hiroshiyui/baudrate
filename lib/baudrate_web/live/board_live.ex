@@ -62,6 +62,7 @@ defmodule BaudrateWeb.BoardLive do
          ancestors: ancestors,
          sub_boards: sub_boards,
          unread_sub_board_ids: unread_sub_board_ids,
+         watched: Content.board_watched?(current_user, board.id),
          page_title: board.name,
          syndication_board_slug: syndication_slug,
          federation_enabled: Baudrate.Setup.federation_enabled?(),
@@ -87,6 +88,22 @@ defmodule BaudrateWeb.BoardLive do
         else: load_articles(socket, 1)
 
     {:noreply, push_event(socket, "focus", %{id: "articles"})}
+  end
+
+  @impl true
+  def handle_event("toggle_watch", _params, %{assigns: %{current_user: nil}} = socket),
+    do: {:noreply, socket}
+
+  def handle_event("toggle_watch", _params, socket) do
+    %{current_user: user, board: board} = socket.assigns
+
+    case Content.toggle_board_watch(user, board.id) do
+      {:ok, _} ->
+        {:noreply, assign(socket, :watched, Content.board_watched?(user, board.id))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Could not change whether you watch this."))}
+    end
   end
 
   @impl true

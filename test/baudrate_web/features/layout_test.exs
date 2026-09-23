@@ -174,6 +174,11 @@ defmodule BaudrateWeb.Features.LayoutTest do
     {:ok, _} = Baudrate.Setup.create_rule(%{"title" => "Rule two"})
     Baudrate.Setup.update_policy(:privacy, "We log. See https://#{long_token}.example/privacy")
 
+    # /watching and /followers with a row in each list (ADR 0070).
+    {:ok, _} = Baudrate.Content.toggle_board_watch(user, board.id)
+    {:ok, _} = Baudrate.Content.toggle_article_watch(user, article.id)
+    {:ok, _} = Baudrate.Federation.create_local_follow(other, user)
+
     %{
       user: user,
       paths: [
@@ -198,6 +203,8 @@ defmodule BaudrateWeb.Features.LayoutTest do
         "/invites",
         "/bookmarks",
         "/following",
+        "/followers",
+        "/watching",
         "/terms",
         "/rules",
         "/privacy"

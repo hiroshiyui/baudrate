@@ -263,7 +263,7 @@ defmodule Baudrate.DataPortability.Archive do
         ),
         "\n",
         gettext(
-          "- interactions.json: your likes, boosts, poll votes and bookmarks (targets as links only)"
+          "- interactions.json: your likes, boosts, poll votes, bookmarks and watches (targets as links only)"
         ),
         "\n",
         gettext("- relationships.json: who you follow, your followers, blocks and mutes"),

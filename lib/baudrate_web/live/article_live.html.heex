@@ -347,6 +347,18 @@
       </button>
       <button
         :if={@current_user}
+        id="article-watch-toggle"
+        type="button"
+        phx-click="toggle_watch"
+        class="article-action article-watch-toggle btn btn-sm btn-ghost"
+        aria-pressed={to_string(@watched)}
+        title={gettext("Be notified of new comments in this thread")}
+      >
+        <.icon name={if @watched, do: "hero-eye-solid", else: "hero-eye"} class="size-4" />
+        {if @watched, do: gettext("Watching"), else: gettext("Watch")}
+      </button>
+      <button
+        :if={@current_user}
         id="article-bookmark-toggle"
         phx-click="toggle_bookmark"
         class="article-action article-bookmark-toggle btn btn-sm btn-ghost"

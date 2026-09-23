@@ -263,6 +263,116 @@ defmodule Baudrate.Notification.Hooks do
   end
 
   @doc """
+  Tells the members watching any of `board_ids` that `article` arrived there
+  (`watched_board_post`, ADR 0070).
+
+  Called wherever an article is placed in a board — written here, arriving
+  from another server, forwarded or cross-posted. Only threads: a board watch
+  never reports comments. A watcher who cannot open the article is skipped,
+  and so is one this article already reached as a mention.
+
+  Best-effort work after the commit (`Federation.schedule_federation_task/1`):
+  a busy board's watchers must not hold up the request that posted, and a
+  notice lost to a restart is acceptable, as a push is.
+  """
+  def notify_board_watchers(%Article{} = article, board_ids) when is_list(board_ids) do
+    Baudrate.Federation.schedule_federation_task(fn ->
+      watchers = Baudrate.Content.Watches.board_watchers(board_ids)
+
+      if watchers != [] do
+        article = Repo.preload(article, :boards, force: true)
+        told = already_told(article.id, nil, ~w(mention))
+
+        for {user_id, board_id} <- watchers,
+            user_id not in told,
+            user_id != article.user_id,
+            %{} = user <- [Auth.get_user(user_id)],
+            ArticleHelpers.user_can_view_article?(article, user) do
+          Notification.create_notification(
+            actor_attrs(article)
+            |> Map.merge(%{
+              type: "watched_board_post",
+              user_id: user_id,
+              article_id: article.id,
+              data: %{"board_id" => board_id}
+            })
+          )
+        end
+      end
+
+      :ok
+    end)
+  end
+
+  @doc """
+  Tells the members watching `comment`'s thread that it was posted
+  (`watched_thread_reply`, ADR 0070).
+
+  Skips anyone the comment already reached as a reply or a mention — one
+  event, one notice — and anyone who can no longer open the thread. A remote
+  comment that is not public or unlisted is never announced, as it is never
+  listed. Best-effort, like `notify_board_watchers/2`.
+  """
+  def notify_thread_watchers(%Comment{} = comment) do
+    if comment.visibility in ["public", "unlisted"] and is_nil(comment.deleted_at) do
+      Baudrate.Federation.schedule_federation_task(fn ->
+        watchers = Baudrate.Content.Watches.watcher_ids_for_article(comment.article_id)
+
+        if watchers != [] do
+          article = Repo.get(Article, comment.article_id) |> Repo.preload(:boards)
+
+          told =
+            already_told(article.id, comment.id, ~w(reply_to_article reply_to_comment mention))
+
+          for user_id <- watchers,
+              user_id not in told,
+              user_id != comment.user_id,
+              %{} = user <- [Auth.get_user(user_id)],
+              ArticleHelpers.user_can_view_article?(article, user) do
+            Notification.create_notification(
+              actor_attrs(comment)
+              |> Map.merge(%{
+                type: "watched_thread_reply",
+                user_id: user_id,
+                article_id: article.id,
+                comment_id: comment.id
+              })
+            )
+          end
+        end
+
+        :ok
+      end)
+    end
+
+    :ok
+  end
+
+  # Who has already been told about this article or comment by a notice of
+  # one of `types` — the watcher notice would be the same event twice.
+  defp already_told(article_id, comment_id, types) do
+    query =
+      from(n in Baudrate.Notification.Notification,
+        where: n.article_id == ^article_id and n.type in ^types,
+        select: n.user_id
+      )
+
+    query =
+      if comment_id,
+        do: from(n in query, where: n.comment_id == ^comment_id),
+        else: from(n in query, where: is_nil(n.comment_id))
+
+    Repo.all(query)
+  end
+
+  defp actor_attrs(%{user_id: user_id}) when is_integer(user_id), do: %{actor_user_id: user_id}
+
+  defp actor_attrs(%{remote_actor_id: remote_actor_id}) when is_integer(remote_actor_id),
+    do: %{actor_remote_actor_id: remote_actor_id}
+
+  defp actor_attrs(_), do: %{}
+
+  @doc """
   Tells the author and the local voters of a poll that it has closed
   (ADR 0069). Called once per poll, by `Content.sweep_closed_polls/0`.
 

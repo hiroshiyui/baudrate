@@ -221,6 +221,10 @@ defmodule Baudrate.Content.Comments do
         Baudrate.Notification.Hooks.notify_comment_created(comment)
       end
 
+      # After the direct notices, so a watcher already told as the author,
+      # the replied-to or a mention is not told again (ADR 0070).
+      Baudrate.Notification.Hooks.notify_thread_watchers(comment)
+
       PreviewWorker.schedule_preview_fetch(:comment, comment.id, body_html, comment.user_id)
 
       {:ok, comment}

@@ -429,6 +429,10 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("poll_closed"),
     do: gettext("A poll you wrote or voted in has closed.")
 
+  # From a watch the recipient set themselves (ADR 0070).
+  def notification_text("watched_board_post"), do: gettext("posted in a board you watch")
+  def notification_text("watched_thread_reply"), do: gettext("replied in a thread you watch")
+
   # Operational notices (ADR 0044). The check names follow on their own line,
   # translated by `translate_health_check/1`; the reasons stay in the detailed
   # health report, which is where an operator acts on them.
@@ -817,6 +821,8 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("post_approved"), do: "hero-check-circle"
   def notification_icon("post_rejected"), do: "hero-x-circle"
   def notification_icon("poll_closed"), do: "hero-chart-bar"
+  def notification_icon("watched_board_post"), do: "hero-eye"
+  def notification_icon("watched_thread_reply"), do: "hero-eye"
   def notification_icon("health_alert"), do: "hero-exclamation-triangle"
   def notification_icon("health_recovered"), do: "hero-check-badge"
   def notification_icon("sanction_applied"), do: "hero-exclamation-triangle"

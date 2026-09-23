@@ -103,6 +103,17 @@ defmodule Baudrate.Notification.Notification do
       by `Content.sweep_closed_polls/0`, in the transaction that records the
       closing. Can be turned off like the other engagement types.
 
+  ### Watching (ADR 0070)
+
+    * `watched_board_post` — a new thread in a board the recipient watches
+      (actor, `article_id`, `data.board_id`)
+    * `watched_thread_reply` — a new comment in a thread the recipient
+      watches (actor, `article_id`, `comment_id`); not sent to anyone this
+      comment already reached as a reply or a mention
+
+  Both come from a watch the recipient created themselves, and both can be
+  turned off like the other engagement types.
+
   ## Grouping
 
   Likes and boosts (`groupable_types/0`) are listed as one entry per type,
@@ -175,6 +186,8 @@ defmodule Baudrate.Notification.Notification do
     post_approved
     post_rejected
     poll_closed
+    watched_board_post
+    watched_thread_reply
   )
 
   @security_types ~w(
@@ -225,7 +238,8 @@ defmodule Baudrate.Notification.Notification do
   # The filter on `/notifications`. Every valid type is in exactly one
   # category — `notification_test.exs` fails when a new type is in none.
   @categories [
-    {"discussion", ~w(reply_to_article reply_to_comment mention poll_closed)},
+    {"discussion",
+     ~w(reply_to_article reply_to_comment mention poll_closed watched_board_post watched_thread_reply)},
     {"reactions",
      ~w(article_liked comment_liked article_boosted comment_boosted article_forwarded)},
     {"follows", ~w(new_follower actor_moved board_actor_moved)},

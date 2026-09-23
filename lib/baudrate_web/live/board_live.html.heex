@@ -82,6 +82,18 @@
     {gettext("Manage Follows")}
   </.link>
   <button
+    :if={@current_user}
+    id="board-watch-toggle"
+    type="button"
+    phx-click="toggle_watch"
+    class="board-action board-watch-toggle btn btn-sm btn-ghost"
+    aria-pressed={to_string(@watched)}
+    title={gettext("Be notified of new threads in this board")}
+  >
+    <.icon name={if @watched, do: "hero-eye-solid", else: "hero-eye"} class="size-4" />
+    {if @watched, do: gettext("Watching"), else: gettext("Watch")}
+  </button>
+  <button
     :if={@current_user && MapSet.size(@unread_article_ids) > 0}
     id="board-mark-all-read"
     type="button"

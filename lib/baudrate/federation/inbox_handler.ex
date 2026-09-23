@@ -911,6 +911,8 @@ defmodule Baudrate.Federation.InboxHandler do
                 comment.id
               )
 
+              Baudrate.Notification.Hooks.notify_thread_watchers(comment)
+
               :ok
 
             {:error, %Ecto.Changeset{} = changeset} ->
@@ -1356,9 +1358,7 @@ defmodule Baudrate.Federation.InboxHandler do
 
           cond do
             existing && existing.remote_actor_id == author_actor_id ->
-              Enum.each(boards, fn board ->
-                Content.add_article_to_board(existing, board.id)
-              end)
+              Content.cross_post_article(existing, Enum.map(boards, & &1.id))
 
               :ok
 
@@ -1835,7 +1835,7 @@ defmodule Baudrate.Federation.InboxHandler do
         # may add it to additional boards — otherwise any verified actor
         # could spuriously link another author's article elsewhere.
         if existing.remote_actor_id == remote_actor.id do
-          Content.add_article_to_board(existing, board.id)
+          Content.cross_post_article(existing, [board.id])
         end
 
         :ok
@@ -1893,9 +1893,7 @@ defmodule Baudrate.Federation.InboxHandler do
             # owns the existing article. Otherwise any verified actor could
             # cross-post another author's article to boards following them.
             if existing.remote_actor_id == remote_actor.id do
-              Enum.each(boards, fn board ->
-                Content.add_article_to_board(existing, board.id)
-              end)
+              Content.cross_post_article(existing, Enum.map(boards, & &1.id))
             end
 
             :ok

@@ -135,6 +135,7 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:comment_boosted_ids, MapSet.new())
         |> assign(:comment_boost_counts, %{})
         |> assign(:comment_bookmarked_ids, MapSet.new())
+        |> assign(:watched, Content.article_watched?(current_user, article.id))
         |> assign(
           :bookmarked,
           if(current_user,
@@ -284,6 +285,22 @@ defmodule BaudrateWeb.ArticleLive do
       end
     else
       {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_watch", _params, %{assigns: %{current_user: nil}} = socket),
+    do: {:noreply, socket}
+
+  def handle_event("toggle_watch", _params, socket) do
+    %{current_user: user, article: article} = socket.assigns
+
+    case Content.toggle_article_watch(user, article.id) do
+      {:ok, _} ->
+        {:noreply, assign(socket, :watched, Content.article_watched?(user, article.id))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Could not change whether you watch this."))}
     end
   end
 

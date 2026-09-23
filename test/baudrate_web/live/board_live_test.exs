@@ -113,6 +113,38 @@ defmodule BaudrateWeb.BoardLiveTest do
       refute has_element?(lv, "#board-new-articles")
     end
 
+    # A remote article arriving in a second board used to be linked in
+    # silently, so a board page never offered it.
+    test "a thread cross-posted in from another board is offered", %{
+      conn: conn,
+      board: board
+    } do
+      other_board =
+        %Board{}
+        |> Board.changeset(%{
+          name: "Elsewhere",
+          slug: "elsewhere-#{System.unique_integer([:positive])}"
+        })
+        |> Repo.insert!()
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Cross-posted",
+            body: "body",
+            slug: "xpost-#{System.unique_integer([:positive])}",
+            user_id: setup_user("user").id
+          },
+          [other_board.id]
+        )
+
+      {:ok, lv, _html} = live(conn, "/boards/general")
+      :ok = Content.cross_post_article(article, [board.id])
+      render(lv)
+
+      assert has_element?(lv, "#board-new-articles-show", "1 new post. Show it")
+    end
+
     test "a post by someone the reader blocked is not counted", %{
       conn: conn,
       user: user,

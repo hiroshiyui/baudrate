@@ -376,7 +376,16 @@ defmodule Baudrate.DataPortability.ArchiveTest do
       Repo.insert_all("bookmarks", [
         %{article_id: article.id, user_id: user.id, inserted_at: now, updated_at: now}
       ])
+
+      Repo.insert_all("watches", [
+        %{article_id: article.id, user_id: user.id, inserted_at: now, updated_at: now}
+      ])
     end
+
+    Repo.insert_all("watches", [
+      %{board_id: public.id, user_id: user.id, inserted_at: now, updated_at: now},
+      %{board_id: admins.id, user_id: user.id, inserted_at: now, updated_at: now}
+    ])
 
     {:ok, comment} =
       Content.create_comment(%{
@@ -414,6 +423,11 @@ defmodule Baudrate.DataPortability.ArchiveTest do
     assert liked == visible.ap_id
     assert [%{"target" => bookmarked}] = interactions["bookmarks"]
     assert bookmarked == visible.ap_id
+
+    # Watches (ADR 0070): the member's own choices, and only what they can
+    # still open — neither the hidden thread nor the admins' board.
+    watched = Enum.map(interactions["watches"], & &1["target"])
+    assert Enum.sort(watched) == Enum.sort([visible.ap_id, "#{@base_url}/boards/#{public.slug}"])
 
     # Other people's titles never appear, and nothing from the hidden board.
     refute blob =~ "SECRETTITLE"

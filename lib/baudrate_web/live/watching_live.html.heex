@@ -1,0 +1,124 @@
+<section
+  id="watching-page"
+  aria-labelledby="watching-heading"
+  class="watching-page space-y-6"
+  data-focus-target
+>
+  <h1 id="watching-heading" class="watching-heading text-2xl font-bold">{gettext("Watching")}</h1>
+
+  <p id="watching-explainer" class="watching-explainer text-sm text-base-content/70">
+    {gettext(
+      "You are told about new threads in the boards you watch, and new comments in the threads you watch. Nothing is watched unless you chose it."
+    )}
+  </p>
+
+  <section
+    id="watching-boards"
+    class="watching-boards space-y-2"
+    aria-labelledby="watching-boards-heading"
+  >
+    <h2 id="watching-boards-heading" class="watching-boards-heading text-lg font-semibold">
+      {gettext("Boards")}
+    </h2>
+    <p
+      :if={@board_watches == []}
+      id="watching-boards-empty"
+      class="watching-empty text-base-content/70"
+    >
+      {gettext(
+        "You are not watching any board. Use “Watch” on a board to be told about its new threads."
+      )}
+    </p>
+    <div
+      :for={{watch, visible?} <- @board_watches}
+      id={"watching-board-#{watch.id}"}
+      class="watching-board watch card bg-base-200 shadow-sm"
+    >
+      <div class="card-body p-4 flex flex-row items-center gap-4">
+        <span
+          :if={!visible?}
+          class="watching-board-name watching-unavailable flex-1 min-w-0 italic"
+        >
+          {gettext("A board you can no longer open")}
+        </span>
+        <.link
+          :if={visible?}
+          id={"watching-board-link-#{watch.id}"}
+          navigate={~p"/boards/#{watch.board.slug}"}
+          class="watching-board-name flex-1 min-w-0 font-bold truncate link link-hover"
+        >
+          {watch.board.name}
+        </.link>
+        <button
+          id={"watching-board-unwatch-#{watch.id}"}
+          type="button"
+          phx-click="unwatch"
+          phx-value-id={watch.id}
+          class="watching-unwatch btn btn-sm btn-ghost"
+          aria-label={
+            if visible?,
+              do: gettext("Stop watching %{name}", name: watch.board.name),
+              else: gettext("Stop watching")
+          }
+        >
+          {gettext("Stop watching")}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="watching-threads"
+    class="watching-threads space-y-2"
+    aria-labelledby="watching-threads-heading"
+  >
+    <h2 id="watching-threads-heading" class="watching-threads-heading text-lg font-semibold">
+      {gettext("Threads")}
+    </h2>
+    <p
+      :if={@article_watches == []}
+      id="watching-threads-empty"
+      class="watching-empty text-base-content/70"
+    >
+      {gettext(
+        "You are not watching any thread. Use “Watch” on an article to be told about its new comments."
+      )}
+    </p>
+    <div
+      :for={{watch, visible?} <- @article_watches}
+      id={"watching-article-#{watch.id}"}
+      class="watching-article watch card bg-base-200 shadow-sm"
+    >
+      <div class="card-body p-4 flex flex-row items-center gap-4">
+        <span
+          :if={!visible?}
+          class="watching-article-title watching-unavailable flex-1 min-w-0 italic"
+        >
+          {gettext("A thread you can no longer open")}
+        </span>
+        <.link
+          :if={visible?}
+          id={"watching-article-link-#{watch.id}"}
+          navigate={~p"/articles/#{watch.article.slug}"}
+          class="watching-article-title flex-1 min-w-0 font-bold break-words link link-hover"
+        >
+          {watch.article.title}
+        </.link>
+        <button
+          id={"watching-article-unwatch-#{watch.id}"}
+          type="button"
+          phx-click="unwatch"
+          phx-value-id={watch.id}
+          class="watching-unwatch btn btn-sm btn-ghost"
+          aria-label={
+            if visible?,
+              do: gettext("Stop watching %{title}", title: watch.article.title),
+              else: gettext("Stop watching")
+          }
+        >
+          {gettext("Stop watching")}
+        </button>
+      </div>
+    </div>
+  </section>
+</section>

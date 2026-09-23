@@ -419,7 +419,8 @@ defmodule Baudrate.DataPortability.Collector do
       "timeline_item_likes" => timeline_item_targets(TimelineItemLike, user),
       "timeline_item_boosts" => timeline_item_targets(TimelineItemBoost, user),
       "poll_votes" => poll_votes(user, visible, base_url),
-      "bookmarks" => bookmarks(user, visible, base_url)
+      "bookmarks" => bookmarks(user, visible, base_url),
+      "watches" => watches(user, visible, base_url)
     }
   end
 
@@ -516,6 +517,38 @@ defmodule Baudrate.DataPortability.Collector do
       )
 
     (articles ++ comments)
+    |> Enum.sort_by(fn {at, id, _} -> {DateTime.to_unix(to_datetime(at)), id} end)
+    |> Enum.map(fn {at, _id, uri} -> %{"target" => uri, "created_at" => iso(at)} end)
+  end
+
+  # A watch is the member's own choice (ADR 0070), so it is their data. A
+  # board or thread they can no longer open is left out, as bookmarks are.
+  defp watches(user, visible, base_url) do
+    boards =
+      Repo.all(
+        from(w in Baudrate.Content.Watch,
+          join: b in assoc(w, :board),
+          where: w.user_id == ^user.id,
+          select: {w.inserted_at, w.id, b}
+        )
+      )
+      |> Enum.filter(fn {_, _, board} -> Baudrate.Content.can_view_board?(board, user) end)
+      |> Enum.map(fn {at, id, board} -> {at, id, "#{base_url}/boards/#{board.slug}"} end)
+
+    articles =
+      Repo.all(
+        from(w in Baudrate.Content.Watch,
+          join: a in subquery(visible),
+          on: a.id == w.article_id,
+          where: w.user_id == ^user.id,
+          select: {w.inserted_at, w.id, a.ap_id, a.slug}
+        )
+      )
+      |> Enum.map(fn {at, id, ap_id, slug} ->
+        {at, id, ap_id || "#{base_url}/ap/articles/#{slug}"}
+      end)
+
+    (boards ++ articles)
     |> Enum.sort_by(fn {at, id, _} -> {DateTime.to_unix(to_datetime(at)), id} end)
     |> Enum.map(fn {at, _id, uri} -> %{"target" => uri, "created_at" => iso(at)} end)
   end

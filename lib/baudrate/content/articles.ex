@@ -410,9 +410,7 @@ defmodule Baudrate.Content.Articles do
 
       Tags.sync_article_tags(article)
 
-      for board_id <- board_ids do
-        ContentPubSub.broadcast_to_board(board_id, :article_created, %{article_id: article.id})
-      end
+      announce_arrival(article, board_ids)
 
       if article.user_id do
         Baudrate.Notification.Hooks.notify_article_created(article)
@@ -582,6 +580,41 @@ defmodule Baudrate.Content.Articles do
   end
 
   @doc """
+  Links an existing article into `board_ids` and announces it in each board
+  it was not already in (`announce_arrival/2`). The inbox's cross-post: the
+  same remote article reaching another board that follows its author.
+  """
+  def cross_post_article(%Article{} = article, board_ids) when is_list(board_ids) do
+    added =
+      for board_id <- board_ids,
+          {:ok, %BoardArticle{id: id}} <- [add_article_to_board(article, board_id)],
+          not is_nil(id),
+          do: board_id
+
+    if added != [], do: announce_arrival(article, added)
+    :ok
+  end
+
+  @doc """
+  Announces that `article` has arrived in `board_ids`: the board pages'
+  "N new posts" offer, and the members watching those boards
+  (`watched_board_post`, ADR 0070).
+
+  **Every way an article is placed in a board ends here** — written here,
+  arriving from another server, forwarded, or cross-posted into a further
+  board by the inbox. An arrival that skips it is a post the board page never
+  offers and its watchers never hear about. Call it after the commit.
+  """
+  def announce_arrival(%Article{} = article, board_ids) when is_list(board_ids) do
+    for board_id <- board_ids do
+      ContentPubSub.broadcast_to_board(board_id, :article_created, %{article_id: article.id})
+    end
+
+    Baudrate.Notification.Hooks.notify_board_watchers(article, board_ids)
+    :ok
+  end
+
+  @doc """
   Forwards an article to a board.
 
   Admins and authors can always forward. Other authenticated users can
@@ -636,10 +669,7 @@ defmodule Baudrate.Content.Articles do
         )
         |> case do
           {:ok, article} ->
-            ContentPubSub.broadcast_to_board(board.id, :article_created, %{
-              article_id: article.id
-            })
-
+            announce_arrival(article, [board.id])
             Baudrate.Notification.Hooks.notify_article_forwarded(article, user.id)
             {:ok, article}
 
@@ -695,10 +725,7 @@ defmodule Baudrate.Content.Articles do
             case add_article_to_board(existing, board.id) do
               {:ok, _} ->
                 existing = Repo.preload(existing, :boards, force: true)
-
-                ContentPubSub.broadcast_to_board(board.id, :article_created, %{
-                  article_id: existing.id
-                })
+                announce_arrival(existing, [board.id])
 
                 {:ok, existing}
 
@@ -792,10 +819,7 @@ defmodule Baudrate.Content.Articles do
               case add_article_to_board(existing, board.id) do
                 {:ok, _} ->
                   existing = Repo.preload(existing, :boards, force: true)
-
-                  ContentPubSub.broadcast_to_board(board.id, :article_created, %{
-                    article_id: existing.id
-                  })
+                  announce_arrival(existing, [board.id])
 
                   {:ok, existing}
 
@@ -952,9 +976,7 @@ defmodule Baudrate.Content.Articles do
       |> Repo.transaction()
 
     with {:ok, %{article: article}} <- result do
-      for board_id <- board_ids do
-        ContentPubSub.broadcast_to_board(board_id, :article_created, %{article_id: article.id})
-      end
+      announce_arrival(article, board_ids)
 
       # Fetch remote image attachments asynchronously (best-effort)
       if image_attachments != [] do

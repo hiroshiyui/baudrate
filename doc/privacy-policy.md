@@ -250,7 +250,7 @@ to other servers.
 - **Profile**: display name, biography, signature, avatar, profile fields and
   language preference. All optional, all public.
 - **Content**: articles, comments, replies, likes, boosts, bookmarks, poll
-  votes, and any images you upload.
+  votes, the boards and threads you watch, and any images you upload.
 - **Direct messages** you send and receive, stored as plain text in the
   database.
 - **Two-factor authentication**, if you enable it: a TOTP secret (encrypted at
@@ -362,7 +362,8 @@ Cleared automatically:
   keeps the sender and the timestamp;
 - your reading history;
 - earlier versions of posts you have edited, for as long as the post itself;
-- bookmarks, likes, boosts, follows, blocks and mutes;
+- bookmarks, watched boards and threads, likes, boosts, follows, blocks and
+  mutes;
 - the record of who invited whom;
 - your push notification registrations, until the push service rejects them.
 
