@@ -38,8 +38,8 @@
 # ---------------------------------------------------------------------------
 FROM debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171 AS otp
 
-ARG OTP_VERSION=28.5.0.6
-ARG OTP_SHA256=49d7a75e906334af54ae336ba53fc4e6ad100645e8e7efd3be008de284dab3ba
+ARG OTP_VERSION=28.5.0.7
+ARG OTP_SHA256=ddf17db6d3e9b7a7cfac0d72238ddc8ea040fedc5e3dfad82fc90675319d6c93
 
 RUN apt-get update \
  && apt-get upgrade -y \
@@ -65,9 +65,9 @@ RUN set -eux; \
 # build: the release build toolchain.
 FROM debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171 AS build
 
-ARG ELIXIR_VERSION=1.19.5
+ARG ELIXIR_VERSION=1.19.6
 ARG ELIXIR_OTP_MAJOR=28
-ARG ELIXIR_SHA256=ca481510feb6dabc875bba43e44b25c7abafa53bd7a103639851b7aeace8a022
+ARG ELIXIR_SHA256=d69db87541e1e5f4fa3f803353c01a30d4ef0e236c6bf53128b2bbed8b0b9b7e
 ARG RUSTUP_VERSION=1.29.1
 ARG RUSTUP_SHA256=dda7234360b7f578ca8b0ddcb80145646fa61a67c1720a5abc7051b35c9fcb71
 ARG RUST_TOOLCHAIN=1.98.1
