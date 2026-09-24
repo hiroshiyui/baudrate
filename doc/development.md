@@ -56,6 +56,10 @@ lib/
 │   ├── account_migration.ex     # AccountMigration context: aliases (alsoKnownAs) and moving with Move (ADR 0025)
 │   ├── account_migration/
 │   │   └── account_move.ex      # AccountMove schema: a pending move, its 24-hour delay and cancellation
+│   ├── announcements.ex         # Announcements context: site-wide notices, dismissals, the member notification (7B)
+│   ├── announcements/
+│   │   ├── announcement.ex      # A notice: plain text, live until ends_at, ended rather than deleted
+│   │   └── dismissal.ex         # A member having closed one, on every device
 │   ├── auth.ex                  # Auth context facade: defdelegate to focused sub-modules
 │   ├── auth/
 │   │   ├── challenge.ex         # The registration proof-of-work challenge: issue and verify (ADR 0063)
@@ -164,6 +168,7 @@ lib/
 │   │   ├── keyring.ex           # Key material per class (:auth, :signing), subkeys, secret_key_base fallback (ADR 0038)
 │   │   ├── rekey.ex             # Resumable re-encryption to the current key, and the key census
 │   │   └── vault.ex             # AES-256-GCM with a self-describing header, bound to the owning row
+│   ├── dashboard.ex             # The counts behind /admin: members, what waits for review, federation (ADR 0074)
 │   ├── data_portability.ex      # DataPortability context: export eligibility, cooling-off, download cap (ADR 0023)
 │   ├── data_portability/
 │   │   ├── archive.ex           # Builds the archive at download time; none is ever stored
@@ -331,8 +336,11 @@ lib/
 │   │   └── sitemap_xml.ex       # Sitemap XML rendering
 │   ├── live/
 │   │   ├── admin/
-│   │   │   ├── boards_live.ex          # Admin board CRUD + moderator management
+│   │   │   ├── announcements_live.ex  # /admin/announcements — post a notice every page shows, end one (7B)
+│   │   │   ├── boards_live.ex          # Admin board CRUD, moderators, order, moving a board's articles (ADR 0075)
+│   │   │   ├── dashboard_live.ex      # /admin — what waits for review; members, federation and health for admins (ADR 0074)
 │   │   │   ├── data_exports_live.ex   # Admin view of data export requests (ADR 0023)
+│   │   │   ├── delivery_live.ex       # /admin/federation/delivery — jobs by server, bulk actions, open circuits
 │   │   │   ├── federation_live.ex      # Admin federation dashboard
 │   │   │   ├── filters_live.ex        # /admin/filters — word, text and domain filters, with match counts (ADR 0065)
 │   │   │   ├── invites_live.ex         # Admin invite code management (generate, revoke, invite chain)
@@ -385,6 +393,7 @@ lib/
 │   │   ├── account_reset_live.ex  # Redeeming an admin-issued recovery link (/account-reset/:token)
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
+│   │   ├── announcement_notice_hook.ex   # Shared attach_hook: a member closing an announcement (7B)
 │   │   ├── recovery_notice_hook.ex       # Shared attach_hook: dismissing the "no way back in" notice
 │   │   ├── register_live.ex     # Public user registration (supports invite-only mode, terms notice, recovery codes)
 │   │   ├── safety_actions.ex    # Shared handlers: block/mute remote accounts, report timeline items, DMs, accounts
