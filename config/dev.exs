@@ -36,6 +36,7 @@ config :baudrate, BaudrateWeb.Endpoint,
   secret_key_base: "C7T+/oTmbOCkTyID3W/5BBlljTfBjtAZL3nmgbc41nMnOiuDxSpdJ8i2K6oc65jU",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:baudrate, ~w(--sourcemap=inline --watch)]},
+    esbuild_cropper: {Esbuild, :install_and_run, [:cropper, ~w(--watch)]},
     tailwind: {Tailwind, :install_and_run, [:baudrate, ~w(--watch)]}
   ]
 

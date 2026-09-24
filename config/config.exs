@@ -40,6 +40,13 @@ config :esbuild,
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
   ],
+  # Cropper.js, loaded by AvatarCropHook only when a crop is needed (Phase 8D).
+  cropper: [
+    args:
+      ~w(js/cropper_entry.js --bundle --target=es2022 --outfile=../priv/static/assets/js/cropper.js),
+    cd: Path.expand("../assets", __DIR__),
+    env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
+  ],
   service_worker: [
     args:
       ~w(js/service_worker.js --bundle --target=es2022 --outdir=../priv/static --asset-names=[name]),

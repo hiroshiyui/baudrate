@@ -1,4 +1,27 @@
-import Cropper from "../vendor/cropperjs/cropper.esm.js"
+// Cropper.js is a bundle of its own (assets/js/cropper_entry.js), loaded the
+// first time a crop is needed rather than on every page (Phase 8D). The
+// element carries its URL in `data-cropper-src`, rendered with `~p` so it is
+// the digested name in production.
+let cropperPromise = null
+
+function loadCropper(src) {
+  if (window.BaudrateCropper) return Promise.resolve(window.BaudrateCropper)
+
+  if (!cropperPromise) {
+    cropperPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script")
+      script.src = src
+      script.onload = () => resolve(window.BaudrateCropper)
+      script.onerror = () => {
+        cropperPromise = null
+        reject(new Error("could not load the image cropper"))
+      }
+      document.head.appendChild(script)
+    })
+  }
+
+  return cropperPromise
+}
 
 const AvatarCropHook = {
   mounted() {
@@ -17,6 +40,8 @@ const AvatarCropHook = {
           if (file) {
             this.objectUrl = URL.createObjectURL(file)
             this.pendingCrop = true
+            // Start fetching the cropper while the dialog opens.
+            loadCropper(this.el.dataset.cropperSrc).catch(() => {})
             this.pushEvent("show_crop_modal", {})
           }
         })
@@ -78,20 +103,29 @@ const AvatarCropHook = {
     }
 
     this.previewImg.addEventListener("load", () => {
-      this.cropper = new Cropper(this.previewImg, {
-        aspectRatio: 1,
-        viewMode: 1,
-        dragMode: "move",
-        autoCropArea: 1,
-        restore: false,
-        guides: true,
-        center: true,
-        highlight: false,
-        cropBoxMovable: true,
-        cropBoxResizable: true,
-        toggleDragModeOnDblclick: false,
-      })
+      loadCropper(this.el.dataset.cropperSrc)
+        .then((Cropper) => this.startCropper(Cropper))
+        .catch((error) => console.warn(error.message))
     }, { once: true })
+  },
+
+  startCropper(Cropper) {
+    // The dialog may have been closed, or the page left, while it loaded.
+    if (!this.previewImg || !this.previewImg.isConnected || this.cropper) return
+
+    this.cropper = new Cropper(this.previewImg, {
+      aspectRatio: 1,
+      viewMode: 1,
+      dragMode: "move",
+      autoCropArea: 1,
+      restore: false,
+      guides: true,
+      center: true,
+      highlight: false,
+      cropBoxMovable: true,
+      cropBoxResizable: true,
+      toggleDragModeOnDblclick: false,
+    })
   },
 
   saveCrop() {

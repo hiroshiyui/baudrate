@@ -131,12 +131,14 @@ defmodule Baudrate.MixProject do
         "compile",
         "tailwind baudrate",
         "esbuild baudrate",
+        "esbuild cropper",
         "esbuild service_worker",
         "esbuild challenge_worker"
       ],
       "assets.deploy": [
         "tailwind baudrate --minify",
         "esbuild baudrate --minify",
+        "esbuild cropper --minify",
         "esbuild service_worker --minify",
         "esbuild challenge_worker --minify",
         "phx.digest"

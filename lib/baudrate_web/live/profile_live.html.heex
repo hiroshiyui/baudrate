@@ -51,7 +51,11 @@
   <% end %>
 
   <%!-- Crop modal --%>
-  <div id="avatar-crop-hook" phx-hook="AvatarCropHook">
+  <div
+    id="avatar-crop-hook"
+    phx-hook="AvatarCropHook"
+    data-cropper-src={~p"/assets/js/cropper.js"}
+  >
     <dialog
       id="crop-modal"
       class="modal"

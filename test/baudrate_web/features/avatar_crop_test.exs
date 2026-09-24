@@ -1,0 +1,63 @@
+defmodule BaudrateWeb.Features.AvatarCropTest do
+  @moduledoc """
+  The avatar editor crops in the browser, with Cropper.js loaded on demand
+  (Phase 8D): it is a bundle of its own (`/assets/js/cropper.js`), fetched by
+  `AvatarCropHook` the first time a crop is needed, and no other page loads
+  it. Nothing but a browser can tell that the lazy load works.
+  """
+
+  use BaudrateWeb.FeatureCase, async: false
+
+  alias Baudrate.Repo
+  alias Baudrate.Setup.User
+
+  @moduletag :feature
+
+  setup do
+    %{user: setup_user("user")}
+  end
+
+  feature "cropping a new avatar loads the cropper and saves the avatar", %{
+    session: session,
+    user: user
+  } do
+    png = Path.join(System.tmp_dir!(), "avatar-test-#{System.unique_integer([:positive])}.png")
+    {:ok, image} = Image.new(160, 120, color: [200, 80, 40])
+    Image.write!(image, png)
+    on_exit(fn -> File.rm(png) end)
+
+    session =
+      session
+      |> log_in_via_browser(user)
+      |> visit("/profile")
+      |> assert_has(Query.css("[data-phx-main].phx-connected"))
+
+    # Not on the page until a crop is needed.
+    refute_has(session, Query.css("script[src*='cropper']"))
+
+    # The file input sits in a hidden form (a button opens the picker). Show
+    # it so the path can be typed in: browser and test share a filesystem, and
+    # Wallaby's attach_file does not work through the W3C shim.
+    session
+    |> execute_script("document.getElementById('avatar-upload-form').classList.remove('hidden')")
+    |> find(Query.css("#avatar-upload-form input[type=file]"))
+    |> Wallaby.Element.set_value(png)
+
+    session
+    |> assert_has(Query.css("#crop-modal[open]"))
+    |> assert_has(Query.css("script[src*='cropper']", visible: false))
+    |> assert_has(Query.css("#avatar-crop-container .cropper-container"))
+    |> click(Query.css("#crop-modal .modal-action .btn-primary"))
+
+    assert wait_until(fn -> Repo.get!(User, user.id).avatar_id != nil end),
+           "the cropped avatar was not saved"
+  end
+
+  defp wait_until(fun, tries \\ 50) do
+    cond do
+      fun.() -> true
+      tries == 0 -> false
+      true -> Process.sleep(100) && wait_until(fun, tries - 1)
+    end
+  end
+end
