@@ -7,14 +7,14 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.41.1, released 2026-09-23; production runs v1.41.1).**
+**Current state (v1.42.0, released 2026-09-24; production runs v1.41.1).**
 The review named five gaps: broken promises (the UI or docs saying something
 happens when it does not), moderation reach, operability, federation reach,
 and discovery and onboarding. **All five are now closed** — Phase 0 in
 v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
 v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
 anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
-and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **6E is done and unreleased, which completes Phase 6.**
+and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **6E shipped in v1.42.0, which completes Phase 6.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -398,7 +398,7 @@ This is the one fact that is still nowhere else.
 
 ---
 
-## Phase 6 — Member depth — **complete** (v1.35.0 – unreleased)
+## Phase 6 — Member depth — **complete** (v1.35.0 – v1.42.0)
 
 **The aim it served:** members who stay find that the site keeps up with
 them — they can fix mistakes, follow what matters, and control their account.
@@ -415,9 +415,9 @@ notify, and members can delete their account and manage their sessions.
 | 6B | "New since your last visit" per comment with a jump across pages; a "N new posts" offer on boards; a sign-in prompt for guests; notifications that open the comment's page, group likes and boosts, filter by kind and announce a closed poll | v1.41.0 | [0069](adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md) (amends 0048), `comments_test.exs` (browser), `poll_anonymity_test.exs` |
 | 6C | Watching a board or a thread, only by the member's own toggle; `/followers`, with removal by `Reject(Follow)` | v1.41.0 | [0070](adr/0070-a-member-hears-about-what-they-chose.md), `watch_test.exs` |
 | 6D | A DM push naming only the sender, with no notification row; private images between members here, rationed before processing; search of one's own conversations | v1.41.0 | [0071](adr/0071-a-direct-message-stays-between-the-two-people-in-it.md), `dm_privacy_test.exs` |
-| 6E-1 | `/profile` as five pages; a session list with addresses and per-session sign-out behind the step-up unlock; the member's own time zone, and `<time datetime>` in UTC; eligibility dates on the export and move pages | unreleased | `session_list_test.exs`, `profile_pages_test.exs`, `profile_time_zone_test.exs` |
-| 6E-2 | Deleting one's own account: step-up re-authentication, a seven-day wait signing in cancels, a resumable sweep to a tombstone with `Delete(Person)` in the same transaction; banned accounts served bare over ActivityPub | unreleased | [0072](adr/0072-a-deleted-account-leaves-a-tombstone.md), `account_deletion_test.exs` |
-| 6E-3 | Muting a server and words (collapsed, never removed); approving followers manually (a request is a follower nowhere); opting out of discovery | unreleased | [0073](adr/0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md), `privacy_settings_test.exs` |
+| 6E-1 | `/profile` as five pages; a session list with addresses and per-session sign-out behind the step-up unlock; the member's own time zone, and `<time datetime>` in UTC; eligibility dates on the export and move pages | v1.42.0 | `session_list_test.exs`, `profile_pages_test.exs`, `profile_time_zone_test.exs` |
+| 6E-2 | Deleting one's own account: step-up re-authentication, a seven-day wait signing in cancels, a resumable sweep to a tombstone with `Delete(Person)` in the same transaction; banned accounts served bare over ActivityPub | v1.42.0 | [0072](adr/0072-a-deleted-account-leaves-a-tombstone.md), `account_deletion_test.exs` |
+| 6E-3 | Muting a server and words (collapsed, never removed); approving followers manually (a request is a follower nowhere); opting out of discovery | v1.42.0 | [0073](adr/0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md), `privacy_settings_test.exs` |
 
 **P6-D1** (editing comments) is [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md);
 **P6-D2** (what account deletion removes) is [0072](adr/0072-a-deleted-account-leaves-a-tombstone.md).
