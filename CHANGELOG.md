@@ -100,11 +100,43 @@ replies collections now link `?page=true` and continue with `max_id` (replies:
 - Test setup no longer times out under load: about twenty async test files
   seeded the roles table, each waiting on the previous test's uncommitted
   insert. The roles are now seeded once, committed, before the suite.
+- **A very large `?page=` answered 500** on every listing and on the
+  ActivityPub collections' numbered pages: the offset overflowed
+  PostgreSQL's bigint and could not be sent. Page numbers are capped at
+  1,000,000, and a page past the end is empty. The personal timeline no
+  longer reads every row the viewer can see to show an empty page past its
+  end.
 
 ### Removed
 
 - `doc/door-apps-development.md`, a design for WASM plug-ins that no code
   implemented; the idea is one line in the Backlog.
+
+### Security
+
+- **Signing in said which accounts exist, by how long it took.** A wrong
+  password for a real account ran bcrypt twice and an unknown name once, so
+  timing the answer enumerated accounts, including those that appear in no
+  byline. Resetting a password with a recovery code leaked the same the other
+  way round: an unknown name cost a bcrypt, a wrong code for a real account
+  none. Every path now costs exactly one, and a test counts them.
+- **A rejected new password spent a recovery code.** Resetting a password
+  consumed the code before checking the new password, so a member who typed
+  one the policy refused lost one of the codes that are their only
+  self-service way back in. The password is checked first, and the code and
+  the new password are now written together or not at all. The reset page
+  also shows the policy's errors in the reader's language, and the username
+  is matched without regard to case, as at sign-in.
+- **Erlang/OTP 28.5.0.7 and Elixir 1.19.6** (dependency drift report #18).
+  OTP fixes two flaws that reach an instance through the TLS connections it
+  opens to other servers: CVE-2026-89422 (the client accepted an unsolicited
+  TLS 1.3 pre-shared key) and CVE-2026-65634 (a certificate with oversized
+  OID components could exhaust resources). Elixir fixes CVE-2026-75758
+  (unbounded recursion on an invalid charlist). Operators get the new
+  runtime from the next deploy, which builds it on the server.
+- An avatar id is stored only in the shape the server generates, and
+  deleting an avatar refuses any other value, since it removes a directory.
+  The feed bots' favicon fetcher names its temporary file randomly.
 
 ## [1.45.0] — 2026-09-24
 
