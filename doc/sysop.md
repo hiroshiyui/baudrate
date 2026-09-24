@@ -981,6 +981,26 @@ in any config file.
 - **Parent board** — hierarchical nesting up to 10 levels deep
 - **Permissions** — minimum role to view and to post (see below)
 - **Federation toggle** — `ap_enabled` enables/disables AP endpoints per board
+- **Order** — set with the **Move up** / **Move down** buttons in the board
+  list, among boards with the same parent; a new board goes last
+
+### Moving Articles and Deleting Boards
+
+An article in the wrong board can be moved: open it, choose **Move to another
+board** from its menu, and pick where from and where to. Admins and global
+moderators can move any article; a board moderator needs to moderate **both**
+boards. The author alone cannot. A board that should be merged or retired is
+emptied from `/admin/boards` with **Move articles**, which moves every
+article to the board you choose, and can then be deleted — deleting a board
+that still has articles is refused.
+
+What other servers see ([ADR 0075](adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md)):
+an article moved into a federated board is announced there like a forwarded
+one; one that stops being public — moved out of the only federated board it
+was in, into a private or non-federating one — is withdrawn from other
+servers; otherwise their copies stay where they are, since no server moves
+a post it already has. Moves, reordering and deletions are in the moderation
+log.
 
 ### Board Permissions
 
@@ -3088,7 +3108,7 @@ If you put one in front anyway:
 | `/admin/users` | User management (search, ban/unban, role changes) |
 | `/admin/users/:id` | One account: sanction history, warn/silence/suspend, lift ([Acting on an account](#acting-on-an-account)); recovery contacts and reset links, admin-only ([Account Recovery](#account-recovery-when-the-codes-are-gone-too)) |
 | `/admin/pending-users` | Approve pending registrations |
-| `/admin/boards` | Board CRUD, permissions, moderator assignment |
+| `/admin/boards` | Board CRUD, permissions, moderator assignment, order, moving a board's articles ([Moving Articles and Deleting Boards](#moving-articles-and-deleting-boards)) |
 | `/admin/bots` | RSS/Atom feed bot accounts ([Feed Bots](#feed-bots-adminbots)) |
 | `/admin/federation` | Delivery summary, known instances, domain blocking, key rotation |
 | `/admin/federation/delivery` | The delivery queue by server, bulk retry and abandon, open circuits ([Delivery Queue](#delivery-queue-adminfederationdelivery)) |

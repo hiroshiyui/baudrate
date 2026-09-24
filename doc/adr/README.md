@@ -94,6 +94,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0072](0072-a-deleted-account-leaves-a-tombstone.md) | A deleted account leaves a tombstone, and its words stay unless the member takes them | Accepted |
 | [0073](0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md) | A member's privacy settings shape what they see and who finds them, never what others may read | Accepted |
 | [0074](0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md) | The dashboard reads the health checks behind the admin session | Accepted |
+| [0075](0075-moving-an-article-arrives-and-withdraws-only-what-changed.md) | Moving an article arrives where it goes, and withdraws only what stopped being public | Accepted |
 
 ## Writing a new ADR
 

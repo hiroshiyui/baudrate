@@ -2005,6 +2005,25 @@ preferences cannot switch off being told your own post was removed, and
 own content notifies nobody (the remover is the notification's actor, and a
 notification is never delivered to its own actor).
 
+**Moving an article (7C, ADR 0075).** `Content.move_article_to_board/4`
+needs `Permissions.can_move_article?/3` (a moderator of both boards; staff
+count as moderators of every board) and swaps the two `board_articles`
+links in one `federate/2` transaction with the article row locked, so it can
+never leave the article board-less. It publishes through
+`publish_article_forwarded/2` into a federated board, and withdraws a local
+article with `publish_article_deleted/1` (addressed to its pre-move boards,
+`intent: :withdraw`) only when the move takes it from passing
+`Delivery.article_boards_federated?/1` to failing it; a remote article is
+relinked with no `Update` or `Delete`. `move_board_articles/3` runs every
+article of a board through the same move (a withdrawn one is relinked
+silently) so `delete_board/1` can succeed; `move_board/2` reorders siblings
+by renumbering them in `(position, id)` order under a lock, and
+`create_board/1` appends a new board after its siblings. The article page
+offers the move from its menu (`open_move`/`move_article`), `/admin/boards`
+the rest, and each is logged (`move_article`, `move_board_articles`,
+`reorder_boards`). **`test/baudrate/content/article_move_test.exs` is the
+acceptance gate.**
+
 **Cross-posted articles (P1-D5).** Deleting, pinning or locking an article
 that lives in several boards needs moderation rights on **every** one of them
 (`Permissions.board_moderator_for_all?/2`); the same goes for deleting a

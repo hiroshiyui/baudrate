@@ -481,18 +481,15 @@ Deliberately not done, and recorded nowhere else:
 
 ### Done
 
+- **7C** — moving an article between boards, emptying a board before
+  deleting it, and ordering boards with Move up / Move down
+  ([ADR 0075](adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md)).
 - **7B** — `/admin/announcements` and the contact setting (shown in the
   footer and on the policy pages; there is no About page).
 - **7A** — `/admin`, the dashboard; **7E** — `/admin/federation/delivery`
   ([ADR 0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md)).
   The `admin.view_dashboard` item was already void: ADR 0042 removed the
   permission.
-
-### 7C — Content tools (M)
-
-- [ ] **Move an article to another board,** audited and federated.
-- [ ] **Move every article out of a board,** so the board can be deleted (`core/content/boards.ex:184`).
-- [ ] **Keyboard-accessible board ordering** (move up and down) instead of a number field.
 
 ### 7D — Bots (M)
 

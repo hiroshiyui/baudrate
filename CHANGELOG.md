@@ -17,10 +17,24 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   Anyone can close it for themselves — a member once for every device, a
   guest in their browser — and it does not come back. Posting and ending one
   are logged.
+- **Moving articles between boards** (7C,
+  [ADR 0075](doc/adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md)).
+  An admin, a global moderator, or a moderator of both boards can move an
+  article from its menu. Into a federated board it is announced like a
+  forwarded one; a local article that stops being public is withdrawn from
+  other servers; remote articles are only relinked here.
+- **Emptying a board** (7C): **Move articles** on `/admin/boards` moves every
+  article of a board to another, so the board can be deleted.
+- **Board order with Move up and Move down** (7C), instead of typing a
+  position; a new board goes after its siblings. Moves and reordering are
+  logged.
 - **A contact line** (7B): one line of plain text on `/admin/settings`,
   shown in the footer and on the rules, terms and privacy pages.
 
 ### Fixed
+
+- Boards that shared a position could be listed in a different order from
+  one page load to the next; every listing now breaks the tie by id.
 
 - The announcement notification went to every account row, bots, pending,
   banned and deleted accounts included; it goes to active members only.
