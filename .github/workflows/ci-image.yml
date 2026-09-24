@@ -164,10 +164,12 @@ jobs:
           branch="ci-image/${TAG}"
           echo "$ci_ref" > ci/image/image.lock
           echo "$build_ref" > ci/image/build-image.lock
+          # The dev container runs the CI image too (verify-toolchain.sh checks).
+          sed -i -E "s|^    image: ${CI_IMAGE}@sha256:[0-9a-f]{64}\$|    image: ${ci_ref}|" .devcontainer/compose.yaml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"
-          git add ci/image/image.lock ci/image/build-image.lock
+          git add ci/image/image.lock ci/image/build-image.lock .devcontainer/compose.yaml
           git commit -q -m "ci: use CI images ${TAG}"
           git push -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
           body="Built by ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} from ${source_sha}.
@@ -175,7 +177,7 @@ jobs:
           CI image: \`${ci_ref}\`
           Build image: \`${build_ref}\`
 
-          Merging changes ci/image/image.lock and ci/image/build-image.lock, so the tests and the release build run these images. CI verifies their provenance attestations first."
+          Merging changes ci/image/image.lock, ci/image/build-image.lock and the dev container's image, so the tests and the release build run these images. CI verifies their provenance attestations first."
           compare="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/current...${branch}?expand=1"
           if gh pr create --base current --head "$branch" --title "ci: use CI images ${TAG}" --body "$body"; then
             echo "Opened a pull request for ${branch}" >> "$GITHUB_STEP_SUMMARY"

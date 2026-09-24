@@ -1,11 +1,14 @@
 import Config
 
 # Configure your database
+# The standard libpq variables override each value, so a contributor's own
+# PostgreSQL (or the dev container's, where PGHOST=db) needs no edit here.
 config :baudrate, Baudrate.Repo,
-  username: "baudrate_db_user",
-  password: "baudrate_database",
-  hostname: "localhost",
-  database: "baudrate_dev",
+  username: System.get_env("PGUSER", "baudrate_db_user"),
+  password: System.get_env("PGPASSWORD", "baudrate_database"),
+  hostname: System.get_env("PGHOST", "localhost"),
+  port: String.to_integer(System.get_env("PGPORT", "5432")),
+  database: System.get_env("PGDATABASE", "baudrate_dev"),
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10

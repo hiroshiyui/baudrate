@@ -1,0 +1,12 @@
+{
+  "name": "Baudrate",
+  "dockerComposeFile": "compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/baudrate",
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [4001],
+  "portsAttributes": {
+    "4001": { "label": "Baudrate (https)", "protocol": "https" }
+  },
+  "postCreateCommand": "mix setup && mix phx.gen.cert"
+}

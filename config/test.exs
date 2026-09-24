@@ -6,8 +6,10 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :baudrate, Baudrate.Repo,
-  username: "baudrate_db_user",
-  password: "baudrate_database",
+  # PGUSER and PGPASSWORD override the defaults, as in config/dev.exs. The
+  # database name is not taken from PGDATABASE: each partition needs its own.
+  username: System.get_env("PGUSER", "baudrate_db_user"),
+  password: System.get_env("PGPASSWORD", "baudrate_database"),
   # PGHOST lets CI reach the Postgres service container by name. PGPORT runs
   # the suite against a second server, such as production's major version in
   # a container. Both must be set here: the Repo does not pick up PGPORT on its

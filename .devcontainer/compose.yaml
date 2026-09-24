@@ -1,0 +1,47 @@
+# The development container (Phase 8C, P8-D1): the CI image and the
+# PostgreSQL service CI tests against, both pinned by digest. Contributors
+# need a container runtime and nothing else — the image carries the pinned
+# Erlang, Elixir, Rust, libvips, PostgreSQL client, Firefox and Selenium.
+#
+# ci/image/verify-toolchain.sh fails when either digest drifts from
+# ci/image/image.lock or from the workflows' postgres service.
+services:
+  app:
+    image: ghcr.io/hiroshiyui/baudrate-ci@sha256:da8a2e2e824de8cf1c4067a6f641c4307e71d2999ed2cfb5d0150ca4e0afb16a
+    command: sleep infinity
+    working_dir: /workspaces/baudrate
+    volumes:
+      - ..:/workspaces/baudrate:cached
+      # Build output stays in volumes: it is compiled for the container, and a
+      # host build in the same directories would be clobbered (and clobber it).
+      - build:/workspaces/baudrate/_build
+      - deps:/workspaces/baudrate/deps
+      - cargo-feed:/workspaces/baudrate/native/baudrate_feed_parser/target
+      - cargo-html:/workspaces/baudrate/native/baudrate_html_parser/target
+      - cargo-sanitizer:/workspaces/baudrate/native/baudrate_sanitizer/target
+      # Rustler copies the compiled NIFs here, inside the checkout; without a
+      # volume a container build would replace the host's libraries.
+      - nifs:/workspaces/baudrate/priv/native
+    environment:
+      PGHOST: db
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15@sha256:9b1d34adbce1dd07ee6e94b4a2cf698884b89bd44a6c9c12f5da8f3acbfe4957
+    environment:
+      # The defaults config/dev.exs and config/test.exs fall back to.
+      POSTGRES_USER: baudrate_db_user
+      POSTGRES_PASSWORD: baudrate_database
+      POSTGRES_DB: baudrate_dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  build:
+  deps:
+  cargo-feed:
+  cargo-html:
+  cargo-sanitizer:
+  nifs:
+  pgdata:
