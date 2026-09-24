@@ -9,6 +9,22 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Added
+
+- **Site announcements** (7B). An admin posts a short notice at
+  `/admin/announcements` that every page shows, to guests and members, for
+  1, 3, 7 or 30 days or until ended, and can also send it as a notification.
+  Anyone can close it for themselves — a member once for every device, a
+  guest in their browser — and it does not come back. Posting and ending one
+  are logged.
+- **A contact line** (7B): one line of plain text on `/admin/settings`,
+  shown in the footer and on the rules, terms and privacy pages.
+
+### Fixed
+
+- The announcement notification went to every account row, bots, pending,
+  banned and deleted accounts included; it goes to active members only.
+
 ## [1.43.0] — 2026-09-24
 
 Phase 7's first stages: 7A, the admin dashboard, and 7E, the delivery queue

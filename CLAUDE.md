@@ -85,6 +85,7 @@ when the row drops an ADR number or a relationship verb the Status line uses.
 - **AccountMigration** (`lib/baudrate/account_migration.ex`) — account aliases (`alsoKnownAs`) and moving accounts with ActivityPub `Move` (ADR 0025)
 - **AccountDeletion** (`lib/baudrate/account_deletion.ex`) — a member deleting their own account: the request, its 7-day wait, cancellation by signing in, the resumable sweep that turns the row into a tombstone, and the key sweep (ADR 0072)
 - **Retention** (`lib/baudrate/retention.ex`) — the hourly purges: untouched timeline items, old announces, soft-deleted articles and comments and their image files (ADR 0040)
+- **Announcements** (`lib/baudrate/announcements.ex`) — site-wide notices an admin posts, optionally as a notification to active members; a member's dismissal is a row, a guest's stays in their browser (Phase 7B)
 - **DataPortability** (`lib/baudrate/data_portability.ex`) — self-service data export requests (eligibility, cooling-off, cancellation, download cap) and the archive builder (ADR 0023)
 
 ### Key Gotchas

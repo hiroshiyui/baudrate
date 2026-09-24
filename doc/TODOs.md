@@ -481,15 +481,12 @@ Deliberately not done, and recorded nowhere else:
 
 ### Done
 
+- **7B** — `/admin/announcements` and the contact setting (shown in the
+  footer and on the policy pages; there is no About page).
 - **7A** — `/admin`, the dashboard; **7E** — `/admin/federation/delivery`
   ([ADR 0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md)).
   The `admin.view_dashboard` item was already void: ADR 0042 removed the
   permission.
-
-### 7B — Announcements and site settings (S)
-
-- [ ] **Admin announcements UI:** a notification plus a site-wide banner that can be dismissed. `Notification.create_admin_announcement/2` already exists.
-- [ ] **A contact setting** (shown on the About and Rules pages).
 
 ### 7C — Content tools (M)
 

@@ -2778,6 +2778,22 @@ curl http://localhost:4000/health
 It only says whether the application can reach its database, and it is public,
 so it says nothing more.
 
+### Announcements (`/admin/announcements`)
+
+An announcement is one short plain-text notice shown at the top of every
+page, to guests and members alike, for 1, 3, 7 or 30 days or until you end
+it. Tick **Also send it to every member as a notification** to put it in
+members' notifications too (active members only: not bots, or pending,
+banned or deleted accounts). Anyone can close it for themselves — a member
+once for all their devices, a guest in their own browser — and it does not
+come back, so post a new one for news. Ended announcements stay listed.
+Posting and ending one are recorded in the moderation log.
+
+The **Contact** field on `/admin/settings` says how to reach whoever runs
+the site (an address, an account, a room). It is one line of plain text,
+shown in the footer and on the rules, terms and privacy pages; empty shows
+nothing.
+
 ### Admin Dashboard (`/admin`)
 
 The dashboard is the Admin menu's first entry and where sudo mode returns to
@@ -3066,7 +3082,8 @@ If you put one in front anyway:
 | Route | Purpose |
 |-------|---------|
 | `/admin` | The dashboard: open reports, held posts and pending registrations; for admins also members, federation figures and each health check's status ([Admin Dashboard](#admin-dashboard-admin)) |
-| `/admin/settings` | Site name, registration mode, timezone, federation settings; read-only system information (Baudrate, Elixir, Erlang/OTP and ERTS versions) |
+| `/admin/settings` | Site name and contact, registration mode, timezone, federation settings; read-only system information (Baudrate, Elixir, Erlang/OTP and ERTS versions) |
+| `/admin/announcements` | Post a notice every page shows, optionally as a notification to members; end one early ([Announcements](#announcements-adminannouncements)) |
 | `/admin/rules` | Site rules: create, edit, reorder, retire, restore |
 | `/admin/users` | User management (search, ban/unban, role changes) |
 | `/admin/users/:id` | One account: sanction history, warn/silence/suspend, lift ([Acting on an account](#acting-on-an-account)); recovery contacts and reset links, admin-only ([Account Recovery](#account-recovery-when-the-codes-are-gone-too)) |

@@ -606,6 +606,34 @@ for re-verification, with `return_to` set to the requested admin path and query
 (read from the `:uri` connect info), so verification lands back on that page.
 With no usable `return_to` it lands on the dashboard, `/admin`.
 
+### Announcements and the Contact Setting (Phase 7B)
+
+An admin posts an announcement at `/admin/announcements`
+(`Admin.AnnouncementsLive`); `Baudrate.Announcements` holds the rules and
+checks the admin role itself. It is plain text (at most 500 characters),
+shown from creation until `ends_at` (1, 3, 7 or 30 days, or until ended by
+hand), and **ended rather than deleted**, so the list stays the record of
+what was said. `notify: true` also sends an `admin_announcement`
+notification to active members only (`Auth.counted_members_query/0` with
+`status == "active"`) from `schedule_federation_task/1`, as best-effort work.
+
+`AuthHooks` assigns `:announcements` (`Announcements.active_for/1`, at most
+three, newest first) in **every** branch, guests included, and attaches
+`AnnouncementNoticeHook`, which handles `"dismiss_announcement"` on any page
+— a member's click writes an `announcement_dismissals` row and the notice is
+gone on every device. A guest's button carries `data-announcement-dismiss`
+instead of `phx-click`: the `AnnouncementNoticeHook` JS hook keeps the id in
+`localStorage` and hides the notice, re-applying `hidden` after every patch
+because LiveView strips attributes the server did not render. **A dismissal
+is final** (ADR 0056's refusal of manufactured urgency); something new is a
+new announcement. The layout component is `announcement_notices/1`; its ids
+and classes say `notice`, never `banner`.
+
+`site_contact` is one line of plain text on `/admin/settings`
+(`Setup.site_contact/0`, `nil` when empty), shown in the footer
+(`#site-footer-contact`) and on `/rules`, `/terms` and `/privacy`
+(`#policy-contact`).
+
 ### Admin Dashboard and Delivery Page (Phase 7A, 7E)
 
 `/admin` (`Admin.DashboardLive`) is the Admin menu's first entry. Its counts
