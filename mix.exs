@@ -16,6 +16,10 @@ defmodule Baudrate.MixProject do
       # Phase 8A. The PLT lives in priv/plts so CI can cache it by path;
       # .dialyzer_ignore.exs holds the reviewed baseline, and CI fails only on
       # a warning that is not in it.
+      # References name the file but not the line: CI runs
+      # `mix gettext.extract --check-up-to-date`, and with line numbers any
+      # edit that moved a gettext call would fail it until someone re-extracted.
+      gettext: [write_reference_line_numbers: false],
       # Phase 8A: CI merges each partition's coverage and publishes the report.
       # Report only — a threshold rewards tests written for the number.
       test_coverage: [summary: [threshold: 0], ignore_modules: [~r/^Inspect\./]],
