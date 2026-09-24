@@ -9,6 +9,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.42.0] — 2026-09-24
+
 Stage 6E, which completes Phase 6: 6E-1, the account controls; 6E-2,
 deleting your own account; and 6E-3, privacy settings. Two new records,
 [ADR 0072](doc/adr/0072-a-deleted-account-leaves-a-tombstone.md) and
@@ -82,7 +84,7 @@ deletion clauses; nothing else needs doing.
   local time with no offset, which anything reading the page could only take
   for UTC — off by the site's offset for everyone.
 
-### Fixed
+### Security
 
 - **Replies from other servers on your threads in the timeline** now get the
   filters every other list applies. A reply addressed only to its author's
@@ -91,6 +93,8 @@ deletion clauses; nothing else needs doing.
 - **Site search no longer lists unlisted articles** — only their author finds
   them — so `/ap/search` does not either. Unlisted already meant "not in the
   sitemap, not indexed".
+
+### Fixed
 
 - **The profile page no longer logs an error for every message or
   notification that arrives while it is open.** It had no catch-all for the
