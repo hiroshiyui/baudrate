@@ -9,6 +9,14 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.44.0] — 2026-09-24
+
+Phase 7's second release: 7B, site announcements and a contact line, and
+7C, moving articles between boards, emptying a board and ordering boards.
+One new record,
+[ADR 0075](doc/adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md).
+One migration: the `announcements` and `announcement_dismissals` tables.
+
 ### Added
 
 - **Site announcements** (7B). An admin posts a short notice at
@@ -39,17 +47,15 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   one called a report モデレーション報告 rather than 通報, and zh_TW used
   聯盟 for federation and 傳送 for delivery in four strings, where the rest
   of the site says 聯邦 and 遞送.
-
 - **Accessibility of this release's new controls** (audit before release):
   the announcement's close button is named for the word it shows (WCAG
   2.5.3); a refused announcement marks its text box invalid and linked to
   the error, not only the flash; cancelling **Move articles**, and opening
   the move panel with nowhere to move to, no longer leave focus on the page
-  body; each **End now** names the announcement it ends.
-
+  body; each **End now** names the announcement it ends; and **Close
+  circuit** and **Move articles** are named for the words they show.
 - Boards that shared a position could be listed in a different order from
   one page load to the next; every listing now breaks the tie by id.
-
 - The announcement notification went to every account row, bots, pending,
   banned and deleted accounts included; it goes to active members only.
 
