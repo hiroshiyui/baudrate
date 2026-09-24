@@ -10197,6 +10197,7 @@ msgid_plural "%{count} new posts. Show them"
 msgstr[0] "%{count} 篇新文章，點此顯示"
 
 #: lib/baudrate_web/live/notifications_live.html.heex
+#: lib/baudrate_web/live/password_reset_live.ex
 #, elixir-autogen, elixir-format
 msgid ", "
 msgstr "、"

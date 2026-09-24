@@ -12,6 +12,7 @@ defmodule BaudrateWeb.PasswordResetLive do
   require Logger
 
   alias Baudrate.Auth
+  alias BaudrateWeb.CoreComponents
   import BaudrateWeb.Helpers, only: [password_strength: 1, extract_peer_ip: 1]
 
   @impl true
@@ -119,15 +120,13 @@ defmodule BaudrateWeb.PasswordResetLive do
         {:noreply, put_flash(socket, :error, gettext("Invalid username or recovery code."))}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        errors =
-          Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-            Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
-              opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
-            end)
-          end)
-
-        password_errors = Map.get(errors, :password, [])
-        error_msg = Enum.join(password_errors, ", ")
+        # Through the errors domain, so the policy speaks the reader's
+        # language; the confirmation's own error is shown too, which it
+        # was not.
+        error_msg =
+          (CoreComponents.translate_errors(changeset.errors, :password) ++
+             CoreComponents.translate_errors(changeset.errors, :password_confirmation))
+          |> Enum.join(gettext(", "))
 
         {:noreply,
          put_flash(

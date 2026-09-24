@@ -16,9 +16,12 @@ defmodule Baudrate.Auth.Passwords do
 
   Returns `{:ok, user}` with role preloaded or `{:error, :invalid_credentials}`.
 
-  Uses `Bcrypt.no_user_verify/0` on failed lookups to maintain constant-time
-  behavior regardless of whether the username exists, preventing timing-based
-  user enumeration.
+  Every path costs exactly one bcrypt computation — `verify_pass/2` for a
+  known account, `Bcrypt.no_user_verify/0` for an unknown one — so the time
+  taken does not say whether the username exists. A wrong password for a
+  known account must not run `no_user_verify/0` as well: that made it cost
+  two, and the difference enumerated accounts that appear in no byline
+  (ADR 0057).
 
   A suspension is refused here rather than per interaction, so every entry
   point inherits it (ADR 0029). `{:error, {:suspended, sanction}}` carries the
@@ -40,18 +43,27 @@ defmodule Baudrate.Auth.Passwords do
           preload: :role
       )
 
-    if user && Bcrypt.verify_pass(password, user.hashed_password) do
-      cond do
-        # Answers exactly as an unknown account does (ADR 0072). Its password
-        # is random bytes, so this is belt and braces.
-        user.status == "deleted" -> {:error, :invalid_credentials}
-        user.is_bot -> {:error, :bot_account}
-        user.status == "banned" -> {:error, :banned}
-        true -> refuse_if_suspended(user)
-      end
-    else
-      Bcrypt.no_user_verify()
-      {:error, :invalid_credentials}
+    cond do
+      is_nil(user) ->
+        Bcrypt.no_user_verify()
+        {:error, :invalid_credentials}
+
+      not Bcrypt.verify_pass(password, user.hashed_password) ->
+        {:error, :invalid_credentials}
+
+      # Answers exactly as an unknown account does (ADR 0072). Its password
+      # is random bytes, so this is belt and braces.
+      user.status == "deleted" ->
+        {:error, :invalid_credentials}
+
+      user.is_bot ->
+        {:error, :bot_account}
+
+      user.status == "banned" ->
+        {:error, :banned}
+
+      true ->
+        refuse_if_suspended(user)
     end
   end
 
@@ -150,8 +162,24 @@ defmodule Baudrate.Auth.Passwords do
   @doc """
   Resets a user's password using a recovery code.
 
-  Looks up the user by username, verifies the recovery code (consuming it),
-  then updates the password. Returns generic errors to prevent user enumeration.
+  The new password is checked against the policy **first**, before any
+  lookup: the check does not depend on the account, so a weak password is
+  refused the same way whether or not the username exists, and a recovery
+  code is never spent on an attempt that could not succeed. It used to be
+  consumed before the password was validated, so a member who typed a
+  password the policy refused lost one of the codes that are their only
+  self-service way back in (ADR 0058).
+
+  The code is then verified and consumed, and the password written, in one
+  transaction: if the write fails, the code is not spent. Every path costs
+  one bcrypt computation — the new password's hash when the code is right,
+  `Bcrypt.no_user_verify/0` otherwise — because verifying a code is an
+  HMAC and would otherwise answer a known username far faster than an
+  unknown one. The username is matched case-insensitively, like sign-in.
+
+  Returns `{:ok, user}`, `{:error, :invalid_credentials}` (unknown account or
+  wrong code, deliberately indistinguishable), or `{:error, changeset}` when
+  the new password breaks the policy.
   """
   @spec reset_password_with_recovery_code(String.t(), String.t(), String.t(), String.t()) ::
           {:ok, User.t()} | {:error, :invalid_credentials | Ecto.Changeset.t()}
@@ -161,40 +189,58 @@ defmodule Baudrate.Auth.Passwords do
         new_password,
         new_password_confirmation
       ) do
-    user = Repo.one(from u in User, where: u.username == ^username, preload: :role)
+    attrs = %{password: new_password, password_confirmation: new_password_confirmation}
+    validation = User.password_validation_changeset(%User{}, attrs)
 
-    if is_nil(user) do
-      # Constant-time: still hash to prevent timing attacks
-      Bcrypt.no_user_verify()
-      {:error, :invalid_credentials}
+    if validation.valid? do
+      do_reset_with_recovery_code(username, recovery_code, attrs)
     else
-      case SecondFactor.verify_recovery_code(user, recovery_code) do
-        :ok ->
-          changeset =
-            User.password_reset_changeset(user, %{
-              password: new_password,
-              password_confirmation: new_password_confirmation
-            })
+      {:error, %{validation | action: :validate}}
+    end
+  end
 
-          case Repo.update(changeset) do
-            {:ok, user} ->
-              Sessions.delete_all_sessions_for_user(user.id)
-              Baudrate.DataPortability.cancel_active_exports(user.id, "password_changed")
-              Baudrate.AccountMigration.cancel_active_moves(user.id, "password_changed")
+  defp do_reset_with_recovery_code(username, recovery_code, attrs) do
+    user =
+      Repo.one(
+        from u in User,
+          where: fragment("lower(?)", u.username) == ^String.downcase(username),
+          preload: :role
+      )
 
-              # `change_password/3` has always sent this; the recovery-code
-              # path did not, which left the flow most likely to be somebody
-              # else the only silent one.
-              Hooks.notify_account_security(user.id, "password_changed")
-              {:ok, user}
-
-            {:error, changeset} ->
-              {:error, changeset}
+    result =
+      if user do
+        Repo.transaction(fn ->
+          with :ok <- SecondFactor.verify_recovery_code(user, recovery_code),
+               {:ok, user} <- Repo.update(User.password_reset_changeset(user, attrs)) do
+            user
+          else
+            :error -> Repo.rollback(:invalid_credentials)
+            {:error, changeset} -> Repo.rollback(changeset)
           end
-
-        :error ->
-          {:error, :invalid_credentials}
+        end)
+      else
+        {:error, :invalid_credentials}
       end
+
+    case result do
+      {:ok, user} ->
+        Sessions.delete_all_sessions_for_user(user.id)
+        Baudrate.DataPortability.cancel_active_exports(user.id, "password_changed")
+        Baudrate.AccountMigration.cancel_active_moves(user.id, "password_changed")
+
+        # `change_password/3` has always sent this; the recovery-code
+        # path did not, which left the flow most likely to be somebody
+        # else the only silent one.
+        Hooks.notify_account_security(user.id, "password_changed")
+        {:ok, user}
+
+      {:error, :invalid_credentials} ->
+        # The one bcrypt a successful reset spends hashing the new password.
+        Bcrypt.no_user_verify()
+        {:error, :invalid_credentials}
+
+      {:error, %Ecto.Changeset{}} = error ->
+        error
     end
   end
 end

@@ -10229,6 +10229,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: lib/baudrate_web/live/notifications_live.html.heex
+#: lib/baudrate_web/live/password_reset_live.ex
 #, elixir-autogen, elixir-format
 msgid ", "
 msgstr ""
