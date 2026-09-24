@@ -9,6 +9,40 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+Phase 8's first release: 8B, the repository files a contributor looks for,
+and 8C, local setup. Nothing an instance runs has changed.
+
+### Added
+
+- `CONTRIBUTING.md`: setting up (the dev container, or your own toolchain),
+  running the tests and the browser suite, and the conventions a change
+  follows.
+- `SECURITY.md`: vulnerabilities are reported privately by email to
+  hiroshi@ghostsinthelab.org, optionally encrypted with the OpenPGP key in
+  `doc/security-contact.asc` (fingerprint
+  `37A4 5B21 B45E A42E BE6C  E74C 9F35 3471 AF05 D276`), with the response
+  to expect and what is in scope.
+- `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1).
+- Issue forms for bugs and feature requests (the feature form asks how the
+  idea fits ADR 0056, and security reports are pointed to `SECURITY.md`), and
+  a pull request checklist.
+- **A dev container** (`.devcontainer/`): the image CI tests in, pinned by
+  the same digest, with PostgreSQL 15 beside it. Build output stays in
+  volumes, so the container and a host build never overwrite each other.
+  `verify-toolchain.sh` fails when its digests drift from CI's, and the CI
+  image workflow updates it with every image bump.
+
+### Changed
+
+- The development and test database settings read `PGUSER`, `PGPASSWORD`,
+  `PGHOST` and `PGPORT` (and `PGDATABASE` in development), with the old
+  values as defaults.
+
+### Removed
+
+- `doc/door-apps-development.md`, a design for WASM plug-ins that no code
+  implemented; the idea is one line in the Backlog.
+
 ## [1.45.0] — 2026-09-24
 
 Phase 7's last release, 7D: bots, which completes Phase 7. One migration

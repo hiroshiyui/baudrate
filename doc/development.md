@@ -4161,6 +4161,9 @@ from the regular test suite.
 
 #### Prerequisites
 
+The dev container (`.devcontainer/`, see `CONTRIBUTING.md`) runs the CI image,
+which already carries all of these at the pinned versions. Outside it:
+
 - Java runtime (for Selenium Server)
 - Firefox browser
 - Rust toolchain (`cargo`), which builds GeckoDriver

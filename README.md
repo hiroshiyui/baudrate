@@ -92,11 +92,20 @@ third party on your behalf.
 
 ### Prerequisites
 
+The quickest route is the **dev container** in `.devcontainer/`: the image CI
+tests in, pinned by digest, with PostgreSQL 15 beside it, so a container
+runtime is all you need. See [CONTRIBUTING.md](CONTRIBUTING.md). Otherwise:
+
 - Elixir 1.19 and Erlang/OTP 28 — the versions in `.tool-versions`, which is
   what CI, the release build and production all install
 - PostgreSQL 15+
 - libvips (for image processing)
-- Rust toolchain (to compile the scraper, Ammonia, and feedparser-rs NIFs)
+- Rust toolchain (to compile the scraper, Ammonia, and feedparser-rs NIFs;
+  there are no precompiled binaries, on purpose)
+
+Development and test databases default to user `baudrate_db_user`, password
+`baudrate_database` on `localhost`; `PGUSER`, `PGPASSWORD`, `PGHOST` and
+`PGPORT` override them.
 
 ### Installation
 
@@ -157,6 +166,9 @@ from `SECRET_KEY_BASE`, which then cannot be rotated; `BAUDRATE_AUTH_KEYS` and
 - [Architecture Decision Records](doc/adr/README.md) — why the architecture is the way it is: rationale, alternatives, and trade-offs
 - [AP API Reference](doc/api.md) — ActivityPub and public API endpoint documentation
 - [Troubleshooting](doc/troubleshooting.md) — common issues and solutions
+- [Contributing](CONTRIBUTING.md) — setting up, running the tests, and making a change
+- [Security Policy](SECURITY.md) — how to report a vulnerability (privately, by email)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ## License
 
