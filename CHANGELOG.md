@@ -9,8 +9,10 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Phase 7's last stage, 7D: bots. One migration adds the filter, first-fetch
-and validator columns to `bots`.
+## [1.45.0] — 2026-09-24
+
+Phase 7's last release, 7D: bots, which completes Phase 7. One migration
+adds the filter, first-fetch and validator columns to `bots`.
 
 ### Added
 
