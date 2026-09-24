@@ -64,7 +64,7 @@ if [ "${BAUDRATE_IMAGE:-}" = ci ]; then
   check postgresql-client "$pg_client_major" "$pinned_postgres"
 fi
 
-for workflow in .github/workflows/elixir.yml .github/workflows/release.yml; do
+for workflow in .github/workflows/elixir.yml .github/workflows/release.yml .devcontainer/compose.yaml; do
   service_majors="$(sed -nE 's/^[[:space:]]*image: postgres:([0-9]+)@sha256:[0-9a-f]{64}[[:space:]]*$/\1/p' "$workflow")"
   if [ -z "$service_majors" ]; then
     echo "::error::no digest-pinned postgres service image found in $workflow"
@@ -79,5 +79,15 @@ for workflow in .github/workflows/elixir.yml .github/workflows/release.yml; do
     fi
   done
 done
+
+# The dev container (Phase 8C) runs the same CI image contributors are told
+# the suite passes in, so it must be the digest the workflows use.
+ci_lock="$(cat ci/image/image.lock)"
+if grep -qxF "    image: ${ci_lock}" .devcontainer/compose.yaml; then
+  echo "ok   devcontainer-image (ci/image/image.lock)"
+else
+  echo "::error::.devcontainer/compose.yaml does not use the image in ci/image/image.lock; update it"
+  fail=1
+fi
 
 exit "$fail"
