@@ -537,9 +537,9 @@ Deliberately not done, and recorded nowhere else:
   (ADR 0027), and production builds on the server anyway (ADR 0037). The
   cost is met instead by documenting the toolchain and shipping a **dev
   container built on the CI image**, which already carries the pinned Rust.
-- **P8-D2. Vulnerabilities are reported by email**, published in
-  `SECURITY.md`. *Open: the address, and whether an OpenPGP key goes with
-  it.*
+- **P8-D2. Vulnerabilities are reported by email** to
+  hiroshi@ghostsinthelab.org, with an OpenPGP key, published in
+  `SECURITY.md`.
 - **P8-D3. `doc/door-apps-development.md` is removed**; the idea becomes one
   Backlog line.
 - **P8-D4. Keyset pagination for the ActivityPub collections only**
@@ -548,31 +548,13 @@ Deliberately not done, and recorded nowhere else:
   rest on them — and only their per-item queries get cheaper.
 - **P8-D5. Three releases:** 8B with 8C, then 8A, then 8D.
 
-### 8B — Repository files (S) — with 8C
+### 8B and 8C — Repository files and local setup — done, unreleased
 
-- [ ] `CONTRIBUTING.md`: the toolchain (`.tool-versions`, Rust, PostgreSQL
-  15, libvips), `mix setup`, the test command with seed 9527 and 4
-  partitions, the browser suite, commit and branch rules (`current`, never
-  `main`), and a pointer to `CLAUDE.md`, the ADRs and the spec index.
-- [ ] `SECURITY.md` (P8-D2): the address, what to include, what is in
-  scope, and the response expected.
-- [ ] `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1, contact as in
-  `SECURITY.md`).
-- [ ] Issue templates (bug, feature — the feature template asks which
-  ADR 0056 question it answers) and a PR template with the "After Every
-  Change" checklist.
-
-### 8C — Local setup (M) — with 8B
-
-- [ ] **Dev container** (`.devcontainer/`, P8-D1): the `baudrate-ci` image
-  by digest (from `ci/image/image.lock`), a PostgreSQL 15 service, and the
-  ports; `mix setup` and the suite run inside it unchanged.
-- [ ] **Development database credentials** from the environment
-  (`PGUSER`, `PGPASSWORD`, `PGHOST`, `PGPORT`, `PGDATABASE`), with today's
-  values as defaults (`config/dev.exs`), as `config/test.exs` already does
-  for host and port.
-- [ ] **Remove `doc/door-apps-development.md`** (P8-D3) and add the Backlog
-  line.
+`CONTRIBUTING.md`, `SECURITY.md` (P8-D2: hiroshi@ghostsinthelab.org, key in
+`doc/security-contact.asc`, valid until 2027-05-25 — **extend it or replace it
+and update `SECURITY.md` before then**), `CODE_OF_CONDUCT.md`, issue forms and
+a PR checklist; the dev container on the CI image (P8-D1); database settings
+from the `PG*` variables; `doc/door-apps-development.md` removed (P8-D3).
 
 ### 8A — CI (M)
 
