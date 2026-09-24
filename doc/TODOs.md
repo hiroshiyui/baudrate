@@ -58,7 +58,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | ~~5~~ | ~~Anti-spam~~ | 5A–5E | **Complete** (v1.37.0 – v1.39.0) |
 | ~~6~~ | ~~Member depth~~ | 6A–6E | **Complete** (v1.35.0 – v1.42.0) |
 | ~~7~~ | ~~Admin and content tools~~ | 7A–7E | **Complete** (v1.43.0 – v1.45.0) |
-| 8 | Contributor health | 8A–8D | Lowers the bus factor of one — **next** |
+| 8 | Contributor health | 8A–8D | Lowers the bus factor of one — **next**, planned 2026-09-24 |
 
 ---
 
@@ -519,34 +519,96 @@ Deliberately not done, and recorded nowhere else:
 
 ---
 
-## Phase 8 — Contributor health — next (not yet planned)
+## Phase 8 — Contributor health — next
 
 **Goal.** Someone other than the maintainer can set up, test and contribute safely.
 
-**Done when:** a new contributor can go from clone to passing tests without installing Rust, and CI catches what reviews would.
+**Done when:**
+- a new contributor can go from clone to passing tests with one documented
+  toolchain, or none beyond a container runtime (the dev container);
+- CI catches what reviews would: stale translations, type errors, Rust lint
+  and tests, Ansible lint, and a coverage report on every run;
+- the ActivityPub collections cost a bounded number of queries per page.
+
+### Decisions (made 2026-09-24)
+
+- **P8-D1. Rust stays required.** No `rustler_precompiled`: a binary
+  downloaded at compile time is a second trust path beside the CI image
+  (ADR 0027), and production builds on the server anyway (ADR 0037). The
+  cost is met instead by documenting the toolchain and shipping a **dev
+  container built on the CI image**, which already carries the pinned Rust.
+- **P8-D2. Vulnerabilities are reported by email**, published in
+  `SECURITY.md`. *Open: the address, and whether an OpenPGP key goes with
+  it.*
+- **P8-D3. `doc/door-apps-development.md` is removed**; the idea becomes one
+  Backlog line.
+- **P8-D4. Keyset pagination for the ActivityPub collections only**
+  (outboxes, followers, replies). Human pages keep numbered pages — the
+  pager, `PaginationScrollHook`, focus handling and shared `?page` links all
+  rest on them — and only their per-item queries get cheaper.
+- **P8-D5. Three releases:** 8B with 8C, then 8A, then 8D.
+
+### 8B — Repository files (S) — with 8C
+
+- [ ] `CONTRIBUTING.md`: the toolchain (`.tool-versions`, Rust, PostgreSQL
+  15, libvips), `mix setup`, the test command with seed 9527 and 4
+  partitions, the browser suite, commit and branch rules (`current`, never
+  `main`), and a pointer to `CLAUDE.md`, the ADRs and the spec index.
+- [ ] `SECURITY.md` (P8-D2): the address, what to include, what is in
+  scope, and the response expected.
+- [ ] `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1, contact as in
+  `SECURITY.md`).
+- [ ] Issue templates (bug, feature — the feature template asks which
+  ADR 0056 question it answers) and a PR template with the "After Every
+  Change" checklist.
+
+### 8C — Local setup (M) — with 8B
+
+- [ ] **Dev container** (`.devcontainer/`, P8-D1): the `baudrate-ci` image
+  by digest (from `ci/image/image.lock`), a PostgreSQL 15 service, and the
+  ports; `mix setup` and the suite run inside it unchanged.
+- [ ] **Development database credentials** from the environment
+  (`PGUSER`, `PGPASSWORD`, `PGHOST`, `PGPORT`, `PGDATABASE`), with today's
+  values as defaults (`config/dev.exs`), as `config/test.exs` already does
+  for host and port.
+- [ ] **Remove `doc/door-apps-development.md`** (P8-D3) and add the Backlog
+  line.
 
 ### 8A — CI (M)
 
-- [ ] **Static checks:** Dialyzer, a coverage report, and a check that gettext translations are extracted and up to date.
-- [ ] **NIF crates:** `cargo clippy` and `cargo test` for the three NIF crates (they have no `#[test]` today).
-- [ ] **Ansible:** `ansible-lint` on the playbooks.
-
-### 8B — Repository files (S)
-
-- [ ] CONTRIBUTING, SECURITY.md (how to report vulnerabilities), a code of conduct, and issue and PR templates.
-
-### 8C — Local setup (M)
-
-- [ ] **Precompiled NIFs** (`rustler_precompiled`) published with each release, so contributors don't need Rust.
-- [ ] **Development database credentials** from the environment, with today's values as defaults (`config/dev.exs`).
-- [ ] **`doc/door-apps-development.md`:** mark it as a proposal or remove it; no code backs it.
+- [ ] **Translations extracted:** `mix gettext.extract --check-up-to-date`
+  in the test job, beside `translation_coverage_test.exs` (which already
+  fails on fuzzy and empty entries).
+- [ ] **Coverage report:** each partition exports its coverage and a
+  follow-up job merges them (`mix test.coverage`) and uploads the HTML with
+  `actions/upload-artifact`. Report only — no threshold, which would reward
+  tests written for the number.
+- [ ] **Dialyzer** (`dialyxir`, dev/test only), with its PLT cached. The
+  existing warnings are fixed where cheap and the rest recorded in an ignore
+  file, so CI fails only on new ones.
+- [ ] **NIF crates:** `clippy` added to the CI image's toolchain (an image
+  rebuild and an `image.lock` bump); `cargo clippy -- -D warnings` and
+  `cargo test` for the three crates. They have no `#[test]` today, so the
+  logic is split from the NIF glue where it has to be, and each crate gets
+  tests for what it guards (the sanitizer's allow-list above all).
+- [ ] **Ansible:** `ansible-lint` on the playbooks, installed in the CI image
+  with hash-pinned requirements (no unpinned download, ADR 0027).
 
 ### 8D — Performance (M)
 
-- [ ] **Outbox and collection pages:** batch the per-item preloads and counts (about 160 queries per page as of v1.18.1; `user_outbox/2`, `board_outbox/2` and `article_replies/1` in `core/federation/collections.ex` build each item with its own queries).
-- [ ] **Large lists:** keyset pagination for the outbox and the long listings, where `Pagination.paginate_query/3` (`core/pagination.ex`) runs a full count on every page.
-- [ ] **LiveView streams** for the timeline, board, notification and conversation lists.
-- [ ] **Cropper.js** loads only on the avatar editor.
+- [ ] **Outbox and collection pages:** batch the per-item preloads and
+  counts (about 160 queries per page as of v1.18.1; `user_outbox/2`,
+  `board_outbox/2` and `article_replies/1` in `core/federation/collections.ex`
+  build each item with its own queries). Measure first, then add a test that
+  bounds the query count per page.
+- [ ] **Keyset pages for the AP collections** (P8-D4): `next`/`prev` links
+  carry a cursor; `?page=N` is still answered, because peers have those URLs
+  cached.
+- [ ] **LiveView streams** for the timeline, board, notification and
+  conversation lists — each checked against the focus and announcement rules
+  (`role="status"`, `data-focus-target`, "N new posts").
+- [ ] **Cropper.js** (108 KB) loads only on the avatar editor: esbuild
+  splitting with a dynamic import in `AvatarCropHook`.
 
 ---
 
@@ -631,6 +693,8 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
   - outbound `Block` (ruled out by P1-D1).
 - **Members:** group DMs, read receipts, emoji reactions, inline image placement, reply depth beyond 5, RTL layout, `hreflang` links.
 - **Content tools:** splitting and merging threads, custom pages beyond Rules, Terms and Privacy.
+- **Extensions:** interactive "door apps" (the removed
+  `doc/door-apps-development.md` sketched WASM plug-ins; P8-D3).
 - **Legal:** a takedown and legal-request workflow, age gating.
 - **Email:** ruled out by D3.
 
