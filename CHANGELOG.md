@@ -9,6 +9,11 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.42.1] — 2026-09-24
+
+A security patch found while planning Phase 7: an article taken out of its
+last board became public. No migrations.
+
 ### Security
 
 - **Taking an article out of its last board no longer publishes it.** An
