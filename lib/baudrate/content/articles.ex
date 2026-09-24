@@ -965,6 +965,170 @@ defmodule Baudrate.Content.Articles do
     end)
   end
 
+  @doc """
+  Moves `article` from board `from` to board `to` (Phase 7C, ADR 0075).
+
+  Needs `Permissions.can_move_article?/3`. The two board links change in one
+  transaction with the article row locked, and the activities commit with
+  them (ADR 0034):
+
+    * **Into a federated board**, the article arrives the way a forward
+      delivers it there — `Create` to the board's followers for a local
+      article, and the board's `Announce` — through
+      `Publisher.publish_article_forwarded/2`.
+    * **A local article that stops federating** — it passed the outbound gate
+      before the move and does not after, because it left the only federated
+      board it was in for one that is private or does not federate — is
+      withdrawn with `Delete`, addressed to the audience it had before
+      (`intent: :withdraw`, never gated; ADR 0043).
+    * Otherwise nothing is sent to the old board's followers: the article is
+      still public where it now lives, and no peer re-homes a post it already
+      holds.
+    * **A remote article** is relinked here only; we never `Update` or
+      `Delete` an object another server owns. The board's `Announce` still
+      goes out.
+
+  Refused with `:unauthorized`, `:not_found` (soft-deleted),
+  `:same_board`, `:not_in_board` (not in `from`) or `:already_in_board`
+  (already in `to`). Returns `{:ok, article}` with its boards reloaded.
+  """
+  def move_article_to_board(%Article{} = article, %Board{} = from, %Board{} = to, user) do
+    cond do
+      not Permissions.can_move_article?(user, from, to) -> {:error, :unauthorized}
+      from.id == to.id -> {:error, :same_board}
+      not is_nil(article.deleted_at) -> {:error, :not_found}
+      true -> do_move(article, from, to)
+    end
+  end
+
+  defp do_move(article, from, to) do
+    Baudrate.Federation.federate(
+      fn -> swap_board_link(article, from, to) end,
+      fn {before, moved} -> publish_move(before, moved, to) end
+    )
+    |> case do
+      {:ok, {_before, moved}} ->
+        ContentPubSub.broadcast_to_board(from.id, :article_deleted, %{article_id: moved.id})
+        announce_arrival(moved, [to.id])
+        {:ok, moved}
+
+      {:error, _} = error ->
+        error
+    end
+  end
+
+  # Returns {:ok, {article as it was, article as it is}} so the publisher can
+  # address a withdrawal to the audience the article had.
+  defp swap_board_link(article, from, to) do
+    Repo.one!(from(a in Article, where: a.id == ^article.id, select: a.id, lock: "FOR UPDATE"))
+
+    before = Repo.preload(article, [:boards, :user], force: true)
+    in_board? = fn board -> Enum.any?(before.boards, &(&1.id == board.id)) end
+
+    cond do
+      not in_board?.(from) ->
+        {:error, :not_in_board}
+
+      in_board?.(to) ->
+        {:error, :already_in_board}
+
+      true ->
+        Repo.delete_all(
+          from(ba in BoardArticle,
+            where: ba.article_id == ^article.id and ba.board_id == ^from.id
+          )
+        )
+
+        with {:ok, _} <- add_article_to_board(article, to.id) do
+          {:ok, {before, Repo.preload(before, [:boards, :user], force: true)}}
+        end
+    end
+  end
+
+  defp publish_move(before, moved, to) do
+    alias Baudrate.Federation.{Delivery, Publisher}
+
+    stops_federating? =
+      not is_nil(before.user_id) and Delivery.article_boards_federated?(before) and
+        not Delivery.article_boards_federated?(moved)
+
+    if stops_federating? do
+      Publisher.publish_article_deleted(before)
+    else
+      Publisher.publish_article_forwarded(moved, to)
+    end
+  end
+
+  @doc """
+  Moves every article in board `from` to board `to`, so `from` can be
+  deleted (Phase 7C). Each article goes through `move_article_to_board/4`,
+  with its checks and its activities; an article already in `to` just leaves
+  `from` (it is still in a board). Soft-deleted articles are moved too —
+  their link is what keeps the board from being deleted, and moving one
+  publishes nothing because a withdrawn article no longer federates.
+
+  Returns `{:ok, moved_count}` or `{:error, :unauthorized | :same_board}`.
+  """
+  def move_board_articles(%Board{} = from, %Board{} = to, user) do
+    cond do
+      not Permissions.can_move_article?(user, from, to) ->
+        {:error, :unauthorized}
+
+      from.id == to.id ->
+        {:error, :same_board}
+
+      true ->
+        article_ids =
+          Repo.all(
+            from(ba in BoardArticle,
+              where: ba.board_id == ^from.id,
+              order_by: [asc: ba.article_id],
+              select: ba.article_id
+            )
+          )
+
+        moved =
+          Enum.count(article_ids, fn id ->
+            article = Repo.get!(Article, id) |> Repo.preload(:boards)
+            move_one(article, from, to) == :ok
+          end)
+
+        {:ok, moved}
+    end
+  end
+
+  defp move_one(%Article{deleted_at: nil} = article, from, to) do
+    case do_move(article, from, to) do
+      {:ok, _} -> :ok
+      {:error, :already_in_board} -> leave_board(article, from)
+      {:error, _} -> :error
+    end
+  end
+
+  # A withdrawn article is not published anywhere, so relinking it needs no
+  # activity; it only has to stop holding the board.
+  defp move_one(article, from, to) do
+    Repo.transaction(fn ->
+      Repo.delete_all(
+        from(ba in BoardArticle, where: ba.article_id == ^article.id and ba.board_id == ^from.id)
+      )
+
+      unless Enum.any?(article.boards, &(&1.id == to.id)),
+        do: add_article_to_board(article, to.id)
+    end)
+
+    :ok
+  end
+
+  defp leave_board(article, from) do
+    Repo.delete_all(
+      from(ba in BoardArticle, where: ba.article_id == ^article.id and ba.board_id == ^from.id)
+    )
+
+    ContentPubSub.broadcast_to_board(from.id, :article_deleted, %{article_id: article.id})
+    :ok
+  end
+
   # --- Remote Articles ---
 
   @doc """

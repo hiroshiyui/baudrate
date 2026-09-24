@@ -4,8 +4,14 @@ defmodule BaudrateWeb.Admin.BoardsLive do
 
   Only accessible to users with the `"admin"` role (enforced by the
   `:require_admin` on_mount hook). Provides CRUD operations for boards
-  including name, slug, description, permission levels, position, parent,
-  federation toggle, and board moderator management.
+  including name, slug, description, permission levels, parent, federation
+  toggle, and board moderator management.
+
+  Phase 7C: boards are listed in the order the site shows them and moved
+  with **Move up** / **Move down** among their siblings
+  (`Content.move_board/2`) rather than by typing a position, and a board's
+  articles can be moved to another board (`Content.move_board_articles/3`)
+  so the board can be deleted.
   """
 
   use BaudrateWeb, :live_view
@@ -21,11 +27,10 @@ defmodule BaudrateWeb.Admin.BoardsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    boards = Content.list_all_boards()
-
     {:ok,
      assign(socket,
-       boards: boards,
+       boards: ordered_boards(socket.assigns.current_user),
+       moving_articles_board: nil,
        editing_board: nil,
        form: nil,
        show_form: false,
@@ -91,6 +96,77 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     case parse_id(id) do
       :error -> {:noreply, socket}
       {:ok, board_id} -> do_delete_board(socket, board_id)
+    end
+  end
+
+  @impl true
+  def handle_event("move", %{"id" => id, "direction" => direction}, socket)
+      when direction in ["up", "down"] do
+    with {:ok, board_id} <- parse_id(id),
+         {:ok, board} <- Content.get_board(board_id),
+         :ok <- Content.move_board(board, String.to_existing_atom(direction)) do
+      Moderation.log_action(socket.assigns.current_user.id, "reorder_boards",
+        target_type: "board",
+        target_id: board.id,
+        details: %{"name" => board.name, "direction" => direction}
+      )
+
+      socket = reload_boards(socket)
+
+      {:noreply,
+       push_event(socket, "focus", %{id: move_focus_target(socket, board_id, direction)})}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("move_articles_prompt", %{"id" => id}, socket) do
+    with {:ok, board_id} <- parse_id(id),
+         {:ok, board} <- Content.get_board(board_id) do
+      {:noreply,
+       socket
+       |> assign(:moving_articles_board, board)
+       |> push_event("focus", %{id: "admin-boards-move-articles-target"})}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("move_articles_cancel", _params, socket) do
+    {:noreply, assign(socket, :moving_articles_board, nil)}
+  end
+
+  def handle_event("move_articles", %{"target_id" => target_id}, socket) do
+    from = socket.assigns.moving_articles_board
+    user = socket.assigns.current_user
+
+    with %Board{} <- from,
+         {:ok, to_id} <- parse_id(target_id),
+         {:ok, to} <- Content.get_board(to_id),
+         {:ok, count} <- Content.move_board_articles(from, to, user) do
+      Moderation.log_action(user.id, "move_board_articles",
+        target_type: "board",
+        target_id: from.id,
+        details: %{"from" => from.name, "to" => to.name, "count" => count}
+      )
+
+      {:noreply,
+       socket
+       |> assign(:moving_articles_board, nil)
+       |> put_flash(
+         :info,
+         ngettext(
+           "%{count} article moved from %{from} to %{to}.",
+           "%{count} articles moved from %{from} to %{to}.",
+           count,
+           from: from.name,
+           to: to.name
+         )
+       )
+       |> reload_boards()
+       |> push_event("focus", %{id: "boards-heading"})}
+    else
+      _ -> {:noreply, put_flash(socket, :error, gettext("Failed to move the articles."))}
     end
   end
 
@@ -173,6 +249,9 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     end
   end
 
+  @impl true
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
   defp do_delete_board(socket, board_id) do
     board = Content.get_board!(board_id)
 
@@ -194,7 +273,14 @@ defmodule BaudrateWeb.Admin.BoardsLive do
         {:noreply, put_flash(socket, :error, gettext("Cannot delete a protected system board."))}
 
       {:error, :has_articles} ->
-        {:noreply, put_flash(socket, :error, gettext("Cannot delete board that has articles."))}
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext(
+             "This board still has articles. Use Move articles to move them to another board first."
+           )
+         )}
 
       {:error, :has_children} ->
         {:noreply, put_flash(socket, :error, gettext("Cannot delete board that has sub-boards."))}
@@ -268,6 +354,43 @@ defmodule BaudrateWeb.Admin.BoardsLive do
   defp normalize_parent_id(params), do: params
 
   defp reload_boards(socket) do
-    assign(socket, :boards, Content.list_all_boards())
+    assign(socket, :boards, ordered_boards(socket.assigns.current_user))
+  end
+
+  # The order the site lists boards in — each board followed by its
+  # sub-boards — so Move up and Move down mean what they look like.
+  defp ordered_boards(admin) do
+    order =
+      admin
+      |> Content.list_visible_boards()
+      |> Enum.with_index()
+      |> Map.new(fn {board, index} -> {board.id, index} end)
+
+    Content.list_all_boards()
+    |> Enum.sort_by(&Map.get(order, &1.id, map_size(order)))
+  end
+
+  # Keep focus on the button that was pressed, or on its twin once the board
+  # has reached the end it was moving towards and that button is gone.
+  defp move_focus_target(socket, board_id, direction) do
+    siblings = siblings_of(socket.assigns.boards, board_id)
+
+    cond do
+      direction == "up" and List.first(siblings) == board_id ->
+        "admin-boards-move-down-#{board_id}"
+
+      direction == "down" and List.last(siblings) == board_id ->
+        "admin-boards-move-up-#{board_id}"
+
+      true ->
+        "admin-boards-move-#{direction}-#{board_id}"
+    end
+  end
+
+  @doc false
+  # Ids of the boards sharing `board_id`'s parent, in listed order.
+  def siblings_of(boards, board_id) do
+    parent_id = Enum.find_value(boards, fn b -> if b.id == board_id, do: b.parent_id end)
+    for b <- boards, b.parent_id == parent_id, do: b.id
   end
 end

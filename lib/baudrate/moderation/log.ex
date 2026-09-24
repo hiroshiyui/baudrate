@@ -34,6 +34,7 @@ defmodule Baudrate.Moderation.Log do
     approve_held_post reject_held_post create_filter update_filter delete_filter
     abandon_deliveries close_delivery_circuit
     create_announcement end_announcement
+    move_article move_board_articles reorder_boards
   )
 
   schema "moderation_logs" do

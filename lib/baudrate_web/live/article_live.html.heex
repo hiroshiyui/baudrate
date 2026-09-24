@@ -384,7 +384,7 @@
       <div
         :if={
           @can_edit || @can_delete || @can_pin || @can_lock || @revision_count > 0 ||
-            (@can_forward && !@forward_search_open) ||
+            (@can_forward && !@forward_search_open) || (@is_board_mod && @article.boards != []) ||
             (@current_user != nil && @article.user_id != @current_user.id)
         }
         class="article-menu dropdown dropdown-end"
@@ -458,6 +458,12 @@
               {gettext("Report")}
             </button>
           </li>
+          <li :if={@is_board_mod && @article.boards != [] && !@move_open}>
+            <button id="article-menu-move" phx-click="open_move" class="article-menu-move">
+              <.icon name="hero-arrows-right-left" class="size-4" />
+              {gettext("Move to another board")}
+            </button>
+          </li>
           <%= if @removable_board_ids != [] do %>
             <li :for={board <- @article.boards} :if={board.id in @removable_board_ids}>
               <button
@@ -486,6 +492,66 @@
         </ul>
       </div>
     </div>
+
+    <section
+      :if={@move_open}
+      id="article-move-panel"
+      class="article-move-panel card bg-base-200 mt-2"
+      aria-labelledby="article-move-heading"
+    >
+      <div class="card-body py-3 gap-2">
+        <h2 id="article-move-heading" class="article-move-heading font-semibold">
+          {gettext("Move to another board")}
+        </h2>
+        <p
+          :if={@move_targets == []}
+          id="article-move-no-targets"
+          class="article-move-no-targets text-sm"
+        >
+          {gettext("There is no other board you moderate to move it to.")}
+        </p>
+        <form
+          :if={@move_targets != [] && @move_from_options != []}
+          id="article-move-form"
+          class="article-move-form flex flex-wrap items-end gap-2"
+          phx-submit="move_article"
+        >
+          <label for="article-move-from" class="fieldset">
+            <span class="label">{gettext("From")}</span>
+            <select
+              id="article-move-from"
+              name="from_id"
+              class="article-move-from select select-sm"
+            >
+              <option :for={board <- @move_from_options} value={board.id}>{board.name}</option>
+            </select>
+          </label>
+          <label for="article-move-to" class="fieldset">
+            <span class="label">{gettext("To")}</span>
+            <select id="article-move-to" name="to_id" class="article-move-to select select-sm">
+              <option :for={board <- @move_targets} value={board.id}>{board.name}</option>
+            </select>
+          </label>
+          <button
+            type="submit"
+            id="article-move-submit"
+            class="article-move-submit btn btn-sm btn-primary"
+          >
+            {gettext("Move")}
+          </button>
+        </form>
+        <div>
+          <button
+            type="button"
+            id="article-move-cancel"
+            phx-click="close_move"
+            class="article-move-cancel btn btn-sm btn-ghost"
+          >
+            {gettext("Cancel")}
+          </button>
+        </div>
+      </div>
+    </section>
 
     <div
       :if={@can_forward && @forward_search_open}

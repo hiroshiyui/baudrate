@@ -292,6 +292,63 @@ defmodule BaudrateWeb.ArticleLiveTest do
     end
   end
 
+  describe "moving to another board (7C)" do
+    test "a moderator of both boards moves it, and it is logged", %{
+      conn: conn,
+      board: board,
+      article: article
+    } do
+      target =
+        %Board{}
+        |> Board.changeset(%{name: "Elsewhere", slug: "elsewhere-art"})
+        |> Repo.insert!()
+
+      moderator = setup_user("moderator")
+      {:ok, lv, _html} = live(log_in_user(conn, moderator), "/articles/#{article.slug}")
+
+      lv |> element("#article-menu-move") |> render_click()
+      assert has_element?(lv, ~s(#article-move-to option[value="#{target.id}"]))
+      refute has_element?(lv, ~s(#article-move-to option[value="#{board.id}"]))
+
+      html =
+        lv
+        |> form("#article-move-form", %{from_id: board.id, to_id: target.id})
+        |> render_submit()
+
+      assert html =~ "Article moved to Elsewhere."
+      assert [%{id: id}] = Repo.preload(article, :boards, force: true).boards
+      assert id == target.id
+
+      assert Repo.exists?(
+               from(l in Baudrate.Moderation.Log,
+                 where: l.action == "move_article" and l.target_id == ^article.id
+               )
+             )
+    end
+
+    test "the author is offered nothing, and a crafted move is refused", %{
+      conn: conn,
+      board: board,
+      article: article
+    } do
+      target =
+        %Board{}
+        |> Board.changeset(%{name: "Elsewhere", slug: "elsewhere-art2"})
+        |> Repo.insert!()
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+      refute has_element?(lv, "#article-menu-move")
+
+      render_submit(lv, "move_article", %{
+        "from_id" => to_string(board.id),
+        "to_id" => to_string(target.id)
+      })
+
+      assert [%{id: id}] = Repo.preload(article, :boards, force: true).boards
+      assert id == board.id
+    end
+  end
+
   describe "toggle_pin" do
     test "admin can pin and unpin an article", %{article: article} do
       admin = setup_user("admin")

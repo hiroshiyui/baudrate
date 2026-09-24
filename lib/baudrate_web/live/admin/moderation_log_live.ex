@@ -130,6 +130,9 @@ defmodule BaudrateWeb.Admin.ModerationLogLive do
   def translate_action("close_delivery_circuit"), do: gettext("Close Delivery Circuit")
   def translate_action("create_announcement"), do: gettext("Post Announcement")
   def translate_action("end_announcement"), do: gettext("End Announcement")
+  def translate_action("move_article"), do: gettext("Move Article")
+  def translate_action("move_board_articles"), do: gettext("Move a Board's Articles")
+  def translate_action("reorder_boards"), do: gettext("Reorder Boards")
   def translate_action(other), do: other
 
   @doc """

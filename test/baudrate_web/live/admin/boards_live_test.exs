@@ -1,6 +1,7 @@
 defmodule BaudrateWeb.Admin.BoardsLiveTest do
   use BaudrateWeb.ConnCase
 
+  import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
 
   alias Baudrate.Content
@@ -53,8 +54,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
           name: "Test Board",
           slug: slug,
           min_role_to_view: "guest",
-          min_role_to_post: "user",
-          position: 1
+          min_role_to_post: "user"
         }
       )
       |> render_submit()
@@ -173,7 +173,81 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
       |> element("button[phx-click=\"delete\"][phx-value-id=\"#{board.id}\"]")
       |> render_click()
 
-    assert html =~ "Cannot delete board that has articles"
+    assert html =~ "This board still has articles. Use Move articles"
+  end
+
+  describe "ordering and emptying boards (7C)" do
+    setup %{conn: conn} do
+      admin = setup_user("admin")
+      %{conn: log_in_admin(conn, admin), admin: admin}
+    end
+
+    defp top_board(name) do
+      {:ok, board} =
+        Content.create_board(%{
+          name: name,
+          slug: "#{String.downcase(name)}-#{System.unique_integer([:positive])}"
+        })
+
+      board
+    end
+
+    test "Move up and Move down reorder siblings, keep focus, and are logged", %{conn: conn} do
+      first = top_board("First")
+      second = top_board("Second")
+
+      {:ok, lv, _html} = live(conn, "/admin/boards")
+
+      # The first board has no Move up; the last has no Move down.
+      refute has_element?(lv, "#admin-boards-move-up-#{first.id}")
+      refute has_element?(lv, "#admin-boards-move-down-#{second.id}")
+      refute has_element?(lv, ~s(#admin-boards-form input[name="board[position]"]))
+
+      lv |> element("#admin-boards-move-up-#{second.id}") |> render_click()
+
+      ids = Enum.map(Content.list_top_boards(), & &1.id)
+      assert Enum.find_index(ids, &(&1 == second.id)) < Enum.find_index(ids, &(&1 == first.id))
+      # It is now first, so its Move up is gone and focus goes to Move down.
+      assert_push_event(lv, "focus", %{id: "admin-boards-move-down-" <> _})
+
+      assert Repo.exists?(
+               from(l in Baudrate.Moderation.Log,
+                 where: l.action == "reorder_boards" and l.target_id == ^second.id
+               )
+             )
+    end
+
+    test "Move articles empties a board so it can be deleted", %{conn: conn} do
+      from = top_board("Old")
+      to = top_board("New")
+      user = setup_user("user")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Keep me",
+            body: "b",
+            slug: "keep-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [from.id]
+        )
+
+      {:ok, lv, _html} = live(conn, "/admin/boards")
+      lv |> element("#admin-boards-move-articles-#{from.id}") |> render_click()
+
+      html =
+        lv
+        |> form("#admin-boards-move-articles-form", %{target_id: to.id})
+        |> render_submit()
+
+      assert html =~ "1 article moved from Old to New."
+      assert [%{id: id}] = Repo.preload(article, :boards, force: true).boards
+      assert id == to.id
+
+      lv |> element("#admin-boards-delete-#{from.id}") |> render_click()
+      assert {:error, :not_found} = Content.get_board(from.id)
+    end
   end
 
   test "admin cannot delete board with children", %{conn: conn} do

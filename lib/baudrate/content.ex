@@ -73,6 +73,7 @@ defmodule Baudrate.Content do
   defdelegate create_board(attrs), to: Boards
   defdelegate update_board(board, attrs), to: Boards
   defdelegate delete_board(board), to: Boards
+  defdelegate move_board(board, direction), to: Boards
   defdelegate toggle_board_federation(board), to: Boards
   defdelegate get_board_by_slug(slug), to: Boards
   defdelegate get_board_by_slug!(slug), to: Boards
@@ -121,6 +122,9 @@ defmodule Baudrate.Content do
   defdelegate forward_timeline_item_to_board(timeline_item, board, user), to: Articles
   defdelegate forward_comment_to_board(comment, board, user), to: Articles
   defdelegate remove_article_from_board(article, board, user), to: Articles
+  defdelegate move_article_to_board(article, from, to, user), to: Articles
+  defdelegate move_board_articles(from, to, user), to: Articles
+  defdelegate can_move_article?(user, from, to), to: Permissions
   defdelegate create_remote_article(attrs, board_ids, opts), to: Articles
   defdelegate get_article(id), to: Articles
   defdelegate get_article_by_ap_id(ap_id), to: Articles

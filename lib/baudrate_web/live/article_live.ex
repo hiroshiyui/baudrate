@@ -66,6 +66,9 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:can_pin, can_pin)
         |> assign(:can_lock, can_lock)
         |> assign(:is_board_mod, is_board_mod)
+        |> assign(:move_open, false)
+        |> assign(:move_from_options, [])
+        |> assign(:move_targets, [])
         |> assign(:comment_roots, [])
         |> assign(:children_map, %{})
         |> assign(:comment_page, 1)
@@ -585,6 +588,65 @@ defmodule BaudrateWeb.ArticleLive do
   @impl true
   def handle_event("cancel_comment_image_upload", %{"ref" => ref}, socket) do
     {:noreply, cancel_upload(socket, :comment_images, ref)}
+  end
+
+  # Moving the article to another board (7C, ADR 0075). The options are the
+  # boards this member moderates; the context checks it all again.
+  @impl true
+  def handle_event("open_move", _params, socket) do
+    user = socket.assigns.current_user
+    article = socket.assigns.article
+    in_article = MapSet.new(article.boards, & &1.id)
+    moderated = MapSet.new(Content.moderated_board_ids(user))
+
+    from_options = Enum.filter(article.boards, &MapSet.member?(moderated, &1.id))
+
+    targets =
+      Content.list_visible_boards(user)
+      |> Enum.filter(
+        &(MapSet.member?(moderated, &1.id) and not MapSet.member?(in_article, &1.id))
+      )
+
+    {:noreply,
+     socket
+     |> assign(move_open: true, move_from_options: from_options, move_targets: targets)
+     |> push_event("focus", %{id: "article-move-to"})}
+  end
+
+  def handle_event("close_move", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:move_open, false)
+     |> push_event("focus", %{id: "article-menu-trigger"})}
+  end
+
+  def handle_event("move_article", %{"from_id" => from_id, "to_id" => to_id}, socket) do
+    user = socket.assigns.current_user
+    article = socket.assigns.article
+
+    with {:ok, from_id} <- parse_id(from_id),
+         {:ok, to_id} <- parse_id(to_id),
+         %{} = from <- Enum.find(article.boards, &(&1.id == from_id)),
+         {:ok, to} <- Content.get_board(to_id),
+         {:ok, moved} <- Content.move_article_to_board(article, from, to, user) do
+      Moderation.log_action(user.id, "move_article",
+        target_type: "article",
+        target_id: article.id,
+        details: %{"title" => article.title, "from" => from.name, "to" => to.name}
+      )
+
+      moved = Baudrate.Repo.preload(moved, [:user, :remote_actor, :link_preview, poll: :options])
+
+      {:noreply,
+       socket
+       |> assign(:article, moved)
+       |> assign(:move_open, false)
+       |> assign(:removable_board_ids, removable_board_ids(moved, user))
+       |> put_flash(:info, gettext("Article moved to %{board}.", board: to.name))
+       |> push_event("focus", %{id: "article-menu-trigger"})}
+    else
+      _ -> {:noreply, put_flash(socket, :error, gettext("Failed to move the article."))}
+    end
   end
 
   @impl true

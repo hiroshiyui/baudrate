@@ -30,7 +30,7 @@ defmodule Baudrate.Content.Boards do
     if board_cache_enabled?() do
       BoardCache.top_boards()
     else
-      from(b in Board, where: is_nil(b.parent_id), order_by: b.position)
+      from(b in Board, where: is_nil(b.parent_id), order_by: [asc: b.position, asc: b.id])
       |> Repo.all()
     end
   end
@@ -150,7 +150,7 @@ defmodule Baudrate.Content.Boards do
     if board_cache_enabled?() do
       BoardCache.sub_boards(board_id)
     else
-      from(b in Board, where: b.parent_id == ^board_id, order_by: b.position)
+      from(b in Board, where: b.parent_id == ^board_id, order_by: [asc: b.position, asc: b.id])
       |> Repo.all()
     end
   end
@@ -270,6 +270,7 @@ defmodule Baudrate.Content.Boards do
     result =
       %Board{}
       |> Board.changeset(attrs)
+      |> put_default_position()
       |> Repo.insert()
 
     with {:ok, _} <- result, true <- board_cache_enabled?() do
@@ -277,6 +278,74 @@ defmodule Baudrate.Content.Boards do
     end
 
     result
+  end
+
+  # A new board with no position of its own goes after its siblings, so it
+  # does not jump to the top of the list (7C: the order is set with Move up
+  # and Move down, not a number field).
+  defp put_default_position(%Ecto.Changeset{valid?: true} = changeset) do
+    if Ecto.Changeset.get_change(changeset, :position) do
+      changeset
+    else
+      parent_id = Ecto.Changeset.get_field(changeset, :parent_id)
+      last = Repo.one(from(b in siblings_query(parent_id), select: max(b.position)))
+      Ecto.Changeset.put_change(changeset, :position, (last || -1) + 1)
+    end
+  end
+
+  defp put_default_position(changeset), do: changeset
+
+  defp siblings_query(nil), do: from(b in Board, where: is_nil(b.parent_id))
+  defp siblings_query(parent_id), do: from(b in Board, where: b.parent_id == ^parent_id)
+
+  @doc """
+  Moves `board` one place up or down among the boards that share its parent
+  (Phase 7C) — the keyboard-accessible replacement for typing a position.
+
+  The siblings are locked and renumbered 0, 1, 2… in their current order
+  (`position`, then `id`, the order every listing uses) with the two
+  swapped, so boards that shared a position still move. Returns `:ok`, or
+  `{:error, :at_edge}` when the board is already first or last.
+  """
+  @spec move_board(%Board{}, :up | :down) :: :ok | {:error, :at_edge}
+  def move_board(%Board{} = board, direction) when direction in [:up, :down] do
+    result =
+      Repo.transaction(fn ->
+        siblings =
+          from(b in siblings_query(board.parent_id),
+            order_by: [asc: b.position, asc: b.id],
+            lock: "FOR UPDATE"
+          )
+          |> Repo.all()
+
+        index = Enum.find_index(siblings, &(&1.id == board.id))
+        target = if direction == :up, do: (index || 0) - 1, else: (index || 0) + 1
+
+        if is_nil(index) or target < 0 or target >= length(siblings) do
+          Repo.rollback(:at_edge)
+        end
+
+        siblings
+        |> List.replace_at(index, Enum.at(siblings, target))
+        |> List.replace_at(target, Enum.at(siblings, index))
+        |> Enum.with_index()
+        |> Enum.each(fn {sibling, position} ->
+          if sibling.position != position do
+            Repo.update_all(from(b in Board, where: b.id == ^sibling.id),
+              set: [position: position]
+            )
+          end
+        end)
+      end)
+
+    with {:ok, _} <- result, true <- board_cache_enabled?() do
+      BoardCache.refresh()
+    end
+
+    case result do
+      {:ok, _} -> :ok
+      {:error, _} = error -> error
+    end
   end
 
   @doc """

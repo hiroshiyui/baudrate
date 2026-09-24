@@ -164,6 +164,19 @@ defmodule Baudrate.Content.Permissions do
   end
 
   @doc """
+  Whether `user` may move an article from board `from` to board `to`
+  (Phase 7C, P7-D3): admins and global moderators, or a moderator of **both**
+  boards — a move takes the article out of one board and puts it in the
+  other, so it needs the rights of each (P1-D5). The author alone may not:
+  moving is reorganising the site, not editing the post.
+  """
+  def can_move_article?(nil, _from, _to), do: false
+
+  def can_move_article?(user, %Board{} = from, %Board{} = to) do
+    board_moderator?(from, user) and board_moderator?(to, user)
+  end
+
+  @doc """
   Whether taking `article` out of `board` leaves it no more exposed than it
   is: true while it stays in another board, or when `board` is federated —
   a board-less article is public and federates, so leaving any other last

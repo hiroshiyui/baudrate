@@ -78,8 +78,6 @@
             ]}
           />
 
-          <.input field={@form[:position]} type="number" label={gettext("Position")} />
-
           <.input
             field={@form[:parent_id]}
             type="select"
@@ -237,6 +235,67 @@
     </div>
   </div>
 
+  <%!-- Moving a board's articles, so it can be deleted (7C) --%>
+  <section
+    :if={@moving_articles_board}
+    id="admin-boards-move-articles"
+    class="admin-boards-move-articles card bg-base-200 shadow-sm"
+    aria-labelledby="admin-boards-move-articles-heading"
+  >
+    <div class="card-body">
+      <h2
+        id="admin-boards-move-articles-heading"
+        class="admin-boards-move-articles-heading card-title"
+      >
+        {gettext("Move the articles of %{name}", name: @moving_articles_board.name)}
+      </h2>
+      <p class="admin-boards-move-articles-help text-sm text-base-content/70">
+        {gettext(
+          "Every article in this board moves to the board you choose, one at a time, as a moderator's move: into a board that federates it is announced there, and an article that stops being public is withdrawn from other servers. Then the board can be deleted."
+        )}
+      </p>
+      <form
+        id="admin-boards-move-articles-form"
+        class="admin-boards-move-articles-form flex flex-wrap items-end gap-2"
+        phx-submit="move_articles"
+      >
+        <label for="admin-boards-move-articles-target" class="fieldset">
+          <span class="label">{gettext("Move to")}</span>
+          <select
+            id="admin-boards-move-articles-target"
+            name="target_id"
+            class="admin-boards-move-articles-target select select-sm"
+            required
+          >
+            <option
+              :for={board <- @boards}
+              :if={board.id != @moving_articles_board.id}
+              value={board.id}
+            >
+              {board.name}
+            </option>
+          </select>
+        </label>
+        <button
+          type="submit"
+          id="admin-boards-move-articles-submit"
+          class="admin-boards-move-articles-submit btn btn-sm btn-primary"
+          data-confirm={gettext("Move every article of this board?")}
+        >
+          {gettext("Move articles")}
+        </button>
+        <button
+          type="button"
+          id="admin-boards-move-articles-cancel"
+          phx-click="move_articles_cancel"
+          class="admin-boards-move-articles-cancel btn btn-sm btn-ghost"
+        >
+          {gettext("Cancel")}
+        </button>
+      </form>
+    </div>
+  </section>
+
   <%!-- Boards table --%>
   <div :if={@boards == []} class="admin-boards-empty text-base-content/70 text-center py-8">
     {gettext("No boards yet.")}
@@ -255,7 +314,7 @@
           <th scope="col">{gettext("Slug")}</th>
           <th scope="col">{gettext("Parent")}</th>
           <th scope="col">{gettext("View / Post")}</th>
-          <th scope="col">{gettext("Position")}</th>
+          <th scope="col">{gettext("Order")}</th>
           <th scope="col">{gettext("Federation")}</th>
           <th scope="col">{gettext("Actions")}</th>
         </tr>
@@ -278,7 +337,34 @@
               {translate_role(board.min_role_to_post)}
             </span>
           </td>
-          <td>{board.position}</td>
+          <td class="admin-boards-row-order">
+            <div class="flex gap-1">
+              <button
+                :if={List.first(siblings_of(@boards, board.id)) != board.id}
+                type="button"
+                id={"admin-boards-move-up-#{board.id}"}
+                phx-click="move"
+                phx-value-id={board.id}
+                phx-value-direction="up"
+                class="admin-boards-move-up btn btn-xs btn-ghost"
+                aria-label={gettext("Move %{name} up", name: board.name)}
+              >
+                <.icon name="hero-arrow-up" class="size-4" />
+              </button>
+              <button
+                :if={List.last(siblings_of(@boards, board.id)) != board.id}
+                type="button"
+                id={"admin-boards-move-down-#{board.id}"}
+                phx-click="move"
+                phx-value-id={board.id}
+                phx-value-direction="down"
+                class="admin-boards-move-down btn btn-xs btn-ghost"
+                aria-label={gettext("Move %{name} down", name: board.name)}
+              >
+                <.icon name="hero-arrow-down" class="size-4" />
+              </button>
+            </div>
+          </td>
           <td>
             <span class={[
               "badge badge-sm",
@@ -322,6 +408,15 @@
               >
                 {gettext("Follows")}
               </.link>
+              <button
+                id={"admin-boards-move-articles-#{board.id}"}
+                phx-click="move_articles_prompt"
+                phx-value-id={board.id}
+                class="admin-boards-move-articles-btn btn btn-sm btn-ghost"
+                aria-label={gettext("Move the articles of %{name}", name: board.name)}
+              >
+                {gettext("Move articles")}
+              </button>
               <button
                 id={"admin-boards-delete-#{board.id}"}
                 phx-click="delete"
