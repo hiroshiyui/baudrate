@@ -34,6 +34,10 @@
     </li>
   </ol>
 
+  <p :if={@contact} id="policy-contact" class="policy-contact text-sm opacity-80 break-words">
+    {gettext("Questions about this page: %{contact}", contact: @contact)}
+  </p>
+
   <p
     :if={is_nil(@body) && @rules == []}
     id="policy-empty"

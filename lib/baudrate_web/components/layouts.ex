@@ -38,6 +38,7 @@ defmodule BaudrateWeb.Layouts do
     # Resolved once per render rather than twice in the footer markup. Reads
     # hit the settings ETS cache, so this costs nothing per page.
     assigns = assign_new(assigns, :published_policies, fn -> Setup.published_policies() end)
+    assigns = assign_new(assigns, :site_contact, fn -> Setup.site_contact() end)
 
     ~H"""
     <header
@@ -80,6 +81,11 @@ defmodule BaudrateWeb.Layouts do
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/settings" class="nav-admin-link">{gettext("Settings")}</.link>
+                    </li>
+                    <li :if={@current_user.role.name == "admin"}>
+                      <.link navigate="/admin/announcements" class="nav-admin-link">
+                        {gettext("Announcements")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/pending-users" class="nav-admin-link">
@@ -351,6 +357,11 @@ defmodule BaudrateWeb.Layouts do
                       <.link navigate="/admin/settings" class="nav-admin-link">{gettext("Settings")}</.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
+                      <.link navigate="/admin/announcements" class="nav-admin-link">
+                        {gettext("Announcements")}
+                      </.link>
+                    </li>
+                    <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/pending-users" class="nav-admin-link">
                         {gettext("Pending Users")}
                       </.link>
@@ -452,6 +463,11 @@ defmodule BaudrateWeb.Layouts do
       class="layout-main flex-1 px-4 pt-6 pb-24 lg:pt-10 lg:pb-20 sm:px-6 lg:px-8 outline-none"
     >
       <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-7xl", else: "max-w-6xl")]}>
+        <.announcement_notices
+          :if={assigns[:announcements] not in [nil, []]}
+          announcements={@announcements}
+          current_user={@current_user}
+        />
         <.data_export_notice :if={assigns[:active_data_export]} request={@active_data_export} />
         <.account_move_notice :if={assigns[:active_account_move]} summary={@active_account_move} />
         <.account_moved_notice :if={assigns[:current_user] && @current_user.moved_to} />
@@ -514,6 +530,14 @@ defmodule BaudrateWeb.Layouts do
         </ul>
       </nav>
 
+      <p
+        :if={@site_contact}
+        id="site-footer-contact"
+        class="site-footer-contact mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-4 text-center text-sm opacity-70 break-words"
+      >
+        {gettext("Contact: %{contact}", contact: @site_contact)}
+      </p>
+
       <.time_zone_label current_user={@current_user} />
 
       <.language_switcher current_locale={assigns[:locale]} current_path={assigns[:current_path]} />
@@ -535,6 +559,70 @@ defmodule BaudrateWeb.Layouts do
     >
       <.icon name="hero-arrow-up-solid" class="size-6" />
     </button>
+    """
+  end
+
+  @doc """
+  The site's live announcements (Phase 7B), newest first, each with a
+  dismiss button. A member's click is an event the server records; a guest's
+  is handled by the `AnnouncementNoticeHook` JS hook, which remembers it in
+  `localStorage` and hides the notice. The ids and classes say `notice`, never
+  `banner`: content blockers hide elements by that name.
+  """
+  attr :announcements, :list, required: true
+  attr :current_user, :any, default: nil
+
+  def announcement_notices(assigns) do
+    ~H"""
+    <section
+      id="announcement-notices"
+      class="announcement-notices space-y-2"
+      aria-label={gettext("Announcements")}
+    >
+      <aside
+        :for={announcement <- @announcements}
+        id={"announcement-notice-#{announcement.id}"}
+        class="announcement-notice alert alert-info"
+        aria-labelledby={"announcement-notice-heading-#{announcement.id}"}
+        phx-hook="AnnouncementNoticeHook"
+        data-announcement-id={announcement.id}
+        data-guest={to_string(is_nil(@current_user))}
+      >
+        <.icon name="hero-megaphone" class="size-5 shrink-0" />
+        <div class="min-w-0 space-y-1">
+          <h2
+            id={"announcement-notice-heading-#{announcement.id}"}
+            class="announcement-notice-heading font-semibold"
+          >
+            {gettext("Announcement")}
+          </h2>
+          <p class="announcement-notice-body text-sm whitespace-pre-line break-words">
+            {announcement.body}
+          </p>
+        </div>
+        <button
+          :if={@current_user}
+          type="button"
+          id={"announcement-notice-dismiss-#{announcement.id}"}
+          phx-click="dismiss_announcement"
+          phx-value-id={announcement.id}
+          class="announcement-notice-dismiss btn btn-sm btn-ghost"
+          aria-label={gettext("Dismiss this announcement")}
+        >
+          {gettext("Close")}
+        </button>
+        <button
+          :if={is_nil(@current_user)}
+          type="button"
+          id={"announcement-notice-dismiss-#{announcement.id}"}
+          data-announcement-dismiss
+          class="announcement-notice-dismiss btn btn-sm btn-ghost"
+          aria-label={gettext("Dismiss this announcement")}
+        >
+          {gettext("Close")}
+        </button>
+      </aside>
+    </section>
     """
   end
 

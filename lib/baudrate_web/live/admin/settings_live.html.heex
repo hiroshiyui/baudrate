@@ -52,6 +52,21 @@
           {gettext("Shown to visitors on the home page, and used for link previews. Plain text.")}
         </p>
         <.input
+          field={@form[:site_contact]}
+          type="text"
+          maxlength="200"
+          label={gettext("Contact")}
+          value={@form[:site_contact].value}
+        />
+        <p
+          id="settings-site-contact-hint"
+          class="admin-settings-hint text-sm text-base-content/70 mb-2"
+        >
+          {gettext(
+            "How to reach whoever runs this site: an address, an account, a chat room. Shown in the footer and on the rules, terms and privacy pages. One line of plain text; leave it empty to show nothing."
+          )}
+        </p>
+        <.input
           field={@form[:timezone]}
           type="select"
           label={gettext("Timezone")}

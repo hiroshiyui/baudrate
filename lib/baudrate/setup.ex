@@ -606,6 +606,7 @@ defmodule Baudrate.Setup do
     types = %{
       site_name: :string,
       site_description: :string,
+      site_contact: :string,
       registration_mode: :string,
       registration_challenge_bits: :integer,
       new_account_days: :integer,
@@ -624,6 +625,7 @@ defmodule Baudrate.Setup do
     defaults = %{
       site_name: get_setting("site_name") || "",
       site_description: get_setting("site_description") || "",
+      site_contact: get_setting("site_contact") || "",
       registration_mode: registration_mode(),
       registration_challenge_bits: Baudrate.Auth.Challenge.bits(),
       new_account_days: Baudrate.Auth.Trust.thresholds().days,
@@ -646,6 +648,13 @@ defmodule Baudrate.Setup do
     # A sentence or two. It is the first thing a visitor reads and it is
     # rendered as plain text, so there is no reason for it to be long.
     |> Ecto.Changeset.validate_length(:site_description, max: 500)
+    # How to reach whoever runs the site (7B): an address, a handle, a room.
+    # One line of plain text — it is shown on the policy pages and in every
+    # footer, so it is never markup and never a paragraph.
+    |> Ecto.Changeset.validate_length(:site_contact, max: 200)
+    |> Ecto.Changeset.validate_format(:site_contact, ~r/\A[^\r\n]*\z/,
+      message: "must be a single line"
+    )
     |> Ecto.Changeset.validate_inclusion(:registration_mode, @valid_registration_modes)
     # 0 switches the proof-of-work challenge off; above the cap a phone takes
     # long enough to give up, which would close the door rather than slow the
@@ -689,6 +698,18 @@ defmodule Baudrate.Setup do
   end
 
   @doc """
+  How to reach whoever runs the site, as an admin wrote it on
+  `/admin/settings` (7B), or `nil` when it is unset. Plain text, one line.
+  """
+  @spec site_contact() :: String.t() | nil
+  def site_contact do
+    case get_setting("site_contact") do
+      contact when is_binary(contact) and contact != "" -> contact
+      _ -> nil
+    end
+  end
+
+  @doc """
   Validates and persists admin settings (including timezone).
 
   Returns `{:ok, changes}` on success or `{:error, changeset}` on validation failure.
@@ -703,6 +724,7 @@ defmodule Baudrate.Setup do
       Repo.transaction(fn ->
         set_setting("site_name", changes.site_name)
         set_setting("site_description", changes.site_description || "")
+        set_setting("site_contact", String.trim(changes.site_contact || ""))
         set_setting("registration_mode", changes.registration_mode)
 
         set_setting(

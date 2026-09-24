@@ -28,6 +28,7 @@ defmodule BaudrateWeb.PolicyLive do
      socket
      |> assign(:policy, name)
      |> assign(:page_title, title(name))
+     |> assign(:contact, Setup.site_contact())
      # The rules are records so a report can cite one (P1-D9); the other two
      # are single documents.
      |> assign(:rules, if(name == :rules, do: Setup.list_rules(), else: []))

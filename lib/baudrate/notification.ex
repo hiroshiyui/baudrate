@@ -313,22 +313,34 @@ defmodule Baudrate.Notification do
   end
 
   @doc """
-  Creates an admin announcement notification for all users with the given role
-  or higher.
+  Sends an announcement to every member as an `admin_announcement`
+  notification, from `admin`.
 
-  The `message` is stored in `data.message`. The `admin` is the acting user.
-  Returns a list of `{:ok, notification}` / `{:ok, :skipped}` / `{:ok, :duplicate}`
-  results.
+  Members are `Auth.counted_members_query/0` with `status == "active"`: not
+  bots, and not pending, banned or deleted accounts — it used to go to every
+  row in `users`, tombstones included. The admin is skipped like any
+  self-notification. `announcement` is a `Baudrate.Announcements.Announcement`
+  (its id travels in `data`) or a bare message.
+
+  Returns one result per recipient.
   """
-  @spec create_admin_announcement(User.t(), String.t()) :: [
+  @spec create_admin_announcement(User.t(), struct() | String.t()) :: [
           {:ok, Notification.t()}
           | {:ok, :skipped}
           | {:ok, :duplicate}
-          | {:error, Ecto.Changeset.t()}
+          | {:error, term()}
         ]
+  def create_admin_announcement(%User{} = admin, %{body: body, id: id}) do
+    send_announcement(admin, %{"message" => body, "announcement_id" => id})
+  end
+
   def create_admin_announcement(%User{} = admin, message) when is_binary(message) do
+    send_announcement(admin, %{"message" => message})
+  end
+
+  defp send_announcement(admin, data) do
     user_ids =
-      from(u in User, select: u.id)
+      from(u in Baudrate.Auth.counted_members_query(), where: u.status == "active", select: u.id)
       |> Repo.all()
 
     Enum.map(user_ids, fn user_id ->
@@ -336,7 +348,7 @@ defmodule Baudrate.Notification do
         type: "admin_announcement",
         user_id: user_id,
         actor_user_id: admin.id,
-        data: %{"message" => message}
+        data: data
       })
     end)
   end

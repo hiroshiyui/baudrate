@@ -128,6 +128,8 @@ defmodule BaudrateWeb.Admin.ModerationLogLive do
   def translate_action("delete_filter"), do: gettext("Delete Content Filter")
   def translate_action("abandon_deliveries"), do: gettext("Abandon Deliveries")
   def translate_action("close_delivery_circuit"), do: gettext("Close Delivery Circuit")
+  def translate_action("create_announcement"), do: gettext("Post Announcement")
+  def translate_action("end_announcement"), do: gettext("End Announcement")
   def translate_action(other), do: other
 
   @doc """
@@ -146,5 +148,6 @@ defmodule BaudrateWeb.Admin.ModerationLogLive do
   def translate_target_type("remote"), do: gettext("Remote account")
   def translate_target_type("shared"), do: gettext("Shared inbox")
   def translate_target_type("timeline_reply"), do: gettext("Timeline reply")
+  def translate_target_type("announcement"), do: gettext("Announcement")
   def translate_target_type(other), do: other
 end

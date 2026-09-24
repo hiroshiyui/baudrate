@@ -34,6 +34,7 @@ import PushManagerHook from "./push_manager_hook"
 import DraftSaveHook from "./draft_save_hook"
 import ChallengeHook from "./challenge_hook"
 import FocusTrapHook from "./focus_trap_hook"
+import AnnouncementNoticeHook from "./announcement_notice_hook"
 import {WebAuthnRegister, WebAuthnAuthenticate} from "./hooks/webauthn"
 import WebShareHook from "./web_share_hook"
 import YouTubeEmbedHook from "./youtube_embed_hook"
@@ -69,7 +70,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
   dom: {onBeforeElUpdated: preserveClientAria},
-  hooks: {...colocatedHooks, AvatarCropHook, MarkdownToolbarHook, ScrollBottomHook, CopyToClipboardHook, DeviceTimeZoneHook, HashtagAutocompleteHook, PushManagerHook, DraftSaveHook, ChallengeHook, FocusTrapHook, WebAuthnRegister, WebAuthnAuthenticate, WebShareHook, YouTubeEmbedHook},
+  hooks: {...colocatedHooks, AnnouncementNoticeHook, AvatarCropHook, MarkdownToolbarHook, ScrollBottomHook, CopyToClipboardHook, DeviceTimeZoneHook, HashtagAutocompleteHook, PushManagerHook, DraftSaveHook, ChallengeHook, FocusTrapHook, WebAuthnRegister, WebAuthnAuthenticate, WebShareHook, YouTubeEmbedHook},
 })
 
 const prefersReducedMotion = () =>

@@ -1,0 +1,135 @@
+<div id="admin-announcements-page" class="admin-announcements-page space-y-6">
+  <h1 id="admin-announcements-heading" class="admin-announcements-heading text-2xl font-bold">
+    {gettext("Announcements")}
+  </h1>
+
+  <section
+    id="admin-announcements-new"
+    class="admin-announcements-new card bg-base-200 shadow-sm"
+    aria-labelledby="admin-announcements-new-heading"
+  >
+    <div class="card-body">
+      <h2 id="admin-announcements-new-heading" class="admin-announcements-new-heading card-title">
+        {gettext("New announcement")}
+      </h2>
+      <p class="admin-announcements-help text-sm text-base-content/70">
+        {gettext(
+          "Shown at the top of every page, to guests and members alike, until it ends or you end it. Anyone can dismiss it for themselves. Plain text."
+        )}
+      </p>
+      <.form
+        for={@form}
+        id="admin-announcements-form"
+        class="admin-announcements-form space-y-3"
+        phx-change="validate"
+        phx-submit="create"
+      >
+        <.input
+          field={@form[:body]}
+          id="admin-announcements-body"
+          type="textarea"
+          rows="3"
+          maxlength={@max_body}
+          label={gettext("Text")}
+          value={@form[:body].value}
+          required
+        />
+        <.input
+          field={@form[:duration]}
+          id="admin-announcements-duration"
+          type="select"
+          label={gettext("Show for")}
+          options={Enum.map(durations(), &{duration_label(&1), &1})}
+          value={@form[:duration].value}
+        />
+        <.input
+          field={@form[:notify]}
+          id="admin-announcements-notify"
+          type="checkbox"
+          label={gettext("Also send it to every member as a notification")}
+          checked={@form[:notify].value in [true, "true"]}
+        />
+        <button
+          type="submit"
+          id="admin-announcements-submit"
+          class="admin-announcements-submit btn btn-primary"
+        >
+          {gettext("Post announcement")}
+        </button>
+      </.form>
+    </div>
+  </section>
+
+  <section
+    id="admin-announcements-list"
+    class="admin-announcements-list space-y-3"
+    aria-labelledby="admin-announcements-list-heading"
+  >
+    <h2
+      id="admin-announcements-list-heading"
+      class="admin-announcements-list-heading text-xl font-semibold"
+      tabindex="-1"
+    >
+      {gettext("Posted announcements")}
+    </h2>
+
+    <p
+      :if={@announcements == []}
+      id="admin-announcements-empty"
+      class="admin-announcements-empty text-sm"
+    >
+      {gettext("Nothing has been announced yet.")}
+    </p>
+
+    <ul :if={@announcements != []} class="admin-announcements-items space-y-2">
+      <li
+        :for={announcement <- @announcements}
+        id={"admin-announcement-#{announcement.id}"}
+        class="admin-announcement card bg-base-200"
+      >
+        <div class="card-body py-3 gap-2">
+          <p class="admin-announcement-body whitespace-pre-line break-words">
+            {announcement.body}
+          </p>
+          <div class="admin-announcement-meta flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <%= if Baudrate.Announcements.live?(announcement, @now) do %>
+              <span class="admin-announcement-status badge badge-success badge-sm">
+                {gettext("Showing")}
+              </span>
+            <% else %>
+              <span class="admin-announcement-status badge badge-ghost badge-sm">
+                {gettext("Ended")}
+              </span>
+            <% end %>
+            <span class="admin-announcement-posted opacity-70">
+              {gettext("Posted")}
+              <time datetime={datetime_attr(announcement.inserted_at)}>
+                {format_datetime(announcement.inserted_at)}
+              </time>
+            </span>
+            <span :if={announcement.ends_at} class="admin-announcement-ends opacity-70">
+              {gettext("Ends")}
+              <time datetime={datetime_attr(announcement.ends_at)}>
+                {format_datetime(announcement.ends_at)}
+              </time>
+            </span>
+            <span :if={announcement.created_by} class="admin-announcement-author opacity-70">
+              {display_name(announcement.created_by)}
+            </span>
+            <button
+              :if={Baudrate.Announcements.live?(announcement, @now)}
+              type="button"
+              id={"admin-announcement-end-#{announcement.id}"}
+              phx-click="end"
+              phx-value-id={announcement.id}
+              data-confirm={gettext("End this announcement now?")}
+              class="admin-announcement-end btn btn-ghost btn-sm text-error"
+            >
+              {gettext("End now")}
+            </button>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </section>
+</div>

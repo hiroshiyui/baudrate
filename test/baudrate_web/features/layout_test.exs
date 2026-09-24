@@ -274,6 +274,7 @@ defmodule BaudrateWeb.Features.LayoutTest do
     paths = [
       "/admin/settings",
       "/admin",
+      "/admin/announcements",
       "/admin/federation",
       "/admin/federation/delivery",
       "/admin/federation/instances/#{domain}",

@@ -43,6 +43,7 @@ defmodule BaudrateWeb.AuthHooks do
   alias Baudrate.Auth
   alias Baudrate.Messaging
   alias Baudrate.Notification
+  alias BaudrateWeb.AnnouncementNoticeHook
   alias BaudrateWeb.AutocompleteSuggestHook
   alias BaudrateWeb.Crawlers
   alias BaudrateWeb.MarkdownPreviewHook
@@ -107,6 +108,9 @@ defmodule BaudrateWeb.AuthHooks do
                 |> assign(:recovery_pending, recovery_pending?(user))
                 # The member's muted words, compiled once per mount (ADR 0073).
                 |> assign(:muted_matchers, muted_matchers(user))
+                # Site announcements this member has not dismissed (7B).
+                |> assign(:announcements, Baudrate.Announcements.active_for(user))
+                |> AnnouncementNoticeHook.attach()
                 |> MarkdownPreviewHook.attach()
                 |> AutocompleteSuggestHook.attach()
                 |> RecoveryNoticeHook.attach()
@@ -139,7 +143,9 @@ defmodule BaudrateWeb.AuthHooks do
              socket
              |> assign(:current_user, nil)
              |> assign(:locale, locale)
-             |> assign(:muted_matchers, [])}
+             |> assign(:muted_matchers, [])
+             |> assign(:announcements, Baudrate.Announcements.active_for(nil))
+             |> AnnouncementNoticeHook.attach()}
           else
             locale = resolve_user_locale(user)
 
@@ -167,6 +173,8 @@ defmodule BaudrateWeb.AuthHooks do
               # Whether this account can be recovered at all (ADR 0058).
               |> assign(:recovery_pending, recovery_pending?(user))
               |> assign(:muted_matchers, muted_matchers(user))
+              |> assign(:announcements, Baudrate.Announcements.active_for(user))
+              |> AnnouncementNoticeHook.attach()
               |> MarkdownPreviewHook.attach()
               |> AutocompleteSuggestHook.attach()
               |> RecoveryNoticeHook.attach()
@@ -183,6 +191,8 @@ defmodule BaudrateWeb.AuthHooks do
            |> assign(:current_user, nil)
            |> assign(:locale, locale)
            |> assign(:muted_matchers, [])
+           |> assign(:announcements, Baudrate.Announcements.active_for(nil))
+           |> AnnouncementNoticeHook.attach()
            |> MarkdownPreviewHook.attach()
            |> attach_page_metadata_hook()}
       end
@@ -193,6 +203,8 @@ defmodule BaudrateWeb.AuthHooks do
        |> assign(:locale, locale)
        |> assign(:recovery_pending, false)
        |> assign(:muted_matchers, [])
+       |> assign(:announcements, Baudrate.Announcements.active_for(nil))
+       |> AnnouncementNoticeHook.attach()
        |> MarkdownPreviewHook.attach()
        |> attach_page_metadata_hook()}
     end

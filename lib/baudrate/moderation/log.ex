@@ -33,6 +33,7 @@ defmodule Baudrate.Moderation.Log do
     create_bot update_bot delete_bot toggle_bot reset_bot_errors refresh_bot_favicon
     approve_held_post reject_held_post create_filter update_filter delete_filter
     abandon_deliveries close_delivery_circuit
+    create_announcement end_announcement
   )
 
   schema "moderation_logs" do

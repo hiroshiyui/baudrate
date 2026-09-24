@@ -300,6 +300,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
       "/admin/settings",
       "/admin/pending-users",
       "/admin",
+      "/admin/announcements",
       "/admin/federation",
       "/admin/federation/delivery",
       "/admin/federation/instances/#{instance_domain}",
