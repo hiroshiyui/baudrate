@@ -15,8 +15,10 @@ v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
 v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
 anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
 and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **6E shipped in v1.42.0, which completes Phase 6.**
+**Phase 7, admin and content tools, followed across v1.43.0–v1.45.0**, after
+the v1.42.1 patch its planning survey called for.
 
-Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
+Every open item belongs to Phase 8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
 phase is summarised rather than listed — the detail lives in its ADRs and in
 `CHANGELOG.md`, and this file keeps only what is recorded nowhere else: the
@@ -54,9 +56,9 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (v1.31.0) |
 | ~~4~~ | ~~Discovery and onboarding~~ | 4A–4F | **Complete** (v1.32.0 – v1.34.0) |
 | ~~5~~ | ~~Anti-spam~~ | 5A–5E | **Complete** (v1.37.0 – v1.39.0) |
-| 6 | Member depth | 6A–6E | Retention |
-| 7 | Admin and content tools | 7A–7E | Running the site without a shell |
-| 8 | Contributor health | 8A–8D | Lowers the bus factor of one |
+| ~~6~~ | ~~Member depth~~ | 6A–6E | **Complete** (v1.35.0 – v1.42.0) |
+| ~~7~~ | ~~Admin and content tools~~ | 7A–7E | **Complete** (v1.43.0 – v1.45.0) |
+| 8 | Contributor health | 8A–8D | Lowers the bus factor of one — **next** |
 
 ---
 
@@ -461,13 +463,12 @@ Deliberately not done, and recorded nowhere else:
 
 ---
 
-## Phase 7 — Admin and content tools (scope)
+## Phase 7 — Admin and content tools — **complete** (v1.43.0 – v1.45.0)
 
-**Goal.** Running the site doesn't need a shell or SQL.
+**The aim it served:** running the site doesn't need a shell or SQL.
 
-**Done when:**
-- an admin sees the site's state on one page;
-- an admin can announce, reorganise content and fix bots from the UI.
+Both exit criteria are met: an admin sees the site's state on one page
+(`/admin`), and can announce, reorganise content and fix bots from the UI.
 
 ### Decisions (made 2026-09-24)
 
@@ -481,22 +482,44 @@ Deliberately not done, and recorded nowhere else:
 
 ### Done
 
-- **7D** — bots: next fetch and post counts, **Fetch now**, a dry run,
-  include and exclude patterns, a first-fetch limit, switching a bot off
-  after 10 failures with an admin notice, and conditional GET.
-- **7C** — moving an article between boards, emptying a board before
-  deleting it, and ordering boards with Move up / Move down
-  ([ADR 0075](adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md)).
-- **7B** — `/admin/announcements` and the contact setting (shown in the
-  footer and on the policy pages; there is no About page).
-- **7A** — `/admin`, the dashboard; **7E** — `/admin/federation/delivery`
-  ([ADR 0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md)).
-  The `admin.view_dashboard` item was already void: ADR 0042 removed the
-  permission.
+| Stage | What | Released | Recorded in |
+|-------|------|----------|-------------|
+| — | An article taken out of its last board is refused unless that board federates (it used to become public) | v1.42.1 | `CLAUDE.md` (P1-D5 bullet), `content_test.exs` |
+| 7A | `/admin`, the dashboard: members, moderation queues, federation, and each health check's status for admins behind sudo mode | v1.43.0 | [0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md) (refines 0035), `dashboard_test.exs` |
+| 7E | `/admin/federation/delivery`: the queue by domain, retrying or abandoning jobs, closing a circuit | v1.43.0 | [0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md), `delivery_live_test.exs` |
+| 7B | `/admin/announcements`, optionally sent as a notification to active members; the site contact line in the footer and on the policy pages | v1.44.0 | `announcements_test.exs`, `features/announcement_notice_test.exs` |
+| 7C | Moving an article between boards, emptying a board before deleting it, ordering boards with Move up / Move down | v1.44.0 | [0075](adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md), `article_move_test.exs` |
+| 7D | Bots: next fetch and post counts, **Fetch now**, a dry run, include and exclude patterns, a first-fetch limit, switching a bot off after 10 failures with an admin notice, conditional GET | v1.45.0 | `CLAUDE.md` ("A feed entry is judged once"), `fetcher_test.exs` |
+
+The `admin.view_dashboard` item was already void: ADR 0042 removed the
+permission. The project-wide code review run between 7A and 7B found three
+more state bugs — an inbox fallback that matched a comment id by prefix,
+approving a registration that was no longer pending, and resolving a report
+twice — all fixed in v1.43.0 and listed in `CHANGELOG.md`.
+
+### Left standing
+
+Deliberately not done, and recorded nowhere else:
+
+- **There is no About page.** The contact line sits in the footer and on the
+  policy pages; custom pages beyond Rules, Terms and Privacy stay in the
+  Backlog.
+- **A moved article's remote copies stay where they were.** No peer re-homes
+  a post it already holds, so the old board's followers keep it
+  (ADR 0075's rejected alternatives).
+- **A bot's skipped entries are skipped for good.** An entry filtered out or
+  left in the first fetch's backlog is recorded like a posted one; loosening
+  the patterns affects new entries only. Re-posting one means deleting its
+  `bot_syndication_items` row by hand.
+- **The dry run uses the saved settings**, not the form being edited: save
+  the patterns first, then run it.
+- **A bot keeps no fetch history** — only its last error and its counts.
+- **Announcements are plain text** and at most three show at once; there is
+  no scheduling of a future start.
 
 ---
 
-## Phase 8 — Contributor health (scope)
+## Phase 8 — Contributor health — next (not yet planned)
 
 **Goal.** Someone other than the maintainer can set up, test and contribute safely.
 
@@ -520,8 +543,8 @@ Deliberately not done, and recorded nowhere else:
 
 ### 8D — Performance (M)
 
-- [ ] **Outbox and collection pages:** batch the per-item preloads and counts (about 160 queries per page today; `core/federation/collections.ex:49,218`).
-- [ ] **Large lists:** keyset pagination for the outbox and the long listings, where `core/pagination.ex:88-93` runs a full count every page.
+- [ ] **Outbox and collection pages:** batch the per-item preloads and counts (about 160 queries per page as of v1.18.1; `user_outbox/2`, `board_outbox/2` and `article_replies/1` in `core/federation/collections.ex` build each item with its own queries).
+- [ ] **Large lists:** keyset pagination for the outbox and the long listings, where `Pagination.paginate_query/3` (`core/pagination.ex`) runs a full count on every page.
 - [ ] **LiveView streams** for the timeline, board, notification and conversation lists.
 - [ ] **Cropper.js** loads only on the avatar editor.
 
@@ -620,6 +643,12 @@ shape of where the project has been.
 
 | Release | What | Recorded in |
 |---|---|---|
+| v1.43.0–v1.45.0 | Phase 7, admin and content tools: the `/admin` dashboard and delivery queue page, announcements and a contact line, moving articles and ordering boards, and bots an admin can inspect and fix; v1.42.1 first closed the last-board leak | [0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md), [0075](adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md) |
+| v1.40.0–v1.42.0 | Recovery challenges issued by the instance; Phase 6B–6E: reading and notifications, watches, private DMs, the account pages, deleting one's own account, privacy settings | [0067](adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md)–[0073](adr/0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md) |
+| v1.35.0–v1.39.1 | Phase 6A (comment editing with public history, image descriptions, server drafts) and Phase 5, anti-spam: proof-of-work registration and IP bans, limits on new accounts, held posts and content filters | [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md)–[0066](adr/0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md) |
+| v1.32.0–v1.34.0 | Phase 4, discovery and onboarding: the language switcher, crawlers and the sitemap, search with operators, account recovery anchored on OpenPGP, installability and remote follow | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md)–[0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md) |
+| v1.31.0 | Phase 3, federation reach: comment and poll ids at paths, mentions, threading, content warnings as fields, Lemmy group announces, profile updates reaching followers | [0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md)–[0053](adr/0053-a-group-announce-is-a-carrier.md) |
+| v1.29.0–v1.30.0 | The instance alerts its admins when a health check fails, closing Phase 2; an ADR-by-ADR audit of what the instance claimed against what it did | [0044](adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md), [0046](adr/0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md)–[0049](adr/0049-user-facing-changesets-are-allow-lists.md) |
 | v1.28.2 | What a documentation audit found by reading the guides against the code: a fourth copy of the article visibility check on the edit-history page, and a periodic worker the health report could not see | [0035](adr/0035-operational-visibility-stays-on-the-host.md) |
 | v1.28.1 | Two authorization fixes from the RBAC investigation: a ban checked neither the permission nor the rank rule; article visibility had four implementations, three missing the remote refusals (the fourth was found in v1.28.2) | [0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md), [0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md) |
 | v1.28.0 | Phase 2F retention; the personal stream became the timeline and RSS/Atom became syndication; the outbound board gate completed at five surfaces; a security audit, an a11y sweep and a code review | [0039](adr/0039-the-personal-stream-is-a-timeline.md), [0040](adr/0040-retention-deletes-what-nobody-touched.md), [0041](adr/0041-rss-and-atom-are-syndication.md) |
