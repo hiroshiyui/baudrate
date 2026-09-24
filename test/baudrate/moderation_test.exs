@@ -366,6 +366,22 @@ defmodule Baudrate.ModerationTest do
     end
   end
 
+  describe "closing a report that is already closed" do
+    test "is refused, and keeps who closed it and when", %{user: user, remote_actor: actor} do
+      other = create_user()
+      {:ok, report} = Moderation.create_report(%{reason: "Spam", remote_actor_id: actor.id})
+      {:ok, dismissed} = Moderation.dismiss_report(report, user.id)
+
+      assert {:error, :not_open} = Moderation.resolve_report(dismissed, other.id, "late")
+      assert {:error, :not_open} = Moderation.dismiss_report(report, other.id)
+
+      stored = Repo.get!(Report, report.id)
+      assert stored.status == "dismissed"
+      assert stored.resolved_by_id == user.id
+      assert stored.resolved_at == dismissed.resolved_at
+    end
+  end
+
   describe "create_report/1 with reported_user_id" do
     test "creates a report targeting a local user", %{user: user} do
       target = create_user()

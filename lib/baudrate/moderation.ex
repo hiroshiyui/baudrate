@@ -486,38 +486,58 @@ defmodule Baudrate.Moderation do
   end
 
   @doc """
-  Resolves a report with a resolution note, marking who resolved it.
+  Resolves an **open** report with a resolution note, marking who resolved it.
+
+  Returns `{:error, :not_open}` for a report already resolved or dismissed:
+  closing it again would overwrite who decided and when, restart the 90-day
+  evidence purge, and tell the reporter a second time.
   """
   @spec resolve_report(Report.t(), integer(), String.t() | nil) ::
-          {:ok, Report.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Report.t()} | {:error, Ecto.Changeset.t() | :not_open}
   def resolve_report(%Report{} = report, resolver_id, note \\ nil) do
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-    report
-    |> Report.changeset(%{
+    close_report(report, %{
       status: "resolved",
       resolved_by_id: resolver_id,
-      resolved_at: now,
+      resolved_at: DateTime.utc_now() |> DateTime.truncate(:second),
       resolution_note: note
     })
-    |> Repo.update()
   end
 
   @doc """
-  Dismisses a report (no action taken).
+  Dismisses an **open** report (no action taken). `{:error, :not_open}` for
+  one already closed, as `resolve_report/3`.
   """
   @spec dismiss_report(Report.t(), integer()) ::
-          {:ok, Report.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Report.t()} | {:error, Ecto.Changeset.t() | :not_open}
   def dismiss_report(%Report{} = report, resolver_id) do
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-    report
-    |> Report.changeset(%{
+    close_report(report, %{
       status: "dismissed",
       resolved_by_id: resolver_id,
-      resolved_at: now
+      resolved_at: DateTime.utc_now() |> DateTime.truncate(:second)
     })
-    |> Repo.update()
+  end
+
+  # Validates like any other change, then writes it only while the row is
+  # still open — one conditional UPDATE, so two moderators closing the same
+  # report at once cannot both succeed.
+  defp close_report(report, attrs) do
+    changeset = Report.changeset(report, attrs)
+
+    if changeset.valid? do
+      set =
+        changeset.changes
+        |> Map.put(:updated_at, DateTime.utc_now() |> DateTime.truncate(:second))
+        |> Map.to_list()
+
+      from(r in Report, where: r.id == ^report.id and r.status == "open", select: r)
+      |> Repo.update_all(set: set)
+      |> case do
+        {1, [closed]} -> {:ok, Repo.preload(closed, @report_preloads)}
+        _ -> {:error, :not_open}
+      end
+    else
+      {:error, changeset}
+    end
   end
 
   @doc """
