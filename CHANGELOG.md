@@ -9,8 +9,10 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [1.43.0] — 2026-09-24
+
 Phase 7's first stages: 7A, the admin dashboard, and 7E, the delivery queue
-page. One new record,
+page, with the fixes from a project-wide code review. One new record,
 [ADR 0074](doc/adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md).
 No migrations.
 
