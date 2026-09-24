@@ -80,6 +80,11 @@ replies collections now link `?page=true` and continue with `max_id` (replies:
 - The development and test database settings read `PGUSER`, `PGPASSWORD`,
   `PGHOST` and `PGPORT` (and `PGDATABASE` in development), with the old
   values as defaults.
+- daisyUI 5.7.46 (from 5.7.37), bug fixes only (dependency drift report
+  #18). In themes other than the Aqua pair, a pressed toggle (like, boost,
+  bookmark, watch) and the current page's link in the header now carry the
+  button's active background; the Aqua themes keep their transparent
+  toolbar buttons.
 
 ### Fixed
 
