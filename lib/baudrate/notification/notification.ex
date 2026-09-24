@@ -90,6 +90,9 @@ defmodule Baudrate.Notification.Notification do
     * `held_post` — a post is waiting for review (`data.held_post_id`,
       `data.kind`), sent to whoever can review it (ADR 0065). Always
       delivered, for the same reason.
+    * `bot_disabled` — a feed bot was switched off after
+      `Baudrate.Bots.Bot.max_failures/0` failed fetches in a row
+      (`data.bot_id`, `data.username`), sent to every admin (Phase 7D)
 
   ### Held posts, for their author
 
@@ -191,6 +194,7 @@ defmodule Baudrate.Notification.Notification do
     health_alert
     health_recovered
     held_post
+    bot_disabled
     post_approved
     post_rejected
     poll_closed
@@ -238,7 +242,7 @@ defmodule Baudrate.Notification.Notification do
   # reason as the other two classes: the person who would switch these off is
   # exactly the person who has to act on them, and an alert that can be muted
   # by accident is not an alert.
-  @operational_notice_types ~w(health_alert health_recovered pending_registration held_post)
+  @operational_notice_types ~w(health_alert health_recovered pending_registration held_post bot_disabled)
 
   # Likes and boosts of one thing are one notification on the page, however
   # many people sent them (6B). Everything else stands alone: a reply or a
@@ -256,7 +260,7 @@ defmodule Baudrate.Notification.Notification do
     {"moderation",
      ~w(moderation_report report_reviewed content_removed admin_announcement sanction_applied
         sanction_lifted sanction_ended pending_registration health_alert health_recovered held_post
-        post_approved post_rejected)},
+        bot_disabled post_approved post_rejected)},
     {"account", @security_types}
   ]
 

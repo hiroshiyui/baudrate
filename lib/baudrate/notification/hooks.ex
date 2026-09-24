@@ -37,6 +37,7 @@ defmodule Baudrate.Notification.Hooks do
     * `notify_board_actor_moved/2` — board_actor_moved (all admins)
     * `notify_health_alert/1` / `notify_health_recovered/0` — health_alert,
       health_recovered (all admins, ADR 0044)
+    * `notify_bot_disabled/1` — bot_disabled (all admins, Phase 7D)
   """
 
   alias Baudrate.{Auth, Notification, Repo, Setup}
@@ -740,6 +741,24 @@ defmodule Baudrate.Notification.Hooks do
         type: "health_alert",
         user_id: admin_id,
         data: %{"checks" => checks}
+      })
+    end)
+
+    :ok
+  end
+
+  @doc """
+  Tells every admin that a feed bot was switched off after too many failed
+  fetches in a row (Phase 7D). Carries the bot's id and username; the error
+  itself stays on `/admin/bots`, where an admin acts on it.
+  """
+  @spec notify_bot_disabled(Baudrate.Bots.Bot.t()) :: :ok
+  def notify_bot_disabled(%Baudrate.Bots.Bot{} = bot) do
+    Enum.each(Setup.admin_user_ids(), fn admin_id ->
+      Notification.create_notification(%{
+        type: "bot_disabled",
+        user_id: admin_id,
+        data: %{"bot_id" => bot.id, "username" => bot.user.username}
       })
     end)
 

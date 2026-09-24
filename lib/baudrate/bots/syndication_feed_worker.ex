@@ -5,7 +5,8 @@ defmodule Baudrate.Bots.SyndicationFeedWorker do
   Follows the `Baudrate.Federation.DeliveryWorker` pattern:
   - Polls every 60 seconds with ±10% jitter (configurable via `bots_poll_interval`)
   - Processes up to 5 bots concurrently (configurable via `bots_max_concurrency`)
-  - Per-bot: optionally refresh favicon, fetch feed, create articles, record items
+  - Per-bot: optionally refresh favicon, then `Baudrate.Bots.Fetcher.run/1`
+    (conditional fetch, filters, the first-fetch limit, posting, recording)
   - Graceful shutdown: sets `shutting_down` flag, skips new polls
   """
 
@@ -14,9 +15,8 @@ defmodule Baudrate.Bots.SyndicationFeedWorker do
   require Logger
 
   alias Baudrate.Bots
-  alias Baudrate.Bots.{FaviconFetcher, SyndicationFeedParser}
+  alias Baudrate.Bots.{FaviconFetcher, Fetcher}
   alias Baudrate.Content
-  alias Baudrate.Federation.HTTPClient
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -87,44 +87,7 @@ defmodule Baudrate.Bots.SyndicationFeedWorker do
       )
     end
 
-    case fetch_and_parse_feed(bot) do
-      {:ok, entries} ->
-        post_entries(bot, entries)
-        Bots.mark_fetch_success(bot)
-
-      {:error, reason} ->
-        error_msg = inspect(reason)
-
-        Logger.warning(
-          "bots.syndication_feed_worker: fetch failed for bot #{bot.id}: #{error_msg}"
-        )
-
-        Bots.mark_fetch_error(bot, error_msg)
-    end
-  end
-
-  defp fetch_and_parse_feed(bot) do
-    case HTTPClient.validate_url(bot.feed_url) do
-      :ok ->
-        case HTTPClient.get_html(bot.feed_url, max_size: 5 * 1024 * 1024) do
-          {:ok, %{body: body}} ->
-            SyndicationFeedParser.parse(body)
-
-          {:error, _} = err ->
-            err
-        end
-
-      {:error, _} = err ->
-        err
-    end
-  end
-
-  defp post_entries(bot, entries) do
-    Enum.each(entries, fn entry ->
-      if not Bots.already_posted?(bot, entry.guid, entry.link) do
-        post_entry(bot, entry)
-      end
-    end)
+    Fetcher.run(bot)
   end
 
   @doc false

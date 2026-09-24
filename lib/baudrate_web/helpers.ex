@@ -481,6 +481,9 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("health_alert"),
     do: gettext("Something on this server needs attention.")
 
+  def notification_text("bot_disabled"),
+    do: gettext("A feed bot was switched off after repeated failed fetches.")
+
   def notification_text("health_recovered"),
     do: gettext("Everything on this server is working again.")
 
@@ -891,6 +894,7 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("watched_thread_reply"), do: "hero-eye"
   def notification_icon("health_alert"), do: "hero-exclamation-triangle"
   def notification_icon("health_recovered"), do: "hero-check-badge"
+  def notification_icon("bot_disabled"), do: "hero-rss"
   def notification_icon("sanction_applied"), do: "hero-exclamation-triangle"
   def notification_icon("sanction_lifted"), do: "hero-check-badge"
   def notification_icon("sanction_ended"), do: "hero-check-badge"

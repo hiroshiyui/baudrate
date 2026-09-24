@@ -367,6 +367,9 @@ defmodule Baudrate.Notification.WebPush do
       notification.type == "follow_request" ->
         "#{base}/followers"
 
+      notification.type == "bot_disabled" ->
+        "#{base}/admin/bots"
+
       true ->
         "#{base}/notifications"
     end

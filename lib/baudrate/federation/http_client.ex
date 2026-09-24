@@ -141,6 +141,10 @@ defmodule Baudrate.Federation.HTTPClient do
     * `:headers` — extra request headers
     * `:max_size` — override maximum response size (default: federation config)
     * `:user_agent` — override the default User-Agent string
+    * `:accept` — override the `Accept` header (a feed asks for feed types)
+    * `:conditional` — `true` when the caller sent `If-None-Match` or
+      `If-Modified-Since`: a 304 then answers
+      `{:ok, %{status: 304, body: "", headers: headers}}` instead of an error
   """
   def get_html(url, opts \\ []) do
     config = federation_config()
@@ -154,9 +158,11 @@ defmodule Baudrate.Federation.HTTPClient do
 
     all_headers = [
       {"user-agent", ua},
-      {"accept", "text/html, application/xhtml+xml"}
+      {"accept", Keyword.get(opts, :accept, "text/html, application/xhtml+xml")}
       | extra_headers
     ]
+
+    config = Keyword.put(config, :not_modified_ok, Keyword.get(opts, :conditional, false))
 
     do_get_html(
       url,
@@ -179,6 +185,11 @@ defmodule Baudrate.Federation.HTTPClient do
         {:ok, %Req.Response{status: status, body: body, headers: resp_headers}}
         when status in 200..299 ->
           {:ok, %{status: status, body: body, headers: resp_headers}}
+
+        {:ok, %Req.Response{status: 304, headers: resp_headers}} ->
+          if config[:not_modified_ok],
+            do: {:ok, %{status: 304, body: "", headers: resp_headers}},
+            else: {:error, {:http_error, 304, ""}}
 
         {:ok, %Req.Response{status: status, headers: resp_headers}}
         when status in [301, 302, 303, 307, 308] ->

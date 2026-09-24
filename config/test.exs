@@ -78,6 +78,10 @@ config :baudrate, allow_http_localhost: true
 config :baudrate, :bypass_ssrf_check, true
 config :baudrate, :req_test_options, plug: {Req.Test, Baudrate.Federation.HTTPClient}
 
+# "Fetch now" and "Reset & Retry" do not wake the feed worker in tests: it
+# runs outside the SQL sandbox, so the poll would crash it.
+config :baudrate, Baudrate.Bots, poke_worker: false
+
 # Each partition gets its own media cache directory. Cache tests wipe the
 # directory in setup, so a shared one races against concurrent partitions.
 config :baudrate, Baudrate.Media,

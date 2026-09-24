@@ -49,6 +49,10 @@ defmodule Baudrate.Bots do
     * `:bio` — bot bio/description (optional; defaults to the feed URL)
     * `:board_ids` — list of target board IDs
     * `:fetch_interval_minutes` — poll interval (default 60)
+    * `:first_fetch_limit` — how many of the newest entries the first fetch
+      posts (default 5)
+    * `:include_text` / `:exclude_text` — filter patterns, one per line
+      (`Bot.parse_patterns/1`)
 
   The user account is created with `is_bot: true`, `dm_access: "nobody"`,
   and a random locked password (human login is rejected by `authenticate_by_password/2`).
@@ -83,13 +87,15 @@ defmodule Baudrate.Bots do
              user = if(display_name, do: set_display_name(user, display_name), else: user),
              user = set_bio(user, if(bio && bio != "", do: bio, else: feed_url)),
              :ok <- ensure_keypair(user) do
-          bot_attrs = %{
-            user_id: user.id,
-            feed_url: feed_url,
-            board_ids: board_ids,
-            fetch_interval_minutes: fetch_interval,
-            active: true
-          }
+          bot_attrs =
+            %{
+              user_id: user.id,
+              feed_url: feed_url,
+              board_ids: board_ids,
+              fetch_interval_minutes: fetch_interval,
+              active: true
+            }
+            |> Map.merge(fetch_control_attrs(attrs))
 
           case Repo.insert(Bot.create_changeset(%Bot{}, bot_attrs)) do
             {:ok, bot} -> %{bot | user: user}
@@ -213,30 +219,43 @@ defmodule Baudrate.Bots do
     |> Repo.insert(on_conflict: :nothing, conflict_target: [:bot_id, :guid])
   end
 
-  @doc "Marks a successful fetch: resets error count and schedules the next fetch."
-  @spec mark_fetch_success(Bot.t(), DateTime.t() | nil) ::
+  @doc """
+  Marks a successful fetch: resets the error count, schedules the next fetch
+  and, when `validators` is given (a 200 answer), stores its `etag` and
+  `last_modified` for the next conditional request. A 304 passes none and
+  keeps the stored ones.
+  """
+  @spec mark_fetch_success(Bot.t(), DateTime.t() | nil, map() | nil) ::
           {:ok, Bot.t()} | {:error, Ecto.Changeset.t()}
-  def mark_fetch_success(bot, fetched_at \\ nil) do
+  def mark_fetch_success(bot, fetched_at \\ nil, validators \\ nil) do
     fetched_at = (fetched_at || DateTime.utc_now()) |> DateTime.truncate(:second)
     next_fetch = DateTime.add(fetched_at, bot.fetch_interval_minutes * 60, :second)
 
-    bot
-    |> Ecto.Changeset.cast(
+    changes =
       %{
         last_fetched_at: fetched_at,
         next_fetch_at: next_fetch,
         error_count: 0,
         last_error: nil
-      },
-      [:last_fetched_at, :next_fetch_at, :error_count, :last_error]
-    )
+      }
+      |> Map.merge(Map.take(validators || %{}, [:etag, :last_modified]))
+
+    bot
+    |> Ecto.Changeset.change(changes)
     |> Repo.update()
   end
 
-  @doc "Marks a failed fetch: increments error count and applies exponential backoff."
+  @doc """
+  Marks a failed fetch: increments the error count and applies exponential
+  backoff. At `Bot.max_failures/0` failures in a row the bot is switched off
+  and every admin gets a `bot_disabled` notice — a feed that has been failing
+  for days is a feed somebody has to look at, and retrying it once a day for
+  ever tells nobody.
+  """
   @spec mark_fetch_error(Bot.t(), String.t()) :: {:ok, Bot.t()} | {:error, Ecto.Changeset.t()}
   def mark_fetch_error(bot, error_message) do
     new_error_count = bot.error_count + 1
+    disable? = bot.active and new_error_count >= Bot.max_failures()
     # Exponential backoff: 5min, 10min, 20min, 40min, 80min, ... capped at 24h
     backoff_minutes =
       min((5 * :math.pow(2, new_error_count - 1)) |> round(), 1440)
@@ -245,16 +264,23 @@ defmodule Baudrate.Bots do
       DateTime.add(DateTime.utc_now(), backoff_minutes * 60, :second)
       |> DateTime.truncate(:second)
 
-    bot
-    |> Ecto.Changeset.cast(
-      %{
-        error_count: new_error_count,
-        last_error: String.slice(error_message, 0, 1000),
-        next_fetch_at: next_fetch
-      },
-      [:error_count, :last_error, :next_fetch_at]
-    )
-    |> Repo.update()
+    changes = %{
+      error_count: new_error_count,
+      last_error: String.slice(error_message, 0, 1000),
+      next_fetch_at: next_fetch
+    }
+
+    changes = if disable?, do: Map.put(changes, :active, false), else: changes
+
+    with {:ok, updated} <- bot |> Ecto.Changeset.change(changes) |> Repo.update() do
+      if disable? do
+        Logger.warning("bots: bot #{bot.id} switched off after #{new_error_count} failed fetches")
+
+        Baudrate.Notification.Hooks.notify_bot_disabled(Repo.preload(updated, :user))
+      end
+
+      {:ok, updated}
+    end
   end
 
   @doc "Resets error state and schedules an immediate re-fetch for a bot."
@@ -269,8 +295,63 @@ defmodule Baudrate.Bots do
       ]
     )
 
-    send(Baudrate.Bots.SyndicationFeedWorker, :poll)
+    poke_worker()
     :ok
+  end
+
+  @doc """
+  Schedules an active bot's next fetch for now, leaving its error count
+  alone (that is `reset_bot_errors/1`). An inactive bot is never fetched,
+  so it answers `{:error, :inactive}`.
+  """
+  @spec fetch_now(Bot.t()) :: :ok | {:error, :inactive}
+  def fetch_now(%Bot{id: id}) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    case Repo.update_all(from(b in Bot, where: b.id == ^id and b.active == true),
+           set: [next_fetch_at: now]
+         ) do
+      {1, _} ->
+        poke_worker()
+        :ok
+
+      {0, _} ->
+        {:error, :inactive}
+    end
+  end
+
+  @doc """
+  The number of articles each bot has posted and not withdrawn, by bot id.
+  Bots with none are absent.
+  """
+  @spec post_counts() :: %{integer() => non_neg_integer()}
+  def post_counts do
+    from(b in Bot,
+      join: a in Article,
+      on: a.user_id == b.user_id and is_nil(a.deleted_at),
+      group_by: b.id,
+      select: {b.id, count(a.id)}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  @doc "The dry run of a bot's next fetch; see `Baudrate.Bots.Fetcher.preview/1`."
+  @spec preview(Bot.t()) :: {:ok, [{map(), atom()}]} | {:error, term()}
+  def preview(%Bot{} = bot), do: Baudrate.Bots.Fetcher.preview(Repo.preload(bot, :user))
+
+  # The worker is not started in every environment a context function can be
+  # called from (a release task), so a missing worker just waits for its next
+  # poll. Tests turn the nudge off (`poke_worker: false`): the worker runs
+  # outside the SQL sandbox and would crash on the poll.
+  defp poke_worker do
+    config = Application.get_env(:baudrate, __MODULE__, [])
+
+    case {config[:poke_worker], Process.whereis(Baudrate.Bots.SyndicationFeedWorker)} do
+      {false, _} -> :ok
+      {_, nil} -> :ok
+      {_, pid} -> send(pid, :poll)
+    end
   end
 
   @doc """
@@ -324,6 +405,14 @@ defmodule Baudrate.Bots do
   defp generate_locked_password do
     random_part = :crypto.strong_rand_bytes(45) |> Base.encode64()
     "Aa1!" <> random_part
+  end
+
+  defp fetch_control_attrs(attrs) do
+    for key <- [:first_fetch_limit, :include_text, :exclude_text],
+        value = Map.get(attrs, key, Map.get(attrs, Atom.to_string(key))),
+        not is_nil(value),
+        into: %{},
+        do: {key, value}
   end
 
   defp update_bot_user_profile(bot, attrs) do
