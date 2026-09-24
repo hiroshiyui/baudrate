@@ -54,7 +54,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0032](0032-rules-are-records-and-retired-not-deleted.md) | Site rules are records, retired rather than deleted, and a report may cite one | Accepted |
 | [0033](0033-baudrate-runs-on-one-node.md) | Baudrate runs on one node | Accepted; `FeedWorker` renamed by [0041](0041-rss-and-atom-are-syndication.md) |
 | [0034](0034-federation-work-is-committed-before-it-is-acknowledged.md) | Federation work is committed before it is acknowledged | Accepted |
-| [0035](0035-operational-visibility-stays-on-the-host.md) | Operational visibility stays on the host | Accepted, except decision 5 ("Baudrate does not notify"), amended by [0044](0044-the-instance-tells-its-admins-when-it-is-unwell.md) |
+| [0035](0035-operational-visibility-stays-on-the-host.md) | Operational visibility stays on the host | Accepted, except decision 5 ("Baudrate does not notify"), amended by [0044](0044-the-instance-tells-its-admins-when-it-is-unwell.md); refined by [0074](0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md) |
 | [0036](0036-production-runs-releases-built-and-attested-in-ci.md) | Production runs releases built and attested in CI | Accepted; decision 3 superseded by [0037](0037-the-deploy-builds-on-the-server-again.md) |
 | [0037](0037-the-deploy-builds-on-the-server-again.md) | The deploy builds on the server again | Accepted |
 | [0038](0038-encryption-keys-are-separate-and-rotatable.md) | Encryption keys are separate, and rotatable | Accepted |
@@ -93,6 +93,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0071](0071-a-direct-message-stays-between-the-two-people-in-it.md) | A direct message stays between the two people in it | Accepted |
 | [0072](0072-a-deleted-account-leaves-a-tombstone.md) | A deleted account leaves a tombstone, and its words stay unless the member takes them | Accepted |
 | [0073](0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md) | A member's privacy settings shape what they see and who finds them, never what others may read | Accepted |
+| [0074](0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md) | The dashboard reads the health checks behind the admin session | Accepted |
 
 ## Writing a new ADR
 

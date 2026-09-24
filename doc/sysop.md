@@ -1281,15 +1281,26 @@ endpoints. Toggle at `/admin/settings` -> `ap_authorized_fetch`.
 - Outbound actor resolution automatically falls back to signed GET when remote
   instances require it
 
-### Delivery Queue (`/admin/federation`)
+### Delivery Queue (`/admin/federation/delivery`)
 
-The federation dashboard shows:
+The federation dashboard (`/admin/federation`) shows:
 
 - **Known instances** — domains with delivery statistics and last contact time,
   each linking to an instance page listing the accounts we know there
 - **Blocked instances** — with the reason, the admin who blocked it, and an
   unblock control
-- **Delivery queue** — pending, failed, delivered, and abandoned jobs
+- **Delivery queue** — the counts of pending, delivered and failed jobs, and
+  the error rate, with a link to the delivery page
+
+The delivery page (`/admin/federation/delivery`) is where the queue is
+managed ([ADR 0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md)):
+
+- **Open circuits** — every domain whose circuit is open (see below), with
+  its failures, how many times it has opened, the next probe and the last
+  error, and a **Close circuit** button
+- **Jobs waiting** — every pending and failed job, 50 to a page, filtered by
+  server. The filter matches the job's stored domain exactly, so
+  `example.social` never includes `notexample.social`
 
 **When a delivery is sent.** Posts, comments, likes, follows and direct
 messages write their delivery jobs in the same database transaction as the
@@ -1326,19 +1337,23 @@ the next one: 5 minutes, 30 minutes, 2 hours, 6 hours, 12 hours, then every
 and the jobs held back go out. Held jobs keep their attempts, so any job still
 waiting 7 days after it was queued is abandoned (`delivery_max_age`). The log
 shows `federation.delivery_circuit_open` and
-`federation.delivery_circuit_closed`. To list the open circuits:
+`federation.delivery_circuit_closed`. The delivery page lists the open circuits.
 
-```sql
-SELECT domain, failures, trips, open_until, last_error
-FROM delivery_circuits WHERE trips > 0 ORDER BY open_until;
-```
+Admin actions on the delivery page:
+- **Retry** a failed job now. A pending job is already queued, and a
+  delivered or abandoned one cannot be retried, since that would send its
+  activity twice.
+- **Abandon** a pending or failed job.
+- With the page filtered to one server: **retry every failed job** for it,
+  or **abandon every job** for it — for a server that is gone for good.
+- **Close circuit** — after fixing a problem on our side (a network or DNS
+  issue, say), so the held jobs go out on the next pass instead of waiting
+  for the next probe. If the server is in fact still down, five more
+  failures open the circuit again.
 
-Admin actions:
-- **Retry** abandoned jobs
-- **Abandon** pending/failed jobs
-
-There is no "abandon everything for one domain" button. From a remote console:
-`Baudrate.Federation.DeliveryStats.abandon_all_for_domain("example.social")`.
+Abandoning a server's jobs and closing a circuit are recorded in the
+moderation log; retrying is not, because it only moves a job earlier in the
+queue it was already in.
 
 Job deduplication: a partial unique index on `(inbox_url, actor_uri,
 activity_id)` for pending/failed jobs queues the same activity once per inbox.
@@ -2712,7 +2727,7 @@ inherits its article's reach) or the comment is remote or deleted.
 | Worker | Interval | What it does |
 |--------|----------|--------------|
 | `SessionCleaner` | 1 hour | The housekeeping jobs listed below, and the health-alert poll (ADR 0044) |
-| `DeliveryWorker` | On commit, and every 60 s ± 10% | Delivers due federation jobs, 10 at a time, with a per-domain circuit breaker ([Delivery Queue](#delivery-queue-adminfederation)) |
+| `DeliveryWorker` | On commit, and every 60 s ± 10% | Delivers due federation jobs, 10 at a time, with a per-domain circuit breaker ([Delivery Queue](#delivery-queue-adminfederationdelivery)) |
 | `InboundWorker` | On arrival, and every 30 s | Processes stored inbox activities, 4 at a time and one per remote account ([Inbound Queue](#inbound-queue)) |
 | `SyndicationFeedWorker` | 60 s ± 10% | Fetches due RSS/Atom bot feeds, 5 bots at a time |
 | `StaleActorCleaner` | 24 hours | Remote actors not re-fetched for 30 days: refreshes them if anything in the database still references them, deletes them otherwise. Batches of 50; skipped while federation is off |
@@ -2763,6 +2778,23 @@ curl http://localhost:4000/health
 It only says whether the application can reach its database, and it is public,
 so it says nothing more.
 
+### Admin Dashboard (`/admin`)
+
+The dashboard is the Admin menu's first entry and where sudo mode returns to
+by default. It shows counts only, each linking to the page that acts on it:
+
+- **Waiting for review** — open reports, posts held for review, and
+  registrations waiting to be let in. This is all a global moderator sees.
+- **Members** (admins) — the same accounts NodeInfo counts (people, not bots,
+  neither banned nor deleted), how many were active in the last 30 days, and
+  how many joined in the last 7 and 30 days.
+- **Federation** (admins) — failed deliveries, blocked servers and suspended
+  remote accounts.
+- **Health** (admins) — each check of the detailed report below, with its
+  status and a few figures, run when the page opens. It shows no reason
+  text; for the details, read the report on the server
+  ([ADR 0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md)).
+
 ### Detailed Health Report
 
 The detailed report answers whether the site is working, not just running. It
@@ -2796,7 +2828,7 @@ report as JSON either way:
 | Check | Fails when | Look at |
 |-------|------------|---------|
 | `database` | `SELECT 1` does not answer | `systemctl status postgresql`, `POOL_SIZE` |
-| `delivery_queue` | a delivery has been due for more than 15 minutes. Jobs held back by an [open circuit](#delivery-queue-adminfederation) are waiting on purpose and not counted | `DeliveryWorker` in `journalctl -u baudrate` |
+| `delivery_queue` | a delivery has been due for more than 15 minutes. Jobs held back by an [open circuit](#delivery-queue-adminfederationdelivery) are waiting on purpose and not counted | `DeliveryWorker` in `journalctl -u baudrate` |
 | `inbound_queue` | an inbox activity has waited more than 10 minutes. `failed_last_24h` counts activities that crashed three times | [Inbound Queue](#inbound-queue) |
 | `encryption_keys` | a stored secret needs an encryption key that is not configured, so those rows cannot be read. `keys` counts values per key id, and `legacy` means still keyed off `SECRET_KEY_BASE`. Skipped while neither class is separated | [Rotating an encryption key](#rotating-an-encryption-key) |
 | `workers` | `DeliveryWorker`, `InboundWorker`, `SyndicationFeedWorker`, `SessionCleaner` or `StaleActorCleaner` has not completed a run for three of its intervals (at least 5 minutes; 3 hours for the hourly `SessionCleaner`, 72 hours for the daily `StaleActorCleaner`). A worker that has never run is measured from boot instead. A worker that keeps crashing and being restarted counts as stopped | the log for crashes of that worker |
@@ -3033,6 +3065,7 @@ If you put one in front anyway:
 
 | Route | Purpose |
 |-------|---------|
+| `/admin` | The dashboard: open reports, held posts and pending registrations; for admins also members, federation figures and each health check's status ([Admin Dashboard](#admin-dashboard-admin)) |
 | `/admin/settings` | Site name, registration mode, timezone, federation settings; read-only system information (Baudrate, Elixir, Erlang/OTP and ERTS versions) |
 | `/admin/rules` | Site rules: create, edit, reorder, retire, restore |
 | `/admin/users` | User management (search, ban/unban, role changes) |
@@ -3040,7 +3073,8 @@ If you put one in front anyway:
 | `/admin/pending-users` | Approve pending registrations |
 | `/admin/boards` | Board CRUD, permissions, moderator assignment |
 | `/admin/bots` | RSS/Atom feed bot accounts ([Feed Bots](#feed-bots-adminbots)) |
-| `/admin/federation` | Delivery queue, known instances, domain blocking, key rotation |
+| `/admin/federation` | Delivery summary, known instances, domain blocking, key rotation |
+| `/admin/federation/delivery` | The delivery queue by server, bulk retry and abandon, open circuits ([Delivery Queue](#delivery-queue-adminfederationdelivery)) |
 | `/admin/federation/instances/:domain` | One instance: the accounts we know there, suspend or unsuspend one ([Suspending One Remote Account](#suspending-one-remote-account)) |
 | `/admin/moderation` | Report queue (resolve, dismiss, delete content) |
 | `/admin/moderation-log` | Audit trail of all admin actions |
@@ -3055,8 +3089,9 @@ Every `/admin` page needs sudo mode **except `/admin/verify`**, which is where
 you go to satisfy it — it sits in the `:authenticated` live session, not
 `:admin`, deliberately, because gating the verification page on verification is
 a redirect loop (ADR 0009). Most are admin-only; `/admin/moderation`,
-`/admin/pending-users` (refusing a registration, not approving one) and
-`/admin/users/:id` are also open to global moderators, whose individual actions
+`/admin/pending-users` (refusing a registration, not approving one),
+`/admin/users/:id` and `/admin` (showing only what is waiting for review) are
+also open to global moderators, whose individual actions
 are checked against their permissions. Board moderators have their own queue at
 `/moderation`, outside `/admin`, scoped to the boards they moderate. Posts
 waiting for review are at `/moderation/held` for everyone who reviews them —

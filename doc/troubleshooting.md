@@ -449,14 +449,16 @@ A final `4xx` response other than `401`, `408` and `429` abandons a job at
 once. You can retry abandoned jobs from the admin federation dashboard
 (`/admin/federation`).
 
-**Symptom of stuck delivery:** Check the federation dashboard for jobs in
-`failed` or `pending` state. Common causes:
+**Symptom of stuck delivery:** Check the delivery page
+(`/admin/federation/delivery`) for jobs in `failed` or `pending` state,
+filtered by server. Common causes:
 
 - Remote instance is down (will retry automatically). After 5 unreachable
   results in a row its circuit opens and its jobs wait together, with one probe
-  per interval; look for `federation.delivery_circuit_open` in the log and
-  `SELECT * FROM delivery_circuits WHERE trips > 0;`. Jobs held for 7 days are
-  abandoned.
+  per interval; the delivery page lists the open circuits, and the log shows
+  `federation.delivery_circuit_open`. Jobs held for 7 days are abandoned. If
+  the fault was on our side and is fixed, **Close circuit** sends the held
+  jobs on the next pass.
 - Deliveries only go out once a minute — the worker is not receiving
   notifications. Baudrate must connect to PostgreSQL directly, not through a
   pooler in transaction mode, which cannot carry `LISTEN`.

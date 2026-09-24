@@ -469,10 +469,22 @@ Deliberately not done, and recorded nowhere else:
 - an admin sees the site's state on one page;
 - an admin can announce, reorganise content and fix bots from the UI.
 
-### 7A — Admin dashboard (M)
+### Decisions (made 2026-09-24)
 
-- [ ] **`/admin`** shows members and growth, pending registrations, open reports, federation health, delivery backlog, disk space and the last backup (reusing the 2D checks).
-- [ ] **Check `admin.view_dashboard`,** which is defined but unused.
+- **P7-D1. Three releases:** 7A with 7E, then 7B with 7C, then 7D.
+- **P7-D2. Announcements** are seen by everyone; a member's dismissal is
+  stored on their account, a guest's in the browser.
+- **P7-D3. Moving an article** needs staff, or a moderator of both boards
+  (P1-D5).
+- **P7-D4.** The planning survey found that taking an article out of its
+  last board published it; fixed first, in v1.42.1.
+
+### Done
+
+- **7A** — `/admin`, the dashboard; **7E** — `/admin/federation/delivery`
+  ([ADR 0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md)).
+  The `admin.view_dashboard` item was already void: ADR 0042 removed the
+  permission.
 
 ### 7B — Announcements and site settings (S)
 
@@ -493,11 +505,6 @@ Deliberately not done, and recorded nowhere else:
 - [ ] **What a bot posts:** include and exclude filters on title and content. The first fetch posts only the latest N entries, not the whole backlog (`core/bots/syndication_feed_worker.ex`).
 - [ ] **Failures:** a bot is disabled automatically after N failed fetches, with an admin notice.
 - [ ] **Conditional GET** (ETag and Last-Modified).
-
-### 7E — Delivery dashboard (S)
-
-- [ ] **Page through actionable jobs** (only 20 are shown today), filter by domain, and retry or abandon in bulk per domain.
-- [ ] **Show open delivery circuits** (`DeliveryCircuits.list_tripped/0`) with their next probe time, and let an admin close one after fixing a problem on our side.
 
 ---
 

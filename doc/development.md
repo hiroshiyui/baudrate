@@ -604,6 +604,30 @@ hook checks the `admin_totp_verified_at` timestamp in the cookie session. If
 missing or older than 10 minutes, the admin is redirected to `/admin/verify`
 for re-verification, with `return_to` set to the requested admin path and query
 (read from the `:uri` connect info), so verification lands back on that page.
+With no usable `return_to` it lands on the dashboard, `/admin`.
+
+### Admin Dashboard and Delivery Page (Phase 7A, 7E)
+
+`/admin` (`Admin.DashboardLive`) is the Admin menu's first entry. Its counts
+come from `Baudrate.Dashboard`: `moderation/1` (open reports, held posts the
+viewer could approve, pending registrations) for admins and moderators;
+`members/1` and `federation/0` for admins only. Members are counted with
+`Auth.counted_members_query/0`, the query NodeInfo's `users.total` uses too.
+The health section runs `Health.report/1` in `assign_async` once connected and
+renders each check under `Helpers.health_check_title/1` with a translated
+status and the figures `check_facts/2` picks out — never the report's
+`reason`, which is untranslated operator text, and there is no route that
+returns the report
+([ADR 0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md)).
+
+`/admin/federation/delivery` (`Admin.DeliveryLive`, admins only) pages the
+pending and failed jobs through `DeliveryStats.paginate_actionable_jobs/1`,
+filtered by the job's stored `domain` with equality (`?domain=`). Retry and
+abandon are conditional updates from the states they make sense in; the
+per-domain bulk actions act on the filtered domain only, and
+`DeliveryCircuits.close/1` deletes an open circuit's row. Bulk abandon and
+closing a circuit are logged (`abandon_deliveries`,
+`close_delivery_circuit`).
 
 Admins can verify using either **TOTP** (time-based one-time password) or a
 registered **WebAuthn hardware security key** (FIDO2). Both methods set the

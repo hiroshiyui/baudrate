@@ -9,6 +9,45 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+Phase 7's first stages: 7A, the admin dashboard, and 7E, the delivery queue
+page. One new record,
+[ADR 0074](doc/adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md).
+No migrations.
+
+### Added
+
+- **`/admin`, the dashboard.** What is waiting for review (open reports,
+  held posts, pending registrations) for admins and moderators; for admins
+  also the members (total, active in 30 days, joined in 7 and 30 days, the
+  same accounts NodeInfo counts), failed deliveries, blocked servers,
+  suspended remote accounts, and each health check's status with a few
+  figures. It is the Admin menu's first entry and where sudo mode returns to.
+- **`/admin/federation/delivery`, the delivery queue page.** Every pending
+  and failed job, 50 to a page, filtered by server; retry and abandon one
+  job, or every job for the filtered server; and the open circuits with
+  their next probe and a **Close circuit** button. Abandoning a server's jobs
+  and closing a circuit are recorded in the moderation log.
+
+### Changed
+
+- `/admin/federation` shows the delivery counts and links to the delivery
+  page instead of listing twenty jobs.
+- The moderation log names every action it records; sixteen (IP bans,
+  recovery contacts and reset links, remote account suspensions, held posts
+  and content filters among them) were listed by their internal identifier
+  in every language.
+
+### Fixed
+
+- **Per-server delivery actions matched a substring of the inbox URL**, so
+  acting on `example.com` would also have retried or abandoned the jobs of
+  `notexample.com` and `example.com.evil`. They match the job's stored
+  domain exactly.
+- **Retrying a delivery job could send it twice**: any job, including a
+  delivered one, could be put back in the queue. Retry now applies only to a
+  failed job and abandon only to a waiting one, each as one conditional
+  update.
+
 ## [1.42.1] — 2026-09-24
 
 A security patch found while planning Phase 7: an article taken out of its
