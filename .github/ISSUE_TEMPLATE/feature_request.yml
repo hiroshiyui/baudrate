@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose something Baudrate does not do yet.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Baudrate aims to be a **boring but friendly** place for discussion
+        ([ADR 0056](https://github.com/hiroshiyui/baudrate/blob/main/doc/adr/0056-boring-but-friendly.md)).
+        Nothing is ranked by engagement and no page lists posts across boards
+        ([ADR 0054](https://github.com/hiroshiyui/baudrate/blob/main/doc/adr/0054-attention-follows-the-board-not-a-ranking.md)).
+        Please read those before proposing anything whose purpose is to bring people back.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: Who has it, and what they cannot do today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you propose
+    validations:
+      required: true
+  - type: textarea
+    id: boring
+    attributes:
+      label: How it fits ADR 0056
+      description: Which of its questions this answers, and why it does not add pressure to return, rank people or amplify conflict.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
