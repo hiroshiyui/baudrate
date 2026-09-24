@@ -109,6 +109,7 @@ defmodule BaudrateWeb.Admin.ModerationLogLive do
   def translate_action("delete_bot"), do: gettext("Delete Bot")
   def translate_action("toggle_bot"), do: gettext("Toggle Bot")
   def translate_action("reset_bot_errors"), do: gettext("Reset Bot Errors")
+  def translate_action("fetch_bot_now"), do: gettext("Fetch Bot Feed Now")
   def translate_action("refresh_bot_favicon"), do: gettext("Refresh Bot Favicon")
   def translate_action("verify_recovery_contact"), do: gettext("Verify Recovery Contact")
   def translate_action("unverify_recovery_contact"), do: gettext("Unverify Recovery Contact")

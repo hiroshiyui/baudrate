@@ -1,6 +1,7 @@
 defmodule BaudrateWeb.Admin.BotsLiveTest do
   use BaudrateWeb.ConnCase
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
 
   alias Baudrate.Bots
@@ -491,6 +492,141 @@ defmodule BaudrateWeb.Admin.BotsLiveTest do
 
       assert html =~ "Notice"
       assert html =~ "Unofficial feed."
+    end
+  end
+
+  describe "fetching (Phase 7D)" do
+    setup %{conn: conn} do
+      admin = setup_user("admin")
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "fetchbot_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://feed.example/rss",
+          "board_ids" => []
+        })
+
+      %{conn: log_in_admin(conn, admin), bot: bot, admin: admin}
+    end
+
+    test "the list shows the next fetch and the post count", %{conn: conn, bot: bot} do
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+
+      assert has_element?(lv, "#admin-bots-next-fetch-#{bot.id}", "Soon")
+      assert has_element?(lv, "#admin-bots-post-count-#{bot.id}", "0")
+    end
+
+    test "Fetch now schedules the bot and is logged", %{conn: conn, bot: bot, admin: admin} do
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+
+      html = lv |> element("#admin-bots-fetch-now-#{bot.id}") |> render_click()
+      assert html =~ "Fetch scheduled."
+
+      assert Repo.exists?(
+               from l in Baudrate.Moderation.Log,
+                 where:
+                   l.action == "fetch_bot_now" and l.actor_id == ^admin.id and
+                     l.target_id == ^bot.id
+             )
+    end
+
+    test "an inactive bot offers no Fetch now, and one stopped by failures says so",
+         %{conn: conn, bot: bot} do
+      Repo.update_all(from(b in Baudrate.Bots.Bot, where: b.id == ^bot.id),
+        set: [active: false, error_count: Baudrate.Bots.Bot.max_failures()]
+      )
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+
+      refute has_element?(lv, "#admin-bots-fetch-now-#{bot.id}")
+      assert has_element?(lv, "#admin-bots-status-#{bot.id}", "Stopped after failures")
+    end
+
+    test "the dry run lists each entry's decision and posts nothing", %{conn: conn, bot: bot} do
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, """
+        <?xml version="1.0"?>
+        <rss version="2.0"><channel><title>F</title>
+        <item><guid>p1</guid><title>First post</title><link>https://feed.example/1</link></item>
+        <item><guid>p2</guid><title>Second post</title><link>javascript:alert(1)</link></item>
+        </channel></rss>
+        """)
+      end)
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+      lv |> element("#admin-bots-preview-#{bot.id}") |> render_click()
+
+      assert has_element?(lv, "#admin-bots-preview-heading", bot.user.username)
+      html = render_async(lv)
+
+      assert html =~ "2 entries; 2 would be posted."
+      assert has_element?(lv, "#admin-bots-preview-entry-0 a[href='https://feed.example/1']")
+      # A non-http link from the feed is shown as text, never as an href.
+      refute has_element?(lv, "#admin-bots-preview-entry-1 a")
+      assert has_element?(lv, "#admin-bots-preview-entry-1", "Second post")
+
+      assert Repo.aggregate(
+               from(a in Baudrate.Content.Article, where: a.user_id == ^bot.user.id),
+               :count
+             ) == 0
+
+      lv |> element("#admin-bots-preview-close") |> render_click()
+      refute has_element?(lv, "#admin-bots-preview")
+    end
+
+    test "the dry run shows a fetch failure by its status only", %{conn: conn, bot: bot} do
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 502, "<html>secret upstream page</html>")
+      end)
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+      lv |> element("#admin-bots-preview-#{bot.id}") |> render_click()
+      html = render_async(lv)
+
+      assert html =~ "The feed could not be fetched: HTTP 502"
+      refute html =~ "secret upstream page"
+    end
+
+    test "the form saves filters and the first-fetch limit, and shows them again",
+         %{conn: conn, bot: bot} do
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+      lv |> element("#admin-bots-edit-#{bot.id}") |> render_click()
+
+      lv
+      |> form("#admin-bots-form",
+        bot: %{
+          "feed_url" => bot.feed_url,
+          "include_text" => "Elixir\n*rust*",
+          "exclude_text" => "sponsored",
+          "first_fetch_limit" => "2"
+        }
+      )
+      |> render_submit()
+
+      bot = Bots.get_bot!(bot.id)
+
+      assert bot.include_patterns == [
+               %{"kind" => "word", "pattern" => "elixir"},
+               %{"kind" => "substring", "pattern" => "*rust*"}
+             ]
+
+      assert bot.exclude_patterns == [%{"kind" => "word", "pattern" => "sponsored"}]
+      assert bot.first_fetch_limit == 2
+
+      lv |> element("#admin-bots-edit-#{bot.id}") |> render_click()
+      assert has_element?(lv, "#bot_include_text", "*rust*")
+    end
+
+    test "an invalid pattern marks its field invalid", %{conn: conn, bot: bot} do
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+      lv |> element("#admin-bots-edit-#{bot.id}") |> render_click()
+
+      lv
+      |> form("#admin-bots-form", bot: %{"feed_url" => bot.feed_url, "include_text" => "!!!"})
+      |> render_submit()
+
+      assert has_element?(lv, "#bot_include_text[aria-invalid='true']")
+      assert render(lv) =~ "has no letters or numbers"
     end
   end
 end

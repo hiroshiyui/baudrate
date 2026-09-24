@@ -30,7 +30,7 @@ defmodule Baudrate.Moderation.Log do
     suspend_remote_actor unsuspend_remote_actor
     update_settings update_eua update_privacy publish_terms_version generate_vapid_keys
     create_rule update_rule retire_rule restore_rule reorder_rules
-    create_bot update_bot delete_bot toggle_bot reset_bot_errors refresh_bot_favicon
+    create_bot update_bot delete_bot toggle_bot reset_bot_errors fetch_bot_now refresh_bot_favicon
     approve_held_post reject_held_post create_filter update_filter delete_filter
     abandon_deliveries close_delivery_circuit
     create_announcement end_announcement

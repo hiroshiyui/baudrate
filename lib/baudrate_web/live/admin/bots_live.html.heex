@@ -139,6 +139,51 @@
           max="1440"
         />
 
+        <fieldset id="admin-bots-what-posts" class="admin-bots-what-posts fieldset mb-2">
+          <legend
+            id="admin-bots-what-posts-legend"
+            class="admin-bots-what-posts-legend label mb-1"
+          >
+            {gettext("What this bot posts")}
+          </legend>
+          <p
+            id="admin-bots-patterns-help"
+            class="admin-bots-patterns-help text-sm opacity-70 mb-2"
+          >
+            {gettext(
+              "One pattern per line, matched against each entry's title and text. A line is a whole word or phrase; put * in it to match part of a word (*rust* also matches “trusted”)."
+            )}
+          </p>
+          <.input
+            field={@form[:include_text]}
+            type="textarea"
+            rows="3"
+            label={gettext("Post only entries matching one of")}
+            placeholder={gettext("Leave empty to post every entry")}
+          />
+          <.input
+            field={@form[:exclude_text]}
+            type="textarea"
+            rows="3"
+            label={gettext("Never post entries matching")}
+          />
+          <.input
+            field={@form[:first_fetch_limit]}
+            type="number"
+            label={gettext("Entries to post on the first fetch")}
+            min="0"
+            max={Bot.max_first_fetch_limit()}
+          />
+          <p
+            id="admin-bots-first-fetch-help"
+            class="admin-bots-first-fetch-help text-sm opacity-70"
+          >
+            {gettext(
+              "The first fetch posts only this many of the newest entries; the rest of the feed's backlog is never posted. Changing the feed URL starts over."
+            )}
+          </p>
+        </fieldset>
+
         <div class="flex gap-2 mt-4">
           <button
             id="admin-bots-form-save"
@@ -180,6 +225,8 @@
             <th scope="col">{gettext("Boards")}</th>
             <th scope="col">{gettext("Status")}</th>
             <th scope="col">{gettext("Last Fetched")}</th>
+            <th scope="col">{gettext("Next Fetch")}</th>
+            <th scope="col">{gettext("Posts")}</th>
             <th scope="col">{gettext("Errors")}</th>
             <th scope="col">{gettext("Actions")}</th>
           </tr>
@@ -223,11 +270,18 @@
               </div>
             </td>
             <td>
-              <span class={[
-                "badge badge-sm",
-                if(bot.active, do: "badge-success", else: "badge-warning")
-              ]}>
-                {if bot.active, do: gettext("Active"), else: gettext("Inactive")}
+              <span
+                id={"admin-bots-status-#{bot.id}"}
+                class={[
+                  "admin-bots-status badge badge-sm",
+                  if(bot.active, do: "badge-success", else: "badge-warning")
+                ]}
+              >
+                {cond do
+                  bot.active -> gettext("Active")
+                  stopped_by_failures?(bot) -> gettext("Stopped after failures")
+                  true -> gettext("Inactive")
+                end}
               </span>
             </td>
             <td class="text-sm text-base-content/70">
@@ -238,6 +292,24 @@
               <% else %>
                 {gettext("Never")}
               <% end %>
+            </td>
+            <td
+              id={"admin-bots-next-fetch-#{bot.id}"}
+              class="admin-bots-next-fetch text-sm text-base-content/70"
+            >
+              <%= cond do %>
+                <% not bot.active -> %>
+                  <span class="text-base-content/40">—</span>
+                <% bot.next_fetch_at -> %>
+                  <time datetime={datetime_attr(bot.next_fetch_at)}>
+                    {format_datetime(bot.next_fetch_at)}
+                  </time>
+                <% true -> %>
+                  {gettext("Soon")}
+              <% end %>
+            </td>
+            <td id={"admin-bots-post-count-#{bot.id}"} class="admin-bots-post-count text-sm">
+              {Map.get(@post_counts, bot.id, 0)}
             </td>
             <td>
               <%= if bot.error_count > 0 do %>
@@ -285,6 +357,28 @@
                   {if bot.active, do: gettext("Deactivate"), else: gettext("Activate")}
                 </button>
                 <button
+                  :if={bot.active}
+                  id={"admin-bots-fetch-now-#{bot.id}"}
+                  phx-click="fetch_now"
+                  phx-value-id={bot.id}
+                  class="admin-bots-fetch-now-btn btn btn-xs btn-ghost"
+                  aria-label={
+                    gettext("Fetch now for bot %{username}", username: bot.user.username)
+                  }
+                >
+                  {gettext("Fetch now")}
+                </button>
+                <button
+                  id={"admin-bots-preview-#{bot.id}"}
+                  phx-click="preview"
+                  phx-value-id={bot.id}
+                  class="admin-bots-preview-btn btn btn-xs btn-ghost"
+                  aria-label={gettext("Dry run for bot %{username}", username: bot.user.username)}
+                  title={gettext("Show what the next fetch would post, without posting anything")}
+                >
+                  {gettext("Dry run")}
+                </button>
+                <button
                   :if={bot.error_count > 0}
                   id={"admin-bots-reset-errors-#{bot.id}"}
                   phx-click="reset_errors"
@@ -328,6 +422,103 @@
           </tr>
         </tbody>
       </table>
+    </div>
+  </section>
+  <%!-- Dry run of the next fetch (Phase 7D): nothing is posted or recorded --%>
+  <section
+    :if={@preview}
+    id="admin-bots-preview"
+    class="admin-bots-preview card bg-base-200 shadow-md"
+    aria-labelledby="admin-bots-preview-heading"
+  >
+    <div class="card-body">
+      <div class="flex items-center justify-between gap-2">
+        <h2
+          id="admin-bots-preview-heading"
+          class="admin-bots-preview-heading card-title"
+          tabindex="-1"
+        >
+          {gettext("Dry run for @%{username}", username: @preview.bot.user.username)}
+        </h2>
+        <button
+          id="admin-bots-preview-close"
+          type="button"
+          phx-click="close_preview"
+          class="admin-bots-preview-close btn btn-ghost btn-sm"
+        >
+          {gettext("Close dry run")}
+        </button>
+      </div>
+      <p id="admin-bots-preview-note" class="admin-bots-preview-note text-sm opacity-70">
+        {gettext(
+          "What the next fetch would do with each entry the feed lists now. Nothing is posted or recorded."
+        )}
+      </p>
+      <p
+        id="admin-bots-preview-status"
+        class="admin-bots-preview-status text-sm"
+        role="status"
+      >
+        <%= case @preview.result do %>
+          <% :loading -> %>
+            {gettext("Fetching the feed…")}
+          <% {:ok, rows} -> %>
+            {ngettext(
+              "%{count} entry; %{post} would be posted.",
+              "%{count} entries; %{post} would be posted.",
+              length(rows),
+              count: length(rows),
+              post: Enum.count(rows, fn {_, d} -> d == :post end)
+            )}
+          <% {:error, :preview_failed} -> %>
+            {gettext("The dry run did not finish.")}
+          <% {:error, reason} -> %>
+            {gettext("The feed could not be fetched: %{reason}", reason: preview_error(reason))}
+        <% end %>
+      </p>
+      <ol
+        :if={match?({:ok, [_ | _]}, @preview.result)}
+        id="admin-bots-preview-list"
+        class="admin-bots-preview-list space-y-2"
+      >
+        <li
+          :for={{{entry, decision}, i} <- Enum.with_index(elem(@preview.result, 1))}
+          id={"admin-bots-preview-entry-#{i}"}
+          class={[
+            "admin-bots-preview-entry flex flex-wrap items-baseline gap-2",
+            "decision-#{decision}"
+          ]}
+        >
+          <span class={[
+            "admin-bots-preview-decision badge badge-sm",
+            if(decision == :post, do: "badge-success", else: "badge-ghost")
+          ]}>
+            {decision_label(decision)}
+          </span>
+          <a
+            :if={http_url?(entry.link)}
+            href={entry.link}
+            target="_blank"
+            rel="nofollow noopener noreferrer"
+            class="admin-bots-preview-title link link-hover min-w-0 break-words"
+          >
+            {entry.title}<span class="sr-only">{gettext("(opens in new tab)")}</span>
+          </a>
+          <span
+            :if={!http_url?(entry.link)}
+            class="admin-bots-preview-title min-w-0 break-words"
+          >
+            {entry.title}
+          </span>
+          <time
+            :if={entry.published_at}
+            datetime={datetime_attr(entry.published_at)}
+            class="admin-bots-preview-date text-xs text-base-content/60"
+          >
+            {format_datetime(entry.published_at)}
+          </time>
+        </li>
+      </ol>
     </div>
   </section>
 </div>

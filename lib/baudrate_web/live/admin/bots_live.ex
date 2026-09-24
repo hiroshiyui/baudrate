@@ -18,6 +18,17 @@ defmodule BaudrateWeb.Admin.BotsLive do
   are published as `PropertyValue` attachments on the AP actor,
   following the Mastodon convention. Admins can use these to add
   disclaimers such as "Unofficial — not affiliated with the source."
+
+  ## Fetching (Phase 7D)
+
+  The list shows each bot's next fetch and how many articles it has posted.
+  **Fetch now** schedules an active bot at once without touching its error
+  count (that is **Reset & Retry**). **Dry run** fetches the feed in the
+  background (`start_async/3`) and lists what the next fetch would do with
+  each entry — post it, skip it as already posted, excluded or not
+  included by the filters, or leave it in the backlog on a first fetch —
+  and posts and records nothing. The form carries the include and exclude
+  patterns (one per line) and the first-fetch limit.
   """
 
   use BaudrateWeb, :live_view
@@ -39,6 +50,8 @@ defmodule BaudrateWeb.Admin.BotsLive do
     {:ok,
      assign(socket,
        bots: bots,
+       post_counts: Bots.post_counts(),
+       preview: nil,
        boards: boards,
        editing_bot: nil,
        editing_bot_profile_fields: [],
@@ -62,7 +75,14 @@ defmodule BaudrateWeb.Admin.BotsLive do
     case parse_id(id) do
       {:ok, bot_id} ->
         bot = Bots.get_bot!(bot_id)
-        changeset = Bot.update_changeset(bot, %{})
+
+        changeset =
+          %{
+            bot
+            | include_text: Bot.patterns_text(bot.include_patterns),
+              exclude_text: Bot.patterns_text(bot.exclude_patterns)
+          }
+          |> Bot.update_changeset(%{})
 
         {:noreply,
          assign(socket,
@@ -162,6 +182,64 @@ defmodule BaudrateWeb.Admin.BotsLive do
   end
 
   @impl true
+  def handle_event("fetch_now", %{"id" => id}, socket) do
+    with {:ok, bot_id} <- parse_id(id),
+         bot = Bots.get_bot!(bot_id),
+         :ok <- Bots.fetch_now(bot) do
+      Moderation.log_action(socket.assigns.current_user.id, "fetch_bot_now",
+        target_type: "bot",
+        target_id: bot_id,
+        details: %{"username" => bot.user.username}
+      )
+
+      {:noreply,
+       socket
+       |> put_flash(:info, gettext("Fetch scheduled. New entries appear within a minute."))
+       |> reload_bots()}
+    else
+      {:error, :inactive} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("This bot is switched off. Activate it first."))}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("preview", %{"id" => id}, socket) do
+    case parse_id(id) do
+      {:ok, bot_id} ->
+        bot = Bots.get_bot!(bot_id)
+
+        {:noreply,
+         socket
+         |> assign(:preview, %{bot: bot, result: :loading})
+         |> start_async(:preview, fn -> Bots.preview(bot) end)
+         |> push_event("focus", %{id: "admin-bots-preview-heading"})}
+
+      :error ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("close_preview", _params, socket) do
+    bot_id = socket.assigns.preview && socket.assigns.preview.bot.id
+
+    socket =
+      socket
+      |> cancel_async(:preview)
+      |> assign(:preview, nil)
+
+    {:noreply,
+     if(bot_id,
+       do: push_event(socket, "focus", %{id: "admin-bots-preview-#{bot_id}"}),
+       else: socket
+     )}
+  end
+
+  @impl true
   def handle_event("refresh_favicon", %{"id" => id}, socket) do
     case parse_id(id) do
       :error ->
@@ -226,6 +304,48 @@ defmodule BaudrateWeb.Admin.BotsLive do
         end
     end
   end
+
+  @impl true
+  def handle_async(:preview, {:ok, result}, socket) do
+    case socket.assigns.preview do
+      %{} = preview -> {:noreply, assign(socket, :preview, %{preview | result: result})}
+      nil -> {:noreply, socket}
+    end
+  end
+
+  def handle_async(:preview, {:exit, _reason}, socket) do
+    case socket.assigns.preview do
+      %{} = preview ->
+        {:noreply, assign(socket, :preview, %{preview | result: {:error, :preview_failed}})}
+
+      nil ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
+  @doc false
+  def decision_label(:post), do: gettext("Would be posted")
+  def decision_label(:seen), do: gettext("Already posted")
+  def decision_label(:excluded), do: gettext("Excluded by a filter")
+  def decision_label(:not_included), do: gettext("Matches no include pattern")
+  def decision_label(:backlog), do: gettext("Left out: older than the first fetch's limit")
+
+  # Only an http(s) link from a feed is rendered as a link: the value is the
+  # feed's, and HEEx does not check an href's scheme.
+  defp http_url?(url) when is_binary(url),
+    do: String.starts_with?(url, ["https://", "http://"])
+
+  defp http_url?(_), do: false
+
+  # A failed answer's body is the remote server's page; the status is enough.
+  defp preview_error({:http_error, status, _body}), do: "HTTP #{status}"
+  defp preview_error(reason), do: reason |> inspect() |> String.slice(0, 200)
+
+  defp stopped_by_failures?(bot),
+    do: not bot.active and bot.error_count >= Bot.max_failures()
 
   defp save_new(socket, params) do
     board_ids = parse_board_ids(params["board_ids"])
@@ -302,7 +422,7 @@ defmodule BaudrateWeb.Admin.BotsLive do
   end
 
   defp reload_bots(socket) do
-    assign(socket, :bots, Bots.list_bots())
+    assign(socket, bots: Bots.list_bots(), post_counts: Bots.post_counts())
   end
 
   # The bio is not a Bot field, so the changeset form does not carry it. Render

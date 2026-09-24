@@ -123,3 +123,15 @@ msgstr "沒有任何文字或數字"
 
 msgid "with a * may hold only letters, numbers and *"
 msgstr "含有 * 時只能包含文字、數字與 *"
+
+msgid "may hold at most %{max} patterns"
+msgstr "最多只能有 %{max} 個條件"
+
+msgid "\"%{pattern}\" is longer than %{max} characters"
+msgstr "「%{pattern}」超過 %{max} 個字元"
+
+msgid "\"%{pattern}\" has no letters or numbers"
+msgstr "「%{pattern}」沒有任何文字或數字"
+
+msgid "\"%{pattern}\" may hold only letters, numbers and *"
+msgstr "「%{pattern}」含有 * 時只能包含文字、數字與 *"
