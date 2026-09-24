@@ -119,6 +119,27 @@ defmodule Baudrate.Federation.DeliveryCircuitsTest do
     end
   end
 
+  describe "close/1" do
+    test "deletes an open circuit and returns it as it was" do
+      open(trips: 2, open_until_in: 3600)
+
+      assert {:ok, %DeliveryCircuit{domain: @domain, trips: 2}} = DeliveryCircuits.close(@domain)
+      refute Repo.get(DeliveryCircuit, @domain)
+      refute Enum.any?(DeliveryCircuits.list_tripped(), &(&1.domain == @domain))
+    end
+
+    test "a domain still counting failures has no circuit to close" do
+      DeliveryCircuits.record(@domain, :unreachable, :timeout)
+
+      assert {:error, :not_found} = DeliveryCircuits.close(@domain)
+      assert circuit().failures == 1
+    end
+
+    test "an unknown domain has no circuit to close" do
+      assert {:error, :not_found} = DeliveryCircuits.close("nowhere.example")
+    end
+  end
+
   defp circuit, do: Repo.get!(DeliveryCircuit, @domain)
 
   defp open(trips: trips, open_until_in: seconds) do

@@ -2,8 +2,9 @@ defmodule BaudrateWeb.Admin.FederationLive do
   @moduledoc """
   LiveView for the admin federation dashboard.
 
-  Displays known remote instances with stats, delivery queue status,
-  and per-board federation controls. Only accessible to admin users.
+  Displays known remote instances with stats, a summary of the delivery
+  queue (managed on `BaudrateWeb.Admin.DeliveryLive`), and per-board
+  federation controls. Only accessible to admin users.
   """
 
   use BaudrateWeb, :live_view
@@ -14,53 +15,11 @@ defmodule BaudrateWeb.Admin.FederationLive do
   alias Baudrate.Content.Board
   alias Baudrate.Federation
   alias Baudrate.Federation.{BlocklistAudit, DeliveryStats, DomainBlocks, InstanceStats}
-  import BaudrateWeb.Helpers, only: [parse_id: 1, translate_role: 1, translate_delivery_status: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, translate_role: 1]
 
   @impl true
   def mount(_params, _session, socket) do
     {:ok, assign(load_dashboard(socket), :page_title, gettext("Admin Federation"))}
-  end
-
-  @impl true
-  def handle_event("retry_job", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, job_id} ->
-        case DeliveryStats.retry_job(job_id) do
-          {:ok, _} ->
-            {:noreply,
-             socket
-             |> put_flash(:info, gettext("Job queued for retry."))
-             |> load_dashboard()
-             |> push_event("focus", %{id: "delivery-queue-heading"})}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Job not found."))}
-        end
-    end
-  end
-
-  @impl true
-  def handle_event("abandon_job", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, job_id} ->
-        case DeliveryStats.abandon_job(job_id) do
-          {:ok, _} ->
-            {:noreply,
-             socket
-             |> put_flash(:info, gettext("Job abandoned."))
-             |> load_dashboard()
-             |> push_event("focus", %{id: "delivery-queue-heading"})}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Job not found."))}
-        end
-    end
   end
 
   # Blocking is a moderation decision, so it goes through the form that asks
@@ -439,7 +398,6 @@ defmodule BaudrateWeb.Admin.FederationLive do
   defp load_dashboard(socket) do
     instances = InstanceStats.list_instances()
     delivery_counts = DeliveryStats.status_counts()
-    failed_jobs = DeliveryStats.list_actionable_jobs(20)
     error_rate = DeliveryStats.error_rate_24h()
     boards = Content.list_all_boards()
     domain_blocks = DomainBlocks.list_domain_blocks()
@@ -448,7 +406,6 @@ defmodule BaudrateWeb.Admin.FederationLive do
     assign(socket,
       instances: instances,
       delivery_counts: delivery_counts,
-      failed_jobs: failed_jobs,
       error_rate: error_rate,
       boards: boards,
       domain_blocks: domain_blocks,

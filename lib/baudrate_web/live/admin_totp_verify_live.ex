@@ -102,7 +102,8 @@ defmodule BaudrateWeb.AdminTotpVerifyLive do
   end
 
   @doc false
-  defp sanitize_return_to(nil), do: "/admin/settings"
+  defp sanitize_return_to(nil), do: "/admin"
+  defp sanitize_return_to("/admin"), do: "/admin"
 
   defp sanitize_return_to(path) when is_binary(path) do
     if String.starts_with?(path, "/admin/") &&
@@ -114,7 +115,7 @@ defmodule BaudrateWeb.AdminTotpVerifyLive do
          !String.contains?(path, "@") do
       path
     else
-      "/admin/settings"
+      "/admin"
     end
   end
 end

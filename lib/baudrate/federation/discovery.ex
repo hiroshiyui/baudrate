@@ -149,9 +149,8 @@ defmodule Baudrate.Federation.Discovery do
     import Ecto.Query
 
     alias Baudrate.Content.{Article, Comment}
-    alias Baudrate.Setup.User
 
-    members = from(u in User, where: not u.is_bot and u.status not in ["banned", "deleted"])
+    members = Baudrate.Auth.counted_members_query()
     today = Date.utc_today()
 
     %{

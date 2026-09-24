@@ -67,6 +67,7 @@ defmodule Baudrate.Auth do
   defdelegate list_users(opts \\ []), to: Users
   defdelegate paginate_users(opts \\ []), to: Users
   defdelegate count_users_by_status, to: Users
+  defdelegate counted_members_query, to: Users
   defdelegate update_user_role(user, role_id, admin_id), to: Users
 
   # --- Sessions & Throttling ---

@@ -437,7 +437,9 @@ defmodule BaudrateWeb.Router do
       live "/admin/settings", Admin.SettingsLive
       live "/admin/rules", Admin.RulesLive
       live "/admin/pending-users", Admin.PendingUsersLive
+      live "/admin", Admin.DashboardLive
       live "/admin/federation", Admin.FederationLive
+      live "/admin/federation/delivery", Admin.DeliveryLive
       live "/admin/federation/instances/:domain", Admin.InstanceDetailLive
       live "/admin/moderation", Admin.ModerationLive
       live "/admin/boards", Admin.BoardsLive

@@ -13,6 +13,17 @@ defmodule BaudrateWeb.Admin.ModerationLogLiveTest do
     {:ok, conn: conn}
   end
 
+  test "every action the log accepts has a label" do
+    untranslated =
+      Enum.filter(
+        Baudrate.Moderation.Log.valid_actions(),
+        &(BaudrateWeb.Admin.ModerationLogLive.translate_action(&1) == &1)
+      )
+
+    assert untranslated == [],
+           "shown as a bare identifier in the log: #{inspect(untranslated)}"
+  end
+
   test "admin can view moderation log", %{conn: conn} do
     admin = setup_user("admin")
     conn = log_in_admin(conn, admin)

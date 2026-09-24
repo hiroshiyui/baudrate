@@ -1,0 +1,294 @@
+<div id="admin-delivery-page" class="admin-delivery-page space-y-6">
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <h1 id="admin-delivery-heading" class="admin-delivery-heading text-2xl font-bold">
+      {gettext("Delivery Queue")}
+    </h1>
+    <.link
+      id="admin-delivery-back-link"
+      navigate={~p"/admin/federation"}
+      class="admin-delivery-back-link link"
+    >
+      {gettext("Back to Federation")}
+    </.link>
+  </div>
+
+  <section
+    id="admin-delivery-summary"
+    class="admin-delivery-summary"
+    aria-labelledby="admin-delivery-summary-heading"
+  >
+    <h2 id="admin-delivery-summary-heading" class="sr-only">{gettext("Summary")}</h2>
+    <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
+      <div id="admin-delivery-stat-pending" class="admin-delivery-stat stat">
+        <div class="stat-title">{gettext("Pending")}</div>
+        <div class="admin-delivery-stat-value stat-value">{Map.get(@counts, "pending", 0)}</div>
+      </div>
+      <div id="admin-delivery-stat-failed" class="admin-delivery-stat stat">
+        <div class="stat-title">{gettext("Failed")}</div>
+        <div class="admin-delivery-stat-value stat-value text-error">
+          {Map.get(@counts, "failed", 0)}
+        </div>
+      </div>
+      <div id="admin-delivery-stat-circuits" class="admin-delivery-stat stat">
+        <div class="stat-title">{gettext("Open circuits")}</div>
+        <div class="admin-delivery-stat-value stat-value">{length(@circuits)}</div>
+      </div>
+      <div id="admin-delivery-stat-error-rate" class="admin-delivery-stat stat">
+        <div class="stat-title">{gettext("Error Rate (24h)")}</div>
+        <div class="admin-delivery-stat-value stat-value text-sm">
+          {Float.round(@error_rate * 100, 1)}%
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="admin-delivery-circuits"
+    class="admin-delivery-circuits card bg-base-200 shadow-sm"
+    aria-labelledby="admin-delivery-circuits-heading"
+  >
+    <div class="card-body">
+      <h2
+        id="admin-delivery-circuits-heading"
+        class="admin-delivery-circuits-heading card-title"
+        tabindex="-1"
+      >
+        {gettext("Open circuits")}
+      </h2>
+      <p class="admin-delivery-circuits-help text-sm text-base-content/70">
+        {gettext(
+          "Deliveries to these servers are held back after repeated failures, and one job is sent as a probe when the wait ends. Close a circuit only after fixing a problem on our side; if the server is still unreachable it opens again."
+        )}
+      </p>
+      <p
+        :if={@circuits == []}
+        id="admin-delivery-circuits-empty"
+        class="admin-delivery-circuits-empty text-sm"
+      >
+        {gettext("No circuit is open.")}
+      </p>
+      <div :if={@circuits != []} class="overflow-x-auto">
+        <table
+          id="admin-delivery-circuits-table"
+          class="admin-delivery-circuits-table table table-sm"
+          aria-labelledby="admin-delivery-circuits-heading"
+        >
+          <thead>
+            <tr>
+              <th scope="col">{gettext("Domain")}</th>
+              <th scope="col">{gettext("Failures")}</th>
+              <th scope="col">{gettext("Times opened")}</th>
+              <th scope="col">{gettext("Next probe")}</th>
+              <th scope="col">{gettext("Last error")}</th>
+              <th scope="col">{gettext("Actions")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              :for={circuit <- @circuits}
+              id={"admin-delivery-circuit-#{circuit.domain}"}
+              class="admin-delivery-circuit"
+            >
+              <th
+                scope="row"
+                class="admin-delivery-circuit-domain font-mono font-normal break-all"
+              >
+                {circuit.domain}
+              </th>
+              <td class="admin-delivery-circuit-failures">{circuit.failures}</td>
+              <td class="admin-delivery-circuit-trips">{circuit.trips}</td>
+              <td class="admin-delivery-circuit-next-probe whitespace-nowrap text-sm">
+                <%= if circuit.open_until && DateTime.compare(circuit.open_until, @now) == :gt do %>
+                  <time datetime={datetime_attr(circuit.open_until)}>
+                    {format_datetime(circuit.open_until)}
+                  </time>
+                <% else %>
+                  {gettext("Due now")}
+                <% end %>
+              </td>
+              <td class="admin-delivery-circuit-error text-sm max-w-xs truncate opacity-70">
+                {circuit.last_error || "—"}
+              </td>
+              <td class="admin-delivery-circuit-actions">
+                <button
+                  type="button"
+                  id={"admin-delivery-circuit-close-#{circuit.domain}"}
+                  phx-click="close_circuit"
+                  phx-value-domain={circuit.domain}
+                  data-confirm={
+                    gettext("Close the circuit for %{domain}?", domain: circuit.domain)
+                  }
+                  class="admin-delivery-circuit-close btn btn-ghost btn-sm"
+                  aria-label={gettext("Close the circuit for %{domain}", domain: circuit.domain)}
+                >
+                  {gettext("Close circuit")}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="admin-delivery-jobs"
+    class="admin-delivery-jobs space-y-4"
+    aria-labelledby="admin-delivery-jobs-heading"
+  >
+    <h2
+      id="admin-delivery-jobs-heading"
+      class="admin-delivery-jobs-heading text-xl font-semibold"
+      tabindex="-1"
+    >
+      {gettext("Jobs waiting")}
+    </h2>
+
+    <form
+      id="admin-delivery-filter-form"
+      class="admin-delivery-filter-form flex flex-wrap items-end gap-2"
+      phx-change="filter"
+      phx-submit="filter"
+    >
+      <label for="admin-delivery-filter-domain" class="admin-delivery-filter-label fieldset">
+        <span class="label">{gettext("Server")}</span>
+        <select
+          id="admin-delivery-filter-domain"
+          name="domain"
+          class="admin-delivery-filter-domain select select-sm"
+        >
+          <option value="" selected={is_nil(@domain)}>{gettext("All servers")}</option>
+          <option
+            :for={{domain, count} <- @waiting_domains}
+            value={domain}
+            selected={@domain == domain}
+          >
+            {gettext("%{domain} (%{count})", domain: domain, count: count)}
+          </option>
+        </select>
+      </label>
+    </form>
+
+    <div
+      :if={@domain && @total > 0}
+      id="admin-delivery-domain-actions"
+      class="admin-delivery-domain-actions flex flex-wrap gap-2"
+    >
+      <button
+        type="button"
+        id="admin-delivery-retry-domain"
+        phx-click="retry_domain"
+        class="admin-delivery-retry-domain btn btn-sm"
+      >
+        {gettext("Retry every failed job for %{domain}", domain: @domain)}
+      </button>
+      <button
+        type="button"
+        id="admin-delivery-abandon-domain"
+        phx-click="abandon_domain"
+        data-confirm={
+          gettext(
+            "Abandon every waiting job for %{domain}? Those activities will never be sent.",
+            domain: @domain
+          )
+        }
+        class="admin-delivery-abandon-domain btn btn-sm btn-error btn-outline"
+      >
+        {gettext("Abandon every job for %{domain}", domain: @domain)}
+      </button>
+    </div>
+
+    <p :if={@jobs == []} id="admin-delivery-jobs-empty" class="admin-delivery-jobs-empty text-sm">
+      {gettext("No job is waiting.")}
+    </p>
+
+    <div
+      :if={@jobs != []}
+      id="admin-delivery-jobs-container"
+      class="admin-delivery-jobs-container overflow-x-auto"
+      data-focus-target
+    >
+      <table
+        id="admin-delivery-jobs-table"
+        class="admin-delivery-jobs-table table table-zebra table-sm"
+        aria-labelledby="admin-delivery-jobs-heading"
+      >
+        <thead>
+          <tr>
+            <th scope="col">{gettext("Inbox")}</th>
+            <th scope="col">{gettext("Status")}</th>
+            <th scope="col">{gettext("Attempts")}</th>
+            <th scope="col">{gettext("Next attempt")}</th>
+            <th scope="col">{gettext("Error")}</th>
+            <th scope="col">{gettext("Actions")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr :for={job <- @jobs} id={"admin-delivery-job-#{job.id}"} class="admin-delivery-job">
+            <th
+              scope="row"
+              class="admin-delivery-job-inbox font-mono font-normal text-sm max-w-xs break-all"
+            >
+              {job.inbox_url}
+            </th>
+            <td class="admin-delivery-job-status">
+              <span class={[
+                "badge badge-sm",
+                job.status == "failed" && "badge-error",
+                job.status == "pending" && "badge-warning"
+              ]}>
+                {translate_delivery_status(job.status)}
+              </span>
+            </td>
+            <td class="admin-delivery-job-attempts">{job.attempts}</td>
+            <td class="admin-delivery-job-next whitespace-nowrap text-sm">
+              <%= if job.next_retry_at do %>
+                <time datetime={datetime_attr(job.next_retry_at)}>
+                  {format_datetime(job.next_retry_at)}
+                </time>
+              <% else %>
+                {gettext("Due now")}
+              <% end %>
+            </td>
+            <td class="admin-delivery-job-error text-sm max-w-xs truncate opacity-70">
+              {job.last_error || "—"}
+            </td>
+            <td class="admin-delivery-job-actions">
+              <div class="flex gap-1">
+                <button
+                  :if={job.status == "failed"}
+                  type="button"
+                  id={"admin-delivery-job-retry-#{job.id}"}
+                  phx-click="retry_job"
+                  phx-value-id={job.id}
+                  class="admin-delivery-job-retry btn btn-ghost btn-sm"
+                  aria-label={gettext("Retry delivery to %{inbox}", inbox: job.inbox_url)}
+                >
+                  {gettext("Retry")}
+                </button>
+                <button
+                  type="button"
+                  id={"admin-delivery-job-abandon-#{job.id}"}
+                  phx-click="abandon_job"
+                  phx-value-id={job.id}
+                  class="admin-delivery-job-abandon btn btn-ghost btn-sm text-error"
+                  aria-label={gettext("Abandon delivery to %{inbox}", inbox: job.inbox_url)}
+                >
+                  {gettext("Abandon")}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <.pagination
+      :if={@jobs != []}
+      page={@page}
+      total_pages={@total_pages}
+      path={~p"/admin/federation/delivery"}
+      params={if @domain, do: %{"domain" => @domain}, else: %{}}
+    />
+  </section>
+</div>

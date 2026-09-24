@@ -570,6 +570,17 @@ defmodule Baudrate.Auth.Users do
   end
 
   @doc """
+  The accounts counted as members: people, not bots, and neither banned nor
+  deleted — a ban is a removal and a tombstone is nobody. NodeInfo's
+  `users.total` and the admin dashboard both count this, so the two cannot
+  disagree about how many members the site has.
+  """
+  @spec counted_members_query() :: Ecto.Query.t()
+  def counted_members_query do
+    from(u in User, where: not u.is_bot and u.status not in ["banned", "deleted"])
+  end
+
+  @doc """
   Returns a map of status counts, e.g. `%{"active" => 5, "pending" => 2, "banned" => 1}`.
   """
   def count_users_by_status do

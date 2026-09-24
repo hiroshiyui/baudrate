@@ -51,61 +51,6 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
     assert {:error, {:redirect, %{to: "/"}}} = live(conn, "/admin/federation")
   end
 
-  test "retry a failed delivery job", %{conn: conn} do
-    admin = setup_user("admin")
-    conn = log_in_admin(conn, admin)
-
-    job = create_failed_delivery_job()
-
-    {:ok, lv, _html} = live(conn, "/admin/federation")
-
-    html =
-      lv
-      |> element("button[phx-click=\"retry_job\"][phx-value-id=\"#{job.id}\"]")
-      |> render_click()
-
-    assert html =~ "Job queued for retry."
-
-    updated_job = Repo.get!(DeliveryJob, job.id)
-    assert updated_job.status == "pending"
-  end
-
-  test "abandon a delivery job", %{conn: conn} do
-    admin = setup_user("admin")
-    conn = log_in_admin(conn, admin)
-
-    job = create_failed_delivery_job()
-
-    {:ok, lv, _html} = live(conn, "/admin/federation")
-
-    html =
-      lv
-      |> element("button[phx-click=\"abandon_job\"][phx-value-id=\"#{job.id}\"]")
-      |> render_click()
-
-    assert html =~ "Job abandoned."
-
-    updated_job = Repo.get!(DeliveryJob, job.id)
-    assert updated_job.status == "abandoned"
-    assert_push_event(lv, "focus", %{id: "delivery-queue-heading"})
-  end
-
-  test "job row actions name their inbox", %{conn: conn} do
-    admin = setup_user("admin")
-    conn = log_in_admin(conn, admin)
-
-    job = create_failed_delivery_job()
-
-    {:ok, lv, _html} = live(conn, "/admin/federation")
-
-    assert has_element?(
-             lv,
-             "#admin-federation-job-abandon-#{job.id}[aria-label=\"Abandon delivery to #{job.inbox_url}\"]"
-           )
-
-    assert has_element?(lv, "#admin-federation-job-#{job.id} th[scope=\"row\"]", job.inbox_url)
-  end
-
   test "block a domain", %{conn: conn} do
     admin = setup_user("admin")
     conn = log_in_admin(conn, admin)

@@ -385,6 +385,20 @@ defmodule BaudrateWeb.Helpers do
   def translate_health_check(other), do: other
 
   @doc """
+  Names a health check as a heading on the admin dashboard (Phase 7A). The
+  notice wording above is a phrase for the middle of a sentence; this is the
+  name a row is listed under.
+  """
+  def health_check_title("database"), do: gettext("Database")
+  def health_check_title("delivery_queue"), do: gettext("Outgoing federation queue")
+  def health_check_title("inbound_queue"), do: gettext("Incoming federation queue")
+  def health_check_title("workers"), do: gettext("Background workers")
+  def health_check_title("disk"), do: gettext("Disk space")
+  def health_check_title("backup"), do: gettext("Backups")
+  def health_check_title("encryption_keys"), do: gettext("Encryption keys")
+  def health_check_title(other), do: other
+
+  @doc """
   Builds a full invite link URL for the given invite code string.
 
   ## Examples

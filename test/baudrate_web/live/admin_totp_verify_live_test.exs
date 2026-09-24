@@ -75,12 +75,12 @@ defmodule BaudrateWeb.AdminTotpVerifyLiveTest do
       assert html =~ ~s(value="/admin/users")
     end
 
-    test "malicious return_to sanitized to /admin/settings", %{conn: conn} do
+    test "malicious return_to sanitized to /admin", %{conn: conn} do
       admin = setup_totp_admin()
       conn = log_in_user(conn, admin)
 
       {:ok, _lv, html} = live(conn, "/admin/verify?return_to=https://evil.com")
-      assert html =~ ~s(value="/admin/settings")
+      assert html =~ ~s(value="/admin")
     end
 
     test "return_to with path traversal sanitized", %{conn: conn} do
@@ -88,7 +88,7 @@ defmodule BaudrateWeb.AdminTotpVerifyLiveTest do
       conn = log_in_user(conn, admin)
 
       {:ok, _lv, html} = live(conn, "/admin/verify?return_to=/admin/../secret")
-      assert html =~ ~s(value="/admin/settings")
+      assert html =~ ~s(value="/admin")
     end
 
     test "form rejects non-numeric code", %{conn: conn} do

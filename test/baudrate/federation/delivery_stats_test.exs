@@ -47,7 +47,7 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
     end
   end
 
-  describe "list_actionable_jobs/1" do
+  describe "paginate_actionable_jobs/1" do
     test "returns only failed and pending jobs" do
       j1 = create_job(%{})
       j2 = create_job(%{})
@@ -56,17 +56,45 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
       set_status(j2, "failed")
       # j3 stays pending
 
-      jobs = DeliveryStats.list_actionable_jobs()
+      %{jobs: jobs, total: 2} = DeliveryStats.paginate_actionable_jobs()
       ids = Enum.map(jobs, & &1.id)
       assert j2.id in ids
       assert j3.id in ids
       refute j1.id in ids
     end
 
-    test "respects limit" do
-      for _ <- 1..5, do: create_job(%{})
+    test "pages 50 at a time" do
+      for _ <- 1..51, do: create_job(%{})
 
-      assert length(DeliveryStats.list_actionable_jobs(3)) == 3
+      assert %{jobs: first, total: 51, total_pages: 2} = DeliveryStats.paginate_actionable_jobs()
+      assert length(first) == 50
+      assert %{jobs: [_], page: 2} = DeliveryStats.paginate_actionable_jobs(page: 2)
+    end
+
+    # The bulk actions act on what the filter shows, so a substring match
+    # would sweep up another server's jobs.
+    test "filters by the exact domain, not a substring of the inbox" do
+      mine = create_job(%{inbox_url: "https://example.com/inbox"})
+      _longer = create_job(%{inbox_url: "https://notexample.com/inbox"})
+      _suffix = create_job(%{inbox_url: "https://example.com.evil/inbox"})
+      _sub = create_job(%{inbox_url: "https://a.example.com/inbox"})
+
+      assert %{jobs: [%{id: id}], total: 1} =
+               DeliveryStats.paginate_actionable_jobs(domain: " Example.COM ")
+
+      assert id == mine.id
+    end
+  end
+
+  describe "waiting_domains/1" do
+    test "lists domains with waiting jobs, largest backlog first" do
+      for n <- 1..2,
+          do: create_job(%{inbox_url: "https://busy.example/inbox", actor_uri: "https://l/#{n}"})
+
+      create_job(%{inbox_url: "https://quiet.example/inbox"})
+      create_job(%{inbox_url: "https://done.example/inbox"}) |> set_status("delivered")
+
+      assert DeliveryStats.waiting_domains() == [{"busy.example", 2}, {"quiet.example", 1}]
     end
   end
 
@@ -77,6 +105,15 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
       assert {:ok, retried} = DeliveryStats.retry_job(job.id)
       assert retried.status == "pending"
       assert is_nil(retried.next_retry_at)
+    end
+
+    # A delivered job put back to pending would send its activity twice.
+    test "refuses a job that is not failed" do
+      for status <- ~w(delivered abandoned pending) do
+        job = create_job(%{}) |> set_status(status)
+        assert {:error, :not_found} = DeliveryStats.retry_job(job.id)
+        assert Repo.get(DeliveryJob, job.id).status == status
+      end
     end
 
     test "returns error for nonexistent job" do
@@ -90,6 +127,12 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
 
       assert {:ok, abandoned} = DeliveryStats.abandon_job(job.id)
       assert abandoned.status == "abandoned"
+    end
+
+    test "refuses a job that already left the queue" do
+      job = create_job(%{}) |> set_status("delivered")
+      assert {:error, :not_found} = DeliveryStats.abandon_job(job.id)
+      assert Repo.get(DeliveryJob, job.id).status == "delivered"
     end
 
     test "returns error for nonexistent job" do
@@ -114,9 +157,11 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
         |> set_status("failed")
 
       j3 = create_job(%{inbox_url: "https://other.example/inbox"}) |> set_status("failed")
+      j4 = create_job(%{inbox_url: "https://notbad.example/inbox"}) |> set_status("failed")
 
       {count, _} = DeliveryStats.retry_all_failed_for_domain("bad.example")
       assert count == 2
+      assert Repo.get(DeliveryJob, j4.id).status == "failed"
 
       assert Repo.get(DeliveryJob, j1.id).status == "pending"
       assert Repo.get(DeliveryJob, j2.id).status == "pending"
@@ -140,9 +185,12 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
         |> set_status("failed")
 
       j3 = create_job(%{inbox_url: "https://good.example/inbox"})
+      j4 = create_job(%{inbox_url: "https://spam.example.org/inbox"})
 
       {count, _} = DeliveryStats.abandon_all_for_domain("spam.example")
       assert count == 2
+      assert Repo.get(DeliveryJob, j4.id).status == "pending"
+      assert {0, nil} = DeliveryStats.abandon_all_for_domain("  ")
 
       assert Repo.get(DeliveryJob, j1.id).status == "abandoned"
       assert Repo.get(DeliveryJob, j2.id).status == "abandoned"

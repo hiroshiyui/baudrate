@@ -31,78 +31,15 @@
         </div>
       </div>
 
-      <div :if={@failed_jobs != []} class="mt-4">
-        <h3
-          id="admin-federation-jobs-heading"
-          class="admin-federation-subheading font-semibold mb-2"
+      <p id="admin-federation-delivery-link-row" class="mt-4">
+        <.link
+          id="admin-federation-delivery-link"
+          navigate={~p"/admin/federation/delivery"}
+          class="admin-federation-delivery-link link"
         >
-          {gettext("Actionable Jobs")}
-        </h3>
-        <div class="overflow-x-auto">
-          <table
-            id="admin-federation-jobs-table"
-            class="admin-federation-jobs-table table table-zebra table-sm"
-          >
-            <thead>
-              <tr>
-                <th scope="col">{gettext("Inbox")}</th>
-                <th scope="col">{gettext("Status")}</th>
-                <th scope="col">{gettext("Attempts")}</th>
-                <th scope="col">{gettext("Error")}</th>
-                <th scope="col">{gettext("Actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                :for={job <- @failed_jobs}
-                id={"admin-federation-job-#{job.id}"}
-                class="admin-federation-job-row"
-              >
-                <th
-                  scope="row"
-                  class="admin-federation-job-inbox font-mono font-normal text-sm max-w-xs truncate"
-                >
-                  {job.inbox_url}
-                </th>
-                <td>
-                  <span class={[
-                    "badge badge-sm",
-                    job.status == "failed" && "badge-error",
-                    job.status == "pending" && "badge-warning"
-                  ]}>
-                    {translate_delivery_status(job.status)}
-                  </span>
-                </td>
-                <td>{job.attempts}</td>
-                <td class="text-sm max-w-xs truncate opacity-70">{job.last_error || "—"}</td>
-                <td class="admin-federation-job-actions">
-                  <div class="flex gap-1">
-                    <button
-                      :if={job.status == "failed"}
-                      id={"admin-federation-job-retry-#{job.id}"}
-                      phx-click="retry_job"
-                      phx-value-id={job.id}
-                      class="admin-federation-job-retry-btn btn btn-ghost btn-sm"
-                      aria-label={gettext("Retry delivery to %{inbox}", inbox: job.inbox_url)}
-                    >
-                      {gettext("Retry")}
-                    </button>
-                    <button
-                      id={"admin-federation-job-abandon-#{job.id}"}
-                      phx-click="abandon_job"
-                      phx-value-id={job.id}
-                      class="admin-federation-job-abandon-btn btn btn-ghost btn-sm text-error"
-                      aria-label={gettext("Abandon delivery to %{inbox}", inbox: job.inbox_url)}
-                    >
-                      {gettext("Abandon")}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+          {gettext("Manage the delivery queue and open circuits")}
+        </.link>
+      </p>
     </div>
   </div>
 

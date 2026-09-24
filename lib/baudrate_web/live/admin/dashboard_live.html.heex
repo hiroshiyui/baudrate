@@ -1,0 +1,211 @@
+<div id="admin-dashboard-page" class="admin-dashboard-page space-y-6">
+  <h1 id="admin-dashboard-heading" class="admin-dashboard-heading text-2xl font-bold">
+    {gettext("Dashboard")}
+  </h1>
+
+  <section
+    id="admin-dashboard-moderation"
+    class="admin-dashboard-section admin-dashboard-moderation card bg-base-200 shadow-sm"
+    aria-labelledby="admin-dashboard-moderation-heading"
+  >
+    <div class="card-body">
+      <h2 id="admin-dashboard-moderation-heading" class="admin-dashboard-section-title card-title">
+        {gettext("Waiting for review")}
+      </h2>
+      <dl class="admin-dashboard-figures grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div id="admin-dashboard-open-reports" class="admin-dashboard-figure">
+          <dt class="admin-dashboard-figure-label text-sm opacity-70">
+            <.link navigate={~p"/admin/moderation"} class="admin-dashboard-figure-link link">
+              {gettext("Open reports")}
+            </.link>
+          </dt>
+          <dd class="admin-dashboard-figure-value text-3xl font-semibold">
+            {@moderation.open_reports}
+          </dd>
+        </div>
+        <div id="admin-dashboard-held-posts" class="admin-dashboard-figure">
+          <dt class="admin-dashboard-figure-label text-sm opacity-70">
+            <.link navigate={~p"/moderation/held"} class="admin-dashboard-figure-link link">
+              {gettext("Held posts")}
+            </.link>
+          </dt>
+          <dd class="admin-dashboard-figure-value text-3xl font-semibold">
+            {@moderation.held_posts}
+          </dd>
+        </div>
+        <div id="admin-dashboard-pending-registrations" class="admin-dashboard-figure">
+          <dt class="admin-dashboard-figure-label text-sm opacity-70">
+            <.link navigate={~p"/admin/pending-users"} class="admin-dashboard-figure-link link">
+              {gettext("Pending registrations")}
+            </.link>
+          </dt>
+          <dd class="admin-dashboard-figure-value text-3xl font-semibold">
+            {@moderation.pending_registrations}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section
+    :if={@admin?}
+    id="admin-dashboard-members"
+    class="admin-dashboard-section admin-dashboard-members card bg-base-200 shadow-sm"
+    aria-labelledby="admin-dashboard-members-heading"
+  >
+    <div class="card-body">
+      <h2 id="admin-dashboard-members-heading" class="admin-dashboard-section-title card-title">
+        <.link navigate={~p"/admin/users"} class="admin-dashboard-section-link link">
+          {gettext("Members")}
+        </.link>
+      </h2>
+      <dl class="admin-dashboard-figures grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div id="admin-dashboard-members-total" class="admin-dashboard-figure">
+          <dt class="admin-dashboard-figure-label text-sm opacity-70">{gettext("Members")}</dt>
+          <dd class="admin-dashboard-figure-value text-3xl font-semibold">{@members.total}</dd>
+        </div>
+        <div id="admin-dashboard-members-active" class="admin-dashboard-figure">
+          <dt class="admin-dashboard-figure-label text-sm opacity-70">
+            {gettext("Active in the last 30 days")}
+          </dt>
+          <dd class="admin-dashboard-figure-value text-3xl font-semibold">
+            {@members.active_month}
+          </dd>
+        </div>
+        <div id="admin-dashboard-members-new-week" class="admin-dashboard-figure">
+          <dt class="admin-dashboard-figure-label text-sm opacity-70">
+            {gettext("Joined in the last 7 days")}
+          </dt>
+          <dd class="admin-dashboard-figure-value text-3xl font-semibold">{@members.new_week}</dd>
+        </div>
+        <div id="admin-dashboard-members-new-month" class="admin-dashboard-figure">
+          <dt class="admin-dashboard-figure-label text-sm opacity-70">
+            {gettext("Joined in the last 30 days")}
+          </dt>
+          <dd class="admin-dashboard-figure-value text-3xl font-semibold">
+            {@members.new_month}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section
+    :if={@admin?}
+    id="admin-dashboard-federation"
+    class="admin-dashboard-section admin-dashboard-federation card bg-base-200 shadow-sm"
+    aria-labelledby="admin-dashboard-federation-heading"
+  >
+    <div class="card-body">
+      <h2 id="admin-dashboard-federation-heading" class="admin-dashboard-section-title card-title">
+        <.link navigate={~p"/admin/federation"} class="admin-dashboard-section-link link">
+          {gettext("Federation")}
+        </.link>
+      </h2>
+      <dl class="admin-dashboard-figures grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div id="admin-dashboard-failed-deliveries" class="admin-dashboard-figure">
+          <dt class="admin-dashboard-figure-label text-sm opacity-70">
+            <.link
+              navigate={~p"/admin/federation/delivery"}
+              class="admin-dashboard-figure-link link"
+            >
+              {gettext("Failed deliveries")}
+            </.link>
+          </dt>
+          <dd class="admin-dashboard-figure-value text-3xl font-semibold">
+            {@federation.failed_deliveries}
+          </dd>
+        </div>
+        <div id="admin-dashboard-blocked-domains" class="admin-dashboard-figure">
+          <dt class="admin-dashboard-figure-label text-sm opacity-70">
+            {gettext("Blocked servers")}
+          </dt>
+          <dd class="admin-dashboard-figure-value text-3xl font-semibold">
+            {@federation.blocked_domains}
+          </dd>
+        </div>
+        <div id="admin-dashboard-suspended-actors" class="admin-dashboard-figure">
+          <dt class="admin-dashboard-figure-label text-sm opacity-70">
+            {gettext("Suspended remote accounts")}
+          </dt>
+          <dd class="admin-dashboard-figure-value text-3xl font-semibold">
+            {@federation.suspended_actors}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section
+    :if={@admin?}
+    id="admin-dashboard-health"
+    class="admin-dashboard-section admin-dashboard-health card bg-base-200 shadow-sm"
+    aria-labelledby="admin-dashboard-health-heading"
+  >
+    <div class="card-body">
+      <h2 id="admin-dashboard-health-heading" class="admin-dashboard-section-title card-title">
+        {gettext("Health")}
+      </h2>
+
+      <p
+        :if={is_nil(@health) or @health.loading}
+        id="admin-dashboard-health-loading"
+        class="admin-dashboard-health-loading text-sm"
+        role="status"
+      >
+        {gettext("Running the health checks…")}
+      </p>
+
+      <p
+        :if={@health && @health.failed}
+        id="admin-dashboard-health-error"
+        class="admin-dashboard-health-error text-sm text-error"
+        role="status"
+      >
+        {gettext("The health checks could not be run.")}
+      </p>
+
+      <ul
+        :if={@health && @health.ok?}
+        id="admin-dashboard-health-checks"
+        class="admin-dashboard-health-checks divide-y divide-base-300"
+      >
+        <li
+          :for={{name, check} <- health_rows(@health.result)}
+          id={"admin-dashboard-health-#{name}"}
+          class={["admin-dashboard-health-check py-2", "admin-dashboard-health-#{check.status}"]}
+        >
+          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span class="admin-dashboard-health-name font-medium">
+              {health_check_title(to_string(name))}
+            </span>
+            <span class={[
+              "admin-dashboard-health-status badge badge-sm",
+              check.status == :ok && "badge-success",
+              check.status == :fail && "badge-error",
+              check.status == :skipped && "badge-ghost"
+            ]}>
+              <%= case check.status do %>
+                <% :ok -> %>
+                  {gettext("OK")}
+                <% :fail -> %>
+                  {gettext("Failing")}
+                <% :skipped -> %>
+                  {gettext("Not checked")}
+              <% end %>
+            </span>
+            <span
+              :for={fact <- check_facts(name, check)}
+              class="admin-dashboard-health-fact text-sm opacity-70"
+            >
+              {fact}
+            </span>
+          </div>
+        </li>
+      </ul>
+      <p class="admin-dashboard-health-help text-sm text-base-content/70">
+        {gettext("What each check means, and what to do when one fails, is in the SysOp guide.")}
+      </p>
+    </div>
+  </section>
+</div>

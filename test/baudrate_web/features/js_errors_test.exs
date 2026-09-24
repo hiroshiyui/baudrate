@@ -299,7 +299,9 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
     admin_paths = [
       "/admin/settings",
       "/admin/pending-users",
+      "/admin",
       "/admin/federation",
+      "/admin/federation/delivery",
       "/admin/federation/instances/#{instance_domain}",
       "/admin/moderation",
       "/admin/boards",

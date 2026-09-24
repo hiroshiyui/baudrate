@@ -775,7 +775,8 @@ defmodule BaudrateWeb.SessionController do
   # same one, and an open-redirect guard kept in two places is kept in one.
   defp sanitize_return_to(path), do: BaudrateWeb.Helpers.local_path(path, "/")
 
-  defp sanitize_admin_return_to(nil), do: "/admin/settings"
+  defp sanitize_admin_return_to(nil), do: "/admin"
+  defp sanitize_admin_return_to("/admin"), do: "/admin"
 
   defp sanitize_admin_return_to(path) when is_binary(path) do
     if String.starts_with?(path, "/admin/") &&
@@ -788,7 +789,7 @@ defmodule BaudrateWeb.SessionController do
          !String.contains?(path, "\0") do
       path
     else
-      "/admin/settings"
+      "/admin"
     end
   end
 end

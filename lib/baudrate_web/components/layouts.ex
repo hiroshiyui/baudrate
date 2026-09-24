@@ -75,6 +75,9 @@ defmodule BaudrateWeb.Layouts do
                 <details id="nav-mobile-admin" class="nav-admin-section">
                   <summary>{gettext("Admin")}</summary>
                   <ul>
+                    <li>
+                      <.link navigate="/admin" class="nav-admin-link">{gettext("Dashboard")}</.link>
+                    </li>
                     <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/settings" class="nav-admin-link">{gettext("Settings")}</.link>
                     </li>
@@ -341,6 +344,9 @@ defmodule BaudrateWeb.Layouts do
                 <details id="nav-admin" class="nav-admin-section">
                   <summary>{gettext("Admin")}</summary>
                   <ul>
+                    <li>
+                      <.link navigate="/admin" class="nav-admin-link">{gettext("Dashboard")}</.link>
+                    </li>
                     <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/settings" class="nav-admin-link">{gettext("Settings")}</.link>
                     </li>

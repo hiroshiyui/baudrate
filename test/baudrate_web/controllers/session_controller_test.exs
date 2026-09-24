@@ -532,7 +532,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Access denied"
     end
 
-    test "malicious return_to falls back to /admin/settings", %{conn: conn} do
+    test "malicious return_to falls back to /admin", %{conn: conn} do
       admin = setup_user("admin")
       secret = Auth.generate_totp_secret()
       {:ok, _} = Auth.enable_totp(admin, secret)
@@ -546,7 +546,7 @@ defmodule BaudrateWeb.SessionControllerTest do
           "return_to" => "https://evil.com"
         })
 
-      assert redirected_to(conn) == "/admin/settings"
+      assert redirected_to(conn) == "/admin"
     end
 
     test "unauthenticated user redirects to login", %{conn: conn} do
@@ -569,7 +569,7 @@ defmodule BaudrateWeb.SessionControllerTest do
           "return_to" => "/admin/users\0malicious"
         })
 
-      assert redirected_to(conn) == "/admin/settings"
+      assert redirected_to(conn) == "/admin"
     end
 
     test "sanitizes admin return_to with path traversal", %{conn: conn} do
@@ -586,7 +586,7 @@ defmodule BaudrateWeb.SessionControllerTest do
           "return_to" => "/admin/../../../etc/passwd"
         })
 
-      assert redirected_to(conn) == "/admin/settings"
+      assert redirected_to(conn) == "/admin"
     end
 
     test "sanitizes admin return_to with double slashes", %{conn: conn} do
@@ -603,7 +603,7 @@ defmodule BaudrateWeb.SessionControllerTest do
           "return_to" => "/admin//evil.com"
         })
 
-      assert redirected_to(conn) == "/admin/settings"
+      assert redirected_to(conn) == "/admin"
     end
   end
 

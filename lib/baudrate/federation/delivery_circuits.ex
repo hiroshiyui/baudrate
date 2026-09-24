@@ -169,6 +169,30 @@ defmodule Baudrate.Federation.DeliveryCircuits do
   end
 
   @doc """
+  Closes `domain`'s circuit by hand (Phase 7E): the admin fixed a problem on
+  our side, or knows the server is back, and does not want its jobs held
+  until the next probe. Deleting the row is what "healthy" already means, so
+  the held jobs are sent on the worker's next pass; if the server is in fact
+  still down, five more failures open the circuit again.
+
+  Returns `{:ok, circuit}` with the row as it was, or `{:error, :not_found}`
+  when the domain has no open circuit.
+  """
+  @spec close(String.t()) :: {:ok, DeliveryCircuit.t()} | {:error, :not_found}
+  def close(domain) when is_binary(domain) do
+    from(c in DeliveryCircuit, where: c.domain == ^domain and c.trips > 0, select: c)
+    |> Repo.delete_all()
+    |> case do
+      {1, [circuit]} ->
+        Logger.info("federation.circuit_closed_by_admin: domain=#{domain}")
+        {:ok, circuit}
+
+      _ ->
+        {:error, :not_found}
+    end
+  end
+
+  @doc """
   Deletes rows not updated for 30 days: failures that never reached the
   threshold, for domains that were not contacted again. Returns the count.
   """

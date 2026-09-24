@@ -55,6 +55,10 @@ defmodule Baudrate.Health do
   @type status :: :ok | :fail | :skipped
   @type report :: %{status: :ok | :fail, checks: %{atom() => map()}}
 
+  @doc "The names of every check, in the order the report runs them."
+  @spec check_names() :: [atom()]
+  def check_names, do: @checks
+
   @doc """
   Runs every check and returns `%{status: :ok | :fail, checks: %{name => result}}`.
   Each result has a `:status` of `:ok`, `:fail` or `:skipped`, and a `:reason`

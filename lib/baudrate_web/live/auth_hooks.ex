@@ -480,7 +480,7 @@ defmodule BaudrateWeb.AuthHooks do
     case get_connect_info(socket, :uri) do
       %URI{path: "/admin/" <> _ = path, query: query} when query in [nil, ""] -> path
       %URI{path: "/admin/" <> _ = path, query: query} -> path <> "?" <> query
-      _ -> "/admin/settings"
+      _ -> "/admin"
     end
   end
 end
