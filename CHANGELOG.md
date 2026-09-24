@@ -9,6 +9,22 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Security
+
+- **Taking an article out of its last board no longer publishes it.** An
+  article in no board is public to everyone and federates to its author's
+  followers, so when the author, an admin or that board's moderator removed
+  an article from the only board it was in, a private board's article became
+  readable by guests at its permalink and fetchable at `/ap/articles/:slug`.
+  The last board may now be removed only when it is itself federated (public
+  and ActivityPub-enabled), which is the case where nothing becomes more
+  visible; any other is refused with a message pointing to deletion, and
+  neither the article page nor the edit form offers the control. The check
+  runs with the article row locked, so two removals cannot race past it.
+- **Deleting a board checks for articles with the board row locked.** The
+  count used to run before the delete, so an article linked in between lost
+  the board to the cascade and could be left in none.
+
 ## [1.42.0] — 2026-09-24
 
 Stage 6E, which completes Phase 6: 6E-1, the account controls; 6E-2,

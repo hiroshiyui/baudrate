@@ -1092,7 +1092,17 @@ the article's `forwardable` flag is `true` (the default). Authors and admins
 can forward regardless of visibility or the forwardable flag. Authors control
 forwarding via the "Allow forwarding" checkbox on the create/edit forms.
 Authors and admins can also remove an article from specific boards via the
-edit form, potentially making it boardless again.
+edit form. **Removing the last board is allowed only when that board is
+federated** (`Board.federated?/1`): an article in no board is public to
+everyone and federates to its author's followers, so leaving a private or
+non-federating board last would publish it. `Content.remove_article_from_board/3`
+refuses that with `{:error, :last_board}`, taking the article row lock
+first so two removals cannot race past the count, and
+`Content.may_leave_board?/2` decides whether a page offers the control. A
+personal post forwarded to a public board can still be taken back out.
+Deleting a board likewise checks for articles with the board row locked,
+since the `ON DELETE CASCADE` on `board_articles` would otherwise strip a
+link added in between.
 
 All three forward paths (`Content.forward_article_to_board/3`,
 `forward_comment_to_board/3`, `forward_timeline_item_to_board/3`) enforce two
