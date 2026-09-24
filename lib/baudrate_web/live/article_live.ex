@@ -610,7 +610,9 @@ defmodule BaudrateWeb.ArticleLive do
     {:noreply,
      socket
      |> assign(move_open: true, move_from_options: from_options, move_targets: targets)
-     |> push_event("focus", %{id: "article-move-to"})}
+     |> push_event("focus", %{
+       id: if(targets == [], do: "article-move-heading", else: "article-move-to")
+     })}
   end
 
   def handle_event("close_move", _params, socket) do

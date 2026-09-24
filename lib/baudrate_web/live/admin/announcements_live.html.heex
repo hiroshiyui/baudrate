@@ -123,6 +123,9 @@
               phx-click="end"
               phx-value-id={announcement.id}
               data-confirm={gettext("End this announcement now?")}
+              aria-label={
+                gettext("End now: %{excerpt}", excerpt: String.slice(announcement.body, 0, 40))
+              }
               class="admin-announcement-end btn btn-ghost btn-sm text-error"
             >
               {gettext("End now")}

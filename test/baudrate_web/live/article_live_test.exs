@@ -326,6 +326,20 @@ defmodule BaudrateWeb.ArticleLiveTest do
              )
     end
 
+    test "with nowhere to move it, focus lands on the panel's heading", %{
+      conn: conn,
+      board: board,
+      article: article
+    } do
+      moderator = setup_user("user")
+      {:ok, _} = Content.add_board_moderator(board.id, moderator.id)
+      {:ok, lv, _html} = live(log_in_user(conn, moderator), "/articles/#{article.slug}")
+
+      lv |> element("#article-menu-move") |> render_click()
+      assert has_element?(lv, "#article-move-no-targets")
+      assert_push_event(lv, "focus", %{id: "article-move-heading"})
+    end
+
     test "the author is offered nothing, and a crafted move is refused", %{
       conn: conn,
       board: board,

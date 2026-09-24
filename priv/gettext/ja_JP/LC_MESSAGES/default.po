@@ -884,7 +884,7 @@ msgid "Allowlist (allow only specific domains)"
 msgstr "許可リスト（指定ドメインのみ許可）"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:357
-#: lib/baudrate_web/live/article_live.ex:1049
+#: lib/baudrate_web/live/article_live.ex:1051
 #: lib/baudrate_web/live/moderation_live.ex:116
 #, elixir-autogen, elixir-format
 msgid "Article deleted."
@@ -922,7 +922,7 @@ msgid "Comma-separated list of domains to allow. Only used in allowlist mode. Wh
 msgstr "許可するドメインのカンマ区切りリスト。許可リストモード時のみ使用。空の場合、すべてのドメインがブロックされます。"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:415
-#: lib/baudrate_web/live/article_live.ex:1099
+#: lib/baudrate_web/live/article_live.ex:1101
 #: lib/baudrate_web/live/moderation_live.ex:146
 #, elixir-autogen, elixir-format
 msgid "Comment deleted."
@@ -1023,14 +1023,14 @@ msgid "Failed"
 msgstr "失敗"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:361
-#: lib/baudrate_web/live/article_live.ex:1053
+#: lib/baudrate_web/live/article_live.ex:1055
 #: lib/baudrate_web/live/moderation_live.ex:119
 #, elixir-autogen, elixir-format
 msgid "Failed to delete article."
 msgstr "記事の削除に失敗しました。"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:419
-#: lib/baudrate_web/live/article_live.ex:1102
+#: lib/baudrate_web/live/article_live.ex:1104
 #: lib/baudrate_web/live/moderation_live.ex:149
 #, elixir-autogen, elixir-format
 msgid "Failed to delete comment."
@@ -1299,7 +1299,7 @@ msgstr "記事を更新しました。"
 msgid "Back to article"
 msgstr "記事に戻る"
 
-#: lib/baudrate_web/live/article_live.ex:1158
+#: lib/baudrate_web/live/article_live.ex:1160
 #, elixir-autogen, elixir-format
 msgid "Comment posted."
 msgstr "コメントを投稿しました。"
@@ -1358,9 +1358,9 @@ msgstr "まだコメントはありません。"
 #: lib/baudrate_web/live/article_live.ex:206
 #: lib/baudrate_web/live/article_live.ex:263
 #: lib/baudrate_web/live/article_live.ex:294
-#: lib/baudrate_web/live/article_live.ex:712
-#: lib/baudrate_web/live/article_live.ex:775
-#: lib/baudrate_web/live/article_live.ex:1078
+#: lib/baudrate_web/live/article_live.ex:714
+#: lib/baudrate_web/live/article_live.ex:777
+#: lib/baudrate_web/live/article_live.ex:1080
 #: lib/baudrate_web/live/timeline_live.ex:651
 #, elixir-autogen, elixir-format
 msgid "Not authorized."
@@ -1465,17 +1465,17 @@ msgstr "BAN済み"
 msgid "Board Management"
 msgstr "掲示板管理"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:322
+#: lib/baudrate_web/live/admin/boards_live.ex:331
 #, elixir-autogen, elixir-format
 msgid "Board created successfully."
 msgstr "掲示板を作成しました。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:268
+#: lib/baudrate_web/live/admin/boards_live.ex:277
 #, elixir-autogen, elixir-format
 msgid "Board deleted successfully."
 msgstr "掲示板を削除しました。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:345
+#: lib/baudrate_web/live/admin/boards_live.ex:354
 #, elixir-autogen, elixir-format
 msgid "Board updated successfully."
 msgstr "掲示板を更新しました。"
@@ -1502,7 +1502,7 @@ msgstr "掲示板を編集"
 msgid "Failed to ban user."
 msgstr "ユーザーのBANに失敗しました。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:289
+#: lib/baudrate_web/live/admin/boards_live.ex:298
 #, elixir-autogen, elixir-format
 msgid "Failed to delete board."
 msgstr "掲示板の削除に失敗しました。"
@@ -1670,7 +1670,7 @@ msgstr "ユーザー名で検索"
 msgid "You cannot ban yourself."
 msgstr "自分自身をBANすることはできません。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:286
+#: lib/baudrate_web/live/admin/boards_live.ex:295
 #, elixir-autogen, elixir-format
 msgid "Cannot delete board that has sub-boards."
 msgstr "サブ掲示板がある掲示板は削除できません。"
@@ -2192,7 +2192,7 @@ msgstr "このコメントを削除してもよろしいですか？"
 msgid "Board Moderators"
 msgstr "掲示板モデレーター"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:225
+#: lib/baudrate_web/live/admin/boards_live.ex:234
 #, elixir-autogen, elixir-format
 msgid "Failed to add moderator."
 msgstr "モデレーターの追加に失敗しました。"
@@ -2306,7 +2306,7 @@ msgstr "閲覧 / 投稿"
 msgid "No comments found for \"%{query}\"."
 msgstr "「%{query}」に一致するコメントが見つかりません。"
 
-#: lib/baudrate_web/live/article_live.ex:1001
+#: lib/baudrate_web/live/article_live.ex:1003
 #, elixir-autogen, elixir-format
 msgid "This article has been deleted."
 msgstr "この記事は削除されました。"
@@ -2935,7 +2935,7 @@ msgstr "結果"
 msgid "Success"
 msgstr "成功"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:273
+#: lib/baudrate_web/live/admin/boards_live.ex:282
 #, elixir-autogen, elixir-format
 msgid "Cannot delete a protected system board."
 msgstr "保護されたシステム掲示板は削除できません。"
@@ -3460,8 +3460,8 @@ msgid "Your account is too new to generate invite codes."
 msgstr "アカウントが新しすぎるため、招待コードを生成できません。"
 
 #: lib/baudrate_web/live/article_live.ex:200
-#: lib/baudrate_web/live/article_live.ex:701
-#: lib/baudrate_web/live/article_live.ex:1072
+#: lib/baudrate_web/live/article_live.ex:703
+#: lib/baudrate_web/live/article_live.ex:1074
 #: lib/baudrate_web/live/safety_actions.ex:80
 #: lib/baudrate_web/live/user_profile_live.ex:206
 #: lib/baudrate_web/live/user_profile_live.ex:253
@@ -3959,8 +3959,8 @@ msgstr "記事が見つかりません。"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:399
 #: lib/baudrate_web/live/article_live.ex:520
-#: lib/baudrate_web/live/article_live.ex:1062
-#: lib/baudrate_web/live/article_live.ex:1065
+#: lib/baudrate_web/live/article_live.ex:1064
+#: lib/baudrate_web/live/article_live.ex:1067
 #: lib/baudrate_web/live/moderation_live.ex:152
 #, elixir-autogen, elixir-format
 msgid "Comment not found."
@@ -3972,12 +3972,12 @@ msgstr "コメントが見つかりません。"
 msgid "Too many requests. Please try again later."
 msgstr "リクエストが多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/live/article_live.ex:697
+#: lib/baudrate_web/live/article_live.ex:699
 #, elixir-autogen, elixir-format
 msgid "Article forwarded to board."
 msgstr "記事を板に転送しました。"
 
-#: lib/baudrate_web/live/article_live.ex:715
+#: lib/baudrate_web/live/article_live.ex:717
 #, elixir-autogen, elixir-format
 msgid "Failed to forward article."
 msgstr "記事の転送に失敗しました。"
@@ -4017,8 +4017,8 @@ msgstr "板を検索"
 msgid "Search boards..."
 msgstr "板を検索…"
 
-#: lib/baudrate_web/live/article_live.ex:708
-#: lib/baudrate_web/live/article_live.ex:782
+#: lib/baudrate_web/live/article_live.ex:710
+#: lib/baudrate_web/live/article_live.ex:784
 #: lib/baudrate_web/live/timeline_live.ex:658
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to post in this board."
@@ -4400,7 +4400,7 @@ msgid "%{count} voter"
 msgid_plural "%{count} voters"
 msgstr[0] "%{count} 人が投票"
 
-#: lib/baudrate_web/live/admin/announcements_live.ex:109
+#: lib/baudrate_web/live/admin/announcements_live.ex:115
 #: lib/baudrate_web/live/article_new_live.html.heex:293
 #: lib/baudrate_web/live/timeline_live.html.heex:247
 #, elixir-autogen, elixir-format
@@ -4413,7 +4413,7 @@ msgstr "1日"
 msgid "1 hour"
 msgstr "1時間"
 
-#: lib/baudrate_web/live/admin/announcements_live.ex:110
+#: lib/baudrate_web/live/admin/announcements_live.ex:116
 #: lib/baudrate_web/live/article_new_live.html.heex:294
 #: lib/baudrate_web/live/timeline_live.html.heex:250
 #, elixir-autogen, elixir-format
@@ -4426,7 +4426,7 @@ msgstr "3日"
 msgid "6 hours"
 msgstr "6時間"
 
-#: lib/baudrate_web/live/admin/announcements_live.ex:111
+#: lib/baudrate_web/live/admin/announcements_live.ex:117
 #: lib/baudrate_web/live/article_new_live.html.heex:295
 #: lib/baudrate_web/live/timeline_live.html.heex:253
 #, elixir-autogen, elixir-format
@@ -4445,7 +4445,7 @@ msgstr "投票を追加"
 msgid "Add option"
 msgstr "選択肢を追加"
 
-#: lib/baudrate_web/live/article_live.ex:796
+#: lib/baudrate_web/live/article_live.ex:798
 #, elixir-autogen, elixir-format
 msgid "Cannot vote on this poll."
 msgstr "この投票には投票できません。"
@@ -4477,7 +4477,7 @@ msgstr "期限（任意）"
 msgid "Failed to create poll."
 msgstr "投票の作成に失敗しました。"
 
-#: lib/baudrate_web/live/article_live.ex:819
+#: lib/baudrate_web/live/article_live.ex:821
 #, elixir-autogen, elixir-format
 msgid "Failed to record vote."
 msgstr "投票の記録に失敗しました。"
@@ -4545,7 +4545,7 @@ msgstr "選択肢 %{number} を削除"
 msgid "Single choice"
 msgstr "単一選択"
 
-#: lib/baudrate_web/live/article_live.ex:815
+#: lib/baudrate_web/live/article_live.ex:817
 #, elixir-autogen, elixir-format
 msgid "This poll has closed."
 msgstr "この投票は終了しました。"
@@ -4555,7 +4555,7 @@ msgstr "この投票は終了しました。"
 msgid "Vote"
 msgstr "投票する"
 
-#: lib/baudrate_web/live/article_live.ex:809
+#: lib/baudrate_web/live/article_live.ex:811
 #, elixir-autogen, elixir-format
 msgid "Vote recorded."
 msgstr "投票を記録しました。"
@@ -4856,8 +4856,8 @@ msgstr "%{author} に返信"
 msgid "Enter the installation key to proceed with setup."
 msgstr "セットアップを続行するには、インストールキーを入力してください。"
 
-#: lib/baudrate_web/live/article_live.ex:911
-#: lib/baudrate_web/live/article_live.ex:930
+#: lib/baudrate_web/live/article_live.ex:913
+#: lib/baudrate_web/live/article_live.ex:932
 #: lib/baudrate_web/live/safety_actions.ex:164
 #: lib/baudrate_web/live/user_profile_live.ex:368
 #, elixir-autogen, elixir-format
@@ -4916,7 +4916,7 @@ msgstr "コメントを通報"
 msgid "Report User"
 msgstr "ユーザーを通報"
 
-#: lib/baudrate_web/live/article_live.ex:927
+#: lib/baudrate_web/live/article_live.ex:929
 #: lib/baudrate_web/live/safety_actions.ex:155
 #: lib/baudrate_web/live/user_profile_live.ex:365
 #, elixir-autogen, elixir-format
@@ -4938,7 +4938,7 @@ msgstr "送信中..."
 msgid "Too many attempts. Please wait before trying again."
 msgstr "試行回数が多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/live/article_live.ex:899
+#: lib/baudrate_web/live/article_live.ex:901
 #: lib/baudrate_web/live/safety_actions.ex:158
 #: lib/baudrate_web/live/user_profile_live.ex:344
 #, elixir-autogen, elixir-format
@@ -4950,7 +4950,7 @@ msgstr "通報が多すぎます。しばらくしてからもう一度お試し
 msgid "Verification"
 msgstr "認証"
 
-#: lib/baudrate_web/live/article_live.ex:917
+#: lib/baudrate_web/live/article_live.ex:919
 #: lib/baudrate_web/live/safety_actions.ex:161
 #: lib/baudrate_web/live/user_profile_live.ex:353
 #, elixir-autogen, elixir-format
@@ -5160,12 +5160,12 @@ msgstr "画像添付"
 msgid "YouTube video"
 msgstr "YouTube 動画"
 
-#: lib/baudrate_web/live/article_live.ex:772
+#: lib/baudrate_web/live/article_live.ex:774
 #, elixir-autogen, elixir-format
 msgid "Comment forwarded to board."
 msgstr "コメントを掲示板に転送しました。"
 
-#: lib/baudrate_web/live/article_live.ex:786
+#: lib/baudrate_web/live/article_live.ex:788
 #, elixir-autogen, elixir-format
 msgid "Failed to forward comment."
 msgstr "コメントの転送に失敗しました。"
@@ -5752,12 +5752,12 @@ msgstr "%{page} / %{total_pages} ページ — 合計 %{count} 件の結果"
 msgid "Share this page"
 msgstr "このページを共有"
 
-#: lib/baudrate_web/live/article_live.ex:1124
+#: lib/baudrate_web/live/article_live.ex:1126
 #, elixir-autogen, elixir-format
 msgid "Invalid reply target."
 msgstr "返信先が無効です。"
 
-#: lib/baudrate_web/live/article_live.ex:1117
+#: lib/baudrate_web/live/article_live.ex:1119
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to comment on this article."
 msgstr "この記事にコメントする権限がありません。"
@@ -5992,12 +5992,12 @@ msgstr "掲示板 %{name} のモデレーター"
 msgid "Muted"
 msgstr "ミュート中"
 
-#: lib/baudrate_web/live/article_live.ex:1253
+#: lib/baudrate_web/live/article_live.ex:1255
 #, elixir-autogen, elixir-format
 msgid "New comment"
 msgstr "新しいコメント"
 
-#: lib/baudrate_web/live/article_live.ex:1249
+#: lib/baudrate_web/live/article_live.ex:1251
 #, elixir-autogen, elixir-format
 msgid "New comment by %{name}"
 msgstr "%{name} さんの新しいコメント"
@@ -7682,7 +7682,7 @@ msgstr "ユーザーに警告"
 msgid "You cannot do that right now."
 msgstr "現在この操作は行えません。"
 
-#: lib/baudrate_web/live/admin/announcements_live.ex:76
+#: lib/baudrate_web/live/admin/announcements_live.ex:82
 #: lib/baudrate_web/live/admin/pending_users_live.ex:52
 #: lib/baudrate_web/live/admin/pending_users_live.ex:89
 #: lib/baudrate_web/live/admin/user_detail_live.ex:530
@@ -8004,7 +8004,7 @@ msgstr "終了日なし"
 msgid "← All users"
 msgstr "← ユーザー一覧"
 
-#: lib/baudrate_web/live/article_live.ex:1178
+#: lib/baudrate_web/live/article_live.ex:1180
 #, elixir-autogen, elixir-format
 msgid "Failed to post comment."
 msgstr "コメントの投稿に失敗しました。"
@@ -9450,7 +9450,7 @@ msgstr "「%{title}」へのコメント"
 msgid "Back to the comment"
 msgstr "コメントへ戻る"
 
-#: lib/baudrate_web/live/article_live.ex:1292
+#: lib/baudrate_web/live/article_live.ex:1294
 #, elixir-autogen, elixir-format
 msgid "Comment updated."
 msgstr "コメントを更新しました。"
@@ -9495,8 +9495,8 @@ msgstr "コメントを編集"
 msgid "Edits are kept in a history anyone reading this thread can see."
 msgstr "編集は履歴として残り、このスレッドを読める人は誰でも見られます。"
 
-#: lib/baudrate_web/live/article_live.ex:1298
-#: lib/baudrate_web/live/article_live.ex:1305
+#: lib/baudrate_web/live/article_live.ex:1300
+#: lib/baudrate_web/live/article_live.ex:1307
 #, elixir-autogen, elixir-format
 msgid "Failed to update comment."
 msgstr "コメントの更新に失敗しました。"
@@ -11809,7 +11809,7 @@ msgstr "タイムラインの返信"
 msgid "abandoned"
 msgstr "破棄済み"
 
-#: lib/baudrate_web/live/admin/announcements_live.ex:112
+#: lib/baudrate_web/live/admin/announcements_live.ex:118
 #, elixir-autogen, elixir-format
 msgid "30 days"
 msgstr "30日"
@@ -11824,7 +11824,7 @@ msgstr "管理 お知らせ"
 msgid "Also send it to every member as a notification"
 msgstr "すべてのメンバーに通知としても送る"
 
-#: lib/baudrate_web/live/admin/announcements_live.ex:70
+#: lib/baudrate_web/live/admin/announcements_live.ex:76
 #, elixir-autogen, elixir-format
 msgid "An announcement needs text, at most %{max} characters."
 msgstr "お知らせには本文が必要です（最大 %{max} 文字）。"
@@ -11835,7 +11835,7 @@ msgstr "お知らせには本文が必要です（最大 %{max} 文字）。"
 msgid "Announcement"
 msgstr "お知らせ"
 
-#: lib/baudrate_web/live/admin/announcements_live.ex:92
+#: lib/baudrate_web/live/admin/announcements_live.ex:98
 #, elixir-autogen, elixir-format
 msgid "Announcement ended."
 msgstr "お知らせを終了しました。"
@@ -11868,18 +11868,12 @@ msgstr "連絡先"
 msgid "Contact: %{contact}"
 msgstr "連絡先：%{contact}"
 
-#: lib/baudrate_web/components/layouts.ex:610
-#: lib/baudrate_web/components/layouts.ex:620
-#, elixir-autogen, elixir-format
-msgid "Dismiss this announcement"
-msgstr "このお知らせを閉じる"
-
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:132
 #, elixir-autogen, elixir-format
 msgid "End Announcement"
 msgstr "お知らせを終了"
 
-#: lib/baudrate_web/live/admin/announcements_live.html.heex:128
+#: lib/baudrate_web/live/admin/announcements_live.html.heex:131
 #, elixir-autogen, elixir-format
 msgid "End now"
 msgstr "今すぐ終了"
@@ -11954,23 +11948,23 @@ msgstr "期間が終わるか、あなたが終了するまで、ゲストにも
 msgid "Text"
 msgstr "本文"
 
-#: lib/baudrate_web/live/admin/announcements_live.ex:98
+#: lib/baudrate_web/live/admin/announcements_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "That announcement has already ended."
 msgstr "このお知らせはすでに終了しています。"
 
-#: lib/baudrate_web/live/admin/announcements_live.ex:113
+#: lib/baudrate_web/live/admin/announcements_live.ex:119
 #, elixir-autogen, elixir-format
 msgid "Until I end it"
 msgstr "終了するまで"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:158
+#: lib/baudrate_web/live/admin/boards_live.ex:167
 #, elixir-autogen, elixir-format
 msgid "%{count} article moved from %{from} to %{to}."
 msgid_plural "%{count} articles moved from %{from} to %{to}."
 msgstr[0] "%{count} 件の記事を %{from} から %{to} に移しました。"
 
-#: lib/baudrate_web/live/article_live.ex:645
+#: lib/baudrate_web/live/article_live.ex:647
 #, elixir-autogen, elixir-format
 msgid "Article moved to %{board}."
 msgstr "記事を %{board} に移しました。"
@@ -11980,12 +11974,12 @@ msgstr "記事を %{board} に移しました。"
 msgid "Every article in this board moves to the board you choose, one at a time, as a moderator's move: into a board that federates it is announced there, and an article that stops being public is withdrawn from other servers. Then the board can be deleted."
 msgstr "この掲示板の記事は、選んだ掲示板へ 1 件ずつ、モデレーターによる移動として移されます。連合している掲示板に移すとそこで告知され、公開でなくなる記事は他のサーバーから取り下げられます。その後、この掲示板を削除できます。"
 
-#: lib/baudrate_web/live/article_live.ex:648
+#: lib/baudrate_web/live/article_live.ex:650
 #, elixir-autogen, elixir-format
 msgid "Failed to move the article."
 msgstr "記事を移動できませんでした。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:169
+#: lib/baudrate_web/live/admin/boards_live.ex:178
 #, elixir-autogen, elixir-format
 msgid "Failed to move the articles."
 msgstr "記事を移動できませんでした。"
@@ -12063,7 +12057,7 @@ msgstr "掲示板の並べ替え"
 msgid "There is no other board you moderate to move it to."
 msgstr "移動先にできる、あなたがモデレートしている掲示板がほかにありません。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:280
+#: lib/baudrate_web/live/admin/boards_live.ex:289
 #, elixir-autogen, elixir-format
 msgid "This board still has articles. Use Move articles to move them to another board first."
 msgstr "この掲示板にはまだ記事があります。先に「記事を移動」で別の掲示板へ移してください。"
@@ -12072,3 +12066,14 @@ msgstr "この掲示板にはまだ記事があります。先に「記事を移
 #, elixir-autogen, elixir-format
 msgid "To"
 msgstr "移動先"
+
+#: lib/baudrate_web/components/layouts.ex:610
+#: lib/baudrate_web/components/layouts.ex:620
+#, elixir-autogen, elixir-format
+msgid "Close this announcement"
+msgstr "このお知らせを閉じる"
+
+#: lib/baudrate_web/live/admin/announcements_live.html.heex:127
+#, elixir-autogen, elixir-format
+msgid "End now: %{excerpt}"
+msgstr "今すぐ終了：%{excerpt}"

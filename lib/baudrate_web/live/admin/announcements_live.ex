@@ -62,10 +62,16 @@ defmodule BaudrateWeb.Admin.AnnouncementsLive do
          |> load()
          |> push_event("focus", %{id: "admin-announcements-list-heading"})}
 
-      {:error, %Ecto.Changeset{}} ->
+      # The error is also attached to the field, so the text box is marked
+      # invalid and names what is wrong, not only the flash.
+      {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply,
-         put_flash(
-           socket,
+         socket
+         |> assign(
+           :form,
+           to_form(params, as: :announcement, errors: changeset.errors, action: :validate)
+         )
+         |> put_flash(
            :error,
            gettext("An announcement needs text, at most %{max} characters.",
              max: Announcement.max_body()

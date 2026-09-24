@@ -132,8 +132,17 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     end
   end
 
+  # The form had focus; give it back to the button that opened it.
   def handle_event("move_articles_cancel", _params, socket) do
-    {:noreply, assign(socket, :moving_articles_board, nil)}
+    board = socket.assigns.moving_articles_board
+
+    socket = assign(socket, :moving_articles_board, nil)
+
+    {:noreply,
+     if(board,
+       do: push_event(socket, "focus", %{id: "admin-boards-move-articles-#{board.id}"}),
+       else: socket
+     )}
   end
 
   def handle_event("move_articles", %{"target_id" => target_id}, socket) do

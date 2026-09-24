@@ -217,6 +217,18 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
              )
     end
 
+    test "cancelling Move articles gives focus back to its button", %{conn: conn} do
+      board = top_board("Solo")
+      {:ok, lv, _html} = live(conn, "/admin/boards")
+
+      lv |> element("#admin-boards-move-articles-#{board.id}") |> render_click()
+      assert_push_event(lv, "focus", %{id: "admin-boards-move-articles-target"})
+
+      lv |> element("#admin-boards-move-articles-cancel") |> render_click()
+      refute has_element?(lv, "#admin-boards-move-articles")
+      assert_push_event(lv, "focus", %{id: "admin-boards-move-articles-" <> _})
+    end
+
     test "Move articles empties a board so it can be deleted", %{conn: conn} do
       from = top_board("Old")
       to = top_board("New")
@@ -242,6 +254,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
         |> render_submit()
 
       assert html =~ "1 article moved from Old to New."
+      assert_push_event(lv, "focus", %{id: "boards-heading"})
       assert [%{id: id}] = Repo.preload(article, :boards, force: true).boards
       assert id == to.id
 

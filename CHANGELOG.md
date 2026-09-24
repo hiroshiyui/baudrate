@@ -33,6 +33,13 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ### Fixed
 
+- **Accessibility of this release's new controls** (audit before release):
+  the announcement's close button is named for the word it shows (WCAG
+  2.5.3); a refused announcement marks its text box invalid and linked to
+  the error, not only the flash; cancelling **Move articles**, and opening
+  the move panel with nowhere to move to, no longer leave focus on the page
+  body; each **End now** names the announcement it ends.
+
 - Boards that shared a position could be listed in a different order from
   one page load to the next; every listing now breaks the tie by id.
 

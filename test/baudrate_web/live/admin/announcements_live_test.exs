@@ -44,6 +44,24 @@ defmodule BaudrateWeb.Admin.AnnouncementsLiveTest do
       refute html =~ "Maintenance tonight"
     end
 
+    test "a refused announcement marks the text box invalid, not only the flash", %{
+      conn: conn,
+      admin: admin
+    } do
+      {:ok, lv, _html} = live(log_in_admin(conn, admin), "/admin/announcements")
+
+      lv
+      |> form("#admin-announcements-form", announcement: %{body: "   "})
+      |> render_submit()
+
+      assert has_element?(
+               lv,
+               ~s(#admin-announcements-body[aria-invalid="true"][aria-describedby="admin-announcements-body-error"])
+             )
+
+      assert has_element?(lv, "#admin-announcements-body-error")
+    end
+
     test "a moderator is turned away" do
       moderator = setup_user("moderator")
 
@@ -66,6 +84,13 @@ defmodule BaudrateWeb.Admin.AnnouncementsLiveTest do
       # Plain text, escaped.
       assert html =~ "Read &lt;me&gt;"
       assert has_element?(lv, ~s(#announcement-notice-#{a.id}[data-guest="false"]))
+
+      # The accessible name contains the visible word (WCAG 2.5.3).
+      assert has_element?(
+               lv,
+               ~s(#announcement-notice-dismiss-#{a.id}[aria-label="Close this announcement"]),
+               "Close"
+             )
 
       lv |> element("#announcement-notice-dismiss-#{a.id}") |> render_click()
       refute has_element?(lv, "#announcement-notice-#{a.id}")

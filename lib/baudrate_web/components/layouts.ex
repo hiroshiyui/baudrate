@@ -607,7 +607,7 @@ defmodule BaudrateWeb.Layouts do
           phx-click="dismiss_announcement"
           phx-value-id={announcement.id}
           class="announcement-notice-dismiss btn btn-sm btn-ghost"
-          aria-label={gettext("Dismiss this announcement")}
+          aria-label={gettext("Close this announcement")}
         >
           {gettext("Close")}
         </button>
@@ -617,7 +617,7 @@ defmodule BaudrateWeb.Layouts do
           id={"announcement-notice-dismiss-#{announcement.id}"}
           data-announcement-dismiss
           class="announcement-notice-dismiss btn btn-sm btn-ghost"
-          aria-label={gettext("Dismiss this announcement")}
+          aria-label={gettext("Close this announcement")}
         >
           {gettext("Close")}
         </button>
