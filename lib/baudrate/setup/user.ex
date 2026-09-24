@@ -289,10 +289,17 @@ defmodule Baudrate.Setup.User do
     |> hash_password()
   end
 
-  @doc "Changeset for updating a user's avatar ID."
+  @doc """
+  Changeset for updating a user's avatar ID. Only an id
+  `Baudrate.Avatar.generate_avatar_id/0` could have made is accepted: the
+  value names a directory under the uploads root that is later removed.
+  """
   def avatar_changeset(user, attrs) do
     user
     |> cast(attrs, [:avatar_id])
+    |> validate_change(:avatar_id, fn :avatar_id, id ->
+      if Baudrate.Avatar.valid_id?(id), do: [], else: [avatar_id: "is invalid"]
+    end)
   end
 
   @doc "Changeset for updating the TOTP secret, enabled flag, and enablement timestamp."

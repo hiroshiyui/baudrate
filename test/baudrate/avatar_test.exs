@@ -87,6 +87,23 @@ defmodule Baudrate.AvatarTest do
       assert Avatar.delete_avatar("nonexistent_id") == :ok
     end
 
+    test "never removes a path that is not an avatar id" do
+      # A directory beside the avatars, reachable only by a traversal.
+      outside =
+        Path.join(
+          Path.dirname(@avatar_dir),
+          "avatar-delete-canary-#{System.unique_integer([:positive])}"
+        )
+
+      File.mkdir_p!(outside)
+      on_exit(fn -> File.rm_rf(outside) end)
+
+      assert Avatar.delete_avatar("../" <> Path.basename(outside)) == :ok
+      assert File.dir?(outside)
+      refute Avatar.valid_id?("../" <> Path.basename(outside))
+      assert Avatar.valid_id?(Avatar.generate_avatar_id())
+    end
+
     test "removes avatar directory", %{png_path: png_path} do
       {:ok, avatar_id} = Avatar.process_upload(png_path, nil)
       assert File.dir?(Path.join(@avatar_dir, avatar_id))

@@ -43,7 +43,7 @@ defmodule BaudrateWeb.ProfileLiveTest do
 
   describe "remove avatar" do
     test "removes user avatar", %{conn: conn, user: user} do
-      {:ok, _} = Auth.update_avatar(user, "test-avatar-id")
+      {:ok, _} = Auth.update_avatar(user, Baudrate.Avatar.generate_avatar_id())
       {:ok, lv, _html} = live(conn, "/profile")
       render_click(lv, "remove_avatar")
 

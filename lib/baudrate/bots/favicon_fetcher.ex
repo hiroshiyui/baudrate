@@ -278,8 +278,14 @@ defmodule Baudrate.Bots.FaviconFetcher do
 
   # sobelow_skip ["Traversal.FileModule"]
   defp process_favicon(image_data) do
+    # A random name, like `Content.Images`' remote fetches: a counter is
+    # guessable, and a shared temporary directory lets another account plant
+    # a file or link under a name it can predict.
     tmp_path =
-      System.tmp_dir!() |> Path.join("favicon_#{:erlang.unique_integer([:positive])}")
+      Path.join(
+        System.tmp_dir!(),
+        "favicon_#{:crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)}"
+      )
 
     try do
       File.write!(tmp_path, image_data)

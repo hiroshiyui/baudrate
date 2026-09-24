@@ -8,11 +8,16 @@ defmodule Baudrate.Avatar do
     * Images are decoded to raw pixels and re-encoded as WebP,
       destroying polyglot files and embedded exploits
     * All EXIF/metadata is stripped (`strip: true`)
-    * File paths use server-generated random hex IDs; no user input in paths
+    * File paths use server-generated random hex IDs; no user input in paths.
+      `valid_id?/1` is the shape of one, and `delete_avatar/1` refuses
+      anything else: it removes a directory tree, so a value that is not an
+      id must never reach it, however it got into the column
     * Uses `image` library (libvips NIF) — no CLI shelling, no command injection surface
   """
 
   @sizes [120, 48, 36, 24]
+
+  @id_re ~r/\A[0-9a-f]{64}\z/
 
   @magic_bytes %{
     <<0xFF, 0xD8, 0xFF>> => :jpeg,
@@ -61,14 +66,24 @@ defmodule Baudrate.Avatar do
   def delete_avatar(nil), do: :ok
 
   def delete_avatar(avatar_id) when is_binary(avatar_id) do
-    dir = Path.join(avatar_dir(), avatar_id)
+    if valid_id?(avatar_id) do
+      dir = Path.join(avatar_dir(), avatar_id)
 
-    if File.dir?(dir) do
-      File.rm_rf!(dir)
+      if File.dir?(dir) do
+        File.rm_rf!(dir)
+      end
     end
 
     :ok
   end
+
+  @doc """
+  Whether `value` has the shape `generate_avatar_id/0` produces: 64
+  lowercase hex characters.
+  """
+  @spec valid_id?(term()) :: boolean()
+  def valid_id?(value) when is_binary(value), do: Regex.match?(@id_re, value)
+  def valid_id?(_), do: false
 
   @doc """
   Returns the URL path for an avatar image.

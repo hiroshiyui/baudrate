@@ -297,23 +297,37 @@ defmodule Baudrate.AuthTest do
       user = create_user("user")
       assert is_nil(user.avatar_id)
 
-      {:ok, updated} = Auth.update_avatar(user, "abc123def456")
-      assert updated.avatar_id == "abc123def456"
+      id = Baudrate.Avatar.generate_avatar_id()
+      {:ok, updated} = Auth.update_avatar(user, id)
+      assert updated.avatar_id == id
     end
 
     test "replaces existing avatar_id" do
       user = create_user("user")
-      {:ok, user} = Auth.update_avatar(user, "old_id")
-      {:ok, updated} = Auth.update_avatar(user, "new_id")
-      assert updated.avatar_id == "new_id"
+      {:ok, user} = Auth.update_avatar(user, Baudrate.Avatar.generate_avatar_id())
+      new_id = Baudrate.Avatar.generate_avatar_id()
+      {:ok, updated} = Auth.update_avatar(user, new_id)
+      assert updated.avatar_id == new_id
+    end
+
+    # The id names a directory that `Avatar.delete_avatar/1` later removes,
+    # so nothing but an id the server could have generated is stored.
+    test "refuses anything that is not a generated id" do
+      user = create_user("user")
+
+      for bad <- ["../../../etc", "abc123def456", String.duplicate("A", 64)] do
+        assert {:error, changeset} = Auth.update_avatar(user, bad), inspect(bad)
+        assert "is invalid" in errors_on(changeset).avatar_id
+      end
     end
   end
 
   describe "remove_avatar/1" do
     test "sets avatar_id to nil" do
       user = create_user("user")
-      {:ok, user} = Auth.update_avatar(user, "some_avatar_id")
-      assert user.avatar_id == "some_avatar_id"
+      id = Baudrate.Avatar.generate_avatar_id()
+      {:ok, user} = Auth.update_avatar(user, id)
+      assert user.avatar_id == id
 
       {:ok, updated} = Auth.remove_avatar(user)
       assert is_nil(updated.avatar_id)
