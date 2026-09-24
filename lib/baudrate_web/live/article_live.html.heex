@@ -517,7 +517,7 @@
           phx-submit="move_article"
         >
           <label for="article-move-from" class="fieldset">
-            <span class="label">{gettext("From")}</span>
+            <span class="label">{gettext("Move from")}</span>
             <select
               id="article-move-from"
               name="from_id"
@@ -527,7 +527,7 @@
             </select>
           </label>
           <label for="article-move-to" class="fieldset">
-            <span class="label">{gettext("To")}</span>
+            <span class="label">{gettext("Move to")}</span>
             <select id="article-move-to" name="to_id" class="article-move-to select select-sm">
               <option :for={board <- @move_targets} value={board.id}>{board.name}</option>
             </select>

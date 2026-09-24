@@ -12019,11 +12019,6 @@ msgstr ""
 msgid "Failed to move the articles."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:520
-#, elixir-autogen, elixir-format
-msgid "From"
-msgstr ""
-
 #: lib/baudrate_web/live/article_live.html.heex:540
 #, elixir-autogen, elixir-format
 msgid "Move"
@@ -12066,6 +12061,7 @@ msgid "Move the articles of %{name}"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:263
+#: lib/baudrate_web/live/article_live.html.heex:530
 #, elixir-autogen, elixir-format
 msgid "Move to"
 msgstr ""
@@ -12096,11 +12092,6 @@ msgstr ""
 msgid "This board still has articles. Use Move articles to move them to another board first."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:530
-#, elixir-autogen, elixir-format
-msgid "To"
-msgstr ""
-
 #: lib/baudrate_web/components/layouts.ex:610
 #: lib/baudrate_web/components/layouts.ex:620
 #, elixir-autogen, elixir-format
@@ -12120,4 +12111,9 @@ msgstr ""
 #: lib/baudrate_web/live/admin/boards_live.html.heex:416
 #, elixir-autogen, elixir-format
 msgid "Move articles of %{name}"
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.html.heex:520
+#, elixir-autogen, elixir-format
+msgid "Move from"
 msgstr ""

@@ -3843,7 +3843,7 @@ msgstr "まだ誰もフォローしていません。"
 #: lib/baudrate_web/live/board_follows_live.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Only followed actors can post to this board"
-msgstr "フォローしたアクターのみ投稿できます"
+msgstr "この掲示板にはフォローしたアクターのみ投稿できます"
 
 #: lib/baudrate_web/live/board_follows_live.ex:151
 #, elixir-autogen, elixir-format
@@ -3975,7 +3975,7 @@ msgstr "リクエストが多すぎます。しばらくしてからもう一度
 #: lib/baudrate_web/live/article_live.ex:699
 #, elixir-autogen, elixir-format
 msgid "Article forwarded to board."
-msgstr "記事を板に転送しました。"
+msgstr "記事を掲示板に転送しました。"
 
 #: lib/baudrate_web/live/article_live.ex:717
 #, elixir-autogen, elixir-format
@@ -3993,7 +3993,7 @@ msgstr "記事の転送に失敗しました。"
 #: lib/baudrate_web/live/timeline_live.html.heex:1433
 #, elixir-autogen, elixir-format
 msgid "Forward to Board"
-msgstr "板に転送"
+msgstr "掲示板に転送"
 
 #: lib/baudrate_web/components/comment_components.ex:431
 #: lib/baudrate_web/live/article_live.html.heex:577
@@ -4004,7 +4004,7 @@ msgstr "板に転送"
 #: lib/baudrate_web/live/timeline_live.html.heex:1460
 #, elixir-autogen, elixir-format
 msgid "Search boards"
-msgstr "板を検索"
+msgstr "掲示板を検索"
 
 #: lib/baudrate_web/components/comment_components.ex:427
 #: lib/baudrate_web/live/article_live.html.heex:573
@@ -4015,14 +4015,14 @@ msgstr "板を検索"
 #: lib/baudrate_web/live/timeline_live.html.heex:1456
 #, elixir-autogen, elixir-format
 msgid "Search boards..."
-msgstr "板を検索…"
+msgstr "掲示板を検索…"
 
 #: lib/baudrate_web/live/article_live.ex:710
 #: lib/baudrate_web/live/article_live.ex:784
 #: lib/baudrate_web/live/timeline_live.ex:658
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to post in this board."
-msgstr "この板に投稿する権限がありません。"
+msgstr "この掲示板に投稿する権限がありません。"
 
 #: lib/baudrate_web/live/user_content_live.ex:60
 #, elixir-autogen, elixir-format
@@ -4136,7 +4136,7 @@ msgstr "通知を送りました"
 #: lib/baudrate_web/helpers.ex:444
 #, elixir-autogen, elixir-format
 msgid "submitted a moderation report"
-msgstr "モデレーション報告を提出しました"
+msgstr "通報を送信しました"
 
 #: lib/baudrate_web/live/profile_notifications_live.ex:91
 #: lib/baudrate_web/live/profile_notifications_live.ex:115
@@ -4308,17 +4308,17 @@ msgstr "転送を許可"
 #: lib/baudrate_web/live/article_edit_live.ex:117
 #, elixir-autogen, elixir-format
 msgid "Article removed from board."
-msgstr "記事を板から削除しました。"
+msgstr "記事を掲示板から削除しました。"
 
 #: lib/baudrate_web/live/article_edit_live.ex:126
 #, elixir-autogen, elixir-format
 msgid "Failed to remove from board."
-msgstr "板からの削除に失敗しました。"
+msgstr "掲示板からの削除に失敗しました。"
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:181
 #, elixir-autogen, elixir-format
 msgid "Remove from board"
-msgstr "板から削除"
+msgstr "掲示板から削除"
 
 #: lib/baudrate_web/live/search_live.html.heex:578
 #, elixir-autogen, elixir-format
@@ -11979,11 +11979,6 @@ msgstr "記事を移動できませんでした。"
 msgid "Failed to move the articles."
 msgstr "記事を移動できませんでした。"
 
-#: lib/baudrate_web/live/article_live.html.heex:520
-#, elixir-autogen, elixir-format
-msgid "From"
-msgstr "移動元"
-
 #: lib/baudrate_web/live/article_live.html.heex:540
 #, elixir-autogen, elixir-format
 msgid "Move"
@@ -12026,6 +12021,7 @@ msgid "Move the articles of %{name}"
 msgstr "%{name} の記事を移動"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:263
+#: lib/baudrate_web/live/article_live.html.heex:530
 #, elixir-autogen, elixir-format
 msgid "Move to"
 msgstr "移動先"
@@ -12056,11 +12052,6 @@ msgstr "移動先にできる、あなたがモデレートしている掲示板
 msgid "This board still has articles. Use Move articles to move them to another board first."
 msgstr "この掲示板にはまだ記事があります。先に「記事を移動」で別の掲示板へ移してください。"
 
-#: lib/baudrate_web/live/article_live.html.heex:530
-#, elixir-autogen, elixir-format
-msgid "To"
-msgstr "移動先"
-
 #: lib/baudrate_web/components/layouts.ex:610
 #: lib/baudrate_web/components/layouts.ex:620
 #, elixir-autogen, elixir-format
@@ -12081,3 +12072,8 @@ msgstr "%{domain} のサーキットを閉じる"
 #, elixir-autogen, elixir-format
 msgid "Move articles of %{name}"
 msgstr "%{name} の記事を移動"
+
+#: lib/baudrate_web/live/article_live.html.heex:520
+#, elixir-autogen, elixir-format
+msgid "Move from"
+msgstr "移動元"

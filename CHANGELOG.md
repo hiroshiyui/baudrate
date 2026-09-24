@@ -33,6 +33,13 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ### Fixed
 
+- **Translations that had drifted from the settled terms** (audit before
+  release): eight Japanese strings called a board 板 rather than 掲示板
+  (forwarding, board search, removing from a board, posting permission),
+  one called a report モデレーション報告 rather than 通報, and zh_TW used
+  聯盟 for federation and 傳送 for delivery in four strings, where the rest
+  of the site says 聯邦 and 遞送.
+
 - **Accessibility of this release's new controls** (audit before release):
   the announcement's close button is named for the word it shows (WCAG
   2.5.3); a refused announcement marks its text box invalid and linked to

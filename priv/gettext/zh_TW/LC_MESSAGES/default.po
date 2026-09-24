@@ -2442,7 +2442,7 @@ msgstr "輪替金鑰"
 #: lib/baudrate_web/live/admin/federation_live.html.heex:289
 #, elixir-autogen, elixir-format
 msgid "Rotate RSA keypairs for federation actors. The new public key will be distributed to followers via an Update activity."
-msgstr "輪替聯盟行為者的 RSA 金鑰對。新的公開金鑰將透過 Update 活動分發給追蹤者。"
+msgstr "輪替聯邦行為者的 RSA 金鑰對。新的公開金鑰將透過 Update 活動分發給追蹤者。"
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:303
 #, elixir-autogen, elixir-format
@@ -2467,7 +2467,7 @@ msgstr "執行稽核"
 #: lib/baudrate_web/live/admin/settings_live.html.heex:202
 #, elixir-autogen, elixir-format
 msgid "URL to an external domain blocklist (CSV or JSON). Used by the federation dashboard audit feature."
-msgstr "外部網域封鎖名單的 URL（CSV 或 JSON）。用於聯盟儀表板的稽核功能。"
+msgstr "外部網域封鎖名單的 URL（CSV 或 JSON）。用於聯邦儀表板的稽核功能。"
 
 #: lib/baudrate_web/live/admin/settings_live.html.heex:191
 #, elixir-autogen, elixir-format
@@ -5812,7 +5812,7 @@ msgstr "（在新分頁開啟）"
 #: lib/baudrate_web/live/admin/delivery_live.html.heex:275
 #, elixir-autogen, elixir-format
 msgid "Abandon delivery to %{inbox}"
-msgstr "放棄傳送至 %{inbox}"
+msgstr "放棄遞送至 %{inbox}"
 
 #: lib/baudrate_web/live/admin/bots_live.html.heex:282
 #, elixir-autogen, elixir-format
@@ -6091,7 +6091,7 @@ msgstr "處理檢舉 #%{id}"
 #: lib/baudrate_web/live/admin/delivery_live.html.heex:265
 #, elixir-autogen, elixir-format
 msgid "Retry delivery to %{inbox}"
-msgstr "重試傳送至 %{inbox}"
+msgstr "重試遞送至 %{inbox}"
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:176
 #: lib/baudrate_web/live/user_invites_live.html.heex:131
@@ -11979,11 +11979,6 @@ msgstr "無法移動文章。"
 msgid "Failed to move the articles."
 msgstr "無法移動這些文章。"
 
-#: lib/baudrate_web/live/article_live.html.heex:520
-#, elixir-autogen, elixir-format
-msgid "From"
-msgstr "從"
-
 #: lib/baudrate_web/live/article_live.html.heex:540
 #, elixir-autogen, elixir-format
 msgid "Move"
@@ -12026,6 +12021,7 @@ msgid "Move the articles of %{name}"
 msgstr "移動 %{name} 的文章"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:263
+#: lib/baudrate_web/live/article_live.html.heex:530
 #, elixir-autogen, elixir-format
 msgid "Move to"
 msgstr "移到"
@@ -12056,11 +12052,6 @@ msgstr "沒有其他由你管理的看板可以移過去。"
 msgid "This board still has articles. Use Move articles to move them to another board first."
 msgstr "這個看板還有文章。請先用「移動文章」把它們移到其他看板。"
 
-#: lib/baudrate_web/live/article_live.html.heex:530
-#, elixir-autogen, elixir-format
-msgid "To"
-msgstr "到"
-
 #: lib/baudrate_web/components/layouts.ex:610
 #: lib/baudrate_web/components/layouts.ex:620
 #, elixir-autogen, elixir-format
@@ -12081,3 +12072,8 @@ msgstr "關閉 %{domain} 的斷路器"
 #, elixir-autogen, elixir-format
 msgid "Move articles of %{name}"
 msgstr "移動 %{name} 的文章"
+
+#: lib/baudrate_web/live/article_live.html.heex:520
+#, elixir-autogen, elixir-format
+msgid "Move from"
+msgstr "移出看板"
