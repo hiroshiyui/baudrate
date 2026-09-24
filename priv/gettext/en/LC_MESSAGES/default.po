@@ -11556,11 +11556,6 @@ msgstr ""
 msgid "Close circuit"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/delivery_live.html.heex:122
-#, elixir-autogen, elixir-format
-msgid "Close the circuit for %{domain}"
-msgstr ""
-
 #: lib/baudrate_web/live/admin/delivery_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Close the circuit for %{domain}?"
@@ -12066,7 +12061,6 @@ msgid "Move every article of this board?"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:250
-#: lib/baudrate_web/live/admin/boards_live.html.heex:416
 #, elixir-autogen, elixir-format
 msgid "Move the articles of %{name}"
 msgstr ""
@@ -12116,4 +12110,14 @@ msgstr ""
 #: lib/baudrate_web/live/admin/announcements_live.html.heex:127
 #, elixir-autogen, elixir-format
 msgid "End now: %{excerpt}"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/delivery_live.html.heex:122
+#, elixir-autogen, elixir-format
+msgid "Close circuit for %{domain}"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/boards_live.html.heex:416
+#, elixir-autogen, elixir-format
+msgid "Move articles of %{name}"
 msgstr ""

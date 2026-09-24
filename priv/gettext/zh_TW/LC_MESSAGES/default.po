@@ -11518,11 +11518,6 @@ msgstr "關閉遞送斷路器"
 msgid "Close circuit"
 msgstr "關閉斷路器"
 
-#: lib/baudrate_web/live/admin/delivery_live.html.heex:122
-#, elixir-autogen, elixir-format
-msgid "Close the circuit for %{domain}"
-msgstr "關閉 %{domain} 的斷路器"
-
 #: lib/baudrate_web/live/admin/delivery_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Close the circuit for %{domain}?"
@@ -12026,7 +12021,6 @@ msgid "Move every article of this board?"
 msgstr "要移動這個看板的所有文章嗎？"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:250
-#: lib/baudrate_web/live/admin/boards_live.html.heex:416
 #, elixir-autogen, elixir-format
 msgid "Move the articles of %{name}"
 msgstr "移動 %{name} 的文章"
@@ -12077,3 +12071,13 @@ msgstr "關閉這則公告"
 #, elixir-autogen, elixir-format
 msgid "End now: %{excerpt}"
 msgstr "立即結束：%{excerpt}"
+
+#: lib/baudrate_web/live/admin/delivery_live.html.heex:122
+#, elixir-autogen, elixir-format
+msgid "Close circuit for %{domain}"
+msgstr "關閉 %{domain} 的斷路器"
+
+#: lib/baudrate_web/live/admin/boards_live.html.heex:416
+#, elixir-autogen, elixir-format
+msgid "Move articles of %{name}"
+msgstr "移動 %{name} 的文章"

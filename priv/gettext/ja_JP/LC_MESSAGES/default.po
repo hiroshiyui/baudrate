@@ -11518,11 +11518,6 @@ msgstr "配信サーキットを閉じる"
 msgid "Close circuit"
 msgstr "サーキットを閉じる"
 
-#: lib/baudrate_web/live/admin/delivery_live.html.heex:122
-#, elixir-autogen, elixir-format
-msgid "Close the circuit for %{domain}"
-msgstr "%{domain} のサーキットを閉じる"
-
 #: lib/baudrate_web/live/admin/delivery_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Close the circuit for %{domain}?"
@@ -12026,7 +12021,6 @@ msgid "Move every article of this board?"
 msgstr "この掲示板のすべての記事を移動しますか？"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:250
-#: lib/baudrate_web/live/admin/boards_live.html.heex:416
 #, elixir-autogen, elixir-format
 msgid "Move the articles of %{name}"
 msgstr "%{name} の記事を移動"
@@ -12077,3 +12071,13 @@ msgstr "このお知らせを閉じる"
 #, elixir-autogen, elixir-format
 msgid "End now: %{excerpt}"
 msgstr "今すぐ終了：%{excerpt}"
+
+#: lib/baudrate_web/live/admin/delivery_live.html.heex:122
+#, elixir-autogen, elixir-format
+msgid "Close circuit for %{domain}"
+msgstr "%{domain} のサーキットを閉じる"
+
+#: lib/baudrate_web/live/admin/boards_live.html.heex:416
+#, elixir-autogen, elixir-format
+msgid "Move articles of %{name}"
+msgstr "%{name} の記事を移動"
