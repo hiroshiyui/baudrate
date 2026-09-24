@@ -374,6 +374,70 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert reply.parent_id == parent.id
     end
 
+    # A comment minted before ADR 0050 was `<author actor URI>#note-N`. Only
+    # that exact id threads a reply under it, and resolving it writes
+    # nothing: a URI that merely began with our base URL used to match and
+    # was then stored as the comment's ap_id.
+    test "a legacy #note-N id threads only when it is exactly the comment's own" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      {:ok, local} =
+        Content.create_comment(%{
+          "body" => "Local parent",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      Repo.update_all(from(c in Baudrate.Content.Comment, where: c.id == ^local.id),
+        set: [ap_id: nil]
+      )
+
+      reply = fn in_reply_to ->
+        uid = System.unique_integer([:positive])
+
+        InboxHandler.handle(
+          %{
+            "id" => "https://remote.example/activities/create-#{uid}",
+            "type" => "Create",
+            "actor" => remote_actor.ap_id,
+            "object" => %{
+              "id" => "https://remote.example/notes/#{uid}",
+              "type" => "Note",
+              "content" => "Reply #{uid}",
+              "attributedTo" => remote_actor.ap_id,
+              "inReplyTo" => in_reply_to,
+              "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+            }
+          },
+          remote_actor,
+          :shared
+        )
+      end
+
+      # The look-alike is not ours, so the handler walks it as a remote
+      # reply chain; that server knows nothing.
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 404, "")
+      end)
+
+      lookalike = "#{Federation.base_url()}.evil.example/users/x#note-#{local.id}"
+      reply.(lookalike)
+
+      assert is_nil(Repo.get!(Baudrate.Content.Comment, local.id).ap_id)
+
+      refute Repo.exists?(from(c in Baudrate.Content.Comment, where: c.parent_id == ^local.id))
+
+      legacy = "#{Federation.actor_uri(:user, user.username)}#note-#{local.id}"
+      assert :ok = reply.(legacy)
+
+      assert Repo.exists?(from(c in Baudrate.Content.Comment, where: c.parent_id == ^local.id))
+
+      assert is_nil(Repo.get!(Baudrate.Content.Comment, local.id).ap_id)
+    end
+
     test "rejects comment with attribution mismatch" do
       user = setup_user_with_role("user")
       board = create_board()

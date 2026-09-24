@@ -1773,21 +1773,21 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  # Parses a local comment URI like "https://host/ap/users/alice#note-42"
-  # to resolve old comments that were created before ap_id stamping.
+  # A local comment minted before ADR 0050 was `<author actor URI>#note-N`,
+  # and a peer may still reply to that id. The id must be *exactly* the one
+  # that comment had: `starts_with?(uri, base)` alone matched
+  # `https://our.host.evil.example/…#note-42`, and the old branch then wrote
+  # that URI into the comment's `ap_id` — a remote choosing a local object's
+  # identity (ADR 0046). Nothing is written here: a rewritten comment's old
+  # id lives in `legacy_ap_id` and `get_comment_by_ap_id/1` already matches it.
   defp resolve_local_comment_by_fragment(uri) do
-    base = Baudrate.Federation.base_url()
-
-    with true <- String.starts_with?(uri, base),
-         %URI{fragment: "note-" <> id_str} <- URI.parse(uri),
+    with %URI{fragment: "note-" <> id_str} <- URI.parse(uri),
          {comment_id, ""} <- Integer.parse(id_str),
-         %{article_id: article_id, deleted_at: nil} = comment <- Content.get_comment(comment_id),
+         %{article_id: article_id, deleted_at: nil, user_id: user_id} = comment
+         when not is_nil(user_id) <- Content.get_comment(comment_id),
+         %{username: username} <- Baudrate.Repo.get(Baudrate.Setup.User, user_id),
+         true <- uri == "#{Federation.actor_uri(:user, username)}#note-#{comment.id}",
          %{} = article <- Baudrate.Repo.get(Baudrate.Content.Article, article_id) do
-      # Backfill the ap_id for future lookups
-      if is_nil(comment.ap_id) do
-        comment |> Ecto.Changeset.change(ap_id: uri) |> Baudrate.Repo.update()
-      end
-
       {:ok, article, comment.id}
     else
       _ -> {:error, :article_not_found}
