@@ -3,7 +3,11 @@
 # toolchain, browser or third-party action is fetched at run time. Only
 # GitHub-owned actions are used, pinned to commit SHAs.
 #
-# Besides the tests: the Security job runs Sobelow and mix_audit, and the
+# Besides the tests: the Static checks job runs the gettext extraction check,
+# Dialyzer against its reviewed baseline, clippy and the Rust unit tests of
+# the three NIF crates, and ansible-lint (Phase 8A); the Coverage job merges
+# each partition's coverage into one report, uploaded as an artifact; the
+# Security job runs Sobelow and mix_audit, and the
 # Release job builds the production release in the build image
 # (ci/image/build-image.lock) and smoke-tests it, the way release.yml does
 # for a published release, so a change that breaks the release fails here
@@ -116,9 +120,138 @@ jobs:
     - name: Run linter
       run: mix lint
     - name: Run tests
-      run: mix test --partitions 4 --seed 9527
+      run: mix test --partitions 4 --seed 9527 --cover --export-coverage "partition-${MIX_TEST_PARTITION}"
       env:
         MIX_TEST_PARTITION: ${{ matrix.partition }}
+    - name: Upload this partition's coverage
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: coverage-partition-${{ matrix.partition }}
+        path: cover/partition-${{ matrix.partition }}.coverdata
+        if-no-files-found: error
+        retention-days: 7
+
+  coverage:
+
+    # One report from the four partitions' exports. Report only: no threshold
+    # (mix.exs `test_coverage`), because a number to reach rewards tests
+    # written for the number.
+    name: Coverage
+    needs: [image, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    env:
+      MIX_ENV: test
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+    - name: Restore dependency and build caches
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: |
+          deps
+          native/*/target
+          /opt/cargo/registry
+        key: ${{ runner.os }}-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('mix.lock', 'native/*/Cargo.lock') }}
+    - name: Install dependencies
+      run: mix deps.get
+    - name: Compile
+      run: mix compile
+    - name: Download the partitions' coverage
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        pattern: coverage-partition-*
+        path: cover
+        merge-multiple: true
+    - name: Merge and report
+      run: |
+        set -o pipefail
+        mix test.coverage | tee coverage.txt
+        {
+          echo '## Test coverage'
+          echo
+          echo '```'
+          tail -n 3 coverage.txt
+          echo '```'
+          echo
+          echo 'The per-module HTML report is the `coverage-report` artifact.'
+        } >> "$GITHUB_STEP_SUMMARY"
+    - name: Upload the report
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: coverage-report
+        path: cover/*.html
+        retention-days: 14
+
+  static:
+
+    # What review would otherwise have to catch (Phase 8A): translations
+    # extracted from the code, Dialyzer (CI fails on a warning not in the
+    # reviewed .dialyzer_ignore.exs), the NIF crates' clippy and unit tests,
+    # and ansible-lint. Dev environment, like the Dialyzer baseline.
+    name: Static checks
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    env:
+      MIX_ENV: dev
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+    - name: Check the CI image matches the pinned toolchain
+      run: ci/image/verify-toolchain.sh
+    - name: Restore dependency, build and PLT caches
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: |
+          deps
+          native/*/target
+          /opt/cargo/registry
+          priv/plts
+        key: ${{ runner.os }}-static-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('mix.lock', 'native/*/Cargo.lock') }}
+    - name: Install dependencies
+      run: mix deps.get
+    - name: Translations are extracted
+      run: mix gettext.extract --check-up-to-date
+    - name: Dialyzer
+      run: mix dialyzer --format github
+    - name: NIF crates — clippy and unit tests
+      run: |
+        set -eu
+        for crate in native/*/; do
+          echo "::group::${crate}"
+          (cd "$crate" && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked)
+          echo "::endgroup::"
+        done
+    - name: ansible-lint
+      working-directory: ansible
+      # host_group_vars only: the SOPS vars plugin would try to decrypt the
+      # production secrets, which CI never holds.
+      env:
+        ANSIBLE_VARS_ENABLED: host_group_vars
+      run: ansible-lint playbooks/ roles/
 
   security:
 

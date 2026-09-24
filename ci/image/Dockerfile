@@ -206,8 +206,21 @@ RUN set -eux; \
     mv /tmp/advisories "$dest"; \
     test -n "$(find "$dest/packages" -name '*.yml' | head -n1)"
 
+# Static checks (Phase 8A). clippy is a rustup component of the pinned
+# toolchain, verified against the channel manifest like the rest of it.
+# ansible-lint and the collections the playbooks use (the `ansible` package:
+# community.general, community.postgresql, community.sops, ansible.posix) come
+# from Debian's signed archive, like Firefox and the PostgreSQL client above.
+RUN set -eux; \
+    rustup component add clippy; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends ansible-lint ansible; \
+    rm -rf /var/lib/apt/lists/*
+
 # Fail the build if any tool is missing or does not start.
 RUN set -eux; \
+    cargo clippy --version; \
+    ansible-lint --version; \
     firefox --version; \
     java -version; \
     pg_dump --version; \
