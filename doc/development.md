@@ -104,6 +104,7 @@ lib/
 │   │   ├── bot.ex               # Bot schema (1:1 with User, feed config, fetch state)
 │   │   ├── bot_syndication_item.ex  # BotSyndicationItem schema (posted GUID dedup)
 │   │   ├── favicon_fetcher.ex   # Fetch site favicon and set as bot avatar (best-effort)
+│   │   ├── fetcher.ex           # One fetch: conditional GET, filters, first-fetch limit, dry run
 │   │   ├── syndication_feed_parser.ex        # Syndication parser facade: NIF, normalizes entries
 │   │   ├── syndication_feed_parser_native.ex # Rustler NIF binding (baudrate_feed_parser crate)
 │   │   └── syndication_feed_worker.ex        # GenServer: polls due bots every 60s, creates articles
@@ -2501,8 +2502,13 @@ Each bot consists of:
    `Task.Supervisor.async_stream_nolink/3` (120s per-bot timeout).
 2. For each due bot, the worker optionally triggers `FaviconFetcher.fetch_and_set/1`
    (best-effort, in a separate Task) to refresh the bot's avatar from the site favicon.
-3. The feed URL is validated (SSRF-safe via `HTTPClient.validate_url/1`) and
-   fetched (max 5 MB). The raw bytes are parsed by `SyndicationFeedParser.parse/1`.
+3. `Bots.Fetcher.run/1` validates the feed URL (SSRF-safe via
+   `HTTPClient.validate_url/1`) and fetches it (max 5 MB) with an `Accept`
+   header naming the feed types and, when the last 200 answer carried them,
+   `If-None-Match` / `If-Modified-Since`. A 304 is a successful fetch with
+   nothing new. The validators are stored only when bounded and free of
+   control characters, since they are sent back verbatim. The raw bytes are
+   parsed by `SyndicationFeedParser.parse/1`.
 4. `SyndicationFeedParser` delegates to the `baudrate_feed_parser` Rustler NIF (backed by
    the `feedparser-rs` Rust crate), which natively supports RSS 0.9x/2.0,
    RSS 1.0 (RDF), Atom 0.3/1.0, and JSON Feed in a single pass. Each entry is
@@ -2510,12 +2516,35 @@ Each bot consists of:
    HTML content is sanitized via `Baudrate.Sanitizer.Native.sanitize_markdown/1`.
    `published_at` is clamped: dates more than 10 years in the past or in the
    future are set to `nil`.
-5. For each new entry (not yet in `bot_syndication_items`), the worker calls
-   `Content.create_article/2` with the bot user as author. The `published_at`
-   field on the article records the original feed entry publication date.
-6. On success, `Bots.mark_fetch_success/1` schedules the next fetch. On failure,
-   `Bots.mark_fetch_error/2` applies exponential backoff (5 min → 10 min → 20 min,
-   capped at 24 hours).
+5. `Fetcher.plan/2` gives each entry one decision: `:seen` (already in
+   `bot_syndication_items`, or its link matches a live article of the bot),
+   `:excluded` (matched an exclude pattern), `:not_included` (the bot has
+   include patterns and matched none), `:backlog` (a **first** fetch —
+   `last_fetched_at` is nil — posts only the newest `first_fetch_limit`
+   entries) or `:post`. Patterns are the admin content filters' `word` and
+   `substring` kinds, matched by `Moderation.PatternMatcher` against the title
+   and the text of the body.
+6. A `:post` entry becomes an article through `Content.create_article/3`
+   with the bot user as author; `published_at` records the entry's date.
+   **Every other decision except `:seen` is recorded in the ledger with no
+   article**, so an entry is judged once: loosening the filters later does not
+   post an old entry, and the backlog skipped on the first fetch stays skipped.
+   Changing the feed URL clears `last_fetched_at` and the validators, so the
+   new feed starts with a first fetch.
+7. On success, `Bots.mark_fetch_success/3` schedules the next fetch (and
+   stores the validators). On failure, `Bots.mark_fetch_error/2` applies
+   exponential backoff (5 min → 10 min → 20 min, capped at 24 hours); at
+   `Bot.max_failures/0` (10) failures in a row it switches the bot off and
+   sends every admin an always-delivered `bot_disabled` notice. Switching it
+   back on clears the count.
+
+**Admin page.** `/admin/bots` shows each bot's next fetch and post count
+(`Bots.post_counts/0`). **Fetch now** (`Bots.fetch_now/1`) makes an active bot
+due without touching its errors; **Reset & Retry** also clears them. **Dry
+run** runs `Bots.preview/1` in `start_async/3`: an unconditional fetch and a
+plan, with nothing posted, recorded or stored. A feed link is rendered only
+when it is `http(s)`, and a failed fetch is shown by its status, never the
+remote body.
 
 **FaviconFetcher:** Scans the site HTML for `<link rel="apple-touch-icon">` and
 `<link rel="icon">` tags, downloads the best candidate, and processes it through
@@ -2538,8 +2567,8 @@ regular user profile fields).
 
 | Table | Purpose |
 |-------|---------|
-| `bots` | Bot config: `user_id`, `feed_url`, `board_ids` (int array), `fetch_interval_minutes`, `active`, `last_fetched_at`, `next_fetch_at`, `error_count`, `last_error`, `avatar_refreshed_at`, `favicon_fail_count` |
-| `bot_syndication_items` | GUID deduplication: `bot_id`, `guid`, `article_id` (nullable on permanent failure) |
+| `bots` | Bot config: `user_id`, `feed_url`, `board_ids` (int array), `fetch_interval_minutes`, `active`, `last_fetched_at`, `next_fetch_at`, `error_count`, `last_error`, `avatar_refreshed_at`, `favicon_fail_count`, `include_patterns` / `exclude_patterns` (`%{"kind", "pattern"}` lists), `first_fetch_limit`, `etag`, `last_modified` |
+| `bot_syndication_items` | GUID deduplication: `bot_id`, `guid`, `article_id` (nil for an entry that failed, was filtered out, or was left in the first fetch's backlog) |
 
 **Key functions in `Bots`:**
 
@@ -2549,7 +2578,10 @@ regular user profile fields).
 - `list_due_bots/0` — bots with `next_fetch_at` nil or in the past
 - `already_posted?/2` — GUID dedup check
 - `record_syndication_item/3` — records a posted entry in the `bot_syndication_items` dedup ledger. This row is **not** a timeline item: deleting one republishes that entry, which is why retention never touches the table ([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)) and why the name no longer says "feed" ([ADR 0041](adr/0041-rss-and-atom-are-syndication.md))
-- `mark_fetch_success/1` / `mark_fetch_error/2` — update fetch state with backoff
+- `mark_fetch_success/3` / `mark_fetch_error/2` — update fetch state with backoff; the tenth failure in a row switches the bot off and notifies the admins
+- `fetch_now/1` — make an active bot due now; `reset_bot_errors/1` also clears its errors
+- `preview/1` — the dry run (`Fetcher.preview/1`)
+- `post_counts/0` — live articles per bot, for the list
 - `avatar_needs_refresh?/1` / `mark_avatar_refreshed/1` — favicon refresh tracking (gate + 7-day cooldown)
 - `increment_favicon_fail_count/1` — increments consecutive failure counter
 
@@ -2567,6 +2599,7 @@ regular user profile fields).
 - `lib/baudrate/bots.ex` — context (CRUD, scheduling, dedup)
 - `lib/baudrate/bots/bot.ex` — Bot schema
 - `lib/baudrate/bots/bot_syndication_item.ex` — BotSyndicationItem schema (GUID dedup)
+- `lib/baudrate/bots/fetcher.ex` — one fetch: request, plan, posting, dry run
 - `lib/baudrate/bots/syndication_feed_worker.ex` — GenServer poller
 - `lib/baudrate/bots/syndication_feed_parser.ex` — feed parser facade (normalizes NIF output)
 - `lib/baudrate/bots/syndication_feed_parser_native.ex` — Rustler NIF bindings to `baudrate_feed_parser`

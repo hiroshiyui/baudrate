@@ -571,18 +571,39 @@ more boards. Create and manage them at `/admin/bots` (admin only).
   articles is skipped as well. That ledger is **never purged** — deleting a row
   makes the bot publish the entry again — which is why retention leaves it alone
   even once the article itself is gone ([Retention](#retention)).
-- **Failures back off.** A failed fetch increments the bot's error counter and
-  pushes the next attempt out exponentially: 5 minutes, doubling per consecutive
-  failure, capped at 24 hours. The dashboard shows the last error and has a reset
-  control that clears the counter and makes the bot due at once. Automatic
-  favicon fetching gives up after 3 consecutive failures until you refresh it by
-  hand.
+- **Asking politely.** The request names the feed types in `Accept` and sends
+  back the feed's `ETag` and `Last-Modified`, so an unchanged feed answers
+  `304 Not Modified` and costs almost nothing on either side.
+- **What gets posted.** The form's *What this bot posts* section takes
+  include and exclude patterns, one per line, matched against each entry's
+  title and text: a line is a whole word or phrase, and a `*` matches part of
+  a word (`*rust*` also matches "trusted"). With include patterns, only
+  entries matching one are posted; an entry matching an exclude pattern is
+  never posted. **A skipped entry is skipped for good** — changing the
+  patterns later affects new entries only.
+- **The first fetch posts only the newest entries** — 5 by default, set per
+  bot, 0 for none — so adding a bot for a feed with 200 items in it does not
+  flood a board. The older ones are recorded and never posted. Changing a
+  bot's feed URL starts over with a first fetch.
+- **Dry run** shows what the next fetch would do with every entry in the feed
+  — post it, or why not — without posting or recording anything. Use it after
+  changing the patterns. **Fetch now** makes the bot fetch within a minute.
+- **Failures back off, then stop.** A failed fetch increments the bot's error
+  counter and pushes the next attempt out exponentially: 5 minutes, doubling
+  per consecutive failure, capped at 24 hours. After **10 failures in a row**
+  (roughly two days) the bot is switched off, shown as *Stopped after
+  failures*, and every admin gets a notification. Fix the feed URL or wait
+  for the site to come back, then activate the bot again, which clears the
+  count. **Reset & Retry** clears the count and fetches at once. Automatic
+  favicon fetching gives up after 3 consecutive failures until you refresh it
+  by hand.
 - **Terms and sanctions.** Publishing new terms does not stop the feeds: a bot
   cannot sign in to accept them, so bots are exempt inside the interaction gate
   itself. Turning a bot's `active` flag off stops its fetches without deleting
   the account or its posts.
-- Create, update, delete, the active toggle, error resets and favicon refreshes
-  are all recorded in the moderation log.
+- Create, update, delete, the active toggle, error resets, **Fetch now** and
+  favicon refreshes are all recorded in the moderation log. A dry run changes
+  nothing and is not logged.
 
 ### Login Monitoring (`/admin/login-attempts`)
 

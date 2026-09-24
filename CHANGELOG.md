@@ -9,6 +9,37 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+Phase 7's last stage, 7D: bots. One migration adds the filter, first-fetch
+and validator columns to `bots`.
+
+### Added
+
+- **Bots list** (`/admin/bots`) shows each bot's next fetch and how many
+  articles it has posted, and has **Fetch now**, which makes a bot fetch
+  within a minute without clearing its errors (that is still **Reset &
+  Retry**). Logged as `fetch_bot_now`.
+- **Dry run.** Shows what the next fetch would do with every entry the feed
+  lists — post it, or skip it as already posted, excluded, not included or
+  part of the first fetch's backlog — without posting or recording anything.
+- **What a bot posts.** Include and exclude patterns, one per line, matched
+  against an entry's title and text with the admin content filters' own
+  matcher (a whole word or phrase, or `*` for part of a word).
+- **The first fetch posts only the newest entries** (5 by default, 0–100 per
+  bot); the rest of a feed's backlog is recorded and never posted. A new
+  feed URL starts over.
+- **A failing bot is switched off** after 10 failed fetches in a row and
+  every admin gets an always-delivered notice; it shows as *Stopped after
+  failures*, and activating it again clears the count.
+- **Conditional GET.** Feeds are asked for with an `Accept` header naming the
+  feed types and with the last answer's `ETag` / `Last-Modified`, so an
+  unchanged feed answers 304.
+
+### Changed
+
+- An entry skipped by a bot's patterns or left in the first fetch's backlog
+  is recorded in the ledger like a posted one, so it is judged once:
+  changing the patterns later affects new entries only.
+
 ## [1.44.0] — 2026-09-24
 
 Phase 7's second release: 7B, site announcements and a contact line, and

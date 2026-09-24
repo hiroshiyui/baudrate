@@ -481,6 +481,9 @@ Deliberately not done, and recorded nowhere else:
 
 ### Done
 
+- **7D** — bots: next fetch and post counts, **Fetch now**, a dry run,
+  include and exclude patterns, a first-fetch limit, switching a bot off
+  after 10 failures with an admin notice, and conditional GET.
 - **7C** — moving an article between boards, emptying a board before
   deleting it, and ordering boards with Move up / Move down
   ([ADR 0075](adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md)).
@@ -490,15 +493,6 @@ Deliberately not done, and recorded nowhere else:
   ([ADR 0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md)).
   The `admin.view_dashboard` item was already void: ADR 0042 removed the
   permission.
-
-### 7D — Bots (M)
-
-- [ ] **Bots list:** show the next fetch time and post counts.
-  - A "fetch now" separate from "reset errors".
-  - A dry-run preview of the next fetch.
-- [ ] **What a bot posts:** include and exclude filters on title and content. The first fetch posts only the latest N entries, not the whole backlog (`core/bots/syndication_feed_worker.ex`).
-- [ ] **Failures:** a bot is disabled automatically after N failed fetches, with an admin notice.
-- [ ] **Conditional GET** (ETag and Last-Modified).
 
 ---
 
