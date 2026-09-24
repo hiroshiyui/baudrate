@@ -14,6 +14,8 @@ defmodule Baudrate.Messaging.ConversationReadCursor do
   """
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   alias Baudrate.Messaging.{Conversation, DirectMessage}

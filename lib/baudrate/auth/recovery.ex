@@ -284,7 +284,8 @@ defmodule Baudrate.Auth.Recovery do
   can only be reached by issuing something is a check that stalls.
   """
   @spec set_verification(User.t(), integer(), String.t()) ::
-          {:ok, RecoveryContact.t()} | {:error, :unauthorized | :not_found | Ecto.Changeset.t()}
+          {:ok, RecoveryContact.t()}
+          | {:error, :unauthorized | :not_found | :no_live_challenge | Ecto.Changeset.t()}
   def set_verification(%User{} = admin, contact_id, status)
       when status in ["pending", "verified"] do
     with :ok <- authorize_verify(admin),

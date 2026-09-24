@@ -25,6 +25,8 @@ defmodule Baudrate.AccountDeletion.Deletion do
   """
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   @statuses ~w(pending executing completed cancelled)

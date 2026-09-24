@@ -33,10 +33,6 @@ defmodule BaudrateWeb.UserInvitesLive do
          |> put_flash(:info, gettext("Invite code generated."))
          |> load_invite_data(user)}
 
-      {:error, :account_too_new} ->
-        {:noreply,
-         put_flash(socket, :error, gettext("Your account is too new to generate invite codes."))}
-
       {:error, :invite_quota_exceeded} ->
         {:noreply, put_flash(socket, :error, gettext("Invite quota exceeded."))}
 

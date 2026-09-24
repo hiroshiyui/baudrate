@@ -1701,7 +1701,7 @@ msgstr ""
 msgid "System theme"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:102
+#: lib/baudrate_web/live/admin/invites_live.ex:98
 #: lib/baudrate_web/live/admin/pending_users_live.ex:54
 #: lib/baudrate_web/live/admin/pending_users_live.ex:92
 #: lib/baudrate_web/live/admin/user_detail_live.ex:74
@@ -1849,15 +1849,15 @@ msgstr ""
 msgid "Expires"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:59
-#: lib/baudrate_web/live/admin/invites_live.ex:123
-#: lib/baudrate_web/live/user_invites_live.ex:44
+#: lib/baudrate_web/live/admin/invites_live.ex:55
+#: lib/baudrate_web/live/admin/invites_live.ex:119
+#: lib/baudrate_web/live/user_invites_live.ex:40
 #, elixir-autogen, elixir-format
 msgid "Failed to generate invite code."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:148
-#: lib/baudrate_web/live/user_invites_live.ex:87
+#: lib/baudrate_web/live/admin/invites_live.ex:144
+#: lib/baudrate_web/live/user_invites_live.ex:83
 #, elixir-autogen, elixir-format
 msgid "Failed to revoke invite code."
 msgstr ""
@@ -1896,8 +1896,8 @@ msgstr ""
 msgid "Invite code generated."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:143
-#: lib/baudrate_web/live/user_invites_live.ex:83
+#: lib/baudrate_web/live/admin/invites_live.ex:139
+#: lib/baudrate_web/live/user_invites_live.ex:79
 #, elixir-autogen, elixir-format
 msgid "Invite code revoked."
 msgstr ""
@@ -3420,15 +3420,15 @@ msgstr ""
 msgid "%{remaining} of %{limit} invites remaining"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:131
-#: lib/baudrate_web/live/user_invites_live.ex:72
+#: lib/baudrate_web/live/admin/invites_live.ex:127
+#: lib/baudrate_web/live/user_invites_live.ex:68
 #, elixir-autogen, elixir-format
 msgid "Invite code not found."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:56
-#: lib/baudrate_web/live/admin/invites_live.ex:120
-#: lib/baudrate_web/live/user_invites_live.ex:41
+#: lib/baudrate_web/live/admin/invites_live.ex:52
+#: lib/baudrate_web/live/admin/invites_live.ex:116
+#: lib/baudrate_web/live/user_invites_live.ex:37
 #, elixir-autogen, elixir-format
 msgid "Invite quota exceeded."
 msgstr ""
@@ -3452,7 +3452,7 @@ msgstr ""
 msgid "User banned successfully. %{count} invite code(s) revoked."
 msgstr ""
 
-#: lib/baudrate_web/live/user_invites_live.ex:76
+#: lib/baudrate_web/live/user_invites_live.ex:72
 #, elixir-autogen, elixir-format
 msgid "You can only revoke your own invite codes."
 msgstr ""
@@ -3460,12 +3460,6 @@ msgstr ""
 #: lib/baudrate_web/live/user_invites_live.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "You haven't generated any invite codes yet."
-msgstr ""
-
-#: lib/baudrate_web/live/admin/invites_live.ex:53
-#: lib/baudrate_web/live/user_invites_live.ex:38
-#, elixir-autogen, elixir-format
-msgid "Your account is too new to generate invite codes."
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.ex:200
@@ -4664,7 +4658,7 @@ msgstr ""
 msgid "Generate for User"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:114
+#: lib/baudrate_web/live/admin/invites_live.ex:110
 #, elixir-autogen, elixir-format
 msgid "Invite code generated for %{username}."
 msgstr ""

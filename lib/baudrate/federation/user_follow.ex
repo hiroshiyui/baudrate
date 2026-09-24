@@ -20,6 +20,8 @@ defmodule Baudrate.Federation.UserFollow do
   """
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   alias Baudrate.Federation.RemoteActor

@@ -31,6 +31,8 @@ defmodule Baudrate.DataPortability.ExportRequest do
   """
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   @statuses ~w(pending ready completed cancelled expired)

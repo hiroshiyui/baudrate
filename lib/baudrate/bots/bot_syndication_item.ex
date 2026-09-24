@@ -9,6 +9,8 @@ defmodule Baudrate.Bots.BotSyndicationItem do
 
   use Ecto.Schema
 
+  @type t :: %__MODULE__{}
+
   alias Baudrate.Bots.Bot
   alias Baudrate.Content.Article
 

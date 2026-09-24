@@ -14,6 +14,8 @@ defmodule Baudrate.Content.LinkPreview do
   """
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   @max_title_length 300

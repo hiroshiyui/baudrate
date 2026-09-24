@@ -24,6 +24,8 @@ defmodule Baudrate.Federation.RemoteActor do
   """
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   schema "remote_actors" do

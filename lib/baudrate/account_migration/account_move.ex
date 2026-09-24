@@ -27,6 +27,8 @@ defmodule Baudrate.AccountMigration.AccountMove do
   """
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   @statuses ~w(pending sent cancelled failed)

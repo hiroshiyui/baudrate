@@ -10,6 +10,8 @@ defmodule Baudrate.Setup.Setting do
   """
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   schema "settings" do

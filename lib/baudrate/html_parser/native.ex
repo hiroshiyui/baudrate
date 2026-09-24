@@ -16,6 +16,13 @@ defmodule Baudrate.HtmlParser.Native do
   defmodule OgMetadata do
     @moduledoc "Struct returned by `parse_og_metadata/1`."
     defstruct [:title, :description, :image_url, :site_name]
+
+    @type t :: %__MODULE__{
+            title: String.t() | nil,
+            description: String.t() | nil,
+            image_url: String.t() | nil,
+            site_name: String.t() | nil
+          }
   end
 
   @doc """

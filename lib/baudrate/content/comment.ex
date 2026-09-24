@@ -24,6 +24,8 @@ defmodule Baudrate.Content.Comment do
   """
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   alias Baudrate.Content.{Article, CommentImage, CommentRevision, LinkPreview}

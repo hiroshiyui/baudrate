@@ -1700,7 +1700,7 @@ msgstr "ナビゲーションメニューを開く"
 msgid "System theme"
 msgstr "システムテーマ"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:102
+#: lib/baudrate_web/live/admin/invites_live.ex:98
 #: lib/baudrate_web/live/admin/pending_users_live.ex:54
 #: lib/baudrate_web/live/admin/pending_users_live.ex:92
 #: lib/baudrate_web/live/admin/user_detail_live.ex:74
@@ -1848,15 +1848,15 @@ msgstr "期限切れ"
 msgid "Expires"
 msgstr "有効期限"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:59
-#: lib/baudrate_web/live/admin/invites_live.ex:123
-#: lib/baudrate_web/live/user_invites_live.ex:44
+#: lib/baudrate_web/live/admin/invites_live.ex:55
+#: lib/baudrate_web/live/admin/invites_live.ex:119
+#: lib/baudrate_web/live/user_invites_live.ex:40
 #, elixir-autogen, elixir-format
 msgid "Failed to generate invite code."
 msgstr "招待コードの生成に失敗しました。"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:148
-#: lib/baudrate_web/live/user_invites_live.ex:87
+#: lib/baudrate_web/live/admin/invites_live.ex:144
+#: lib/baudrate_web/live/user_invites_live.ex:83
 #, elixir-autogen, elixir-format
 msgid "Failed to revoke invite code."
 msgstr "招待コードの無効化に失敗しました。"
@@ -1895,8 +1895,8 @@ msgstr "招待制"
 msgid "Invite code generated."
 msgstr "招待コードを生成しました。"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:143
-#: lib/baudrate_web/live/user_invites_live.ex:83
+#: lib/baudrate_web/live/admin/invites_live.ex:139
+#: lib/baudrate_web/live/user_invites_live.ex:79
 #, elixir-autogen, elixir-format
 msgid "Invite code revoked."
 msgstr "招待コードを無効化しました。"
@@ -3411,15 +3411,15 @@ msgstr "登録日"
 msgid "%{remaining} of %{limit} invites remaining"
 msgstr "招待枠の残り %{remaining} / %{limit}"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:131
-#: lib/baudrate_web/live/user_invites_live.ex:72
+#: lib/baudrate_web/live/admin/invites_live.ex:127
+#: lib/baudrate_web/live/user_invites_live.ex:68
 #, elixir-autogen, elixir-format
 msgid "Invite code not found."
 msgstr "招待コードが見つかりません。"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:56
-#: lib/baudrate_web/live/admin/invites_live.ex:120
-#: lib/baudrate_web/live/user_invites_live.ex:41
+#: lib/baudrate_web/live/admin/invites_live.ex:52
+#: lib/baudrate_web/live/admin/invites_live.ex:116
+#: lib/baudrate_web/live/user_invites_live.ex:37
 #, elixir-autogen, elixir-format
 msgid "Invite quota exceeded."
 msgstr "招待コードの上限に達しました。"
@@ -3443,7 +3443,7 @@ msgstr "マイ招待コード"
 msgid "User banned successfully. %{count} invite code(s) revoked."
 msgstr "ユーザーをBANしました。招待コード %{count} 件を取り消しました。"
 
-#: lib/baudrate_web/live/user_invites_live.ex:76
+#: lib/baudrate_web/live/user_invites_live.ex:72
 #, elixir-autogen, elixir-format
 msgid "You can only revoke your own invite codes."
 msgstr "自分の招待コードのみ取り消しできます。"
@@ -3452,12 +3452,6 @@ msgstr "自分の招待コードのみ取り消しできます。"
 #, elixir-autogen, elixir-format
 msgid "You haven't generated any invite codes yet."
 msgstr "まだ招待コードを生成していません。"
-
-#: lib/baudrate_web/live/admin/invites_live.ex:53
-#: lib/baudrate_web/live/user_invites_live.ex:38
-#, elixir-autogen, elixir-format
-msgid "Your account is too new to generate invite codes."
-msgstr "アカウントが新しすぎるため、招待コードを生成できません。"
 
 #: lib/baudrate_web/live/article_live.ex:200
 #: lib/baudrate_web/live/article_live.ex:703
@@ -4651,7 +4645,7 @@ msgstr "編集"
 msgid "Generate for User"
 msgstr "ユーザー代理生成"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:114
+#: lib/baudrate_web/live/admin/invites_live.ex:110
 #, elixir-autogen, elixir-format
 msgid "Invite code generated for %{username}."
 msgstr "%{username}の招待コードを生成しました。"

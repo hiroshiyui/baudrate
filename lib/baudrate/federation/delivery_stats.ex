@@ -37,12 +37,13 @@ defmodule Baudrate.Federation.DeliveryStats do
   `example.com` to mean `notexample.com` and `example.com.evil` as well, and
   the bulk actions act on whatever the filter shows.
 
-  Returns `%{jobs: [...], total: n, page: p, total_pages: t}`.
+  Returns `%{jobs: [...], total: n, page: p, per_page: pp, total_pages: t}`.
   """
   @spec paginate_actionable_jobs(keyword()) :: %{
           jobs: [DeliveryJob.t()],
           total: non_neg_integer(),
           page: pos_integer(),
+          per_page: pos_integer(),
           total_pages: pos_integer()
         }
   def paginate_actionable_jobs(opts \\ []) do

@@ -12,7 +12,20 @@ defmodule Baudrate.MixProject do
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
-      releases: releases()
+      releases: releases(),
+      # Phase 8A. The PLT lives in priv/plts so CI can cache it by path;
+      # .dialyzer_ignore.exs holds the reviewed baseline, and CI fails only on
+      # a warning that is not in it.
+      # Phase 8A: CI merges each partition's coverage and publishes the report.
+      # Report only — a threshold rewards tests written for the number.
+      test_coverage: [summary: [threshold: 0], ignore_modules: [~r/^Inspect\./]],
+      dialyzer: [
+        plt_local_path: "priv/plts",
+        plt_core_path: "priv/plts",
+        plt_add_apps: [:mix, :ex_unit],
+        ignore_warnings: ".dialyzer_ignore.exs",
+        list_unused_filters: true
+      ]
     ]
   end
 
@@ -91,6 +104,7 @@ defmodule Baudrate.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.15", only: [:dev, :test], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:cbor, "~> 1.0"},
       {:wax_, "~> 0.7"}
     ]

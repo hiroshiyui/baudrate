@@ -95,7 +95,7 @@ defmodule Baudrate.Federation.Validator do
   or `{:error, :object_id_too_long}` for an id no unique `ap_id` index could
   store (the same bound as an activity id).
   """
-  @spec validate_object_origin(map(), %{ap_id: String.t()}) ::
+  @spec validate_object_origin(map(), %{:ap_id => String.t(), optional(atom()) => any()}) ::
           :ok | {:error, :object_origin_mismatch | :object_id_too_long}
   def validate_object_origin(%{"id" => id}, %{ap_id: actor_ap_id})
       when is_binary(id) and is_binary(actor_ap_id) do

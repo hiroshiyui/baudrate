@@ -8,6 +8,8 @@ defmodule Baudrate.Auth.UserBlock do
   """
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   alias Baudrate.Setup.User
