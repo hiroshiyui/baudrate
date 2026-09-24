@@ -1,0 +1,50 @@
+name: Bug report
+description: Something does not work the way the UI, the docs or a record says it does.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Security problems go by email, not here** — see SECURITY.md.
+        Please do not paste private content, other people's data or secrets.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The `software.version` in `/nodeinfo/2.1`, or the commit.
+      placeholder: "1.45.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Who runs into it
+      options:
+        - A guest (not signed in)
+        - A member
+        - A board moderator
+        - An admin
+        - A remote server (federation)
+        - An operator (installation, deploy, backups)
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to …
+        2. Click …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: Browser and locale, logs, screenshots, the remote software for a federation problem.
