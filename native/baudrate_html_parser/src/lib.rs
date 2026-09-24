@@ -11,9 +11,16 @@ struct OgMetadata {
     site_name: Option<String>,
 }
 
+// Each NIF is a one-line wrapper around a plain function, so `cargo test` can
+// exercise the rules without a BEAM (Phase 8A).
+
 /// Parse an HTML document and extract Open Graph / Twitter Card / fallback metadata.
 #[rustler::nif]
 fn parse_og_metadata(html: &str) -> OgMetadata {
+    og_metadata(html)
+}
+
+fn og_metadata(html: &str) -> OgMetadata {
     let document = Html::parse_document(html);
 
     let title = find_meta_property(&document, "og:title")
@@ -98,6 +105,10 @@ fn external_links(html: &str, origin: &str) -> Vec<(String, Url)> {
 /// fragment, in document order. See `external_links/2` for what counts.
 #[rustler::nif]
 fn extract_urls(html: &str, origin: &str) -> Vec<String> {
+    urls(html, origin)
+}
+
+fn urls(html: &str, origin: &str) -> Vec<String> {
     let mut seen = HashSet::new();
 
     external_links(html, origin)
@@ -115,6 +126,10 @@ fn extract_urls(html: &str, origin: &str) -> Vec<String> {
 /// otherwise, because `//host/path` is not something a fetcher can use.
 #[rustler::nif]
 fn extract_first_url(html: &str, origin: &str) -> Option<String> {
+    first_url(html, origin)
+}
+
+fn first_url(html: &str, origin: &str) -> Option<String> {
     external_links(html, origin)
         .into_iter()
         .next()
@@ -132,6 +147,10 @@ fn extract_first_url(html: &str, origin: &str) -> Option<String> {
 /// The number of `<img>` elements in an HTML fragment.
 #[rustler::nif]
 fn count_images(html: &str) -> usize {
+    images(html)
+}
+
+fn images(html: &str) -> usize {
     let fragment = Html::parse_fragment(html);
     let selector = Selector::parse("img").unwrap();
     fragment.select(&selector).count()
@@ -172,3 +191,103 @@ fn find_tag_text(document: &Html, tag: &str) -> Option<String> {
 }
 
 rustler::init!("Elixir.Baudrate.HtmlParser.Native");
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ORIGIN: &str = "https://example.org";
+
+    // --- extract_urls: what the limits on new accounts and the filters count ---
+
+    #[test]
+    fn links_that_leave_the_site_are_counted_however_they_are_written() {
+        let html = r#"<a href="//spam.example/a">1</a><a href="/\spam2.example/b">2</a><a href="http:spam3.example">3</a><a href="https://spam4.example/">4</a>"#;
+        let found = urls(html, ORIGIN);
+        assert_eq!(found.len(), 4, "{found:?}");
+        for host in ["spam.example", "spam2.example", "spam3.example", "spam4.example"] {
+            assert!(found.iter().any(|u| u.contains(host)), "{host} missing: {found:?}");
+        }
+    }
+
+    #[test]
+    fn same_site_is_a_host_comparison_not_a_prefix() {
+        let html = r#"<a href="https://example.org/x">own</a><a href="/y">own</a><a href="https://example.org.spam.example/">not own</a>"#;
+        assert_eq!(urls(html, ORIGIN), vec!["https://example.org.spam.example/"]);
+    }
+
+    #[test]
+    fn tags_mentions_fragments_and_other_schemes_are_skipped() {
+        let html = r##"<a class="hashtag" href="https://r.example/tags/x">#x</a><a class="u-url mention" href="https://r.example/@a">@a</a><a href="#top">top</a><a href="">e</a><a href="mailto:a@b.example">m</a><a href="javascript:x">j</a>"##;
+        assert!(urls(html, ORIGIN).is_empty());
+    }
+
+    #[test]
+    fn urls_are_distinct_and_lose_their_fragment() {
+        let html = r#"<a href="https://a.example/p#one">1</a><a href="https://a.example/p#two">2</a>"#;
+        assert_eq!(urls(html, ORIGIN), vec!["https://a.example/p"]);
+    }
+
+    #[test]
+    fn a_bad_origin_finds_nothing() {
+        assert!(urls(r#"<a href="https://a.example/">a</a>"#, "not a url").is_empty());
+    }
+
+    // --- extract_first_url: the link preview ---
+
+    #[test]
+    fn first_url_keeps_an_absolute_link_as_written() {
+        let html = r#"<a href="https://例え.jp/">jp</a><a href="https://b.example/">b</a>"#;
+        assert_eq!(first_url(html, ORIGIN).as_deref(), Some("https://例え.jp/"));
+    }
+
+    #[test]
+    fn first_url_resolves_a_protocol_relative_link() {
+        let html = r#"<a href="//a.example/x">a</a>"#;
+        assert_eq!(first_url(html, ORIGIN).as_deref(), Some("https://a.example/x"));
+    }
+
+    #[test]
+    fn first_url_agrees_with_urls_about_what_is_external() {
+        let html = r#"<a href="/own">own</a><a class="mention" href="https://r.example/@a">@a</a><a href="https://c.example/">c</a>"#;
+        assert_eq!(first_url(html, ORIGIN).as_deref(), Some("https://c.example/"));
+        assert_eq!(first_url(r#"<a href="/own">own</a>"#, ORIGIN), None);
+    }
+
+    // --- count_images ---
+
+    #[test]
+    fn images_are_counted() {
+        assert_eq!(images(r#"<p><img src="a"><img src="b"></p>"#), 2);
+        assert_eq!(images("<p>none</p>"), 0);
+    }
+
+    // --- parse_og_metadata ---
+
+    #[test]
+    fn og_tags_win_over_twitter_and_fallbacks() {
+        let html = r#"<html><head><title>Plain</title>
+            <meta property="og:title" content="OG title">
+            <meta name="twitter:title" content="Twitter title">
+            <meta property="og:description" content="OG desc">
+            <meta property="og:image" content="https://i.example/a.png">
+            <meta property="og:site_name" content="Site"></head></html>"#;
+        let og = og_metadata(html);
+        assert_eq!(og.title.as_deref(), Some("OG title"));
+        assert_eq!(og.description.as_deref(), Some("OG desc"));
+        assert_eq!(og.image_url.as_deref(), Some("https://i.example/a.png"));
+        assert_eq!(og.site_name.as_deref(), Some("Site"));
+    }
+
+    #[test]
+    fn og_falls_back_to_twitter_then_the_document() {
+        let html = r#"<html><head><title> Plain title </title>
+            <meta name="twitter:image" content="https://i.example/t.png">
+            <meta name="description" content="Meta desc"></head></html>"#;
+        let og = og_metadata(html);
+        assert_eq!(og.title.as_deref(), Some("Plain title"));
+        assert_eq!(og.description.as_deref(), Some("Meta desc"));
+        assert_eq!(og.image_url.as_deref(), Some("https://i.example/t.png"));
+        assert_eq!(og.site_name, None);
+    }
+}
