@@ -14,6 +14,20 @@ page. One new record,
 [ADR 0074](doc/adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md).
 No migrations.
 
+### Security
+
+- **A peer could claim a local comment's identity.** The fallback that
+  threads a reply addressed to a pre-v1.31.0 comment id
+  (`<actor>#note-N`) accepted any URI that merely *began* with this site's
+  base URL — `https://our.host.evil.example/…#note-42` included — and then
+  stored that URI as the comment's `ap_id`. It now matches only the exact id
+  the comment was minted under and writes nothing (ADR 0046, ADR 0050).
+- **Approving a registration could unban an account.** The account id comes
+  from the client, and approval set any account `active` — a banned one
+  included, with its ban fields still set, skipping the unban's rank check,
+  log line and notice. Only a pending account can be approved now, in one
+  conditional update.
+
 ### Added
 
 - **`/admin`, the dashboard.** What is waiting for review (open reports,
@@ -38,6 +52,14 @@ No migrations.
   in every language.
 
 ### Fixed
+
+- **A closed report could be closed again**, overwriting who decided it and
+  when, restarting its 90-day evidence purge and telling the reporter a
+  second time. Resolving and dismissing now apply only to an open report.
+- The admin account page showed a report's status untranslated, and the
+  moderation log its targets' internal kind (`timeline_reply#12`).
+- A test deadlocked now and then: it took two unique keys in the opposite
+  order from every other test.
 
 - **Per-server delivery actions matched a substring of the inbox URL**, so
   acting on `example.com` would also have retried or abandoned the jobs of
