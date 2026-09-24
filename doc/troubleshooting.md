@@ -713,10 +713,11 @@ reason `staff`.
 
 ### Session cleanup
 
-The `SessionCleaner` GenServer runs every hour and carries seventeen steps —
-expired sessions, old login attempts, orphan images, delivery and inbox queue
-hygiene, link previews, the media cache, the data-export and account-move
-sweeps, old notifications, ended-sanction notices, closed-report evidence, the
+The `SessionCleaner` GenServer runs every hour and carries twenty-two steps —
+expired sessions, old login attempts, orphan images (direct-message images
+included), delivery and inbox queue hygiene, link previews, the media cache,
+the data-export, account-move and account-deletion sweeps and the deleted
+accounts' key sweep, old notifications, ended-sanction notices, closed-report evidence, the
 retention purges below, and the health-alert check (ADR 0044), which is the
 only one that keeps state between runs and so sits outside the uniform list. `doc/sysop.md` has the full table. Each step is
 isolated, so one failing step no longer skips the rest of the hour.
