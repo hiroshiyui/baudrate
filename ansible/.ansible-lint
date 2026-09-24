@@ -1,0 +1,5 @@
+# Phase 8A. CI runs ansible-lint from Debian bookworm in the CI image
+# (ci/image/Dockerfile), with the vars plugin limited to host_group_vars so the
+# SOPS-encrypted secrets are never opened.
+profile: production
+offline: true

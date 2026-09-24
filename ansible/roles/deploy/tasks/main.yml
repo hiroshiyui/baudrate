@@ -448,7 +448,7 @@
     recurse: false
   register: all_releases
 
-- name: Remove old releases (keep {{ keep_releases }} most recent)
+- name: Remove old releases beyond the newest {{ keep_releases }}
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: absent

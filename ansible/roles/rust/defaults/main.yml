@@ -1,0 +1,6 @@
+---
+# rustup-init, pinned by version and SHA-256 like the CI image's
+# (ci/image/Dockerfile: RUSTUP_VERSION, RUSTUP_SHA256). rustup then verifies the
+# toolchain it installs against the channel manifest.
+rustup_version: "1.29.1"
+rustup_init_sha256: "dda7234360b7f578ca8b0ddcb80145646fa61a67c1720a5abc7051b35c9fcb71"

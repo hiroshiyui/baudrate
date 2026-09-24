@@ -5,16 +5,32 @@
     path: "{{ baudrate_home }}/.cargo/bin/rustup"
   register: rustup_installed
 
+# rustup-init is downloaded pinned and checked, never piped from a URL into a
+# shell (the CI image installs it the same way).
+- name: Download rustup-init
+  when: not rustup_installed.stat.exists
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.get_url:
+    url: "https://static.rust-lang.org/rustup/archive/{{ rustup_version }}/x86_64-unknown-linux-gnu/rustup-init"
+    checksum: "sha256:{{ rustup_init_sha256 }}"
+    dest: "{{ baudrate_home }}/rustup-init"
+    mode: "0755"
+
 - name: Install rustup
   when: not rustup_installed.stat.exists
   become_user: "{{ baudrate_user }}"
-  ansible.builtin.shell:
-    cmd: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/rustup-init -y --profile minimal"
+    creates: "{{ baudrate_home }}/.cargo/bin/rustup"
   environment:
     CARGO_HOME: "{{ baudrate_home }}/.cargo"
     RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
-  args:
-    creates: "{{ baudrate_home }}/.cargo/bin/rustup"
+
+- name: Remove rustup-init
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.file:
+    path: "{{ baudrate_home }}/rustup-init"
+    state: absent
 
 - name: Update Rust toolchain
   when: rustup_installed.stat.exists

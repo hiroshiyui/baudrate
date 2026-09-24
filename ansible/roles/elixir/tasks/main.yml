@@ -82,7 +82,7 @@
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
     PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
 
-- name: Set Erlang {{ erlang_version }} as global default
+- name: Set the global default Erlang to {{ erlang_version }}
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf set --home erlang {{ erlang_version }}"
@@ -99,7 +99,7 @@
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
     PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
 
-- name: Set Elixir {{ elixir_version }} as global default
+- name: Set the global default Elixir to {{ elixir_version }}
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf set --home elixir {{ elixir_version }}"
