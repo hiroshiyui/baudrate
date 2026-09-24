@@ -628,6 +628,16 @@ defmodule BaudrateWeb.Helpers do
   ]
 
   @doc """
+  Flash text when an article cannot leave its last board: an article in no
+  board is public, so the way to take it down is to delete it.
+  """
+  def last_board_message do
+    gettext(
+      "This is the article's only board, and without it the article would be public. Delete the article instead."
+    )
+  end
+
+  @doc """
   Flash text for a refused action: the gate's own explanation when the gate
   refused it (ADR 0029), a new account's limit did (ADR 0064) or a content
   filter did (ADR 0065), and `fallback` for anything else.

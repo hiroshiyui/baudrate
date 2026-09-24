@@ -317,22 +317,22 @@ defmodule Baudrate.Content.Boards do
   def delete_board(%Board{slug: "sysop"}), do: {:error, :protected}
 
   def delete_board(%Board{} = board) do
-    article_count =
-      Repo.one(from(ba in BoardArticle, where: ba.board_id == ^board.id, select: count()))
+    # The checks run with the board row locked: linking an article to a board
+    # takes a key-share lock on it, so no link can arrive between the count
+    # and the delete — and a link that did would be cascaded away, leaving an
+    # article that was only here in no board, which is public.
+    result =
+      Repo.transaction(fn ->
+        Repo.one(from(b in Board, where: b.id == ^board.id, select: b.id, lock: "FOR UPDATE"))
 
-    child_count =
-      Repo.one(from(b in Board, where: b.parent_id == ^board.id, select: count()))
+        cond do
+          Repo.exists?(from(ba in BoardArticle, where: ba.board_id == ^board.id)) ->
+            Repo.rollback(:has_articles)
 
-    cond do
-      article_count > 0 ->
-        {:error, :has_articles}
+          Repo.exists?(from(b in Board, where: b.parent_id == ^board.id)) ->
+            Repo.rollback(:has_children)
 
-      child_count > 0 ->
-        {:error, :has_children}
-
-      true ->
-        result =
-          Repo.transaction(fn ->
+          true ->
             case Repo.delete(board) do
               {:ok, deleted_board} ->
                 now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -350,14 +350,14 @@ defmodule Baudrate.Content.Boards do
               {:error, changeset} ->
                 Repo.rollback(changeset)
             end
-          end)
-
-        with {:ok, _} <- result, true <- board_cache_enabled?() do
-          BoardCache.refresh()
         end
+      end)
 
-        result
+    with {:ok, _} <- result, true <- board_cache_enabled?() do
+      BoardCache.refresh()
     end
+
+    result
   end
 
   @doc """

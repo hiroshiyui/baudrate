@@ -458,7 +458,7 @@
               {gettext("Report")}
             </button>
           </li>
-          <%= if length(@article.boards) > 1 do %>
+          <%= if @removable_board_ids != [] do %>
             <li :for={board <- @article.boards} :if={board.id in @removable_board_ids}>
               <button
                 id={"article-menu-remove-board-#{board.id}"}

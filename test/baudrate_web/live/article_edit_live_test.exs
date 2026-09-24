@@ -40,6 +40,49 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
              live(conn, "/articles/#{article.slug}/edit")
   end
 
+  describe "the article's last board" do
+    setup %{board: board} do
+      %{board: board |> Board.changeset(%{ap_enabled: false}) |> Repo.update!()}
+    end
+
+    test "offers no way to remove it when it does not federate, and a crafted event is refused",
+         %{
+           conn: conn,
+           board: board,
+           article: article
+         } do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}/edit")
+
+      assert has_element?(lv, "#article-edit-board-#{board.id}")
+      refute has_element?(lv, "#article-edit-board-#{board.id} .article-edit-remove-board")
+
+      html = render_click(lv, "remove_board", %{"board-id" => to_string(board.id)})
+      assert html =~ "only board"
+
+      assert [%{id: id}] = Repo.preload(article, :boards, force: true).boards
+      assert id == board.id
+    end
+
+    test "a second board can be removed", %{conn: conn, board: board, article: article} do
+      other =
+        %Board{}
+        |> Board.changeset(%{name: "Second", slug: "second-edit"})
+        |> Repo.insert!()
+
+      Content.add_article_to_board(article, other.id)
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}/edit")
+
+      lv
+      |> element("#article-edit-board-#{other.id} .article-edit-remove-board")
+      |> render_click()
+
+      assert [%{id: id}] = Repo.preload(article, :boards, force: true).boards
+      assert id == board.id
+      refute has_element?(lv, "#article-edit-board-#{board.id} .article-edit-remove-board")
+    end
+  end
+
   test "renders edit form for article author", %{conn: conn, article: article} do
     {:ok, _lv, html} = live(conn, "/articles/#{article.slug}/edit")
     assert html =~ "Edit Article"

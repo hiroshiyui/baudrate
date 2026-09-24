@@ -101,7 +101,7 @@ defmodule BaudrateWeb.ArticleEditLive do
 
   @impl true
   def handle_event("remove_board", %{"board-id" => board_id}, socket) do
-    import BaudrateWeb.Helpers, only: [parse_id: 1]
+    import BaudrateWeb.Helpers, only: [parse_id: 1, last_board_message: 0]
 
     with {:ok, board_id} <- parse_id(board_id),
          board <- Content.get_board!(board_id),
@@ -118,6 +118,9 @@ defmodule BaudrateWeb.ArticleEditLive do
     else
       {:error, :unauthorized} ->
         {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+
+      {:error, :last_board} ->
+        {:noreply, put_flash(socket, :error, last_board_message())}
 
       _ ->
         {:noreply, put_flash(socket, :error, gettext("Failed to remove from board."))}

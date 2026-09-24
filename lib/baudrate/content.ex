@@ -97,6 +97,7 @@ defmodule Baudrate.Content do
   defdelegate can_edit_article?(user, article), to: Permissions
   defdelegate can_delete_article?(user, article), to: Permissions
   defdelegate can_remove_from_board?(user, article, board), to: Permissions
+  defdelegate may_leave_board?(article, board), to: Permissions
   defdelegate can_pin_article?(user, article), to: Permissions
   defdelegate can_lock_article?(user, article), to: Permissions
   defdelegate can_delete_comment?(user, comment, article), to: Permissions

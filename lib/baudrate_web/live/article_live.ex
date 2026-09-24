@@ -25,7 +25,7 @@ defmodule BaudrateWeb.ArticleLive do
   alias BaudrateWeb.RateLimits
   alias BaudrateWeb.InteractionHelpers
   alias BaudrateWeb.SafetyActions
-  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, last_board_message: 0]
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -48,12 +48,7 @@ defmodule BaudrateWeb.ArticleLive do
       can_lock =
         if current_user, do: Content.can_lock_article?(current_user, article), else: false
 
-      # Which boards this member may take the article out of (P1-D5): their
-      # own boards, or every board for the author and staff.
-      removable_board_ids =
-        for board <- article.boards,
-            current_user && Content.can_remove_from_board?(current_user, article, board),
-            do: board.id
+      removable_board_ids = removable_board_ids(article, current_user)
 
       is_board_mod = Content.can_moderate_article?(current_user, article)
       can_comment = Content.can_comment_on_article?(current_user, article)
@@ -230,8 +225,12 @@ defmodule BaudrateWeb.ArticleLive do
        |> assign(
          :article,
          Baudrate.Repo.preload(updated, [:user, :remote_actor, :link_preview, poll: :options])
-       )}
+       )
+       |> assign(:removable_board_ids, removable_board_ids(updated, user))}
     else
+      {:error, :last_board} ->
+        {:noreply, put_flash(socket, :error, last_board_message())}
+
       _ ->
         {:noreply, put_flash(socket, :error, gettext("Failed to remove article from board."))}
     end
@@ -814,6 +813,18 @@ defmodule BaudrateWeb.ArticleLive do
       submit_content_report(socket, SafetyActions.report_details(params))
     end
   end
+
+  # Which boards this member may take the article out of (P1-D5): their own
+  # boards, or every board for the author and staff — never the last one
+  # unless it federates, because an article in no board is public.
+  defp removable_board_ids(article, %{} = user) do
+    for board <- article.boards,
+        Content.can_remove_from_board?(user, article, board),
+        Content.may_leave_board?(article, board),
+        do: board.id
+  end
+
+  defp removable_board_ids(_article, _user), do: []
 
   defp submit_content_report(socket, details) do
     user = socket.assigns.current_user

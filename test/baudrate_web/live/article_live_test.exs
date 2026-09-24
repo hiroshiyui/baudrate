@@ -251,6 +251,47 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert html =~ "Guest Viewable"
   end
 
+  describe "remove_from_board" do
+    setup %{board: board} do
+      %{board: board |> Board.changeset(%{ap_enabled: false}) |> Repo.update!()}
+    end
+
+    # An article in no board is public, so the author of a one-board article
+    # must not be able to empty it — not even with a crafted event.
+    test "the last board is refused", %{conn: conn, board: board, article: article} do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      refute has_element?(lv, "#article-menu-remove-board-#{board.id}")
+
+      html = render_click(lv, "remove_from_board", %{"board-id" => to_string(board.id)})
+      refute html =~ "Article removed from"
+
+      assert [%{id: id}] = Repo.preload(article, :boards, force: true).boards
+      assert id == board.id
+    end
+
+    test "after one of two boards goes, the other offers no removal", %{
+      conn: conn,
+      board: board,
+      article: article
+    } do
+      other =
+        %Board{}
+        |> Board.changeset(%{name: "Second", slug: "second-art"})
+        |> Repo.insert!()
+
+      Content.add_article_to_board(article, other.id)
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      lv |> element("#article-menu-remove-board-#{other.id}") |> render_click()
+
+      assert [%{id: id}] = Repo.preload(article, :boards, force: true).boards
+      assert id == board.id
+      refute has_element?(lv, "#article-menu-remove-board-#{board.id}")
+    end
+  end
+
   describe "toggle_pin" do
     test "admin can pin and unpin an article", %{article: article} do
       admin = setup_user("admin")

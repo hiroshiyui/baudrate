@@ -3003,15 +3003,86 @@ defmodule Baudrate.ContentTest do
       assert {:error, :unauthorized} = Content.remove_article_from_board(article, board1, other)
     end
 
-    test "removing from all boards makes article boardless", %{
+    test "the last board may go when it federates: the article was public already", %{
       author: author,
       board1: board1,
       board2: board2,
       article: article
     } do
+      assert Board.federated?(board2)
       assert {:ok, updated} = Content.remove_article_from_board(article, board1, author)
       assert {:ok, final} = Content.remove_article_from_board(updated, board2, author)
       assert final.boards == []
+    end
+
+    # A board-less article is public and federates, so leaving any other last
+    # board would publish what the board kept in.
+    for {label, attrs} <- [
+          {"a private board", %{min_role_to_view: "user"}},
+          {"a public board that does not federate", %{ap_enabled: false}}
+        ] do
+      test "the last board is kept when it is #{label}", %{author: author, admin: admin} do
+        uid = System.unique_integer([:positive])
+
+        board =
+          create_board(
+            Map.merge(%{name: "Kept #{uid}", slug: "kept-#{uid}"}, unquote(Macro.escape(attrs)))
+          )
+
+        {:ok, %{article: article}} =
+          Content.create_article(
+            %{title: "Kept #{uid}", body: "body", slug: "kept-#{uid}", user_id: author.id},
+            [board.id]
+          )
+
+        assert {:error, :last_board} = Content.remove_article_from_board(article, board, author)
+        assert {:error, :last_board} = Content.remove_article_from_board(article, board, admin)
+        refute Content.may_leave_board?(article, board)
+
+        assert [%{id: id}] = Repo.preload(article, :boards, force: true).boards
+        assert id == board.id
+      end
+    end
+
+    test "a stale article struct cannot race the last board away", %{author: author} do
+      uid = System.unique_integer([:positive])
+      a = create_board(%{name: "A #{uid}", slug: "race-a-#{uid}", ap_enabled: false})
+      b = create_board(%{name: "B #{uid}", slug: "race-b-#{uid}", ap_enabled: false})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Race #{uid}", body: "body", slug: "race-#{uid}", user_id: author.id},
+          [a.id, b.id]
+        )
+
+      # Both removals start from the same two-board struct; the second must be
+      # judged by the rows, not by the boards the struct still lists.
+      assert {:ok, _} = Content.remove_article_from_board(article, a, author)
+      assert {:error, :last_board} = Content.remove_article_from_board(article, b, author)
+    end
+
+    test "a private board's only article stays private" do
+      author = create_user("user")
+      uid = System.unique_integer([:positive])
+
+      board =
+        create_board(%{name: "Staff #{uid}", slug: "staff-#{uid}", min_role_to_view: "moderator"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Staff only #{uid}",
+            body: "body",
+            slug: "staff-only-#{uid}",
+            user_id: author.id
+          },
+          [board.id]
+        )
+
+      assert {:error, :last_board} = Content.remove_article_from_board(article, board, author)
+
+      article = Repo.preload(article, :boards, force: true)
+      refute BaudrateWeb.ArticleHelpers.user_can_view_article?(article, nil)
     end
 
     test "returns error when article is not in the board", %{author: author, article: article} do

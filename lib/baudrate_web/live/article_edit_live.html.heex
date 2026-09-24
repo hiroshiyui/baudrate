@@ -173,6 +173,7 @@
         >
           {board.name}
           <button
+            :if={Baudrate.Content.may_leave_board?(@article, board)}
             type="button"
             phx-click="remove_board"
             phx-value-board-id={board.id}

@@ -164,6 +164,18 @@ defmodule Baudrate.Content.Permissions do
   end
 
   @doc """
+  Whether taking `article` out of `board` leaves it no more exposed than it
+  is: true while it stays in another board, or when `board` is federated —
+  a board-less article is public and federates, so leaving any other last
+  board would publish it. `Content.remove_article_from_board/3` enforces it;
+  this is for deciding whether to offer the control.
+  """
+  def may_leave_board?(article, %Board{} = board) do
+    article = ensure_boards_loaded(article)
+    length(article.boards) > 1 or Board.federated?(board)
+  end
+
+  @doc """
   Ensures the `:boards` association is loaded, skipping the query when already present.
   """
   def ensure_boards_loaded(article) do

@@ -898,12 +898,27 @@ defmodule Baudrate.Content.Articles do
   @doc """
   Removes an article from a specific board.
 
-  Only the article author or an admin can remove. Deletes the `BoardArticle`
-  join record linking the article to the board and broadcasts the removal.
+  The author, staff, or a moderator of that board may remove it (P1-D5).
+  Deletes the `BoardArticle` join record linking the article to the board
+  and broadcasts the removal.
+
+  **Leaving no board must not widen the audience.** A board-less article is
+  public to everyone (`ArticleHelpers.user_can_view_article?/2`,
+  `ActivityPubController.publicly_servable?/1`) and federates to its
+  author's followers (ADR 0043), so taking an article out of the only board
+  it was in publishes it — unless that board already did both, which is
+  `Board.federated?/1`. So the last board may go only when it is federated
+  (a personal post forwarded to a public board and taken back out); any
+  other is refused with `{:error, :last_board}`, and deleting the article is
+  the way to take it down. The check runs with the article row locked, so
+  two removals racing each other cannot both see a second board, and it
+  reads the board's current row rather than the struct handed in.
 
   Returns `{:ok, updated_article}` with refreshed boards on success,
-  `{:error, :unauthorized}` if the user cannot remove, and
-  `{:error, :not_in_board}` if the article is not in the target board.
+  `{:error, :unauthorized}` if the user cannot remove,
+  `{:error, :not_in_board}` if the article is not in the target board, and
+  `{:error, :last_board}` if it is the article's only board and does not
+  federate.
   """
   def remove_article_from_board(%Article{} = article, %Board{} = board, user) do
     article = Permissions.ensure_boards_loaded(article)
@@ -918,19 +933,36 @@ defmodule Baudrate.Content.Articles do
         {:error, :not_in_board}
 
       true ->
-        from(ba in BoardArticle,
-          where: ba.article_id == ^article.id and ba.board_id == ^board.id
-        )
-        |> Repo.delete_all()
+        with {:ok, :removed} <- delete_board_link(article, board) do
+          article = Repo.preload(article, :boards, force: true)
 
-        article = Repo.preload(article, :boards, force: true)
+          ContentPubSub.broadcast_to_board(board.id, :article_deleted, %{
+            article_id: article.id
+          })
 
-        ContentPubSub.broadcast_to_board(board.id, :article_deleted, %{
-          article_id: article.id
-        })
-
-        {:ok, article}
+          {:ok, article}
+        end
     end
+  end
+
+  defp delete_board_link(article, board) do
+    Repo.transaction(fn ->
+      Repo.one!(from(a in Article, where: a.id == ^article.id, select: a.id, lock: "FOR UPDATE"))
+
+      links = from(ba in BoardArticle, where: ba.article_id == ^article.id)
+
+      cond do
+        not Repo.exists?(where(links, [ba], ba.board_id == ^board.id)) ->
+          Repo.rollback(:not_in_board)
+
+        Repo.aggregate(links, :count) <= 1 and not Board.federated?(Repo.get!(Board, board.id)) ->
+          Repo.rollback(:last_board)
+
+        true ->
+          Repo.delete_all(where(links, [ba], ba.board_id == ^board.id))
+          :removed
+      end
+    end)
   end
 
   # --- Remote Articles ---
