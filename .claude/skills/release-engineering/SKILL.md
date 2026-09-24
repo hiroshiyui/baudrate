@@ -11,6 +11,12 @@ When performing release engineering, always follow these steps:
    - **What it finds that is not documentation is a change like any other.** It gets a `CHANGELOG.md` entry in step 4 and may move the version decision in step 1 — not a follow-up commit after the tag. The v1.27.0 audit found `mix.exs` declaring `elixir: "~> 1.15"` while a non-optional dependency requires `~> 1.17`, so no one on 1.15 could build at all; that is project metadata belonging under `Fixed`.
    - **Re-check step 0 afterwards.** `docs-engineering` ends with commits of its own, so confirm the working tree is clean and `current` is pushed again before continuing.
 
+0b. **Audit accessibility** — run the `a11y-engineering` skill over what this release changes and commit what it finds, *before* the version is decided, for the same reason as 0a: the fixes must land inside the tag. Every user-facing element the release adds or alters must be valid: a semantic `id`/`class` (ADR 0018), an accessible name on every control (icon-only buttons included), labelled form fields, focus moved by the server when an action removes the focused control, `role="status"` rather than `aria-live` on a whole list, nothing conveyed by colour alone, and no page that scrolls sideways at 500 px. A finding is a change like any other: it gets a `CHANGELOG.md` entry and may move the version decision.
+
+0c. **Audit localisation** — run the `l10n-engineering` skill and commit what it finds, *before* the version is decided. No user-visible string is left untranslated or shown as a raw identifier (a status, kind or action name); every new or reworded msgid is reviewed by hand in `zh_TW` and `ja_JP` (fuzzy guesses replaced, not trusted), `en` stays blank; terminology matches the settled terms, and `zh_TW` is named 台灣漢語. A finding is a change like any other, as in 0b.
+
+   **Re-check step 0 after 0a–0c.** Each ends with commits of its own, so confirm the working tree is clean (apart from work deliberately left out of this release) and `current` is pushed before continuing.
+
 1. **Determine the release type** — review all unreleased commits since the last tag and classify the release as `major`, `minor`, or `patch` following [Semantic Versioning](https://semver.org/). Present the recommendation to the user and confirm before proceeding.
 
 2. **Run the full test suite** — run all tests with 4 partitions and seed 9527 and wait for all to pass before proceeding. **Do not continue if any test fails.**
