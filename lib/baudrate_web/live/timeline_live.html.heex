@@ -386,16 +386,10 @@
     >
       <article
         :for={{item, idx} <- Enum.with_index(@items)}
+        :key={item_key(item)}
         aria-posinset={(@page - 1) * @per_page + idx + 1}
         aria-setsize={@total}
-        id={
-          "timeline-item-" <>
-            case item.source do
-              :remote -> "fi-#{item.timeline_item.id}"
-              :local -> "a-#{item.article.id}"
-              :local_comment -> "c-#{item.comment.id}"
-            end
-        }
+        id={"timeline-item-" <> item_key(item)}
         class="timeline-item card bg-base-200 shadow-sm"
         aria-label={timeline_item_label(item)}
       >

@@ -198,6 +198,7 @@
         <div id="message-log" class="message-log space-y-3" role="log">
           <div
             :for={msg <- @messages}
+            :key={msg.id}
             id={"message-#{msg.id}"}
             class={[
               "message chat",

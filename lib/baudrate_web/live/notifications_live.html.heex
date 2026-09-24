@@ -66,6 +66,7 @@
   >
     <div
       :for={%{notification: notif} = group <- @groups}
+      :key={notif.id}
       id={"notification-#{notif.id}"}
       class={[
         "notification card shadow-sm transition-colors",

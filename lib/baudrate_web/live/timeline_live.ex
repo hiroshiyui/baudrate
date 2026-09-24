@@ -180,6 +180,13 @@ defmodule BaudrateWeb.TimelineLive do
   # monitor :DOWN) never crashes the LiveView.
   def handle_info(_msg, socket), do: {:noreply, socket}
 
+  # One identifier per item across the three sources, for its DOM id and its
+  # comprehension `:key` (Phase 8D, P8-D6): keyed, a new page or arrival
+  # re-renders only the items that changed rather than every one after it.
+  defp item_key(%{source: :remote, timeline_item: item}), do: "fi-#{item.id}"
+  defp item_key(%{source: :local, article: article}), do: "a-#{article.id}"
+  defp item_key(%{source: :local_comment, comment: comment}), do: "c-#{comment.id}"
+
   # `#timeline-items` is deliberately not a live region (a whole re-rendered feed
   # would be read out); arrivals are summarised in `#timeline-live-status` instead.
   defp announce_new_items(socket, count) when count > 0 do

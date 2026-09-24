@@ -186,6 +186,7 @@
 <div :if={@articles != []} id="articles" class="board-articles space-y-2" data-focus-target>
   <article
     :for={article <- @articles}
+    :key={article.id}
     id={"article-#{article.slug}"}
     aria-labelledby={"article-title-#{article.slug}"}
     class="article tappable-card card bg-base-200 shadow-sm hover:bg-base-300 transition-colors relative"
