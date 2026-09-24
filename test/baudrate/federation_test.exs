@@ -381,7 +381,7 @@ defmodule Baudrate.FederationTest do
 
       assert outbox["type"] == "OrderedCollection"
       assert outbox["totalItems"] == 1
-      assert outbox["first"] =~ "page=1"
+      assert outbox["first"] =~ "?page=true"
       refute outbox["orderedItems"]
     end
 
@@ -403,7 +403,7 @@ defmodule Baudrate.FederationTest do
       outbox = Federation.user_outbox(user)
 
       assert outbox["totalItems"] == 0
-      assert outbox["first"] =~ "page=1"
+      assert outbox["first"] =~ "?page=true"
     end
   end
 
@@ -519,7 +519,7 @@ defmodule Baudrate.FederationTest do
       result = Federation.followers_collection(actor_uri)
       assert result["type"] == "OrderedCollection"
       assert result["totalItems"] == 0
-      assert result["first"] =~ "page=1"
+      assert result["first"] =~ "?page=true"
     end
   end
 

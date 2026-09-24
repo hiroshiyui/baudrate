@@ -22,13 +22,42 @@ defmodule Baudrate.Federation.ObjectBuilder do
 
   @as_public "https://www.w3.org/ns/activitystreams#Public"
 
+  @article_preloads [:boards, :user, :link_preview, :article_images, poll: :options]
+
   @doc """
   Returns an Article JSON-LD map for the given article.
-  """
-  def article_object(article) do
-    article =
-      Repo.preload(article, [:boards, :user, :link_preview, :article_images, poll: :options])
 
+  The one-item case of `article_objects/1`, so a single object and a page of
+  them can never be built two different ways.
+  """
+  def article_object(article), do: article |> List.wrap() |> article_objects() |> hd()
+
+  @doc """
+  Article JSON-LD maps for a page of articles, in order, at a fixed number of
+  queries (Phase 8D). The associations are preloaded for the whole list, and
+  the comment count, like count and whether each article was edited come from
+  one grouped query each, where `article_object/1` used to issue all of that
+  per item — about 160 queries for a 20-item outbox page. The one lookup that
+  stays per article is a remote mention, which queries only when the body
+  names a handle.
+  """
+  @spec article_objects([Content.Article.t()]) :: [map()]
+  def article_objects([]), do: []
+
+  def article_objects(articles) when is_list(articles) do
+    articles = Repo.preload(articles, @article_preloads)
+    ids = Enum.map(articles, & &1.id)
+
+    stats = %{
+      comments: Content.count_comments_for_articles(ids),
+      likes: Content.count_article_likes_for(ids),
+      edited: Content.edited_article_ids(ids)
+    }
+
+    Enum.map(articles, &build_article_object(&1, stats))
+  end
+
+  defp build_article_object(article, stats) do
     # Only federated boards are named. A board's actor URI carries its slug,
     # so listing a private or AP-disabled board here disclosed that the board
     # exists and what it is called — and this object is served verbatim by
@@ -77,11 +106,11 @@ defmodule Baudrate.Federation.ObjectBuilder do
       "replies" => "#{article.ap_id || actor_uri(:article, article.slug)}/replies",
       "baudrate:pinned" => article.pinned,
       "baudrate:locked" => article.locked,
-      "baudrate:commentCount" => Content.count_comments_for_article(article),
-      "baudrate:likeCount" => Content.count_article_likes(article)
+      "baudrate:commentCount" => Map.fetch!(stats.comments, article.id),
+      "baudrate:likeCount" => Map.fetch!(stats.likes, article.id)
     }
 
-    map = put_updated(map, article, Content.article_edited?(article))
+    map = put_updated(map, article, article.id in stats.edited)
 
     map = if tags == [], do: map, else: Map.put(map, "tag", tags)
 

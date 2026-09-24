@@ -430,7 +430,7 @@ defmodule BaudrateWeb.ActivityPubController do
   # --- Article Replies ---
 
   @doc "Returns the replies collection (comments as Note objects) for a public article."
-  def article_replies(conn, %{"slug" => slug}) do
+  def article_replies(conn, %{"slug" => slug} = params) do
     with true <- Regex.match?(@slug_re, slug) do
       try do
         article = Baudrate.Content.get_article_by_slug!(slug)
@@ -438,7 +438,7 @@ defmodule BaudrateWeb.ActivityPubController do
         if publicly_servable?(article) do
           conn
           |> put_resp_content_type(@activity_json)
-          |> json(Federation.article_replies(article))
+          |> json(Federation.article_replies(article, params))
         else
           not_found(conn)
         end

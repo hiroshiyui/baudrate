@@ -153,6 +153,40 @@ defmodule Baudrate.Content.Articles do
 
   # Every article a viewer sees in a board's listing, unordered. The page and
   # the "N new posts" count both start here.
+  @doc """
+  A board's arrivals for its ActivityPub outbox (Phase 8D): the articles a
+  guest can read there, newest arrival first, as `{board_article_id, article}`
+  pairs with `:boards` and `:user` preloaded. The `board_articles` id is the
+  keyset cursor — it grows with every arrival, so `max_id` pages never skip
+  or repeat a row the way an offset does when the board changes between two
+  requests.
+
+  Options: `:limit` (required), `:max_id` (only arrivals older than it) and
+  `:offset` (the legacy `?page=N` form, answered for links peers cached).
+  """
+  @spec list_board_arrivals(Board.t(), keyword()) :: [{integer(), Article.t()}]
+  def list_board_arrivals(%Board{} = board, opts) do
+    limit = Keyword.fetch!(opts, :limit)
+
+    query =
+      from([a, ba] in board_articles_query(board, nil),
+        order_by: [desc: ba.id],
+        limit: ^limit,
+        offset: ^Keyword.get(opts, :offset, 0),
+        select: {ba.id, a}
+      )
+
+    query =
+      case Keyword.get(opts, :max_id) do
+        nil -> query
+        max_id -> from([_a, ba] in query, where: ba.id < ^max_id)
+      end
+
+    pairs = Repo.all(query)
+    articles = pairs |> Enum.map(&elem(&1, 1)) |> Repo.preload([:boards, :user])
+    Enum.zip_with(pairs, articles, fn {id, _}, article -> {id, article} end)
+  end
+
   defp board_articles_query(%Board{id: board_id} = board, viewer) do
     from(a in Article,
       join: ba in BoardArticle,
@@ -1309,6 +1343,22 @@ defmodule Baudrate.Content.Articles do
   end
 
   def article_edited?(_), do: false
+
+  @doc """
+  The ids among `article_ids` that have ever been edited: `article_edited?/1`
+  for a page of articles in one query (Phase 8D).
+  """
+  @spec edited_article_ids([integer()]) :: [integer()]
+  def edited_article_ids([]), do: []
+
+  def edited_article_ids(article_ids) when is_list(article_ids) do
+    from(r in ArticleRevision,
+      where: r.article_id in ^article_ids,
+      distinct: true,
+      select: r.article_id
+    )
+    |> Repo.all()
+  end
 
   @doc """
   Lists all revisions for an article, newest first, with editor preloaded.

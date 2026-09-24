@@ -424,7 +424,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert is_integer(body["totalItems"])
-      assert body["first"] =~ "page=1"
+      assert body["first"] =~ "?page=true"
       refute body["orderedItems"]
     end
 
@@ -463,7 +463,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert body["totalItems"] == 1
-      assert body["first"] =~ "page=1"
+      assert body["first"] =~ "?page=true"
     end
 
     test "returns OrderedCollectionPage with Announce activities", %{conn: conn} do
@@ -497,7 +497,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert body["totalItems"] == 0
-      assert body["first"] =~ "page=1"
+      assert body["first"] =~ "?page=true"
     end
 
     test "returns 404 for non-existent user", %{conn: conn} do
@@ -548,7 +548,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert body["totalItems"] == 0
-      assert body["first"] =~ "/following?page=1"
+      assert body["first"] =~ "/following?page=true"
       assert body["id"] =~ "/following"
     end
 
@@ -567,7 +567,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert body["totalItems"] == 0
-      assert body["first"] =~ "/following?page=1"
+      assert body["first"] =~ "/following?page=true"
     end
 
     test "returns 404 for private board", %{conn: conn} do
@@ -692,7 +692,17 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert body["totalItems"] == 1
-      [reply] = body["orderedItems"]
+      assert body["first"] =~ "/replies?page=true"
+
+      # The root links its first page; the Notes are on the pages (Phase 8D).
+      page =
+        build_conn()
+        |> json_conn()
+        |> get("/ap/articles/#{article.slug}/replies?page=true")
+        |> json_response(200)
+
+      assert page["type"] == "OrderedCollectionPage"
+      [reply] = page["orderedItems"]
       assert reply["type"] == "Note"
       assert reply["content"] =~ "test comment"
       assert reply["attributedTo"] =~ user.username
@@ -709,7 +719,15 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert body["totalItems"] == 0
-      assert body["orderedItems"] == []
+
+      page =
+        build_conn()
+        |> json_conn()
+        |> get("/ap/articles/#{article.slug}/replies?page=true")
+        |> json_response(200)
+
+      assert page["orderedItems"] == []
+      refute Map.has_key?(page, "next")
     end
 
     test "returns 404 for non-existent article", %{conn: conn} do

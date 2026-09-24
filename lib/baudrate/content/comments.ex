@@ -590,6 +590,36 @@ defmodule Baudrate.Content.Comments do
     |> Repo.all()
   end
 
+  @doc """
+  One page of an article's ActivityPub replies collection (Phase 8D): the
+  comments `list_comments_for_article/2` shows a guest, oldest first, after
+  `min_id` when given, at most `limit`. The comment id is the keyset cursor.
+  `count_comments_for_article/1` applies the same filter, so the collection's
+  `totalItems` agrees with its pages.
+  """
+  @spec list_replies_page(Article.t(), keyword()) :: [Comment.t()]
+  def list_replies_page(%Article{id: article_id}, opts) do
+    limit = Keyword.fetch!(opts, :limit)
+
+    query =
+      from(c in Comment,
+        where: c.article_id == ^article_id and is_nil(c.deleted_at),
+        order_by: [asc: c.id],
+        limit: ^limit,
+        preload: [:user, :remote_actor]
+      )
+
+    query =
+      case Keyword.get(opts, :min_id) do
+        nil -> query
+        min_id -> from(c in query, where: c.id > ^min_id)
+      end
+
+    query
+    |> exclude_unservable_remote()
+    |> Repo.all()
+  end
+
   # Article pages and the AP replies collection are public surfaces. A remote
   # comment ingested as followers-only/direct (rows that predate the inbox
   # refusing them) must not be shown there. Local comments are board content
@@ -889,6 +919,28 @@ defmodule Baudrate.Content.Comments do
     |> exclude_unservable_remote()
     |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
     |> Repo.one()
+  end
+
+  @doc """
+  `count_comments_for_article/1` for many articles in one query: a map of
+  article id to count, with every id present (0 when it has none). The same
+  filter, so a page of AP objects says what one object would (Phase 8D).
+  """
+  @spec count_comments_for_articles([integer()]) :: %{integer() => non_neg_integer()}
+  def count_comments_for_articles([]), do: %{}
+
+  def count_comments_for_articles(article_ids) when is_list(article_ids) do
+    counts =
+      from(c in Comment,
+        where: c.article_id in ^article_ids and is_nil(c.deleted_at),
+        group_by: c.article_id,
+        select: {c.article_id, count(c.id)}
+      )
+      |> Filters.exclude_unservable_remote()
+      |> Repo.all()
+      |> Map.new()
+
+    Map.new(article_ids, &{&1, Map.get(counts, &1, 0)})
   end
 
   @doc """

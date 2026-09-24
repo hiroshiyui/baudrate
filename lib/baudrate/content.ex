@@ -133,10 +133,13 @@ defmodule Baudrate.Content do
   defdelegate create_article_revision(article, editor), to: Articles
   defdelegate list_article_revisions(article_id), to: Articles
   defdelegate article_edited?(article), to: Articles
+  defdelegate edited_article_ids(article_ids), to: Articles
   defdelegate get_article_revision!(id), to: Articles
   defdelegate count_article_revisions(article_id), to: Articles
   defdelegate toggle_pin_article(article, actor), to: Articles
   defdelegate toggle_lock_article(article, actor), to: Articles
+
+  defdelegate list_board_arrivals(board, opts), to: Articles
 
   def paginate_articles_for_board(board, opts \\ []),
     do: Articles.paginate_articles_for_board(board, opts)
@@ -193,6 +196,8 @@ defmodule Baudrate.Content do
   defdelegate comment_edited?(comment), to: Comments
   defdelegate count_comment_revisions_for(comment_ids), to: Comments
   defdelegate count_comments_for_article(article), to: Comments
+  defdelegate count_comments_for_articles(article_ids), to: Comments
+  defdelegate list_replies_page(article, opts), to: Comments
   defdelegate search_discussion_remote_actors(article_id, term, opts \\ []), to: Comments
 
   def change_comment(comment \\ %Baudrate.Content.Comment{}, attrs \\ %{}),
@@ -220,6 +225,7 @@ defmodule Baudrate.Content do
 
   defdelegate create_remote_article_like(attrs), to: Likes
   defdelegate count_article_likes(article), to: Likes
+  defdelegate count_article_likes_for(article_ids), to: Likes
   defdelegate like_article(user_id, article_id), to: Likes
   defdelegate unlike_article(user_id, article_id), to: Likes
   defdelegate article_liked?(user_id, article_id), to: Likes

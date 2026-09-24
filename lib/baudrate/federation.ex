@@ -181,7 +181,7 @@ defmodule Baudrate.Federation do
   defdelegate followers_collection(actor_uri, page_params \\ %{}), to: Collections
   defdelegate following_collection(actor_uri, page_params \\ %{}), to: Collections
   defdelegate boards_collection(), to: Collections
-  defdelegate article_replies(article), to: Collections
+  defdelegate article_replies(article, page_params \\ %{}), to: Collections
   defdelegate search_collection(query, page_params), to: Collections
 
   # --- Inbound Followers ---

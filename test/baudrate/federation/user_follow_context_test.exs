@@ -246,7 +246,7 @@ defmodule Baudrate.Federation.UserFollowContextTest do
       root = Federation.following_collection(actor_uri)
       assert root["type"] == "OrderedCollection"
       assert root["totalItems"] == 1
-      assert root["first"] =~ "?page=1"
+      assert root["first"] =~ "?page=true"
 
       # Page 1
       page = Federation.following_collection(actor_uri, %{"page" => "1"})

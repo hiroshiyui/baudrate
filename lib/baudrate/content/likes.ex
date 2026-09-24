@@ -58,6 +58,26 @@ defmodule Baudrate.Content.Likes do
   end
 
   @doc """
+  `count_article_likes/1` for many articles in one query: a map of article id
+  to count, with every id present (Phase 8D).
+  """
+  @spec count_article_likes_for([integer()]) :: %{integer() => non_neg_integer()}
+  def count_article_likes_for([]), do: %{}
+
+  def count_article_likes_for(article_ids) when is_list(article_ids) do
+    counts =
+      from(l in ArticleLike,
+        where: l.article_id in ^article_ids,
+        group_by: l.article_id,
+        select: {l.article_id, count(l.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    Map.new(article_ids, &{&1, Map.get(counts, &1, 0)})
+  end
+
+  @doc """
   Returns the count of likes for an article.
   """
   def count_article_likes(%Article{id: article_id}) do
