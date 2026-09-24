@@ -2618,7 +2618,7 @@ and never need to know about the internal split.
 | `Federation.Discovery` | Remote actor lookup, WebFinger, and NodeInfo discovery |
 | `Federation.ActorRenderer` | JSON-LD representation of local actors (Person, Group, Organization) |
 | `Federation.ObjectBuilder` | ActivityStreams JSON-LD serialization for articles, comments, and polls |
-| `Federation.Collections` | Paginated OrderedCollection endpoints (Outbox, Followers, Boards) |
+| `Federation.Collections` | Paginated OrderedCollection endpoints (outboxes, followers, following, replies, boards, search). Keyset pages by row id (`?page=true`, `max_id`/`min_id`) since Phase 8D, with `?page=N` still answered; a page of Articles is built by `ObjectBuilder.article_objects/1` at a fixed number of queries |
 | `Federation.Follows` | Inbound follower management and outbound user/board follow lifecycle |
 | `Federation.Timeline` | Inbound activity routing to personal timelines, timeline item interactions (likes, boosts) |
 | `Federation.InboxHandler` | Dispatches incoming Activities (Follow, Create, Like, Delete, etc.) to sub-modules |
@@ -2782,7 +2782,7 @@ wrong.
 - `/ap/site` — Organization actor (instance actor, discoverable as `acct:site@host`)
 - `/ap/articles/:slug` — Article object with replies link and `baudrate:*` extensions
 - `/articles/:slug` — content-negotiated: AP `Accept` headers (`application/activity+json`, `application/ld+json`, `application/json`) are forwarded to the AS2 article endpoint by `BaudrateWeb.Plugs.ArticleApContentNeg`; browser requests fall through to `ArticleLive`. The article LiveView also emits `<link rel="alternate" type="application/activity+json" href="…/ap/articles/:slug">` for federated articles, so remote implementations can discover the AP `id` from the human URL when content negotiation isn't attempted
-- `/ap/users/:username/outbox` — paginated `OrderedCollection` of `Create(Article)`, counting and listing only the user's articles in **federated** boards (`min_role_to_view == "guest"` and `ap_enabled`); a board-less article is not in the outbox at all, because the query joins `board_articles`
+- `/ap/users/:username/outbox` — paginated `OrderedCollection` of `Create(Article)`, counting and listing only the user's articles in **federated** boards (`min_role_to_view == "guest"` and `ap_enabled`, an `exists` on `board_articles`); a board-less article is not in the outbox at all
 - `/ap/boards/:slug/outbox` — paginated `OrderedCollection` of `Announce(Article)`
 - `/ap/site/outbox` — empty `OrderedCollection`. The site actor signs instance-level activities and publishes no content of its own, but an actor that advertises an `outbox` it does not serve fails a peer's discovery: Mastodon fetches it when the actor is first seen. An explicit empty collection is the answer, not a 404
 - `/ap/users/:username/followers`, `/ap/boards/:slug/followers`, `/ap/site/followers` — `OrderedCollection` of follower actor URIs (the site actor's is empty, for the same reason as its outbox)

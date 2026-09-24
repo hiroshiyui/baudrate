@@ -546,7 +546,11 @@ Deliberately not done, and recorded nowhere else:
   (outboxes, followers, replies). Human pages keep numbered pages — the
   pager, `PaginationScrollHook`, focus handling and shared `?page` links all
   rest on them — and only their per-item queries get cheaper.
-- **P8-D5. Three releases:** 8B with 8C, then 8A, then 8D.
+- **P8-D5. Three releases:** 8B with 8C, then 8A, then 8D. *Changed
+  2026-09-25 by the operator: all of Phase 8 ships as one major release.*
+- **P8-D6. Keyed comprehensions instead of LiveView streams** for the
+  timeline, board, notification and conversation lists: all four are bounded,
+  and streams would have meant rewriting their focus and announcement code.
 
 ### 8B and 8C — Repository files and local setup — done, unreleased
 
@@ -572,21 +576,21 @@ on one trust model. A test now checks every locale holds exactly its
 template's messages. Test setup no longer times out: the roles are seeded once,
 committed, before the suite.
 
-### 8D — Performance (M)
+### 8D — Performance — done, unreleased
 
-- [ ] **Outbox and collection pages:** batch the per-item preloads and
-  counts (about 160 queries per page as of v1.18.1; `user_outbox/2`,
-  `board_outbox/2` and `article_replies/1` in `core/federation/collections.ex`
-  build each item with its own queries). Measure first, then add a test that
-  bounds the query count per page.
-- [ ] **Keyset pages for the AP collections** (P8-D4): `next`/`prev` links
-  carry a cursor; `?page=N` is still answered, because peers have those URLs
-  cached.
-- [ ] **LiveView streams** for the timeline, board, notification and
-  conversation lists — each checked against the focus and announcement rules
-  (`role="status"`, `data-focus-target`, "N new posts").
-- [ ] **Cropper.js** (108 KB) loads only on the avatar editor: esbuild
-  splitting with a dynamic import in `AvatarCropHook`.
+- **Collections:** `ObjectBuilder.article_objects/1` builds a page at a fixed
+  number of queries (a 20-item outbox page: 104 → 6; search: 101 → 9), with
+  `collections_query_count_test.exs` as the gate. The user outbox turned out
+  to list oldest first (`DISTINCT ON` replacing its `ORDER BY`); fixed.
+- **Keyset pages** for the outboxes, followers, following and replies
+  (P8-D4), `?page=N` still answered. Replies are paged at all now, and a
+  user's following no longer loads every follow into memory.
+- **Keyed comprehensions, not streams** (P8-D6, decided 2026-09-25): the four
+  lists are bounded, and `:key` gives the diff benefit without rewriting the
+  pages' focus and announcement code. Streams remain the tool for a list that
+  grows without bound; the comment tree (an EEx `for`) is not keyed yet.
+- **Cropper.js** is its own bundle, loaded by the avatar hook on demand
+  (`features/avatar_crop_test.exs`).
 
 ---
 

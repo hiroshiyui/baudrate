@@ -10,7 +10,11 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 ## [Unreleased]
 
 Phase 8, contributor health: 8B, the repository files a contributor looks
-for; 8C, local setup; and 8A, what CI checks.
+for; 8C, local setup; 8A, what CI checks; and 8D, performance.
+
+**For other servers:** the ActivityPub outboxes, followers, following and
+replies collections now link `?page=true` and continue with `max_id` (replies:
+`min_id`). The numbered `?page=N` links are still answered.
 
 ### Added
 
@@ -50,6 +54,25 @@ for; 8C, local setup; and 8A, what CI checks.
 
 ### Changed
 
+- **ActivityPub collections page by row id** (8D): `first` is `?page=true`,
+  and `next` is `?page=true&max_id=<id>`, so a page costs the same at any
+  depth and never skips or repeats an item when the collection changes between
+  two requests. The older `?page=N` is still answered.
+  - The **replies** collection is paged too (oldest first, `min_id`); it used
+    to return every comment in one document.
+  - A user's **following** collection is one query; it loaded every follow
+    the account had and paged them in memory.
+- **A page of Articles costs a fixed number of queries** (8D):
+  `ObjectBuilder.article_objects/1` preloads, counts comments and likes and
+  checks for edits for the whole page at once. A 20-item user outbox page
+  went from 104 queries to 6, and an `/ap/search` page from 101 to 9.
+- **Cropper.js loads only on the avatar editor** (8D). It was 108 KB of every
+  page's `app.js`; it is now `/assets/js/cropper.js`, which the avatar hook
+  fetches when a crop is first needed.
+- **The timeline, board, notification and conversation lists are keyed**
+  (`:key`), so loading older messages, a new arrival or a regrouped
+  notification sends only what changed. LiveView streams were considered and
+  not used: every one of these lists is bounded (decision P8-D6).
 - Server provisioning downloads `rustup-init` pinned by version and SHA-256,
   like the CI image, instead of piping `https://sh.rustup.rs` into a shell.
 - Dialyzer's first run reported 404 warnings. 344 were specs naming a
@@ -60,6 +83,10 @@ for; 8C, local setup; and 8A, what CI checks.
 
 ### Fixed
 
+- **A member's ActivityPub outbox listed their oldest posts first**, while
+  claiming newest first. Its query paired `distinct` with an `order_by`, and
+  Ecto's `DISTINCT ON` put the article id first in the order, replacing the
+  requested one. The same defect CLAUDE.md records for comment search.
 - Specs that left out an error the function returns: verifying a recovery
   contact can refuse with `:no_live_challenge`, and the delivery queue's page
   carries `per_page`. A spec for object-origin validation was so narrow that

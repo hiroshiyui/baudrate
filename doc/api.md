@@ -753,12 +753,23 @@ their own id.
 
 ## Collections
 
-All paginated collections follow the same scheme:
+The outboxes, followers, following and replies collections are paged by
+**row id** (keyset pagination, since v1.46.0):
 
-- **Without `?page`**: Returns an `OrderedCollection` root with `totalItems` and `first` link
-- **With `?page=N`**: Returns an `OrderedCollectionPage` with up to 20 items
-- **Page numbering**: 1-based (`?page=1` is the first page)
-- **Navigation**: Pages include `prev`/`next` links where applicable
+- **Without `?page`**: an `OrderedCollection` root with `totalItems` and a
+  `first` link to `?page=true`.
+- **`?page=true`**: the first `OrderedCollectionPage`, up to 20 items, newest
+  first (replies: oldest first).
+- **`next`**: `?page=true&max_id=<id>` (replies: `&min_id=<id>`), present
+  only when the page is full. The cursor is the last item's row id, so a page
+  costs the same at any depth and never skips or repeats an item when the
+  collection changes between two requests. A cursor that is not a positive
+  integer is ignored and the first page is served.
+- **`?page=N`**: the older numbered form is still answered for the
+  outboxes, followers and following, with `prev`/`next` in the same form,
+  because peers have those URLs cached. For replies it serves the first page.
+- Search (`/ap/search`) keeps numbered pages: it is ordered by the query, not
+  by a row id.
 
 **Root collection example:**
 
@@ -768,7 +779,7 @@ All paginated collections follow the same scheme:
   "id": "https://example.com/ap/users/alice/outbox",
   "type": "OrderedCollection",
   "totalItems": 42,
-  "first": "https://example.com/ap/users/alice/outbox?page=1"
+  "first": "https://example.com/ap/users/alice/outbox?page=true"
 }
 ```
 
@@ -777,11 +788,10 @@ All paginated collections follow the same scheme:
 ```json
 {
   "@context": "https://www.w3.org/ns/activitystreams",
-  "id": "https://example.com/ap/users/alice/outbox?page=2",
+  "id": "https://example.com/ap/users/alice/outbox?page=true&max_id=1234",
   "type": "OrderedCollectionPage",
   "partOf": "https://example.com/ap/users/alice/outbox",
-  "prev": "https://example.com/ap/users/alice/outbox?page=1",
-  "next": "https://example.com/ap/users/alice/outbox?page=3",
+  "next": "https://example.com/ap/users/alice/outbox?page=true&max_id=1190",
   "orderedItems": [ ... ]
 }
 ```
@@ -792,7 +802,7 @@ All paginated collections follow the same scheme:
 
 ```
 GET /ap/users/:username/outbox
-GET /ap/users/:username/outbox?page=1
+GET /ap/users/:username/outbox?page=true
 ```
 
 **Auth:** HTTP Signature required if authorized fetch is enabled
@@ -800,8 +810,10 @@ GET /ap/users/:username/outbox?page=1
 
 Returns `Create` activities wrapping Article objects. Only articles in
 **federated** boards (`min_role_to_view == "guest"` **and** `ap_enabled == true`)
-are listed; a board-less article is not listed here at all, because the query
-joins `board_articles`. `totalItems` and the pages apply the same filter.
+are listed; a board-less article is not listed here at all. `totalItems` and the
+pages apply the same filter, and pages are newest first. (Until v1.46.0 they
+were oldest first, despite saying otherwise: the query's `DISTINCT ON` replaced
+its `ORDER BY`.)
 
 **Item structure:**
 
@@ -823,7 +835,7 @@ joins `board_articles`. `totalItems` and the pages apply the same filter.
 
 ```
 GET /ap/boards/:slug/outbox
-GET /ap/boards/:slug/outbox?page=1
+GET /ap/boards/:slug/outbox?page=true
 ```
 
 **Auth:** HTTP Signature required if authorized fetch is enabled
@@ -869,7 +881,7 @@ is the answer, not a 404.
 
 ```
 GET /ap/users/:username/followers
-GET /ap/users/:username/followers?page=1
+GET /ap/users/:username/followers?page=true
 ```
 
 **Auth:** HTTP Signature required if authorized fetch is enabled
@@ -883,7 +895,7 @@ Items are remote actor URIs (strings).
 
 ```
 GET /ap/boards/:slug/followers
-GET /ap/boards/:slug/followers?page=1
+GET /ap/boards/:slug/followers?page=true
 ```
 
 **Auth:** HTTP Signature required if authorized fetch is enabled
@@ -915,7 +927,7 @@ must not get a 404.
 
 ```
 GET /ap/users/:username/following
-GET /ap/users/:username/following?page=1
+GET /ap/users/:username/following?page=true
 ```
 
 **Auth:** HTTP Signature required if authorized fetch is enabled
@@ -930,7 +942,7 @@ Items are remote actor URIs (strings) and local user actor URIs.
 
 ```
 GET /ap/boards/:slug/following
-GET /ap/boards/:slug/following?page=1
+GET /ap/boards/:slug/following?page=true
 ```
 
 **Auth:** HTTP Signature required if authorized fetch is enabled
@@ -939,7 +951,7 @@ GET /ap/boards/:slug/following?page=1
 
 Returns an `OrderedCollection` root whose `totalItems` counts the remote actors
 the board follows — accepted board follows only, which is how remote content is
-routed into a board — and `?page=N` returns an `OrderedCollectionPage` of their
+routed into a board — and `?page=true` returns an `OrderedCollectionPage` of their
 actor URIs, 20 per page, newest follow first. Paginated like every other
 collection. It is **not** empty: a board following remote actors is the
 mechanism, not an edge case.
@@ -976,6 +988,7 @@ paginated** — all boards are returned in a single response.
 
 ```
 GET /ap/articles/:slug/replies
+GET /ap/articles/:slug/replies?page=true
 ```
 
 **Auth:** HTTP Signature required if authorized fetch is enabled
@@ -984,8 +997,9 @@ GET /ap/articles/:slug/replies
 `GET /ap/articles/:slug` (no federated board, non-public remote visibility, or a
 suspended actor / blocked domain).
 
-Returns an `OrderedCollection` of comments as Note objects. **Not paginated**
-— all comments are returned in a single response. Soft-deleted comments, and
+Returns an `OrderedCollection` of comments as Note objects, paged oldest
+first (`?page=true`, then `?page=true&min_id=<id>`); until v1.46.0 every
+comment was returned in one document. Soft-deleted comments, and
 remote comments ingested as `followers_only`/`direct` or belonging to a
 suspended actor or blocked domain, are left out.
 
