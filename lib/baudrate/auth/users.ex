@@ -187,18 +187,25 @@ defmodule Baudrate.Auth.Users do
   that is where every other account notice comes from — a second approval path
   must not be able to skip it. Until Phase 4D approval was silent, and a member
   discovered it by trying to post and finding they now could.
+
+  **Only a pending account can be approved**, checked in the `UPDATE` itself.
+  The id comes from the client, and approving a banned account used to set it
+  `active` with its ban fields still set — an unban that skipped
+  `Auth.unban_user/2`'s rank check, its log line and its notice. Anything
+  but `pending` returns `{:error, :not_pending}`.
   """
-  def approve_user(user) do
-    user
-    |> User.status_changeset(%{status: "active"})
-    |> Repo.update()
-    |> tap(fn
-      {:ok, approved} ->
+  @spec approve_user(User.t()) :: {:ok, User.t()} | {:error, :not_pending}
+  def approve_user(%User{id: id}) do
+    from(u in User, where: u.id == ^id and u.status == "pending", select: u)
+    |> Repo.update_all(set: [status: "active", updated_at: DateTime.utc_now(:second)])
+    |> case do
+      {1, [approved]} ->
         Baudrate.Notification.Hooks.notify_account_security(approved.id, "registration_approved")
+        {:ok, Repo.preload(approved, :role)}
 
       _ ->
-        :ok
-    end)
+        {:error, :not_pending}
+    end
   end
 
   @doc """

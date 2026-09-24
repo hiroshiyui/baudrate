@@ -299,15 +299,6 @@ defmodule Baudrate.Setup.User do
     |> cast(attrs, [:totp_secret, :totp_enabled, :totp_enabled_at, :totp_last_used_step])
   end
 
-  @doc "Changeset for setting user status to `\"active\"` or `\"pending\"`."
-  def status_changeset(user, attrs) do
-    user
-    |> cast(attrs, [:status])
-    |> validate_required([:status])
-    |> validate_inclusion(:status, ["active", "pending"])
-    |> refuse_deleted()
-  end
-
   @doc """
   Changeset for the account's aliases (`also_known_as`). Only
   `Baudrate.AccountMigration` calls it, with actor ids it has resolved.

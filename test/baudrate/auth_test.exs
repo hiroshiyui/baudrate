@@ -384,6 +384,22 @@ defmodule Baudrate.AuthTest do
 
       {:ok, approved} = Auth.approve_user(user)
       assert approved.status == "active"
+      assert {:error, :not_pending} = Auth.approve_user(approved)
+    end
+
+    # The id comes from the client: approving a banned account would be an
+    # unban that skips unban_user/2's rank check, log line and notice.
+    test "refuses a banned or deleted account" do
+      admin = create_user("admin")
+      target = create_user("user")
+      {:ok, banned, _} = Auth.ban_user(target, admin, "spam")
+
+      assert {:error, :not_pending} = Auth.approve_user(banned)
+      assert Repo.get!(User, banned.id).status == "banned"
+
+      tomb = create_user("user")
+      tomb |> Ecto.Changeset.change(status: "deleted") |> Repo.update!()
+      assert {:error, :not_pending} = Auth.approve_user(tomb)
     end
   end
 
