@@ -360,7 +360,9 @@
           id={"admin-user-detail-report-about-#{report.id}"}
           class="admin-user-detail-report text-sm break-words"
         >
-          <span class="admin-user-detail-report-status badge badge-sm">{report.status}</span>
+          <span class="admin-user-detail-report-status badge badge-sm">
+            {translate_report_status(report.status)}
+          </span>
           <time datetime={datetime_attr(report.inserted_at)}>
             {format_datetime(report.inserted_at)}
           </time>
@@ -387,7 +389,9 @@
           id={"admin-user-detail-report-by-#{report.id}"}
           class="admin-user-detail-report text-sm break-words"
         >
-          <span class="admin-user-detail-report-status badge badge-sm">{report.status}</span>
+          <span class="admin-user-detail-report-status badge badge-sm">
+            {translate_report_status(report.status)}
+          </span>
           <time datetime={datetime_attr(report.inserted_at)}>
             {format_datetime(report.inserted_at)}
           </time>

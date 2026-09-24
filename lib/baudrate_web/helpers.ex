@@ -416,6 +416,7 @@ defmodule BaudrateWeb.Helpers do
   def translate_delivery_status("pending"), do: gettext("pending")
   def translate_delivery_status("delivered"), do: gettext("delivered")
   def translate_delivery_status("failed"), do: gettext("failed")
+  def translate_delivery_status("abandoned"), do: gettext("abandoned")
   def translate_delivery_status(other), do: other
 
   @doc """

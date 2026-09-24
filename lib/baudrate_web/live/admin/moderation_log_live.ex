@@ -129,4 +129,22 @@ defmodule BaudrateWeb.Admin.ModerationLogLive do
   def translate_action("abandon_deliveries"), do: gettext("Abandon Deliveries")
   def translate_action("close_delivery_circuit"), do: gettext("Close Delivery Circuit")
   def translate_action(other), do: other
+
+  @doc """
+  The label a log entry's target kind is shown under — the `target_type`
+  strings `Moderation.log_action/3` callers pass.
+  """
+  def translate_target_type("user"), do: gettext("User")
+  def translate_target_type("article"), do: gettext("Article")
+  def translate_target_type("comment"), do: gettext("Comment")
+  def translate_target_type("board"), do: gettext("Board")
+  def translate_target_type("bot"), do: gettext("Bot")
+  def translate_target_type("report"), do: gettext("Report")
+  def translate_target_type("content_filter"), do: gettext("Content filter")
+  def translate_target_type("held_post"), do: gettext("Held post")
+  def translate_target_type("ip_ban"), do: gettext("IP ban")
+  def translate_target_type("remote"), do: gettext("Remote account")
+  def translate_target_type("shared"), do: gettext("Shared inbox")
+  def translate_target_type("timeline_reply"), do: gettext("Timeline reply")
+  def translate_target_type(other), do: other
 end

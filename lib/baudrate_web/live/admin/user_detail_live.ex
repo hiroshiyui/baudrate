@@ -37,7 +37,8 @@ defmodule BaudrateWeb.Admin.UserDetailLive do
   alias Baudrate.Setup
   alias BaudrateWeb.RateLimits
 
-  import BaudrateWeb.Helpers, only: [parse_id: 1, translate_role: 1, translate_status: 1]
+  import BaudrateWeb.Helpers,
+    only: [parse_id: 1, translate_role: 1, translate_status: 1, translate_report_status: 1]
 
   @kinds ~w(warn silence suspend)
 

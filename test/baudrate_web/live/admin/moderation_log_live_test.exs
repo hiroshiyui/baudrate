@@ -24,6 +24,23 @@ defmodule BaudrateWeb.Admin.ModerationLogLiveTest do
            "shown as a bare identifier in the log: #{inspect(untranslated)}"
   end
 
+  test "every target kind a caller logs has a label" do
+    kinds =
+      Path.wildcard("lib/**/*.ex")
+      |> Enum.flat_map(
+        &Regex.scan(~r/target_type: "([a-z_]+)"/, File.read!(&1), capture: :all_but_first)
+      )
+      |> List.flatten()
+      |> Enum.uniq()
+
+    assert kinds != []
+
+    untranslated =
+      Enum.filter(kinds, &(BaudrateWeb.Admin.ModerationLogLive.translate_target_type(&1) == &1))
+
+    assert untranslated == [], "shown as a bare identifier in the log: #{inspect(untranslated)}"
+  end
+
   test "admin can view moderation log", %{conn: conn} do
     admin = setup_user("admin")
     conn = log_in_admin(conn, admin)
