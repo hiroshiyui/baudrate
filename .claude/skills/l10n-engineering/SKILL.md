@@ -36,29 +36,56 @@ When performing l10n engineering, always follow these steps. The locales are
    the number of new messages, how many were "reworded (fuzzy)", and how many
    were removed.
 
-3. **Review every new or reworded msgid by hand.** Start from
-   `git diff priv/gettext/default.pot | grep '^+msgid'`, not only the entries
-   left with `msgstr ""`.
-   - **The fuzzy matcher mistranslates silently.** It attaches a plausible,
-     wrong translation from a similar string. Real examples: "Admin Dashboard"
-     → 管理看板 (看板 means *board*), "%{count} waiting" → "%{count} minutes
-     ago", "abandoned" → "Job abandoned.", "Dismiss" reused as the report
-     sense 駁回 / 却下. Rewrite every fuzzy entry and remove its `fuzzy` flag.
-   - **`en` stays blank.** Every `en` msgstr is empty so Gettext falls back
-     to the msgid; blank it, never retype the English. `en` must keep exactly
-     its existing count of `fuzzy` flags (109 at the time of writing) —
-     `grep -c fuzzy priv/gettext/en/LC_MESSAGES/default.po` before and after.
+3. **Fix every fuzzy entry — new or old, in every locale.** A `fuzzy` flag
+   means `mix gettext.extract --merge` guessed the translation from a similar
+   msgid and nobody checked it, and **Gettext serves it anyway**. There is no
+   acceptable number of them: the target is **zero in every locale and
+   domain**, and `translation_coverage_test.exs` fails on any.
+   - Find them: `grep -n -A3 '^#,.*fuzzy' priv/gettext/*/LC_MESSAGES/*.po`,
+     plus every new msgid in `git diff priv/gettext/default.pot | grep '^+msgid'`
+     (review those even when not flagged — an entry left with `msgstr ""`
+     is new too).
+   - **zh_TW / ja_JP:** write the real translation by hand against the msgid
+     in front of you, then delete `fuzzy` from the `#,` line (keep the other
+     flags) and any `#|` previous-msgid lines. Real guesses the matcher made:
+     "Admin Dashboard" → 管理看板 (看板 is *board*), "%{count} waiting" →
+     "%{count} minutes ago", "abandoned" → "Job abandoned.".
+   - **en:** blank the `msgstr` (Gettext falls back to the msgid, which *is*
+     the English) and delete the flag. Never retype the English.
    - **Plurals:** `zh_TW` and `ja_JP` have `nplurals=1` (only `msgstr[0]`);
      `en` has two forms.
-   - **A reused msgid reuses its meaning.** If an existing msgid's translation
-     does not fit the new place ("Dismiss", "Posted", "Order", "From", "To"),
-     use a different msgid rather than a translation that is wrong in one of
-     the two places.
+   - **A reused msgid reuses its meaning.** If an existing msgid's
+     translation does not fit the new place ("Dismiss" is the report sense
+     駁回 / 却下; "Posted", "Order", "From", "To"), use a different msgid
+     rather than a translation that is wrong in one of the two places.
    - A string whose translation really is the English (an example value in a
-     placeholder) is written out in full, with a translator comment saying
+     placeholder) is written out in full with a translator comment saying
      so; an empty entry cannot be told from an oversight.
-   - Keep orphans out: messages the merge reports as removed must not linger,
-     and `mix gettext.extract --merge` run again must report nothing new.
+   - Keep orphans out: running `mix gettext.extract --merge` again must
+     report nothing new, reworded or removed.
+
+3a. **Fix wrong translations that are not flagged.** The matcher's guesses
+   lose their flag the moment someone clears it without reading, and older
+   entries predate the gates — so every run also audits what is already
+   there, and **fixes what it finds in the same run**, not in a follow-up:
+   - **Forbidden terms:**
+     `grep -nE '版面|板塊|用戶|繁體中文|正體中文' priv/gettext/zh_TW/LC_MESSAGES/*.po`
+     and `grep -n 'ボード' priv/gettext/ja_JP/LC_MESSAGES/*.po` (ダッシュボード
+     is fine). Each hit is rewritten with the table's term.
+   - **Terms that drifted:** for each row of the table in step 4, grep the
+     msgids that contain the English term and check their msgstrs use the
+     settled translation — e.g. every msgid with "delivery" says 遞送 / 配信,
+     every one with "board" says 看板 / 掲示板.
+   - **Meaning that drifted:** read the msgstr beside its msgid for every
+     entry near what changed (same file, same feature), and for any entry
+     whose msgid is short and generic ("Dismiss", "Close", "Remove",
+     "Status", "Open"), where one translation is most likely shared by two
+     senses. Check that bindings match (`%{…}` names and count) — the
+     coverage test catches extra bindings, not a dropped one.
+   - **en entries that are not blank** are wrong by definition (the test
+     fails on them); blank them.
+   - Report what was fixed, with the msgid and the old and new msgstr, in
+     the commit message.
 
 4. **Terminology is consistent across locales.** Before translating, look up
    how the concept is already translated (`grep -A1 '^msgid "X"$'` in both
@@ -110,8 +137,9 @@ When performing l10n engineering, always follow these steps. The locales are
 
 7. **Run the gates.**
    - `mix test test/baudrate_web/translation_coverage_test.exs`. It fails on
-     an empty `zh_TW` or `ja_JP` msgstr and on any `en` msgstr that differs
-     from its msgid.
+     an empty `zh_TW` or `ja_JP` msgstr, on any `en` msgstr that differs from
+     its msgid, on a translation that interpolates a binding its message does
+     not pass, and on **any entry still marked fuzzy, in any locale**.
    - Any label-coverage tests touched in step 1.
    - The full suite with seed 9527 in 4 partitions.
    - When templates or CSS changed, the browser crawls:

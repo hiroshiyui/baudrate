@@ -96,6 +96,33 @@ defmodule BaudrateWeb.TranslationCoverageTest do
            """
   end
 
+  test "no entry in any locale is still marked fuzzy" do
+    flagged =
+      for locale <- ["en" | @locales],
+          domain <- @domains,
+          path = Path.join(["priv/gettext", locale, "LC_MESSAGES", "#{domain}.po"]),
+          File.exists?(path),
+          block <- String.split(File.read!(path), "\n\n"),
+          Regex.match?(~r/^#,.*\bfuzzy\b/m, block),
+          [msgid] <- [capture(block, ~r/^msgid ((?:"(?:[^"\\]|\\.)*"\n?)+)/m)] do
+        "#{locale}/#{domain}: #{inspect(msgid)}"
+      end
+
+    assert flagged == [],
+           """
+           These entries are still marked fuzzy:
+
+           #{Enum.join(flagged, "\n")}
+
+           A fuzzy flag means `mix gettext.extract --merge` guessed the
+           translation from a similar msgid and nobody has checked it — and
+           Gettext serves it anyway. Review each one by hand: write the real
+           translation (zh_TW, ja_JP) or blank the msgstr (en), then delete
+           `fuzzy` from its `#,` line. A leftover flag on a correct entry is
+           not harmless either: it hides the next real one in the count.
+           """
+  end
+
   test "no translation interpolates a binding its message does not provide" do
     stray =
       for locale <- @locales,
