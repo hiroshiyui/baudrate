@@ -22,9 +22,13 @@ defmodule BaudrateWeb.ProfilePagesTest do
     {"/profile/account", "account"}
   ]
 
+  # The user first, then the setting: every other async test seeds roles
+  # before it writes `setup_completed`, and each sandbox transaction holds
+  # its uncommitted unique keys until the test ends, so taking the two in
+  # the opposite order here deadlocked against them.
   setup %{conn: conn} do
-    Repo.insert!(%Setting{key: "setup_completed", value: "true"})
     user = setup_user("user")
+    Repo.insert!(%Setting{key: "setup_completed", value: "true"})
     %{conn: log_in_user(conn, user)}
   end
 
