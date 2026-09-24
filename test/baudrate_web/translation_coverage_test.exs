@@ -36,6 +36,38 @@ defmodule BaudrateWeb.TranslationCoverageTest do
   @locales ~w(zh_TW ja_JP)
   @domains ~w(default errors)
 
+  # `mix gettext.extract --check-up-to-date` (run in CI) proves the `.pot`
+  # templates match the code; this proves every locale was merged from them.
+  # A message missing from a `.po` file entirely is not "untranslated" to the
+  # test above — it is invisible, and Gettext silently renders the English.
+  test "every locale holds exactly the messages of its template" do
+    drift =
+      for domain <- @domains,
+          pot = Path.join("priv/gettext", "#{domain}.pot"),
+          File.exists?(pot),
+          expected = msgids(pot),
+          locale <- ["en" | @locales],
+          po = Path.join(["priv/gettext", locale, "LC_MESSAGES", "#{domain}.po"]),
+          actual = if(File.exists?(po), do: msgids(po), else: MapSet.new()),
+          {label, ids} <- [
+            {"missing", MapSet.difference(expected, actual)},
+            {"not in the template", MapSet.difference(actual, expected)}
+          ],
+          id <- Enum.sort(ids) do
+        "#{locale}/#{domain} #{label}: #{inspect(id)}"
+      end
+
+    assert drift == [],
+           """
+           These locale files do not match their templates:
+
+           #{Enum.join(drift, "\n")}
+
+           Run `mix gettext.extract --merge`, then review every new or fuzzy
+           entry by hand.
+           """
+  end
+
   test "no message in zh_TW or ja_JP is left untranslated" do
     missing =
       for locale <- @locales,
@@ -175,6 +207,15 @@ defmodule BaudrateWeb.TranslationCoverageTest do
 
   # Blocks are separated by blank lines. Within a block, a msgid or msgstr can
   # span several quoted lines, which gettext concatenates.
+  defp msgids(path) do
+    path
+    |> File.read!()
+    |> entries()
+    |> Enum.map(fn {msgid, plural, _} -> {msgid, plural} end)
+    |> Enum.reject(&(&1 == {"", ""}))
+    |> MapSet.new()
+  end
+
   defp entries(source) do
     source
     |> String.split("\n\n")
