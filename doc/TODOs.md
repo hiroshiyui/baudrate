@@ -556,25 +556,21 @@ and update `SECURITY.md` before then**), `CODE_OF_CONDUCT.md`, issue forms and
 a PR checklist; the dev container on the CI image (P8-D1); database settings
 from the `PG*` variables; `doc/door-apps-development.md` removed (P8-D3).
 
-### 8A — CI (M)
+### 8A — CI — done, unreleased
 
-- [ ] **Translations extracted:** `mix gettext.extract --check-up-to-date`
-  in the test job, beside `translation_coverage_test.exs` (which already
-  fails on fuzzy and empty entries).
-- [ ] **Coverage report:** each partition exports its coverage and a
-  follow-up job merges them (`mix test.coverage`) and uploads the HTML with
-  `actions/upload-artifact`. Report only — no threshold, which would reward
-  tests written for the number.
-- [ ] **Dialyzer** (`dialyxir`, dev/test only), with its PLT cached. The
-  existing warnings are fixed where cheap and the rest recorded in an ignore
-  file, so CI fails only on new ones.
-- [ ] **NIF crates:** `clippy` added to the CI image's toolchain (an image
-  rebuild and an `image.lock` bump); `cargo clippy -- -D warnings` and
-  `cargo test` for the three crates. They have no `#[test]` today, so the
-  logic is split from the NIF glue where it has to be, and each crate gets
-  tests for what it guards (the sanitizer's allow-list above all).
-- [ ] **Ansible:** `ansible-lint` on the playbooks, installed in the CI image
-  with hash-pinned requirements (no unpinned download, ADR 0027).
+A **Static checks** job: `mix gettext.extract --check-up-to-date`; Dialyzer
+against a reviewed baseline (404 warnings became 54, listed by file and kind;
+344 were schemas without a `t/0` type, and the review fixed three wrong specs
+and a dead refusal); clippy and `cargo test` for the three NIF crates, which
+now have 30 unit tests (they found the feed parser keeping non-adjacent
+repeated tags); and `ansible-lint` at the `production` profile, whose one real
+finding was provisioning piping `sh.rustup.rs` into a shell. A **Coverage**
+job merges the partitions into one report, with no threshold. The CI image
+gains clippy and ansible-lint from their signed sources — Debian's
+`ansible-lint` rather than hash-pinned pip requirements, which keeps the image
+on one trust model. A test now checks every locale holds exactly its
+template's messages. Test setup no longer times out: the roles are seeded once,
+committed, before the suite.
 
 ### 8D — Performance (M)
 

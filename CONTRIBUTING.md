@@ -67,8 +67,19 @@ mix test --include feature test/baudrate_web/features/
 ```
 
 `mix precommit` runs what CI checks first: compiling with warnings as
-errors, formatting, Credo and the tests. CI also runs Sobelow and a
-dependency audit, and every Sobelow finding fails the build.
+errors, formatting, Credo and the tests. CI also runs:
+
+- Sobelow and a dependency audit (every Sobelow finding fails the build);
+- `mix gettext.extract --check-up-to-date`;
+- `mix dialyzer`, which fails on any warning not in the reviewed
+  `.dialyzer_ignore.exs` (the first run builds a PLT in `priv/plts` and takes
+  several minutes);
+- `cargo clippy --all-targets -- -D warnings` and `cargo test` in each crate
+  under `native/`;
+- `ansible-lint` in `ansible/`;
+- a coverage report for the whole suite, as a downloadable artifact.
+
+The dev container has every one of these tools.
 
 ## Where to start reading
 

@@ -9,8 +9,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Phase 8's first release: 8B, the repository files a contributor looks for,
-and 8C, local setup. Nothing an instance runs has changed.
+Phase 8, contributor health: 8B, the repository files a contributor looks
+for; 8C, local setup; and 8A, what CI checks.
 
 ### Added
 
@@ -32,11 +32,47 @@ and 8C, local setup. Nothing an instance runs has changed.
   `verify-toolchain.sh` fails when its digests drift from CI's, and the CI
   image workflow updates it with every image bump.
 
+- **CI's Static checks job** (8A): translations must be extracted from the
+  code, Dialyzer must report nothing outside a reviewed baseline, the three
+  NIF crates must pass `clippy -D warnings` and their own unit tests, and the
+  Ansible playbooks must pass `ansible-lint` at its strictest profile. A
+  **Coverage** job merges the four test partitions into one report,
+  published as a CI artifact, with no threshold. The CI image gains clippy
+  and ansible-lint.
+- **Rust unit tests** for the sanitizer (what federated and Markdown HTML may
+  keep, and that image sources stay within what the media proxy rewrites),
+  the link extractor that the limits on new accounts and the filters rely on,
+  and the feed parser. Each NIF is now a one-line wrapper around a plain
+  function the tests call.
+- A test that every locale's `.po` file holds exactly the messages of its
+  template, which `translation_coverage_test.exs` could not see before: a
+  message missing from a locale entirely rendered in English with no failure.
+
 ### Changed
 
+- Server provisioning downloads `rustup-init` pinned by version and SHA-256,
+  like the CI image, instead of piping `https://sh.rustup.rs` into a shell.
+- Dialyzer's first run reported 404 warnings. 344 were specs naming a
+  schema's `t/0` type that did not exist; the 28 schemas now define it.
 - The development and test database settings read `PGUSER`, `PGPASSWORD`,
   `PGHOST` and `PGPORT` (and `PGDATABASE` in development), with the old
   values as defaults.
+
+### Fixed
+
+- Specs that left out an error the function returns: verifying a recovery
+  contact can refuse with `:no_live_challenge`, and the delivery queue's page
+  carries `per_page`. A spec for object-origin validation was so narrow that
+  a correct guard in the inbox looked impossible.
+- The feed parser removed only *adjacent* repeated categories, so `a, b, a`
+  kept both `a`s (the Elixir side removed them again, so no post showed a
+  duplicate tag).
+- The invite pages handled an `:account_too_new` refusal that invite
+  generation stopped returning in March; the dead branch and its message are
+  gone.
+- Test setup no longer times out under load: about twenty async test files
+  seeded the roles table, each waiting on the previous test's uncommitted
+  insert. The roles are now seeded once, committed, before the suite.
 
 ### Removed
 
