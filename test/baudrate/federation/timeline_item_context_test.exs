@@ -178,6 +178,20 @@ defmodule Baudrate.Federation.TimelineItemContextTest do
       result2 = Federation.list_timeline_items(user, page: 2)
       assert length(result2.items) == 5
     end
+
+    # Each source is read up to `offset + per_page` and merged in memory, so a
+    # page past the end used to read the viewer's whole timeline to show
+    # nothing. It reads nothing now, however far past the end it is.
+    test "a page past the end is empty and reads no rows", %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      Federation.create_timeline_item(timeline_item_attrs(actor))
+
+      for page <- [2, 99_999_999_999_999_999_999] do
+        result = Federation.list_timeline_items(user, page: page)
+        assert result.items == []
+        assert result.total == 1
+      end
+    end
   end
 
   describe "list_timeline_items/2 local follows" do

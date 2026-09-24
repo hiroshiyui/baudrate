@@ -134,6 +134,20 @@ defmodule Baudrate.Federation.CollectionsPaginationTest do
       end
     end
 
+    test "an out-of-range ?page=N is an empty page, not an error", %{board: board, user: user} do
+      post(user, board, 1)
+
+      for page <- ["99999999999999999999", "1000001"] do
+        result = Collections.user_outbox(user, %{"page" => page})
+        assert result["orderedItems"] == []
+        assert result["id"] =~ "?page=#{Baudrate.Pagination.max_page()}"
+      end
+
+      assert Collections.board_outbox(board, %{"page" => "99999999999999999999"})[
+               "orderedItems"
+             ] == []
+    end
+
     test "is empty for a banned account", %{board: board, user: user} do
       post(user, board, 2)
       user = %{user | status: "banned"}

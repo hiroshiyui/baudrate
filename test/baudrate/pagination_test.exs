@@ -152,6 +152,15 @@ defmodule Baudrate.PaginationTest do
     test "calculates correct offset" do
       assert {5, 10, 40} = Pagination.paginate_opts([page: 5, per_page: 10], 20)
     end
+
+    test "caps the page, so the offset always fits a bigint" do
+      max = Pagination.max_page()
+
+      assert {^max, 20, offset} =
+               Pagination.paginate_opts([page: 99_999_999_999_999_999_999], 20)
+
+      assert offset < 9_223_372_036_854_775_807
+    end
   end
 
   describe "Pagination.paginate_query/3" do

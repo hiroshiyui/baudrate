@@ -579,9 +579,11 @@ defmodule Baudrate.Federation.Collections do
   defp last_id([], _id_of), do: nil
   defp last_id(rows, id_of), do: rows |> List.last() |> id_of.()
 
+  # Capped like every other listing (`Baudrate.Pagination.max_page/0`):
+  # the offset form multiplies it, and an overflowing `OFFSET` raised.
   defp parse_page(%{"page" => page}) when is_binary(page) do
     case Integer.parse(page) do
-      {n, ""} when n >= 1 -> n
+      {n, ""} when n >= 1 -> min(n, Baudrate.Pagination.max_page())
       _ -> nil
     end
   end

@@ -106,6 +106,11 @@ defmodule BaudrateWeb.HelpersTest do
       assert Helpers.parse_page("abc") == 1
     end
 
+    # A page that large overflowed the bigint OFFSET and raised (a 500).
+    test "caps a huge page at Pagination.max_page/0" do
+      assert Helpers.parse_page("99999999999999999999") == Baudrate.Pagination.max_page()
+    end
+
     test "empty string returns 1" do
       assert Helpers.parse_page("") == 1
     end

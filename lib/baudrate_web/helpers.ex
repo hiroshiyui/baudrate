@@ -107,7 +107,8 @@ defmodule BaudrateWeb.Helpers do
 
   @doc """
   Parses a page number from a string parameter.
-  Returns 1 for nil, invalid, or non-positive values.
+  Returns 1 for nil, invalid, or non-positive values, and at most
+  `Baudrate.Pagination.max_page/0`.
 
   ## Examples
 
@@ -119,12 +120,15 @@ defmodule BaudrateWeb.Helpers do
 
       iex> BaudrateWeb.Helpers.parse_page("abc")
       1
+
+      iex> BaudrateWeb.Helpers.parse_page("99999999999999999999")
+      1_000_000
   """
   def parse_page(nil), do: 1
 
   def parse_page(str) when is_binary(str) do
     case Integer.parse(str) do
-      {n, ""} when n > 0 -> n
+      {n, ""} when n > 0 -> min(n, Baudrate.Pagination.max_page())
       _ -> 1
     end
   end

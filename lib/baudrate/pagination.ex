@@ -9,14 +9,27 @@ defmodule Baudrate.Pagination do
   import Ecto.Query
   alias Baudrate.Repo
 
+  # A page number arrives from a query string. Beyond this it names nothing a
+  # listing here could hold, and a large enough one made `(page - 1) *
+  # per_page` overflow PostgreSQL's bigint `OFFSET`, which Postgrex refuses
+  # to encode — a 500 for anybody who typed `?page=99999999999999999999`.
+  @max_page 1_000_000
+
+  @doc """
+  The largest page number any listing answers; larger ones are treated as it.
+  """
+  @spec max_page() :: pos_integer()
+  def max_page, do: @max_page
+
   @doc """
   Extracts pagination options from a keyword list.
 
-  Returns `{page, per_page, offset}` where `page` is at least 1.
+  Returns `{page, per_page, offset}` where `page` is between 1 and
+  `max_page/0`.
 
   ## Options
 
-    * `:page` — page number (default 1, clamped to min 1)
+    * `:page` — page number (default 1, clamped to 1..`max_page/0`)
     * `:per_page` — items per page (default `default_per_page`)
     * `:max_per_page` — maximum allowed per_page (optional, clamps value)
 
@@ -31,13 +44,16 @@ defmodule Baudrate.Pagination do
       iex> Baudrate.Pagination.paginate_opts([page: -1], 20)
       {1, 20, 0}
 
+      iex> Baudrate.Pagination.paginate_opts([page: 99_999_999_999_999_999_999], 20)
+      {1_000_000, 20, 19_999_980}
+
       iex> Baudrate.Pagination.paginate_opts([per_page: 100], 20, max_per_page: 50)
       {1, 50, 0}
   """
   @spec paginate_opts(keyword(), pos_integer(), keyword()) ::
           {pos_integer(), pos_integer(), non_neg_integer()}
   def paginate_opts(opts, default_per_page, extra_opts \\ []) do
-    page = max(Keyword.get(opts, :page, 1), 1)
+    page = opts |> Keyword.get(:page, 1) |> max(1) |> min(@max_page)
     per_page = Keyword.get(opts, :per_page, default_per_page)
 
     per_page =

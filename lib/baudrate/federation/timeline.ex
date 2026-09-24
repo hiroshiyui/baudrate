@@ -232,10 +232,12 @@ defmodule Baudrate.Federation.Timeline do
 
     total = remote_total + local_total + comment_total
 
+    limit = read_limit(offset, per_page, total)
+
     remote_items =
       from([fi, _uf, ra] in remote_query,
         order_by: [desc: fi.published_at, desc: fi.id],
-        limit: ^(offset + per_page),
+        limit: ^limit,
         preload: [:remote_actor, :boosted_by_actor]
       )
       |> Repo.all()
@@ -246,7 +248,7 @@ defmodule Baudrate.Federation.Timeline do
     local_articles =
       from(a in local_query,
         order_by: [desc: a.inserted_at, desc: a.id],
-        limit: ^(offset + per_page),
+        limit: ^limit,
         preload: [:user, :article_images, boards: []]
       )
       |> Repo.all()
@@ -279,7 +281,7 @@ defmodule Baudrate.Federation.Timeline do
     comment_items =
       from([c, _a] in comment_query,
         order_by: [desc: c.inserted_at, desc: c.id],
-        limit: ^(offset + per_page),
+        limit: ^limit,
         preload: [:user, :remote_actor, article: :user]
       )
       |> Repo.all()
@@ -303,6 +305,12 @@ defmodule Baudrate.Federation.Timeline do
       total_pages: total_pages
     }
   end
+
+  # Each source is read to `offset + per_page` and merged in memory, so a
+  # page past the end would read every row the viewer can see and show none
+  # of them. Past the end there is nothing to read.
+  defp read_limit(offset, _per_page, total) when offset >= total, do: 0
+  defp read_limit(offset, per_page, _total), do: offset + per_page
 
   @doc """
   Returns a timeline item by its ActivityPub ID, or nil.
