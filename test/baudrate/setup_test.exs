@@ -110,13 +110,15 @@ defmodule Baudrate.SetupTest do
     end
 
     test "rolls back on invalid user attrs" do
+      roles_before = Repo.all(Role)
+
       assert {:error, :admin_user, _changeset, _changes} =
                Setup.complete_setup("My Site", %{"username" => ""})
 
       # Verify nothing was persisted
       refute Repo.get_by(Setting, key: "site_name")
       refute Repo.get_by(Setting, key: "setup_completed")
-      assert Repo.all(Role) == []
+      assert Repo.all(Role) == roles_before
     end
 
     test "returns recovery codes for admin user" do
@@ -337,8 +339,11 @@ defmodule Baudrate.SetupTest do
   end
 
   describe "all_roles/0" do
-    test "returns empty list when no roles exist" do
-      assert Setup.all_roles() == []
+    # The roles are seeded once before the suite (test_helper.exs), so the
+    # table is never empty here.
+    test "returns every seeded role" do
+      assert Setup.all_roles() |> Enum.map(& &1.name) |> Enum.sort() ==
+               Setup.default_permissions() |> Map.keys() |> Enum.sort()
     end
 
     test "returns all roles after setup" do

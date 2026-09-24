@@ -24,12 +24,13 @@ defmodule Baudrate.Setup.PermissionTest do
       assert %{name: ["can't be blank"]} = errors_on(changeset)
     end
 
+    # The seeded permissions are committed before the suite (test_helper.exs),
+    # so this uses a name of its own.
     test "enforces unique name constraint" do
-      {:ok, _} =
-        Repo.insert(Permission.changeset(%Permission{}, %{name: "admin.manage_users"}))
+      name = "test.permission_#{System.unique_integer([:positive])}"
+      {:ok, _} = Repo.insert(Permission.changeset(%Permission{}, %{name: name}))
 
-      {:error, changeset} =
-        Repo.insert(Permission.changeset(%Permission{}, %{name: "admin.manage_users"}))
+      {:error, changeset} = Repo.insert(Permission.changeset(%Permission{}, %{name: name}))
 
       assert %{name: ["has already been taken"]} = errors_on(changeset)
     end

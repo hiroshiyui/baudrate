@@ -319,6 +319,7 @@ When creating a new release (on `current`):
 - **Always run the full test suite without asking** — never ask for permission to run tests
 - `use BaudrateWeb.ConnCase` for LiveView/controller tests; `use Baudrate.DataCase` for context tests
 - `setup_user("role_name")` — creates a test user with the given role (seeds roles if needed)
+- **The roles and permissions are seeded once, committed, in `test_helper.exs`** before the sandbox takes over. A seed inside an async test's sandbox made every other test seeding the same unique names wait for that whole test to end, which timed out under CI load. So the tables are never empty in a test, and **a test that inserts a role or permission of its own uses a name nothing seeds** (`"role_#{System.unique_integer([:positive])}"`), never `"admin"`.
 - `log_in_user(conn, user)` — authenticates a connection with session tokens
 - `log_in_admin(conn, user)` — authenticates an admin with TOTP sudo mode enabled (sets `admin_totp_verified_at`)
 - `errors_on(changeset)` — extracts validation errors as `%{field: [messages]}`

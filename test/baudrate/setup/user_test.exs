@@ -3,10 +3,12 @@ defmodule Baudrate.Setup.UserTest do
 
   alias Baudrate.Setup.{Role, User}
 
+  # The seeded roles are committed before the suite (test_helper.exs), so the
+  # fixture uses names of its own.
   setup do
     role =
       Repo.insert!(%Role{
-        name: "admin",
+        name: "role_#{System.unique_integer([:positive])}",
         inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
         updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
       })

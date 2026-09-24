@@ -19,10 +19,13 @@ defmodule Baudrate.Setup.RoleTest do
       assert %{name: ["can't be blank"]} = errors_on(changeset)
     end
 
+    # The seeded roles are committed before the suite (test_helper.exs), so a
+    # test that inserts one uses a name of its own.
     test "enforces unique name constraint" do
-      {:ok, _} = Repo.insert(Role.changeset(%Role{}, %{name: "admin"}))
+      name = "role_#{System.unique_integer([:positive])}"
+      {:ok, _} = Repo.insert(Role.changeset(%Role{}, %{name: name}))
 
-      {:error, changeset} = Repo.insert(Role.changeset(%Role{}, %{name: "admin"}))
+      {:error, changeset} = Repo.insert(Role.changeset(%Role{}, %{name: name}))
       assert %{name: ["has already been taken"]} = errors_on(changeset)
     end
   end
