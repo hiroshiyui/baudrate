@@ -1,60 +1,37 @@
 ---
 name: release-engineering
-description: Manage the full software release process, including version bumps, changelogs, Git tags, and GitHub releases.
+description: Run a release — pre-release docs/a11y/l10n audits, version decision, full tests, CHANGELOG and version bump, ff-merge to main, tag, GitHub release, release-build check.
 ---
 
-When performing release engineering, always follow these steps:
-
-0. **Start from `current`** — releases are prepared on the `current` branch; `main` is never committed to directly. Verify `git branch --show-current` is `current`, the working tree is clean, and `current` is pushed. If `main` has commits that `current` lacks (`git log current..main`), stop and ask the user.
-
-0a. **Audit the documentation before anything else** — run the `docs-engineering` skill and commit what it finds, *before* the version is decided. Its commits then land inside the release and inside the tag. Run it after the release and the tag permanently describes the release before it: v1.27.0 shipped with `mix.exs` understating its own Elixir requirement, a manual-install example pinned to `v1.26.0` (the release whose deploy model ADR 0037 had just reversed), a NodeInfo sample nineteen versions behind, and a project tree missing `media/` — the machinery behind the no-hotlink invariant. Two things follow from running it here:
-   - **What it finds that is not documentation is a change like any other.** It gets a `CHANGELOG.md` entry in step 4 and may move the version decision in step 1 — not a follow-up commit after the tag. The v1.27.0 audit found `mix.exs` declaring `elixir: "~> 1.15"` while a non-optional dependency requires `~> 1.17`, so no one on 1.15 could build at all; that is project metadata belonging under `Fixed`.
-   - **Re-check step 0 afterwards.** `docs-engineering` ends with commits of its own, so confirm the working tree is clean and `current` is pushed again before continuing.
-
-0b. **Audit accessibility** — run the `a11y-engineering` skill over what this release changes and commit what it finds, *before* the version is decided, for the same reason as 0a: the fixes must land inside the tag. Every user-facing element the release adds or alters must be valid: a semantic `id`/`class` (ADR 0018), an accessible name on every control (icon-only buttons included), labelled form fields, focus moved by the server when an action removes the focused control, `role="status"` rather than `aria-live` on a whole list, nothing conveyed by colour alone, and no page that scrolls sideways at 500 px. A finding is a change like any other: it gets a `CHANGELOG.md` entry and may move the version decision.
-
-0c. **Audit localisation** — run the `l10n-engineering` skill and commit what it finds, *before* the version is decided. No user-visible string is left untranslated or shown as a raw identifier (a status, kind or action name); every new or reworded msgid is reviewed by hand in `zh_TW` and `ja_JP` (fuzzy guesses replaced, not trusted), `en` stays blank; terminology matches the settled terms, and `zh_TW` is named 台灣漢語. A finding is a change like any other, as in 0b.
-
-   **Re-check step 0 after 0a–0c.** Each ends with commits of its own, so confirm the working tree is clean (apart from work deliberately left out of this release) and `current` is pushed before continuing.
-
-1. **Determine the release type** — review all unreleased commits since the last tag and classify the release as `major`, `minor`, or `patch` following [Semantic Versioning](https://semver.org/). Present the recommendation to the user and confirm before proceeding.
-
-2. **Run the full test suite** — run all tests with 4 partitions and seed 9527 and wait for all to pass before proceeding. **Do not continue if any test fails.**
+0. **Start from `current`:** clean tree, pushed. If `git log current..main` shows
+   anything, stop and ask.
+   - **0a.** Run `docs-engineering` and commit its findings *before* deciding the
+     version, so they land inside the tag (v1.27.0 shipped docs describing the release
+     before it). A non-doc finding is a change like any other: it gets a CHANGELOG entry
+     and may move the version.
+   - **0b.** Run `a11y-engineering` over what the release changes; commit its fixes.
+   - **0c.** Run `l10n-engineering`; commit its fixes.
+   - Re-check step 0 afterwards.
+1. **Decide major / minor / patch** (SemVer) from the unreleased commits; confirm with
+   the user.
+2. **Run every test.** The partitioned suite, then the browser suite (it is excluded
+   by default; v1.33.0 shipped two stale browser tests that were never named):
    ```bash
    for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 & done; wait
-   ```
-
-   **That run excludes every browser test**, because they are `:feature`-tagged
-   and excluded by default. Run them too, or the only thing standing between a
-   stale browser test and a tag is CI finding it afterwards — which is how
-   v1.33.0 shipped with a `registration_test.exs` still asserting the
-   sign-in-after-registering behaviour that P4-D2 had replaced, and a
-   `js_errors_test.exs` crawl that had quietly outgrown ExUnit's 60-second
-   default as Phases 4C and 4D added form fields to the pages it types into.
-   Running a few feature files by name is not the same thing: both failures
-   were in files that were never named.
-   ```bash
-   # Stale digest artifacts are served in preference to a fresh build, so
-   # clear them first or the browser loads months-old CSS/JS.
    rm -f priv/static/assets/{css,js}/*.gz priv/static/cache_manifest.json
-   mix assets.build
-   mix test --include feature test/baudrate_web/features/
+   mix assets.build && mix test --include feature test/baudrate_web/features/
    ```
-
-3. **Update the version** — bump the `version` field in `mix.exs` to match the new release version.
-
-4. **Update `CHANGELOG.md`** — add a new version entry at the top following the [Keep a Changelog](https://keepachangelog.com/) format. Group changes under `Added`, `Changed`, `Fixed`, `Removed`, or `Security` as appropriate. Include all notable changes since the previous release.
-
-5. **Commit the release** — on `current`, stage `mix.exs` and `CHANGELOG.md` together, commit with the message `chore: release vX.Y.Z`, and push `current`.
-
-5a. **Merge into `main`** — fast-forward only, then return to `current`:
-   ```bash
-   git switch main && git merge --ff-only current && git push origin main && git switch current
-   ```
-   If the fast-forward fails, `main` was modified out of band — stop and ask the user; never force-push or create a merge commit on `main` to get past it.
-
-6. **Tag the release** — create an annotated Git tag (e.g., `git tag -a v1.2.3 -m "v1.2.3"`) and push it to the remote (`git push --tags`).
-
-7. **Create a GitHub release** — use `gh release create vX.Y.Z` with the corresponding `CHANGELOG.md` section as the release body.
-
-8. **Check the release build** — publishing the GitHub release starts `.github/workflows/release.yml` (ADR 0036), which builds, smoke-tests and attests the production release and attaches `baudrate-X.Y.Z-debian12-x86_64.tar.gz` to it. Watch it (`gh run list --workflow release.yml`, then `gh run watch <id>`). The deploy builds on the server and does not need the tarball (ADR 0037), so a failure here does not block deploying — but it means the release could not start in CI, so read it before deploying anyway. A rebuild for the same tag is a re-run of that workflow run.
+   Stop on any failure.
+3. **Bump** `version` in `mix.exs`.
+4. **CHANGELOG.md:** a new entry at the top (Keep a Changelog: Added, Changed, Fixed,
+   Removed, Security).
+5. **Commit** `mix.exs` + `CHANGELOG.md` on `current` as `chore: release vX.Y.Z`; push.
+   - **5a.** `git switch main && git merge --ff-only current && git push origin main && git switch current`.
+     If it is not a fast-forward, stop and ask; never force-push or merge-commit `main`.
+6. **Tag:** `git tag -a vX.Y.Z -m "vX.Y.Z"`; `git push --tags`.
+7. **GitHub release:** `gh release create vX.Y.Z` with the CHANGELOG section as the body.
+8. **Check the release build** (`release.yml`, ADR 0036): `gh run list --workflow
+   release.yml`, then watch it. The deploy builds on the server (ADR 0037) so a
+   failure does not block it, but read it before deploying. Rebuild = re-run that run.
+   The deploy itself waits for `elixir.yml` on the release commit and needs the user's
+   confirmation.
