@@ -28,7 +28,8 @@ has to be installed on your machine.
 ### Your own toolchain
 
 - **Erlang and Elixir** at the versions in `.tool-versions` (asdf or mise
-  read it).
+  read it). They are the versions CI, the dev container and production run;
+  CI fails when any of them differs.
 - **Rust**, stable: three NIF crates in `native/` are compiled from source by
   `mix compile`. There are no precompiled binaries, on purpose (decision
   P8-D1 in `doc/TODOs.md`).
@@ -67,7 +68,10 @@ mix test --include feature test/baudrate_web/features/
 ```
 
 `mix precommit` runs what CI checks first: compiling with warnings as
-errors, formatting, Credo and the tests. CI also runs:
+errors, formatting, Credo and the tests. Elixir's type checker warns as part
+of compiling, and a type warning is fixed, never suppressed: a clause it
+proves unreachable is deleted (CLAUDE.md, "Follow the type checker"). CI also
+runs:
 
 - Sobelow and a dependency audit (every Sobelow finding fails the build);
 - `mix gettext.extract --check-up-to-date`;

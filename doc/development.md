@@ -466,7 +466,7 @@ and never need to know about the internal split.
 | Sub-Module | Responsibility |
 |---|---|
 | `Auth.Users` | User CRUD, lookup (by ID, username, session), registration, admin approval, role updates, capability checks, and the bounded invite tree (`invite_tree/1`) |
-| `Auth.Passwords` | Password hashing (bcrypt), verification, and recovery code-based resets |
+| `Auth.Passwords` | Password hashing (bcrypt), verification, and recovery code-based resets. Sign-in and the reset cost exactly one bcrypt on every path, so timing does not reveal which accounts exist (`passwords_test.exs` counts them); a reset validates the new password before spending the code |
 | `Auth.Sessions` | Session lifecycle (dual-token rotation), server-side session storage, and login attempt throttling/monitoring |
 | `Auth.SecondFactor` | TOTP enrollment, encryption/decryption of secrets, QR code generation, and recovery code management |
 | `Auth.Reauthentication` | Step-up re-authentication from an authenticated session (password, plus TOTP when enabled; no recovery codes); feeds the per-account login throttle |
@@ -3992,7 +3992,10 @@ crate: its 0.37.x release binaries are signed only by a Mozilla subkey revoked
 as compromised. Jobs use the images only through the digests in
 `ci/image/image.lock` and `ci/image/build-image.lock`, after `ci-image-ref.yml`
 verifies their build provenance, and each job first runs
-`ci/image/verify-toolchain.sh`. Only GitHub-owned actions are used, pinned to
+`ci/image/verify-toolchain.sh`, which also holds the Ansible inventory's
+`erlang_version`/`elixir_version` to `.tool-versions`, so production builds
+with the versions CI tested (the deploy installs them on the server when
+missing). Only GitHub-owned actions are used, pinned to
 commit SHAs; the PostgreSQL service is pinned by digest. Inside the container
 the database is reached as `postgres` (`PGHOST`), and esbuild, Tailwind and
 Selenium come from the image (`MIX_ESBUILD_PATH`, `MIX_TAILWIND_PATH`,
