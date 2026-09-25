@@ -9,6 +9,33 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.0.1] — 2026-09-25
+
+A maintenance release: no behaviour a member or operator sees changes, there
+are no migrations, and deploying it needs nothing by hand.
+
+### Fixed
+
+- **Three functions' specs left out how they refuse.** Saving an image
+  description on a published or held post can be refused by a sanction or a
+  content filter; the specs said only "invalid" or "not found", so Dialyzer
+  concluded that the message explaining the refusal could never be shown. It
+  always was — the specs now say so.
+- A Logger test failed at random when another test was capturing logs at the
+  same moment; it now runs on its own.
+
+### Changed
+
+- **Code the type checkers prove can never run is deleted, not tolerated**
+  (the rule in `CLAUDE.md`, now part of every code review). Dialyzer's list of
+  accepted warnings went from 31 entries to 9, and what is left cannot be
+  fixed in this code (warnings about library types, and two build-time
+  settings). Two error messages that no code path could show leave the
+  translations.
+- `doc/TODOs.md` keeps only what is open, what was accepted knowingly, the
+  limits left standing on purpose, and an index of the decision and stage
+  ids.
+
 ## [2.0.0] — 2026-09-25
 
 Phase 8, contributor health, as one major release: 8B, the repository files
