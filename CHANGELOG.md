@@ -9,8 +9,20 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Phase 8, contributor health: 8B, the repository files a contributor looks
-for; 8C, local setup; 8A, what CI checks; and 8D, performance.
+## [2.0.0] — 2026-09-25
+
+Phase 8, contributor health, as one major release: 8B, the repository files
+a contributor looks for; 8C, local setup; 8A, what CI checks; and 8D,
+performance. With it come a security audit's fixes and the move to
+**Erlang/OTP 29 and Elixir 1.20**.
+
+**Why a major version:** building Baudrate now needs Elixir 1.20 and OTP 29
+(`mix.exs` requires `~> 1.20`), and the ActivityPub collections page
+differently (below).
+
+**For operators:** no migrations. The first deploy of this release compiles
+Erlang/OTP 29 on the server, which takes several minutes; later deploys skip
+it. Nothing needs installing by hand.
 
 **For other servers:** the ActivityPub outboxes, followers, following and
 replies collections now link `?page=true` and continue with `max_id` (replies:
