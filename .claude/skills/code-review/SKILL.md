@@ -19,7 +19,12 @@ Before reviewing, understand the system's current shape:
 
 ## Step 2 — Correctness
 
-- Logic errors, off-by-one mistakes, incorrect pattern matches, missing `nil`/`{:error, _}` guards
+- Logic errors, off-by-one mistakes, incorrect pattern matches, missing `nil`/`{:error, _}` handling **where the value can actually be `nil` or an error** — never ask for a guard the type checker proves unreachable (next bullet)
+- **Follow the type checker; never work around it** (CLAUDE.md, "While Coding"). Elixir 1.20's type inference and Dialyzer are a code-quality factor, not noise. Review with both (`mix compile --warnings-as-errors`, `mix dialyzer`) and treat what they report as findings:
+  - A clause, `case` branch or guard they prove can never match is **dead code — delete it**: private catch-alls (`defp f(_)`), `{:error, _}` branches for errors the callee never returns, `nil` clauses no caller reaches, `|| default` / `&&` on values that are never nil, `is_integer` guards on settings that are always strings. A silent fallback hides a future unhandled value until run time; without it the checker reports it at build time.
+  - When the checker calls a *correct* branch unreachable, the **spec is wrong** — it left out a value the function returns. Fix the spec (e.g. an `{:error, …}` type missing the sanction-gate or content-filter refusals), never the branch.
+  - Never quiet a warning: no widening a type, no clause added to satisfy it, no new `.dialyzer_ignore.exs` entry for dead code. The baseline holds only what cannot be fixed in this code (opaque-type notices on `Ecto.Multi`/`MapSet`/Gettext, compile-time flags), and an entry is removed as soon as its warnings are gone.
+  - Pin variables used in a bitstring size (`size(^n)`), and remove `require`/`import` that nothing uses.
 - Ecto: missing `Repo.preload`, N+1 risks, missing `FOR UPDATE` locks on counter updates (use `Ecto.Multi`), unescaped ILIKE inputs (require `Repo.sanitize_like/1`)
 - LiveView: missing `handle_info` clauses for all subscribed PubSub topics, stale socket assigns after redirects, race conditions between `mount` and `handle_params`
 - Pagination: uses `Baudrate.Pagination` (`paginate_opts/3` + `paginate_query/3`) — no hand-rolled `LIMIT`/`OFFSET`
@@ -110,7 +115,7 @@ Information security is the **top priority**. Treat every finding as potentially
 - **Primitive obsession**: raw strings/integers used where a well-named type, struct, or enum would be clearer
 - **Feature envy**: a module reaching deeply into another context's internals instead of calling its public API
 - **Unnecessary complexity**: over-engineered abstractions for one-time operations; speculative generality (YAGNI)
-- **Stale code**: unused functions, dead branches, obsolete modules, leftover `IO.inspect` / `dbg` calls, commented-out blocks
+- **Stale code**: unused functions, dead branches (including every branch the type checker or Dialyzer proves unreachable — Step 2), obsolete modules, leftover `IO.inspect` / `dbg` calls, commented-out blocks
 - **Inconsistent naming**: functions or variables that don't follow Elixir conventions or contradict surrounding code
 - **No nested modules in a single file** — one module per file, always
 - **OTP paths**: no `:code.priv_dir/1` in module attributes (`@var`); use `Application.app_dir(:baudrate, "priv/...")` in functions (runtime resolution)
