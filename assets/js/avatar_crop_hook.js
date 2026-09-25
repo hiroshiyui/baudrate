@@ -129,7 +129,15 @@ const AvatarCropHook = {
   },
 
   saveCrop() {
-    if (!this.cropper) return
+    // The cropper is a separate script that may not have loaded (a dropped
+    // connection, a blocked request). Save must still do something: with no
+    // crop box the server takes the centred square, as it does for an avatar
+    // chosen without cropping. A Save that silently did nothing left the
+    // dialog open with no word of why.
+    if (!this.cropper) {
+      this.pushEvent("save_crop", {})
+      return
+    }
 
     const imageData = this.cropper.getImageData()
     const cropData = this.cropper.getData(true)

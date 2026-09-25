@@ -116,6 +116,10 @@ replies collections now link `?page=true` and continue with `max_id` (replies:
 - Test setup no longer times out under load: about twenty async test files
   seeded the roles table, each waiting on the previous test's uncommitted
   insert. The roles are now seeded once, committed, before the suite.
+- **Saving a cropped avatar did nothing when the cropper had not loaded.**
+  Cropper.js became a separate file in this release; if it failed to load,
+  the dialog stayed open and Save silently did nothing. Save now keeps the
+  centred square instead, as an avatar chosen without cropping does.
 - **A very large `?page=` answered 500** on every listing and on the
   ActivityPub collections' numbered pages: the offset overflowed
   PostgreSQL's bigint and could not be sent. Page numbers are capped at

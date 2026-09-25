@@ -53,6 +53,48 @@ defmodule BaudrateWeb.Features.AvatarCropTest do
            "the cropped avatar was not saved"
   end
 
+  # The cropper is a separate script. When it cannot load, Save must still
+  # save (the server takes the centred square) rather than do nothing while
+  # the dialog stays open.
+  feature "Save still saves when the cropper cannot load", %{session: session, user: user} do
+    png = Path.join(System.tmp_dir!(), "avatar-test-#{System.unique_integer([:positive])}.png")
+    {:ok, image} = Image.new(160, 120, color: [40, 80, 200])
+    Image.write!(image, png)
+    on_exit(fn -> File.rm(png) end)
+
+    session =
+      session
+      |> log_in_via_browser(user)
+      |> visit("/profile")
+      |> assert_has(Query.css("[data-phx-main].phx-connected"))
+
+    # Fail the cropper's script the way a dropped connection would. Changing
+    # data-cropper-src is not enough: LiveView patches it back when the
+    # dialog opens.
+    session
+    |> execute_script("""
+    const append = document.head.appendChild.bind(document.head);
+    document.head.appendChild = (el) => {
+      if (el.tagName === "SCRIPT" && el.src.includes("cropper")) {
+        setTimeout(() => el.onerror && el.onerror(new Event("error")), 0);
+        return el;
+      }
+      return append(el);
+    };
+    document.getElementById("avatar-upload-form").classList.remove("hidden");
+    """)
+    |> find(Query.css("#avatar-upload-form input[type=file]"))
+    |> Wallaby.Element.set_value(png)
+
+    session
+    |> assert_has(Query.css("#crop-modal[open]"))
+    |> refute_has(Query.css("#avatar-crop-container .cropper-container"))
+    |> click(Query.css("#crop-modal .modal-action .btn-primary"))
+
+    assert wait_until(fn -> Repo.get!(User, user.id).avatar_id != nil end),
+           "Save did nothing without the cropper"
+  end
+
   defp wait_until(fun, tries \\ 50) do
     cond do
       fun.() -> true
