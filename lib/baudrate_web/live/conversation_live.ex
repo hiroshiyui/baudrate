@@ -523,5 +523,4 @@ defmodule BaudrateWeb.ConversationLive do
 
   defp error_message(:not_found), do: gettext("Conversation not found.")
   defp error_message(:recipient_not_found), do: gettext("User not found.")
-  defp error_message(_), do: gettext("Something went wrong.")
 end

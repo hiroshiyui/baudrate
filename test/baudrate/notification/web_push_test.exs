@@ -59,7 +59,7 @@ defmodule Baudrate.Notification.WebPushTest do
 
       # Decrypt: parse aes128gcm wire format
       <<salt::binary-16, _rs::unsigned-big-32, idlen::8, rest::binary>> = encrypted
-      <<server_public::binary-size(idlen), ciphertext_with_tag::binary>> = rest
+      <<server_public::binary-size(^idlen), ciphertext_with_tag::binary>> = rest
 
       # Recompute ECDH shared secret from subscriber's private key + server's public key
       shared_secret = :crypto.compute_key(:ecdh, server_public, subscriber_priv, :prime256v1)
@@ -74,7 +74,7 @@ defmodule Baudrate.Notification.WebPushTest do
 
       # Split ciphertext and tag (AES-128-GCM tag is last 16 bytes)
       ct_len = byte_size(ciphertext_with_tag) - 16
-      <<ciphertext::binary-size(ct_len), tag::binary-16>> = ciphertext_with_tag
+      <<ciphertext::binary-size(^ct_len), tag::binary-16>> = ciphertext_with_tag
 
       # Decrypt
       padded =
@@ -386,7 +386,7 @@ defmodule Baudrate.Notification.WebPushTest do
   # RFC 8291 decryption for round-trip testing
   defp test_decrypt(encrypted, subscriber_pub, subscriber_priv, subscriber_auth) do
     <<salt::binary-16, _rs::unsigned-big-32, idlen::8, rest::binary>> = encrypted
-    <<server_public::binary-size(idlen), ciphertext_with_tag::binary>> = rest
+    <<server_public::binary-size(^idlen), ciphertext_with_tag::binary>> = rest
 
     shared_secret = :crypto.compute_key(:ecdh, server_public, subscriber_priv, :prime256v1)
 
@@ -397,7 +397,7 @@ defmodule Baudrate.Notification.WebPushTest do
     nonce = test_hkdf_sha256(salt, ikm, "Content-Encoding: nonce\0", 12)
 
     ct_len = byte_size(ciphertext_with_tag) - 16
-    <<ciphertext::binary-size(ct_len), tag::binary-16>> = ciphertext_with_tag
+    <<ciphertext::binary-size(^ct_len), tag::binary-16>> = ciphertext_with_tag
 
     padded = :crypto.crypto_one_time_aead(:aes_128_gcm, cek, nonce, ciphertext, <<>>, tag, false)
     binary_part(padded, 0, byte_size(padded) - 1)

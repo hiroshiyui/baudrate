@@ -542,10 +542,10 @@ defmodule Baudrate.Federation.Delivery do
         end
 
       String.starts_with?(actor_uri, "#{base}/ap/site") ->
-        case KeyStore.ensure_site_keypair() do
-          {:ok, _} -> normalize_key(KeyStore.decrypt_site_private_key())
-          _ -> {:error, :no_private_key}
-        end
+        # `ensure_site_keypair/0` returns `{:ok, _}` or raises; there is no
+        # error value to translate here.
+        {:ok, _} = KeyStore.ensure_site_keypair()
+        normalize_key(KeyStore.decrypt_site_private_key())
 
       true ->
         {:error, :unknown_actor}

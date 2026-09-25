@@ -696,7 +696,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
     end
   end
 
-  defp create_board(attrs \\ %{}) do
+  defp create_board(attrs) do
     uid = System.unique_integer([:positive])
 
     default = %{

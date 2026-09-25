@@ -393,8 +393,6 @@ defmodule BaudrateWeb.UserProfileLive do
     )
   end
 
-  defp digest(nil), do: ""
-
   defp digest(text) do
     plain =
       text

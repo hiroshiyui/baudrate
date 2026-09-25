@@ -28,7 +28,7 @@
       <p class="admin-instance-blocked-text font-semibold">
         {gettext("This instance is blocked.")}
       </p>
-      <p :if={@domain_block && @domain_block.reason} class="admin-instance-blocked-reason text-sm">
+      <p :if={@domain_block.reason} class="admin-instance-blocked-reason text-sm">
         {@domain_block.reason}
       </p>
       <p class="admin-instance-blocked-hint text-sm opacity-80">

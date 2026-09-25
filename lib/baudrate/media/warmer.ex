@@ -13,8 +13,6 @@ defmodule Baudrate.Media.Warmer do
   unrelated tests depend on the HTTP stub.
   """
 
-  require Logger
-
   alias Baudrate.Media.Cache
 
   @max_urls 8

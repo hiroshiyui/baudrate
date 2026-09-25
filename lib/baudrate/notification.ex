@@ -12,8 +12,6 @@ defmodule Baudrate.Notification do
 
   import Ecto.Query
 
-  require Logger
-
   alias Baudrate.Auth
   alias Baudrate.Notification.{Notification, PubSub, WebPush}
   alias Baudrate.Repo

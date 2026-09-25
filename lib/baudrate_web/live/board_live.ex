@@ -221,8 +221,6 @@ defmodule BaudrateWeb.BoardLive do
     )
   end
 
-  defp digest(nil), do: ""
-
   defp digest(text) do
     plain =
       text

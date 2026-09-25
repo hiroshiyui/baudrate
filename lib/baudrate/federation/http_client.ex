@@ -40,8 +40,6 @@ defmodule Baudrate.Federation.HTTPClient do
   `body` is the response body truncated to 4 KB for diagnostic logging.
   """
 
-  require Logger
-
   @max_redirects 5
   @default_request_timeout 60_000
   @default_max_payload_size 262_144

@@ -2216,11 +2216,6 @@ msgstr "封鎖名單稽核"
 msgid "Blocklist Audit URL"
 msgstr "封鎖名單稽核 URL"
 
-#: lib/baudrate_web/live/admin/federation_live.ex
-#, elixir-autogen, elixir-format
-msgid "Blocklist audit failed."
-msgstr "封鎖名單稽核失敗。"
-
 #: lib/baudrate_web/live/admin/federation_live.html.heex
 #, elixir-autogen, elixir-format
 msgid "Board Keys"
@@ -2699,11 +2694,6 @@ msgstr "不允許任何人"
 #, elixir-autogen, elixir-format
 msgid "Send"
 msgstr "傳送"
-
-#: lib/baudrate_web/live/conversation_live.ex
-#, elixir-autogen, elixir-format
-msgid "Something went wrong."
-msgstr "發生錯誤。"
 
 #: lib/baudrate_web/live/conversations_live.html.heex
 #, elixir-autogen, elixir-format

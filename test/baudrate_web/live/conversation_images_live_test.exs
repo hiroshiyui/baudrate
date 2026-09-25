@@ -6,7 +6,6 @@ defmodule BaudrateWeb.ConversationImagesLiveTest do
 
   use BaudrateWeb.ConnCase, async: false
 
-  import Ecto.Query
   import Phoenix.LiveViewTest
 
   alias Baudrate.Messaging

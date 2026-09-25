@@ -118,7 +118,7 @@ defmodule Baudrate.Crypto.Vault do
   @spec key_id(binary()) :: {:ok, Keyring.id()} | :error
   def key_id(<<@magic, id_len::8, rest::binary>> = blob) when id_len > 0 do
     case rest do
-      <<id::binary-size(id_len), body::binary>>
+      <<id::binary-size(^id_len), body::binary>>
       when byte_size(body) >= @iv_bytes + @tag_bytes ->
         # An IV is uniform random, so one legacy blob in ~2^24 begins with
         # these four bytes by chance and parses as a header. `decrypt/3`
@@ -153,7 +153,7 @@ defmodule Baudrate.Crypto.Vault do
 
   defp decrypt_current(purpose, <<@magic, id_len::8, rest::binary>>, context)
        when id_len > 0 do
-    with <<id::binary-size(id_len), iv::binary-size(@iv_bytes), tag::binary-size(@tag_bytes),
+    with <<id::binary-size(^id_len), iv::binary-size(@iv_bytes), tag::binary-size(@tag_bytes),
            ciphertext::binary>> <- rest,
          {:ok, key} <- Keyring.fetch(purpose, id),
          header = @magic <> <<id_len::8>> <> id,

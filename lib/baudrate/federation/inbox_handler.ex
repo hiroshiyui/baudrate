@@ -1621,8 +1621,6 @@ defmodule Baudrate.Federation.InboxHandler do
     |> String.trim()
   end
 
-  defp strip_html(_), do: ""
-
   defp decode_html_entities(text) do
     text
     |> String.replace("&amp;", "&")

@@ -19,8 +19,6 @@ defmodule Baudrate.Bots.SyndicationFeedParser do
     usable GUID are silently dropped.
   """
 
-  require Logger
-
   alias Baudrate.Bots.SyndicationFeedParserNative
 
   @max_title_length 255

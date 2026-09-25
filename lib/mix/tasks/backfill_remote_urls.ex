@@ -17,8 +17,6 @@ defmodule Mix.Tasks.BackfillRemoteUrls do
 
   use Mix.Task
 
-  require Logger
-
   @shortdoc "Backfill missing url fields on remote articles and comments"
 
   @impl Mix.Task

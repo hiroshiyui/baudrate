@@ -69,10 +69,10 @@ defmodule BaudrateWeb.Layouts do
                 {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
               </li>
               <%!-- Admin section (collapsible, matches desktop user menu) --%>
-              <li :if={@current_user && @current_user.role.name in ["admin", "moderator"]}>
+              <li :if={@current_user.role.name in ["admin", "moderator"]}>
                 <hr />
               </li>
-              <li :if={@current_user && @current_user.role.name in ["admin", "moderator"]}>
+              <li :if={@current_user.role.name in ["admin", "moderator"]}>
                 <details id="nav-mobile-admin" class="nav-admin-section">
                   <summary>{gettext("Admin")}</summary>
                   <ul>
@@ -154,33 +154,33 @@ defmodule BaudrateWeb.Layouts do
                 </details>
               </li>
               <%!-- User section (matches desktop user menu) --%>
-              <li :if={@current_user}>
+              <li>
                 <hr />
               </li>
-              <li :if={@current_user} class="menu-title flex flex-row items-center gap-2">
+              <li class="menu-title flex flex-row items-center gap-2">
                 <.avatar user={@current_user} size={36} decorative />
                 <span class="truncate max-w-[10rem]">{display_name(@current_user)}</span>
                 ({translate_role(@current_user.role.name)})
               </li>
-              <li :if={@current_user}>
+              <li>
                 <.link navigate="/profile" class="nav-user-link">{gettext("Profile")}</.link>
               </li>
-              <li :if={@current_user}>
+              <li>
                 <.link navigate="/bookmarks" class="nav-user-link">{gettext("Bookmarks")}</.link>
               </li>
-              <li :if={@current_user}>
+              <li>
                 <.link navigate="/following" class="nav-user-link">{gettext("Following")}</.link>
               </li>
-              <li :if={@current_user}>
+              <li>
                 <.link navigate="/watching" class="nav-user-link">{gettext("Watching")}</.link>
               </li>
-              <li :if={@current_user}>
+              <li>
                 <.link navigate="/drafts" class="nav-user-link">{gettext("Drafts")}</.link>
               </li>
-              <li :if={@current_user}>
+              <li>
                 <.link navigate="/invites" class="nav-user-link">{gettext("My Invites")}</.link>
               </li>
-              <li :if={@current_user}>
+              <li>
                 <.link href="/logout" method="delete" class="nav-user-link">{gettext("Sign Out")}</.link>
               </li>
             </ul>

@@ -122,7 +122,7 @@ defmodule Baudrate.Auth.Challenge do
   def solved?(%{nonce: nonce, bits: bits}, solution)
       when is_binary(solution) and byte_size(solution) in 1..@max_solution_bytes do
     hash = :crypto.hash(:sha256, nonce <> solution)
-    match?(<<0::size(bits), _::bitstring>>, hash)
+    match?(<<0::size(^bits), _::bitstring>>, hash)
   end
 
   def solved?(_challenge, _solution), do: false

@@ -63,8 +63,6 @@ defmodule Baudrate.Moderation.HeldPosts do
 
   import Ecto.Query
 
-  require Logger
-
   alias Baudrate.Auth.Trust
   alias Baudrate.Content
   alias Baudrate.Content.{Article, BoardArticle, BoardModerator}

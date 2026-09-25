@@ -42,7 +42,7 @@ defmodule Baudrate.Notification.VapidVaultTest do
       blob = VapidVault.encrypt(:crypto.strong_rand_bytes(32))
 
       for offset <- [0, 4, div(byte_size(blob), 2), byte_size(blob) - 1] do
-        <<before::binary-size(offset), byte::8, rest::binary>> = blob
+        <<before::binary-size(^offset), byte::8, rest::binary>> = blob
         tampered = <<before::binary, Bitwise.bxor(byte, 1)::8, rest::binary>>
 
         assert :error = VapidVault.decrypt(tampered), "flipping byte #{offset} was accepted"

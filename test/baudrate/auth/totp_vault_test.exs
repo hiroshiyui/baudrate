@@ -55,7 +55,7 @@ defmodule Baudrate.Auth.TotpVaultTest do
       blob = TotpVault.encrypt(secret, @user)
 
       for offset <- [0, 4, div(byte_size(blob), 2), byte_size(blob) - 1] do
-        <<before::binary-size(offset), byte::8, rest::binary>> = blob
+        <<before::binary-size(^offset), byte::8, rest::binary>> = blob
         tampered = <<before::binary, Bitwise.bxor(byte, 1)::8, rest::binary>>
 
         assert :error = TotpVault.decrypt(tampered, @user), "flipping byte #{offset} was accepted"

@@ -156,9 +156,6 @@ defmodule BaudrateWeb.Admin.FederationLive do
 
       {:error, {:fetch_failed, _}} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to fetch external blocklist."))}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Blocklist audit failed."))}
     end
   end
 

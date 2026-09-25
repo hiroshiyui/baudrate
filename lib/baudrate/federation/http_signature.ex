@@ -22,8 +22,6 @@ defmodule Baudrate.Federation.HTTPSignature do
        managed by `HTTPClient` for DNS-pinned connections)
   """
 
-  require Logger
-
   alias Baudrate.Federation.ActorResolver
 
   @required_signed_headers ["(request-target)", "host", "date", "digest"]

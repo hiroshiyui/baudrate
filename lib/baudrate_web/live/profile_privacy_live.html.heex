@@ -334,19 +334,19 @@
       </button>
     </.form>
     <p
-      :if={(@current_user.muted_keywords || []) == []}
+      :if={@current_user.muted_keywords == []}
       id="profile-muted-words-empty"
       class="profile-muted-words-empty text-sm text-base-content/70 italic"
     >
       {gettext("No muted words.")}
     </p>
     <ul
-      :if={(@current_user.muted_keywords || []) != []}
+      :if={@current_user.muted_keywords != []}
       id="profile-muted-words-list"
       class="space-y-2"
     >
       <li
-        :for={{entry, index} <- Enum.with_index(@current_user.muted_keywords || [])}
+        :for={{entry, index} <- Enum.with_index(@current_user.muted_keywords)}
         id={"muted-word-#{index}"}
         class="muted-word flex items-center gap-3"
       >

@@ -22,8 +22,6 @@ defmodule Baudrate.DataPortability.Files do
   read.
   """
 
-  require Logger
-
   @hex_webp ~r/\A[0-9a-f]{64}\.webp\z/
   @hex_id ~r/\A[0-9a-f]{64}\z/
   @max_symlink_depth 40

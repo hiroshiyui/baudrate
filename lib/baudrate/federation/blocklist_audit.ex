@@ -13,8 +13,6 @@ defmodule Baudrate.Federation.BlocklistAudit do
     * Lines starting with `#` are treated as comments
   """
 
-  require Logger
-
   alias Baudrate.Federation.HTTPClient
   alias Baudrate.Setup
 

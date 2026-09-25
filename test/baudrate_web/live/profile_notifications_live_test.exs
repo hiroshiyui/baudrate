@@ -1,7 +1,6 @@
 defmodule BaudrateWeb.ProfileNotificationsLiveTest do
   use BaudrateWeb.ConnCase
 
-  import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
 
   alias Baudrate.Auth
