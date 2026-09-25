@@ -125,7 +125,7 @@ root.
 | Pre-flight | Verify the `baudrate` user and asdf exist and that the host runs Debian `debian_version` on x86_64 (ADR 0036 decision 1); warn if deploying an older version |
 | Directories | Create `releases/`, `shared/uploads/`, `env/` |
 | Source | Clone repo and checkout the prompted release tag |
-| Build | Wipe `_build/prod` if the tag's `.tool-versions` differs from the last build → `mix deps.get` → `mix compile` → `mix assets.deploy` → clean stale rel → `mix release` |
+| Build | Install the tag's `.tool-versions` Erlang and Elixir if missing, and stop unless the build toolchain reports exactly those → wipe `_build/prod` if the tag's `.tool-versions` differs from the last build → `mix deps.get` → `mix compile` → `mix assets.deploy` → clean stale rel → `mix release` |
 | Install | Copy release to `releases/<timestamp>/`, symlink shared uploads |
 | Env file | Generate this server's Erlang cookie once (`env/release_cookie`), then template `baudrate.env` with `DATABASE_URL`, `SECRET_KEY_BASE`, `RELEASE_COOKIE`, `HEALTH_DETAIL_PORT` (`health_detail_port`, default 4001), `BAUDRATE_BACKUP_DIR`, `LOG_FORMAT` when `log_format` is set, and `BAUDRATE_AUTH_KEYS` / `BAUDRATE_SIGNING_KEYS` when `auth_keys` / `signing_keys` are set (ADR 0038) |
 | Systemd | Install and enable `baudrate.service` |
@@ -201,7 +201,7 @@ older code works with the newer schema.
 
 Re-deploying an older tag with `deploy-baudrate.yml` also works, but it rebuilds
 that tag from source with the Erlang/Elixir versions pinned in *that tag's*
-`.tool-versions` (install them first, or the build fails), and it runs its
+`.tool-versions` (installing them if the server lacks them), and it runs its
 migrations step; prefer the rollback playbook for a release still on the
 server.
 

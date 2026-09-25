@@ -171,6 +171,68 @@
     src: "{{ deploy_path }}/src/.tool-versions"
   register: tool_versions_current
 
+# The build runs under the tag's own `.tool-versions`, and the release carries
+# the Erlang runtime it was built with, so these pins are exactly what
+# production runs. Install them here rather than relying on setup-server.yml
+# having been re-run after a toolchain bump: a deploy of a tag whose pins the
+# server lacks used to fail at `mix deps.get`. An installed version is skipped.
+- name: Parse the tag's Erlang and Elixir pins
+  ansible.builtin.set_fact:
+    tag_erlang_version: "{{ (tool_versions_current.content | b64decode | regex_search('(?m)^erlang\\s+(\\S+)', '\\1')) | first }}"
+    tag_elixir_version: "{{ (tool_versions_current.content | b64decode | regex_search('(?m)^elixir\\s+(\\S+)', '\\1')) | first }}"
+
+- name: Install the tag's Erlang {{ tag_erlang_version }}
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf install erlang {{ tag_erlang_version }}"
+    creates: "{{ baudrate_home }}/.asdf/installs/erlang/{{ tag_erlang_version }}/bin/erl"
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
+
+- name: Install the tag's Elixir {{ tag_elixir_version }}
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf install elixir {{ tag_elixir_version }}"
+    creates: "{{ baudrate_home }}/.asdf/installs/elixir/{{ tag_elixir_version }}/bin/elixir"
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
+
+- name: Install Hex and Rebar for the tag's Elixir
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix {{ item }} --force"
+    chdir: "{{ deploy_path }}/src"
+  loop: [local.hex, local.rebar]
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
+  changed_when: false
+
+- name: Read the toolchain the build will use
+  ansible.builtin.command:
+    cmd: >-
+      {{ baudrate_home }}/.asdf/bin/asdf exec elixir -e
+      'IO.puts(System.version()); IO.puts(:erlang.system_info(:otp_release));
+      IO.puts(File.read!(Path.join([:code.root_dir(), "releases", :erlang.system_info(:otp_release), "OTP_VERSION"])))'
+    chdir: "{{ deploy_path }}/src"
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
+  register: build_toolchain
+  changed_when: false
+
+- name: Check the build toolchain is exactly the tag's pins
+  ansible.builtin.assert:
+    that:
+      - build_toolchain.stdout_lines[0] == (tag_elixir_version | regex_replace('-otp-.*$', ''))
+      - build_toolchain.stdout_lines[2] | trim == tag_erlang_version
+      - >-
+        '-otp-' not in tag_elixir_version
+        or build_toolchain.stdout_lines[1] == (tag_elixir_version | regex_replace('^.*-otp-', ''))
+    fail_msg: >-
+      The build would use Elixir {{ build_toolchain.stdout_lines[0] }} on OTP
+      {{ build_toolchain.stdout_lines[2] | default('?') }}, but the tag pins
+      Elixir {{ tag_elixir_version }} and Erlang {{ tag_erlang_version }}.
+
 - name: Check toolchain stamp of the previous build
   ansible.builtin.stat:
     path: "{{ deploy_path }}/src/_build/prod/.tool-versions.stamp"

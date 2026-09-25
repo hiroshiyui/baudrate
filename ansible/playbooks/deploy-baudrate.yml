@@ -7,7 +7,9 @@
 # server, use rollback-baudrate.yml.
 #
 # Requires setup-server.yml to have been run first (server must already have
-# Erlang, Elixir, Rust, PostgreSQL, nginx, and the baudrate system user).
+# asdf, Rust, PostgreSQL, nginx, and the baudrate system user). The Erlang and
+# Elixir the tag's .tool-versions pins are installed by the deploy itself when
+# missing, and the build stops unless it runs exactly those versions.
 #
 # Secrets are decrypted automatically from all.sops.yml via your GPG key.
 #

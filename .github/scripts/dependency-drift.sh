@@ -83,7 +83,7 @@ check_versions "Cropper.js" "assets/vendor/cropperjs/cropper.esm.js" \
   "$(npm_versions cropperjs)"
 
 check_versions "Elixir" ".tool-versions" \
-  "$(awk '$1 == "elixir" {print $2}' .tool-versions)" "$(gh_versions elixir-lang/elixir v)"
+  "$(awk '$1 == "elixir" {sub(/-otp-.*/, "", $2); print $2}' .tool-versions)" "$(gh_versions elixir-lang/elixir v)"
 check_versions "Erlang/OTP" ".tool-versions" \
   "$(awk '$1 == "erlang" {print $2}' .tool-versions)" "$(gh_versions erlang/otp OTP-)"
 

@@ -2365,8 +2365,17 @@ BEAM code, ERTS, the NIF `.so` files (Baudrate's own three, plus every NIF its d
 > toolchain that built them. The Ansible deploy playbook does this
 > automatically: it compares the tag's `.tool-versions` with a
 > `_build/prod/.tool-versions.stamp` written after each successful compile.
-> Install the new toolchain first (`setup-server.yml --tags elixir`), or the
-> build fails. CI always builds from a clean checkout.
+> It also installs the tag's Erlang and Elixir with asdf when the server lacks
+> them (compiling Erlang takes several minutes, once), and stops before
+> building unless the toolchain reports exactly the tag's pins. The release
+> carries the runtime it was built with, so production runs the versions CI
+> tested. CI always builds from a clean checkout.
+>
+> One set of versions everywhere: `.tool-versions` is the pin (development
+> uses it through asdf); the CI image's Dockerfile, the dev container (the CI
+> image by digest) and `erlang_version`/`elixir_version` in the Ansible
+> inventory must equal it, and `ci/image/verify-toolchain.sh` fails CI when
+> any of them differs.
 
 ### Uploads Directory
 

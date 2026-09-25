@@ -37,7 +37,21 @@ if [ -z "$tailwind_version" ]; then
 fi
 
 check erlang "$otp_version" "$(pinned_tool erlang)"
-check elixir "$elixir_version" "$(pinned_tool elixir)"
+
+# `.tool-versions` names the Elixir build compiled for this OTP major
+# (`1.20.4-otp-29`), which is what asdf installs in development and
+# production; `System.version/0` reports the version alone.
+pinned_elixir="$(pinned_tool elixir)"
+check elixir "$elixir_version" "${pinned_elixir%-otp-*}"
+case "$pinned_elixir" in
+  *-otp-*) check elixir-otp "$(erl -noshell -eval 'io:format("~s", [erlang:system_info(otp_release)]), halt().')" "${pinned_elixir##*-otp-}" ;;
+esac
+
+# Production builds the release on the server with the Ansible pins
+# (ADR 0037), so they must be the versions CI tested.
+ansible_pin() { sed -nE "s/^$1: \"?([^\"]+)\"?.*/\1/p" ansible/inventory/group_vars/all.yml; }
+check ansible-erlang "$(ansible_pin erlang_version)" "$(pinned_tool erlang)"
+check ansible-elixir "$(ansible_pin elixir_version)" "$pinned_elixir"
 check esbuild "$esbuild_version" "$(pinned_asset esbuild)"
 check tailwind "$tailwind_version" "$(pinned_asset tailwind)"
 
