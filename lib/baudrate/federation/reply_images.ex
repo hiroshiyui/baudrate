@@ -76,7 +76,12 @@ defmodule Baudrate.Federation.ReplyImages do
   matched against the uploader.
   """
   @spec update_reply_image_alt(term(), integer(), String.t() | nil) ::
-          {:ok, %TimelineItemReplyImage{}} | {:error, Ecto.Changeset.t() | :not_found}
+          {:ok, %TimelineItemReplyImage{}}
+          | {:error,
+             Ecto.Changeset.t()
+             | :not_found
+             | :content_filtered
+             | Baudrate.Auth.Sanctions.refusal()}
   def update_reply_image_alt(image_id, user_id, alt) do
     with {:ok, id} <- image_id(image_id),
          %{} = image <- Repo.get_by(TimelineItemReplyImage, id: id, user_id: user_id),

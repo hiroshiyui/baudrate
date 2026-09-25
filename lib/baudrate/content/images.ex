@@ -157,7 +157,12 @@ defmodule Baudrate.Content.Images do
   actually runs.
   """
   @spec update_article_image_alt(term(), integer(), String.t() | nil) ::
-          {:ok, %ArticleImage{}} | {:error, Ecto.Changeset.t() | :not_found}
+          {:ok, %ArticleImage{}}
+          | {:error,
+             Ecto.Changeset.t()
+             | :not_found
+             | :content_filtered
+             | Baudrate.Auth.Sanctions.refusal()}
   def update_article_image_alt(image_id, user_id, alt),
     do: set_alt(ArticleImage, &ArticleImage.changeset/2, image_id, user_id, alt)
 
@@ -165,7 +170,12 @@ defmodule Baudrate.Content.Images do
   Sets a comment image's description. See `update_article_image_alt/3`.
   """
   @spec update_comment_image_alt(term(), integer(), String.t() | nil) ::
-          {:ok, %CommentImage{}} | {:error, Ecto.Changeset.t() | :not_found}
+          {:ok, %CommentImage{}}
+          | {:error,
+             Ecto.Changeset.t()
+             | :not_found
+             | :content_filtered
+             | Baudrate.Auth.Sanctions.refusal()}
   def update_comment_image_alt(image_id, user_id, alt),
     do: set_alt(CommentImage, &CommentImage.changeset/2, image_id, user_id, alt)
 
