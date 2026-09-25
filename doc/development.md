@@ -1712,7 +1712,7 @@ a filter. A control the reader did not move leaves its operator untouched —
 writing unconditionally would quietly drop the second of two `board:`
 operators, which a single-choice control cannot show. Every control renders its
 value back from the URL, or LiveView's re-render would wipe it (see the
-form-reset gotcha in `CLAUDE.md`).
+form-reset gotcha in `doc/gotchas.md`).
 
 The board `<select>` is filled by `Content.list_visible_boards/1`, a flat
 hierarchy-ordered list read from the board cache, so a board the viewer cannot

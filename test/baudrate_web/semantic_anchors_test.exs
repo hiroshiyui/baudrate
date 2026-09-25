@@ -32,7 +32,7 @@ defmodule BaudrateWeb.SemanticAnchorsTest do
       `#main-content`, so the marker is inert rather than fighting — and a
       `?page` change bypasses that guard on purpose, which is what makes a
       paginated page with a search box work. So no check here fails the build
-      for the combination. `CLAUDE.md` now describes the actual behaviour;
+      for the combination. `doc/gotchas.md` now describes the actual behaviour;
       0018 is accepted and its body is not rewritten, so the divergence lives
       here and there rather than in the record.
   """

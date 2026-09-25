@@ -7,7 +7,11 @@ When performing documentation engineering, always follow these steps:
 
 1. **Audit** all documentation against the current codebase and development status. The review scope must include — without exception:
    - `README.md` — features list, prerequisites, acknowledgements
-   - `CLAUDE.md` — stack, architecture, key gotchas, project conventions
+   - `CLAUDE.md` — stack, architecture, key gotchas, project conventions. It is
+     loaded into every coding session, so it stays **short**: one or two lines
+     per rule, naming the function, ADR and gate test. The full text of a rule
+     (the incident, the bug's shape, why the simplification is wrong) goes in
+     `doc/gotchas.md`, never back into `CLAUDE.md`
    - `doc/` — `development.md`, `sysop.md`, `api.md`, `troubleshooting.md`, `TODOs.md`
    - `doc/baudrate-spec.md` — the conformance index (see step 4a)
    - `doc/adr/` — Architecture Decision Records (see step 4)
@@ -37,7 +41,7 @@ When performing documentation engineering, always follow these steps:
      line may change.
    - **Keep the index in sync.** Every new or superseded ADR updates the table in
      `doc/adr/README.md`.
-   - **Cross-check against `CLAUDE.md` gotchas.** A gotcha that explains a *why*
+   - **Cross-check against the gotchas** (`CLAUDE.md`, long form in `doc/gotchas.md`). A gotcha that explains a *why*
      (a trust boundary, a fail-closed choice, a deliberate non-obvious design)
      belongs in an ADR, with the gotcha reduced to a pointer. A gotcha that is
      purely a *how* stays where it is.

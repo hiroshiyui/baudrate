@@ -88,8 +88,11 @@ The dev container has every one of these tools.
 ## Where to start reading
 
 - [`CLAUDE.md`](CLAUDE.md): the conventions and the "Key Gotchas", the
-  non-obvious rules the code depends on. Its name reflects the assistant it
-  was first written for, but it is the project's working rulebook.
+  non-obvious rules the code depends on, one or two lines each. Its name
+  reflects the assistant it was first written for, but it is the project's
+  working rulebook. [`doc/gotchas.md`](doc/gotchas.md) has the full text of
+  each rule: the bug that produced it and why the obvious simplification is
+  wrong.
 - [`doc/development.md`](doc/development.md): the architecture and the
   project tree.
 - [`doc/adr/`](doc/adr/README.md): *why* things are the way they are. Before

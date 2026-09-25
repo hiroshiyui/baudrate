@@ -14,9 +14,10 @@ That makes the precedence explicit, and it matters when they disagree:
    immutable but for their Status line).
 3. **This index is neither.** It is a finding aid, so that "is there a rule
    about X, and what proves it holds?" is one lookup instead of a search across
-   `CLAUDE.md`, every record and the test suite.
+   `CLAUDE.md`, `doc/gotchas.md`, every record and the test suite.
 
-`CLAUDE.md` remains the operative guide for whoever is writing code right now;
+`CLAUDE.md` remains the operative guide for whoever is writing code right now
+(with [`doc/gotchas.md`](gotchas.md) holding the full text of its rules);
 [`doc/development.md`](development.md) remains the reference manual. This exists
 because neither of them, nor the records, could answer the second half of that
 question.
