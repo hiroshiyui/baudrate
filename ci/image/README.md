@@ -43,7 +43,7 @@ disagree, and `verify-toolchain.sh` checks the running image.
 | Firefox ESR, OpenJDK 17, PostgreSQL 15 client | `ci` | Debian apt | Debian's signed repositories |
 | ansible-lint, and `ansible` for the collections the playbooks use (Phase 8A) | `ci` | Debian apt | Debian's signed repositories |
 | Erlang/OTP | both | upstream source tarball, built in the image | SHA-256 |
-| Elixir | both | upstream precompiled release (`elixir-otp-28.zip`, BEAM bytecode) | SHA-256 |
+| Elixir | both | upstream precompiled release (`elixir-otp-29.zip`, BEAM bytecode) | SHA-256 |
 | Hex, Rebar | both | `mix local.hex` / `mix local.rebar` | Mix checks the signed installer index |
 | Rust | both | `rustup-init`, one pinned toolchain | SHA-256; rustup verifies components against the channel manifest |
 | clippy | `ci` | `rustup component add` for the pinned toolchain (Phase 8A) | rustup verifies it against the channel manifest |

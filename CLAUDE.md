@@ -16,7 +16,7 @@ want, it does not decide what you should look at today.
 ## Quick Reference
 
 ```bash
-# Requires: Elixir 1.19 / OTP 28 (see .tool-versions), PostgreSQL 15, libvips, Rust toolchain (Ammonia, scraper, feedparser-rs NIFs)
+# Requires: Elixir 1.20 / OTP 29 (see .tool-versions), PostgreSQL 15, libvips, Rust toolchain (Ammonia, scraper, feedparser-rs NIFs)
 # — or just a container runtime: .devcontainer/ runs the CI image (by digest) with PostgreSQL 15
 # Dev/test DB credentials default to baudrate_db_user / baudrate_database; PGUSER, PGPASSWORD, PGHOST, PGPORT override
 mix setup              # Install deps, create DB, build assets
@@ -34,7 +34,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Elixir 1.19 / OTP 28 — pinned in `.tool-versions` |
+| Language | Elixir 1.20 / OTP 29 — pinned in `.tool-versions` |
 | Web | Phoenix 1.8 / LiveView 1.2 |
 | HTTP server | Bandit |
 | Database | PostgreSQL 15 (Ecto) — production's major; see the CI section |

@@ -96,7 +96,7 @@ The quickest route is the **dev container** in `.devcontainer/`: the image CI
 tests in, pinned by digest, with PostgreSQL 15 beside it, so a container
 runtime is all you need. See [CONTRIBUTING.md](CONTRIBUTING.md). Otherwise:
 
-- Elixir 1.19 and Erlang/OTP 28 — the versions in `.tool-versions`, which is
+- Elixir 1.20 and Erlang/OTP 29 — the versions in `.tool-versions`, which is
   what CI, the release build and production all install
 - PostgreSQL 15+
 - libvips (for image processing)

@@ -1,4 +1,8 @@
-# Dialyzer baseline (Phase 8A). Reviewed 2026-09-25: 404 warnings became 54.
+# Dialyzer baseline (Phase 8A). Reviewed 2026-09-25: 404 warnings became 54,
+# then 44 with OTP 29 and Elixir 1.20: four catch-alls Dialyzer had listed
+# here were among those the 1.20 type checker also proved unreachable and
+# were deleted (CLAUDE.md, "Follow the type checker"), and four opaque-type
+# notices no longer arise.
 #
 #   * 344 were specs naming `Schema.t()` on schemas that defined no `t/0`;
 #     each schema now does.
@@ -23,14 +27,11 @@
   {"lib/baudrate/auth/challenge.ex", :pattern_match_cov},
   {"lib/baudrate/auth/trust.ex", :guard_fail},
   {"lib/baudrate/auth/trust.ex", :pattern_match_cov},
-  {"lib/baudrate/bots/favicon_fetcher.ex", :call_without_opaque},
   {"lib/baudrate/bots/fetcher.ex", :pattern_match_cov},
   {"lib/baudrate/bots/syndication_feed_worker.ex", :pattern_match},
   {"lib/baudrate/bots/syndication_feed_worker.ex", :pattern_match_cov},
   {"lib/baudrate/content/articles.ex", :call_without_opaque},
-  {"lib/baudrate/content/bookmarks.ex", :contract_with_opaque},
   {"lib/baudrate/content/comments.ex", :call_without_opaque},
-  {"lib/baudrate/content/likes.ex", :contract_with_opaque},
   {"lib/baudrate/content/link_preview/fetcher.ex", :pattern_match},
   {"lib/baudrate/content/link_preview/fetcher.ex", :pattern_match_cov},
   {"lib/baudrate/content/polls.ex", :call_without_opaque},
@@ -47,7 +48,6 @@
   {"lib/baudrate/setup.ex", :call_without_opaque},
   {"lib/baudrate_web/gettext.ex", :call_without_opaque},
   {"lib/baudrate_web/live/admin/boards_live.ex", :pattern_match_cov},
-  {"lib/baudrate_web/live/admin/settings_live.ex", :call_without_opaque},
   {"lib/baudrate_web/live/article_edit_live.ex", :guard_fail},
   {"lib/baudrate_web/live/article_live.ex", :guard_fail},
   {"lib/baudrate_web/live/article_new_live.ex", :guard_fail},
