@@ -754,7 +754,7 @@ their own id.
 ## Collections
 
 The outboxes, followers, following and replies collections are paged by
-**row id** (keyset pagination, since v1.46.0):
+**row id** (keyset pagination, since v2.0.0):
 
 - **Without `?page`**: an `OrderedCollection` root with `totalItems` and a
   `first` link to `?page=true`.
@@ -770,6 +770,8 @@ The outboxes, followers, following and replies collections are paged by
   because peers have those URLs cached. For replies it serves the first page.
 - Search (`/ap/search`) keeps numbered pages: it is ordered by the query, not
   by a row id.
+- A numbered page above 1,000,000 is treated as page 1,000,000, which is
+  empty; it used to answer 500.
 
 **Root collection example:**
 
@@ -811,7 +813,7 @@ GET /ap/users/:username/outbox?page=true
 Returns `Create` activities wrapping Article objects. Only articles in
 **federated** boards (`min_role_to_view == "guest"` **and** `ap_enabled == true`)
 are listed; a board-less article is not listed here at all. `totalItems` and the
-pages apply the same filter, and pages are newest first. (Until v1.46.0 they
+pages apply the same filter, and pages are newest first. (Until v2.0.0 they
 were oldest first, despite saying otherwise: the query's `DISTINCT ON` replaced
 its `ORDER BY`.)
 
@@ -998,7 +1000,7 @@ GET /ap/articles/:slug/replies?page=true
 suspended actor / blocked domain).
 
 Returns an `OrderedCollection` of comments as Note objects, paged oldest
-first (`?page=true`, then `?page=true&min_id=<id>`); until v1.46.0 every
+first (`?page=true`, then `?page=true&min_id=<id>`); until v2.0.0 every
 comment was returned in one document. Soft-deleted comments, and
 remote comments ingested as `followers_only`/`direct` or belonging to a
 suspended actor or blocked domain, are left out.
