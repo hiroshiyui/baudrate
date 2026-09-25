@@ -19,7 +19,14 @@ config :baudrate, Baudrate.Repo,
   port: String.to_integer(System.get_env("PGPORT", "5432")),
   database: "baudrate_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2
+  pool_size: System.schedulers_online() * 2,
+  # A preload of several associations runs its queries as parallel tasks, and
+  # in a test they all share the test's one sandbox connection, so they queue.
+  # DBConnection's default 50 ms `queue_target` then drops a request under
+  # load (four partitions at once), failing a correct test. Waiting is right
+  # here; production keeps the defaults.
+  queue_target: 5_000,
+  queue_interval: 10_000
 
 # Start the server for browser (feature) tests.
 # Each partition gets its own port to avoid collisions.
