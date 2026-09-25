@@ -80,6 +80,17 @@ replies collections now link `?page=true` and continue with `max_id` (replies:
 - The development and test database settings read `PGUSER`, `PGPASSWORD`,
   `PGHOST` and `PGPORT` (and `PGDATABASE` in development), with the old
   values as defaults.
+- **Erlang/OTP 29 and Elixir 1.20** (29.1.1 and 1.20.4), from 28 and 1.19.
+  Operators do nothing by hand: **the deploy now installs the Erlang and
+  Elixir the release pins when the server lacks them** (compiling Erlang
+  takes several minutes, once) and refuses to build on anything else, so
+  production runs exactly what CI tested. Development, the CI images, the
+  dev container and the Ansible pins are checked to be one version.
+- Elixir 1.20's type checker found 34 places where the code guarded against
+  something that cannot happen: fallback clauses no caller can reach,
+  `nil` checks inside a condition that already rules `nil` out, and unused
+  requires. They were removed rather than silenced, so a value that later
+  goes unhandled fails the build instead of falling into a silent default.
 - daisyUI 5.7.46 (from 5.7.37), bug fixes only (dependency drift report
   #18). In themes other than the Aqua pair, a pressed toggle (like, boost,
   bookmark, watch) and the current page's link in the header now carry the
@@ -132,13 +143,13 @@ replies collections now link `?page=true` and continue with `max_id` (replies:
   the new password are now written together or not at all. The reset page
   also shows the policy's errors in the reader's language, and the username
   is matched without regard to case, as at sign-in.
-- **Erlang/OTP 28.5.0.7 and Elixir 1.19.6** (dependency drift report #18).
-  OTP fixes two flaws that reach an instance through the TLS connections it
-  opens to other servers: CVE-2026-89422 (the client accepted an unsolicited
-  TLS 1.3 pre-shared key) and CVE-2026-65634 (a certificate with oversized
-  OID components could exhaust resources). Elixir fixes CVE-2026-75758
-  (unbounded recursion on an invalid charlist). Operators get the new
-  runtime from the next deploy, which builds it on the server.
+- **The runtime's own security fixes** (dependency drift report #18). The
+  new Erlang/OTP 29.1.1 and Elixir 1.20.4 (see Changed) include fixes for
+  two flaws that reach an instance through the TLS connections it opens to
+  other servers: CVE-2026-89422 (the client accepted an unsolicited TLS 1.3
+  pre-shared key) and CVE-2026-65634 (a certificate with oversized OID
+  components could exhaust resources). Elixir fixes CVE-2026-75758
+  (unbounded recursion on an invalid charlist).
 - An avatar id is stored only in the shape the server generates, and
   deleting an avatar refuses any other value, since it removes a directory.
   The feed bots' favicon fetcher names its temporary file randomly.
