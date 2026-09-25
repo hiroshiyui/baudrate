@@ -33,18 +33,8 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 Elixir 1.20 / OTP 29 (pinned in `.tool-versions`) · Phoenix 1.8 / LiveView 1.2 · Bandit ·
 PostgreSQL 15 (production's major) · Tailwind + DaisyUI · esbuild · **Req only** (never
 HTTPoison, Tesla, httpc) · libvips via `image` (WebP re-encode, EXIF strip) · Hammer 7 ·
-MDEx · NimbleTOTP + EQRCode + wax_ · Rust NIFs via Rustler: Ammonia (sanitize), scraper/
-html5ever (parse), feedparser-rs (feeds) · tz · Gettext (en, zh_TW, ja_JP).
-
-## Contexts
-
-Auth (login, 2FA, sessions, recovery ADR 0058, IP bans ADR 0063, new-account limits ADR
-0064) · Content (boards, articles, comments, likes, polls, permissions, search, drafts,
-watches) · Federation (actors, inbox/outbox, delivery, follows, timeline, mentions) ·
-Messaging (DMs, ADR 0071) · Setup (wizard, RBAC, settings) · Moderation (reports, audit
-log, held posts, filters ADR 0065) · Notification · Bots (RSS/Atom) · AccountMigration (ADR
-0025) · AccountDeletion (ADR 0072) · Retention (ADR 0040) · Announcements ·
-DataPortability (ADR 0023). Details: `doc/development.md`.
+MDEx · wax_ · Rust NIFs (Ammonia, scraper, feedparser-rs) · Gettext (en, zh_TW, ja_JP).
+Contexts and architecture: `doc/development.md`.
 
 ## Key Gotchas
 
@@ -171,9 +161,6 @@ that kind goes in it.
   `Auth.verify_totp_code/3` (single-use, ADR 0024).
 - WebAuthn: store the full `Wax.Challenge`; `pop/3` requires the purpose; `wax_` origin
   must equal `window.location.origin` exactly.
-- Auth hooks: `:require_admin`, `:require_admin_or_moderator`, `:require_admin_totp`
-  (10-min sudo, per-user attempt cap), `:require_auth`, `:optional_auth`,
-  `:require_password_auth`, `:redirect_if_authenticated`, `:rate_limit_mount`.
 - Session deletion only through `Auth.Sessions` (broadcasts `disconnect`); keep "this"
   session by row id, never token.
 - The permission catalogue is fixed at compile time; four permissions enforce anything
