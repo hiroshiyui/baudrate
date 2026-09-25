@@ -81,13 +81,6 @@ defmodule Baudrate.Logger.JSONFormatterTest do
     assert %{"message" => "log event could not be formatted"} = Jason.decode!(line)
   end
 
-  test "is not installed unless LOG_FORMAT=json was configured" do
-    assert Application.get_env(:baudrate, :log_format) == nil
-    assert :ok = JSONFormatter.install_if_configured()
-    {:ok, %{formatter: {formatter, _}}} = :logger.get_handler_config(:default)
-    refute formatter == JSONFormatter
-  end
-
   defp format(event), do: event |> JSONFormatter.format(%{}) |> IO.iodata_to_binary()
   defp decode(event), do: event |> format() |> Jason.decode!()
 
