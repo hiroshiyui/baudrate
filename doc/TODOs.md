@@ -7,7 +7,7 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.45.0, released 2026-09-24; production runs v1.45.0).**
+**Current state (v2.0.0, released 2026-09-25; production runs v2.0.0).**
 The review named five gaps: broken promises (the UI or docs saying something
 happens when it does not), moderation reach, operability, federation reach,
 and discovery and onboarding. **All five are now closed** — Phase 0 in
@@ -16,9 +16,12 @@ v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
 anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
 and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **6E shipped in v1.42.0, which completes Phase 6.**
 **Phase 7, admin and content tools, followed across v1.43.0–v1.45.0**, after
-the v1.42.1 patch its planning survey called for.
+the v1.42.1 patch its planning survey called for. **Phase 8, contributor
+health, shipped as one major release, v2.0.0**, with Erlang/OTP 29 and
+Elixir 1.20.
 
-Every open item belongs to Phase 8 below, or to the Backlog. Work
+Every phase of the review is complete. The one dated item left is the
+security contact key's expiry (below); everything else is in the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
 phase is summarised rather than listed — the detail lives in its ADRs and in
 `CHANGELOG.md`, and this file keeps only what is recorded nowhere else: the
@@ -58,7 +61,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | ~~5~~ | ~~Anti-spam~~ | 5A–5E | **Complete** (v1.37.0 – v1.39.0) |
 | ~~6~~ | ~~Member depth~~ | 6A–6E | **Complete** (v1.35.0 – v1.42.0) |
 | ~~7~~ | ~~Admin and content tools~~ | 7A–7E | **Complete** (v1.43.0 – v1.45.0) |
-| 8 | Contributor health | 8A–8D | Lowers the bus factor of one — **next**, planned 2026-09-24 |
+| ~~8~~ | ~~Contributor health~~ | 8A–8D | **Complete** (v2.0.0) |
 
 ---
 
@@ -519,16 +522,15 @@ Deliberately not done, and recorded nowhere else:
 
 ---
 
-## Phase 8 — Contributor health — next
+## Phase 8 — Contributor health — **complete** (v2.0.0)
 
-**Goal.** Someone other than the maintainer can set up, test and contribute safely.
+Someone other than the maintainer can now set up, test and contribute: one
+documented toolchain or a dev container on the CI image (8B, 8C), a Static
+checks job and a coverage report (8A), and ActivityPub collections at a fixed
+query cost with keyset pages (8D). `CHANGELOG.md` has the detail.
 
-**Done when:**
-- a new contributor can go from clone to passing tests with one documented
-  toolchain, or none beyond a container runtime (the dev container);
-- CI catches what reviews would: stale translations, type errors, Rust lint
-  and tests, Ansible lint, and a coverage report on every run;
-- the ActivityPub collections cost a bounded number of queries per page.
+**Open: the security contact key expires on 2027-05-25.** Extend it or
+replace it (`doc/security-contact.asc`) and update `SECURITY.md` before then.
 
 ### Decisions (made 2026-09-24)
 
@@ -546,51 +548,19 @@ Deliberately not done, and recorded nowhere else:
   (outboxes, followers, replies). Human pages keep numbered pages — the
   pager, `PaginationScrollHook`, focus handling and shared `?page` links all
   rest on them — and only their per-item queries get cheaper.
-- **P8-D5. Three releases:** 8B with 8C, then 8A, then 8D. *Changed
-  2026-09-25 by the operator: all of Phase 8 ships as one major release.*
+- **P8-D5. One major release for the whole phase** (changed 2026-09-25 by the
+  operator from three releases).
 - **P8-D6. Keyed comprehensions instead of LiveView streams** for the
   timeline, board, notification and conversation lists: all four are bounded,
   and streams would have meant rewriting their focus and announcement code.
-
-### 8B and 8C — Repository files and local setup — done, unreleased
-
-`CONTRIBUTING.md`, `SECURITY.md` (P8-D2: hiroshi@ghostsinthelab.org, key in
-`doc/security-contact.asc`, valid until 2027-05-25 — **extend it or replace it
-and update `SECURITY.md` before then**), `CODE_OF_CONDUCT.md`, issue forms and
-a PR checklist; the dev container on the CI image (P8-D1); database settings
-from the `PG*` variables; `doc/door-apps-development.md` removed (P8-D3).
-
-### 8A — CI — done, unreleased
-
-A **Static checks** job: `mix gettext.extract --check-up-to-date`; Dialyzer
-against a reviewed baseline (404 warnings became 54, listed by file and kind;
-344 were schemas without a `t/0` type, and the review fixed three wrong specs
-and a dead refusal); clippy and `cargo test` for the three NIF crates, which
-now have 30 unit tests (they found the feed parser keeping non-adjacent
-repeated tags); and `ansible-lint` at the `production` profile, whose one real
-finding was provisioning piping `sh.rustup.rs` into a shell. A **Coverage**
-job merges the partitions into one report, with no threshold. The CI image
-gains clippy and ansible-lint from their signed sources — Debian's
-`ansible-lint` rather than hash-pinned pip requirements, which keeps the image
-on one trust model. A test now checks every locale holds exactly its
-template's messages. Test setup no longer times out: the roles are seeded once,
-committed, before the suite.
-
-### 8D — Performance — done, unreleased
-
-- **Collections:** `ObjectBuilder.article_objects/1` builds a page at a fixed
-  number of queries (a 20-item outbox page: 104 → 6; search: 101 → 9), with
-  `collections_query_count_test.exs` as the gate. The user outbox turned out
-  to list oldest first (`DISTINCT ON` replacing its `ORDER BY`); fixed.
-- **Keyset pages** for the outboxes, followers, following and replies
-  (P8-D4), `?page=N` still answered. Replies are paged at all now, and a
-  user's following no longer loads every follow into memory.
-- **Keyed comprehensions, not streams** (P8-D6, decided 2026-09-25): the four
-  lists are bounded, and `:key` gives the diff benefit without rewriting the
-  pages' focus and announcement code. Streams remain the tool for a list that
-  grows without bound; the comment tree (an EEx `for`) is not keyed yet.
-- **Cropper.js** is its own bundle, loaded by the avatar hook on demand
-  (`features/avatar_crop_test.exs`).
+  Streams remain the tool for a list that grows without bound; the comment
+  tree (an EEx `for`) is not keyed yet.
+- **P8-D7. One Erlang and Elixir version everywhere, and the type checker is
+  followed** (2026-09-25). `.tool-versions` is the pin for development, the CI
+  images, the dev container and production, and CI checks all four; the
+  deploy installs the release's pins when the server lacks them. Elixir
+  1.20's type warnings are fixed, never suppressed (CLAUDE.md, "Follow the
+  type checker").
 
 ---
 
@@ -689,6 +659,7 @@ shape of where the project has been.
 
 | Release | What | Recorded in |
 |---|---|---|
+| v2.0.0 | Phase 8, contributor health: contributor files and a dev container, a Static checks job and coverage, collections at a fixed query cost with keyset pages; a security audit (timing oracles on sign-in and password reset); Erlang/OTP 29 and Elixir 1.20 with one version everywhere | `CHANGELOG.md`, CLAUDE.md |
 | v1.43.0–v1.45.0 | Phase 7, admin and content tools: the `/admin` dashboard and delivery queue page, announcements and a contact line, moving articles and ordering boards, and bots an admin can inspect and fix; v1.42.1 first closed the last-board leak | [0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md), [0075](adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md) |
 | v1.40.0–v1.42.0 | Recovery challenges issued by the instance; Phase 6B–6E: reading and notifications, watches, private DMs, the account pages, deleting one's own account, privacy settings | [0067](adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md)–[0073](adr/0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md) |
 | v1.35.0–v1.39.1 | Phase 6A (comment editing with public history, image descriptions, server drafts) and Phase 5, anti-spam: proof-of-work registration and IP bans, limits on new accounts, held posts and content filters | [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md)–[0066](adr/0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md) |
