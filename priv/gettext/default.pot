@@ -1411,11 +1411,6 @@ msgstr ""
 msgid "Failed to ban user."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/boards_live.ex
-#, elixir-autogen, elixir-format
-msgid "Failed to delete board."
-msgstr ""
-
 #: lib/baudrate_web/live/admin/users_live.ex
 #, elixir-autogen, elixir-format
 msgid "Failed to unban user."
@@ -9022,11 +9017,6 @@ msgstr ""
 #: lib/baudrate_web/helpers.ex
 #, elixir-autogen, elixir-format
 msgid "An admin issued a recovery link for your account. If you did not ask for one, tell them now."
-msgstr ""
-
-#: lib/baudrate_web/live/profile_security_live.ex
-#, elixir-autogen, elixir-format
-msgid "Could not save that recovery contact."
 msgstr ""
 
 #: lib/baudrate_web/live/welcome_live.ex

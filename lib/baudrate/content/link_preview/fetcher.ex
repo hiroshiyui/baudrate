@@ -162,9 +162,6 @@ defmodule Baudrate.Content.LinkPreview.Fetcher do
           {:error, :not_html}
         end
 
-      {:ok, %{body: body}} ->
-        {:ok, parse_og_metadata(body, url)}
-
       {:error, reason} ->
         {:error, reason}
     end
@@ -176,8 +173,6 @@ defmodule Baudrate.Content.LinkPreview.Fetcher do
       _ -> true
     end
   end
-
-  defp html_content_type?(_), do: true
 
   defp parse_og_metadata(html, _url) do
     %{title: title, description: description, image_url: image_url, site_name: site_name} =

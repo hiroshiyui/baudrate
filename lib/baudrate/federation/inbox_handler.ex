@@ -1825,8 +1825,6 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  defp resolve_local_article_by_ap_or_uri(_), do: nil
-
   # --- Accept policy and auto-routing helpers ---
 
   defp check_board_accept_policy(%{ap_accept_policy: "open"}, _remote_actor), do: :ok
@@ -2528,7 +2526,7 @@ defmodule Baudrate.Federation.InboxHandler do
             ~s(<p><img src="#{escape_attr(url)}" alt="#{escape_attr(alt)}" loading="lazy" /></p>)
           end)
 
-        if img_tags == "", do: body_html, else: (body_html || "") <> img_tags
+        if img_tags == "", do: body_html, else: body_html <> img_tags
     end
   end
 
@@ -2552,7 +2550,7 @@ defmodule Baudrate.Federation.InboxHandler do
           ~s(target="_blank" class="attachment-media-link">#{escape_attr(label)}</a></p>)
       end)
 
-    if links == "", do: body_html, else: (body_html || "") <> links
+    if links == "", do: body_html, else: body_html <> links
   end
 
   # Not translated: this text is baked into stored HTML at ingest time, so it

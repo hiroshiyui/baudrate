@@ -190,11 +190,7 @@ defmodule Baudrate.Bots.Fetcher do
   end
 
   defp header_value(headers, name, max) do
-    value =
-      case headers do
-        %{} -> headers |> Map.get(name) |> List.wrap() |> List.first()
-        list when is_list(list) -> List.keyfind(list, name, 0) |> then(&(&1 && elem(&1, 1)))
-      end
+    value = headers |> Map.get(name) |> List.wrap() |> List.first()
 
     if is_binary(value) and value != "" and byte_size(value) <= max and
          String.printable?(value) and not String.contains?(value, ["\r", "\n"]),

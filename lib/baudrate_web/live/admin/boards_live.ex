@@ -293,9 +293,6 @@ defmodule BaudrateWeb.Admin.BoardsLive do
 
       {:error, :has_children} ->
         {:noreply, put_flash(socket, :error, gettext("Cannot delete board that has sub-boards."))}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to delete board."))}
     end
   end
 

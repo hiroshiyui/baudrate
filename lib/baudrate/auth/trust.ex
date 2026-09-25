@@ -147,16 +147,13 @@ defmodule Baudrate.Auth.Trust do
     |> min(max)
   end
 
-  defp parse(value, _default) when is_integer(value), do: value
-
+  # A setting is a string (`Setup.get_setting/1`); `nil` is handled before.
   defp parse(value, default) when is_binary(value) do
     case Integer.parse(String.trim(value)) do
       {n, ""} -> n
       _ -> default
     end
   end
-
-  defp parse(_, default), do: default
 
   @doc """
   The account's standing: whether it is trusted, and if not, how far it has to

@@ -184,22 +184,11 @@ defmodule BaudrateWeb.ProfileSecurityLive do
              )
            )}
 
+        # `Recovery.add_contact/2` refuses only these two ways: a recovery
+        # contact is an account-security action, which the sanction gate
+        # leaves open (ADR 0029).
         {:error, %Ecto.Changeset{} = changeset} ->
           {:noreply, assign(socket, :contact_form, to_form(changeset, as: :contact))}
-
-        # Typed patterns above, so anything else — a gate refusal, a new
-        # error value — would be a CaseClauseError rather than a flash.
-        {:error, reason} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             BaudrateWeb.Helpers.refusal_message(
-               reason,
-               user,
-               gettext("Could not save that recovery contact.")
-             )
-           )}
       end
     end)
   end

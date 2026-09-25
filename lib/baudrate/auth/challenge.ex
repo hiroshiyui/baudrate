@@ -127,16 +127,13 @@ defmodule Baudrate.Auth.Challenge do
 
   def solved?(_challenge, _solution), do: false
 
-  defp parse_bits(value) when is_integer(value), do: value
-
+  # A setting is a string (`Setup.get_setting/1`); `nil` is handled before.
   defp parse_bits(value) when is_binary(value) do
     case Integer.parse(String.trim(value)) do
       {n, ""} -> n
       _ -> @default_bits
     end
   end
-
-  defp parse_bits(_), do: @default_bits
 
   defp clamp(n) when n < 0, do: 0
   defp clamp(n) when n > @max_bits, do: @max_bits

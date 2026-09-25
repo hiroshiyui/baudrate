@@ -120,19 +120,12 @@ defmodule Baudrate.Bots.SyndicationFeedWorker do
           "bots.syndication_feed_worker: posted article #{article.id} for bot #{bot.id}"
         )
 
-      error ->
-        # `create_article/3` surfaces failures from its `Ecto.Multi` as a 4-tuple
-        # `{:error, failed_op, value, changes}` (e.g. a slug `unique_constraint`
-        # collision). Match any error shape so a failed insert records the item
-        # and moves on instead of crashing the bot with a `CaseClauseError` and
-        # looping it forever.
-        reason =
-          case error do
-            {:error, _op, value, _changes} -> value
-            {:error, value} -> value
-            other -> other
-          end
-
+      # `create_article/3` fails only as `{:error, step, value, changes}`: a
+      # slug `unique_constraint` collision fails a Multi step, and a gate
+      # refusal is wrapped as the `:account` step. Matching it records the
+      # item and moves on instead of crashing the bot with a `CaseClauseError`
+      # and looping it forever.
+      {:error, _step, reason, _changes} ->
         Logger.warning(
           "bots.syndication_feed_worker: failed to post entry #{inspect(entry.guid)} for bot #{bot.id}: #{inspect(reason)}"
         )

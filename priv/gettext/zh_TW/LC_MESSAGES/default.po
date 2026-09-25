@@ -1410,11 +1410,6 @@ msgstr "編輯看板"
 msgid "Failed to ban user."
 msgstr "停權使用者失敗。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex
-#, elixir-autogen, elixir-format
-msgid "Failed to delete board."
-msgstr "刪除看板失敗。"
-
 #: lib/baudrate_web/live/admin/users_live.ex
 #, elixir-autogen, elixir-format
 msgid "Failed to unban user."
@@ -9002,11 +8997,6 @@ msgstr "您的帳號已通過核准，現在可以發文、留言與傳送訊息
 #, elixir-autogen, elixir-format
 msgid "An admin issued a recovery link for your account. If you did not ask for one, tell them now."
 msgstr "管理員為您的帳號發出了一組救援連結。如果這不是您要求的，請立刻告知對方。"
-
-#: lib/baudrate_web/live/profile_security_live.ex
-#, elixir-autogen, elixir-format
-msgid "Could not save that recovery contact."
-msgstr "無法儲存該救援聯絡方式。"
 
 #: lib/baudrate_web/live/welcome_live.ex
 #, elixir-autogen, elixir-format

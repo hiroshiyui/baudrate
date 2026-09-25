@@ -95,16 +95,13 @@ defmodule Baudrate.Moderation.HeldPosts do
     |> min(@max_first_posts)
   end
 
-  defp parse(value) when is_integer(value), do: value
-
+  # A setting is a string (`Setup.get_setting/1`); `nil` is handled before.
   defp parse(value) when is_binary(value) do
     case Integer.parse(String.trim(value)) do
       {n, ""} -> n
       _ -> @default_first_posts
     end
   end
-
-  defp parse(_), do: @default_first_posts
 
   @doc """
   Whether a post by `user_id` is one of its first and should be held. Staff

@@ -586,7 +586,6 @@ defmodule Baudrate.DataPortability do
     else
       {:ok, %File.Stat{}} -> {:error, :output_dir_not_a_directory}
       {:error, reason} when is_atom(reason) -> {:error, reason}
-      _ -> {:error, :output_dir_invalid}
     end
   end
 

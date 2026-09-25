@@ -622,8 +622,8 @@ defmodule Baudrate.Federation.HTTPClient do
 
   def private_ip?(_), do: false
 
+  # `decode_body: false`, so a body is always the bytes received.
   defp truncate_body(body) when is_binary(body), do: String.slice(body, 0, 4096)
-  defp truncate_body(body), do: body |> inspect() |> String.slice(0, 4096)
 
   defp user_agent do
     version = Application.spec(:baudrate, :vsn) |> to_string()

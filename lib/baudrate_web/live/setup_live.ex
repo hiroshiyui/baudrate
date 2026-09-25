@@ -71,7 +71,7 @@ defmodule BaudrateWeb.SetupLive do
       |> assign(:key_locked_until, nil)
       # Captured at mount: `connect_info` is only readable here, and the
       # per-IP limit on key attempts has to survive into the handler.
-      |> assign(:client_ip, BaudrateWeb.Helpers.extract_peer_ip(socket) || "unknown")
+      |> assign(:client_ip, BaudrateWeb.Helpers.extract_peer_ip(socket))
       |> assign(:db_status, db_status)
       |> assign(:migrations_status, migrations_status)
       |> assign(:site_name, "Baudrate")
