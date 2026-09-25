@@ -1,679 +1,155 @@
 # TODOs
 
-From a product review on 2026-09-14 (after v1.18.1) that looked at every role:
-guests, members, board moderators, admins, sysops, remote instances and
-contributors. Items marked **(confirmed)** were checked against the code, and
-"absent" claims with grep. Paths are relative to the repository root, with
-`lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
-line numbers were correct as of v1.18.1.
-
-**Current state (v2.0.0, released 2026-09-25; production runs v2.0.0).**
-The review named five gaps: broken promises (the UI or docs saying something
-happens when it does not), moderation reach, operability, federation reach,
-and discovery and onboarding. **All five are now closed** — Phase 0 in
-v1.18.2, Phase 1 in v1.21.0, Phase 2 with the alerting item that followed
-v1.28.2, Phase 3 in v1.31.0, and Phase 4 across v1.32.0–v1.34.0. **Phase 5,
-anti-spam, followed across v1.37.0–v1.39.0**, after 6A went first in v1.35.0
-and v1.36.0. 6B, 6C and 6D shipped together in v1.41.0. **6E shipped in v1.42.0, which completes Phase 6.**
-**Phase 7, admin and content tools, followed across v1.43.0–v1.45.0**, after
-the v1.42.1 patch its planning survey called for. **Phase 8, contributor
-health, shipped as one major release, v2.0.0**, with Erlang/OTP 29 and
-Elixir 1.20.
-
-Every phase of the review is complete. The one dated item left is the
-security contact key's expiry (below); everything else is in the Backlog. Work
-phase by phase; within a phase, ship each stage as its own release. A completed
-phase is summarised rather than listed — the detail lives in its ADRs and in
-`CHANGELOG.md`, and this file keeps only what is recorded nowhere else: the
-numbered decisions, the open items, and the risks the operator accepted
-knowingly.
+**State (v2.0.0, 2026-09-25; production runs v2.0.0).** Every phase of the
+2026-09-14 product review is complete (Phase 0 in v1.18.2 through Phase 8 in
+v2.0.0). This file keeps only what is recorded nowhere else: the open items,
+the risks accepted knowingly, the limits left standing on purpose, and an
+index from the decision and stage ids that commits and ADRs cite to where
+each is recorded. `CHANGELOG.md` has what shipped; the ADRs have why.
 
 ---
 
-## Decisions (made 2026-09-14)
+## Open
 
-- **D1. Local post visibility:** keep Public and Unlisted; drop "Followers only" and "Direct" from local composers, because boards are public spaces whose audience is set by the board's view role, and direct messages are the private channel. Done (B4).
-- **D2. Scale target: one server.** Done (2B, [ADR 0033](adr/0033-baudrate-runs-on-one-node.md)).
-- **D3. Email: stay without it.** Done (4D). Recovery codes stay the only
-  self-service route, they can now be replaced, and past them recovery is
-  anchored on an OpenPGP key verified out of band —
-  [ADR 0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md)
-  records why that is better than adding a mailer, and what it costs. The
-  text the member signs is issued by the instance since
-  [0067](adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md),
-  and a confirmed key shows on the profile as what it is, never as a
-  verified badge
-  ([0068](adr/0068-a-profile-says-what-was-checked-not-that-someone-is-verified.md)).
-- **D4. Data export and move gate: keep "TOTP enabled for ≥ 7 days"** ([ADR 0023](adr/0023-data-export-threat-model.md), [ADR 0025](adr/0025-account-migration.md)), and improve the path for members in 6E. Accepting WebAuthn in step-up re-authentication stays a separate possible feature.
+- **The security contact key expires on 2027-05-25.** Extend or replace it
+  (`doc/security-contact.asc`) and update `SECURITY.md` before then.
+- **Interop is unverified against real peers** (Phase 3). Against a real
+  Mastodon account and a real Lemmy community: thread a reply, send a
+  mention, edit a display name, post with a content warning, follow a
+  community. All of it is met in code and none of it has been seen working;
+  nothing depends on it, so nothing will make it happen by itself.
+- **`SECRET_KEY_BASE` is not yet rotatable:** 130 recovery-code hashes still
+  ride its derivation, and an HMAC cannot be re-keyed without the code, so
+  they move only as members regenerate theirs. `Release.key_census/0` says
+  when that reaches zero. (The separated keys were rotated end to end on
+  production in 2026-09.)
 
----
-
-## Roadmap
-
-Each phase settles its decisions and gets its own implementation plan before work starts. Sizes: S ≈ a day, M ≈ a few days, L ≈ a week.
-
-| Phase | Theme | Stages | Why |
-|-------|-------|--------|-----|
-| ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
-| ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (v1.31.0) |
-| ~~4~~ | ~~Discovery and onboarding~~ | 4A–4F | **Complete** (v1.32.0 – v1.34.0) |
-| ~~5~~ | ~~Anti-spam~~ | 5A–5E | **Complete** (v1.37.0 – v1.39.0) |
-| ~~6~~ | ~~Member depth~~ | 6A–6E | **Complete** (v1.35.0 – v1.42.0) |
-| ~~7~~ | ~~Admin and content tools~~ | 7A–7E | **Complete** (v1.43.0 – v1.45.0) |
-| ~~8~~ | ~~Contributor health~~ | 8A–8D | **Complete** (v2.0.0) |
-
----
-
-## Phase 1 — Trust and safety — **complete**
-
-Everyone who has to act on abuse can act at the right level, everyone affected
-by a decision is told about it, and the site publishes the rules those
-decisions rest on. Shipped v1.19.0–v1.21.0: **1A** blocks
-([0026](adr/0026-blocks-stop-interaction-locally.md)), **1B** the report queue
-board moderators can use (`doc/development.md`), **1C** sanctions
-([0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)), **1D** domain
-blocks and per-actor suspension
-([0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md)), **1E**
-terms acceptance ([0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md))
-and **1F** rules as records
-([0032](adr/0032-rules-are-records-and-retired-not-deleted.md)). The decisions
-behind it (P1-D1 … P1-D9, made 2026-09-14) are all implemented and live in
-those records and the `CLAUDE.md` invariants.
-
-**Closed by 2F:** an article its author deletes used to keep its body in the
-row and in `article_revisions` indefinitely; both are destroyed 90 days later
-([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)).
-
-**Deliberately not in Phase 1:** anti-spam → Phase 5; moving articles between
-boards → 7C; an `/admin` dashboard and announcement UI → 7A, 7B; content
-warnings → 3E. Silence and reject-media domain levels, splitting threads,
-takedown workflow and age gating are in the Backlog; outbound `Block` was ruled
-out by P1-D1.
-
----
-
-## Phase 2 — Operability — complete
-
-**Goal.** No data loss goes unnoticed, the operator hears about problems before users do, and a bad deploy can be undone.
-
-**Done when:** production takes verified backups on a schedule and a restore has been rehearsed; a delivery or inbound backlog, a stalled worker or a full disk shows up in the detailed health report; no federated activity is lost to a restart; a release can be rolled back with one command. One of the original five — "the production host no longer compiles releases" — was withdrawn by [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md): moving the artifact cost more than compiling it.
-
-### Done
-
-Every stage's reasoning is in its record; this is only the index, so that
-"Phase 2D" in an ADR resolves to something.
-
-| Stage | What | Released | Recorded in |
-|-------|------|----------|-------------|
-| 2A | Backups, recovery, and the alert when a check fails | v1.23.0; alerting after v1.28.2 | [0028](adr/0028-backups-are-complete-folders-with-count-based-retention.md), [0044](adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md) |
-| 2B | One node (D2) | v1.23.0 | [0033](adr/0033-baudrate-runs-on-one-node.md) |
-| 2C | Federation work commits before it is acknowledged | v1.24.0 | [0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
-| 2D | The loopback-only health report, and JSON logs | v1.25.0 | [0035](adr/0035-operational-visibility-stays-on-the-host.md) |
-| 2E | Deploy safety: CI-built releases, rollback, per-server cookie | v1.26.0 | [0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
-| 2F | Retention: the hourly purges | v1.28.0 | [0040](adr/0040-retention-deletes-what-nobody-touched.md) |
-| 2G | Key separation, and every key rotatable | v1.27.0 | [0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
-| 2H | Drift: CI runs production's PostgreSQL, server and client | v1.23.0 | `ci/image/README.md` |
-
-### Only recorded here
-
-Everything else about Phase 2 is in its ADRs, in `CLAUDE.md` and in
-`doc/sysop.md`. These are the facts that are not.
-
-- **The rotation path is exercised, not theoretical.** Production separated its
-  keys on 2026-09-18 and has since rotated them once, end to end: 117 stored
-  secrets re-keyed with none left unreadable, the retired key dropped from
-  configuration, `encryption_keys` reporting `ok`.
-- **`SECRET_KEY_BASE` is still not rotatable,** because 130 recovery-code
-  hashes ride the old derivation. A recovery code is a keyed HMAC and cannot be
-  re-keyed without the code, so they move only as members regenerate theirs.
-  `Baudrate.Release.key_census/0` says when that reaches zero.
-- **Retention's first production pass** (2026-09-18) removed 717 timeline
-  items, 93 announces, 48 articles, 287 comments and 14 files, then settled.
-- **P2-D4 says "nobody has bookmarked or interacted with", but `bookmarks`
-  only targets articles and comments** — a timeline item cannot be bookmarked —
-  so the keep rule is likes, boosts and replies.
-- **There is no `/admin/roles` screen, and adding one would not be a screen.**
-  [0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md)
-  settled that roles are a fixed ordered set of four and capabilities are not
-  configurable. Revisiting it supersedes 0042 *and* needs a migration that
-  backfills grants: gating `/admin/settings` on a permission an existing role
-  row happens to lack locks an operator out of their own instance.
-- **`Baudrate.Content.Feed` keeps its name** (operator's call, 2026-09-19). It
-  is recent-content listings plus per-user statistics — a fifth sense of
-  "feed" — but after [0041](adr/0041-rss-and-atom-are-syndication.md) it
-  collides with nothing, and splitting it would be a cohesion change rather
-  than a naming one.
-
-### Accepted knowingly
+## Accepted knowingly
 
 Recorded so a later reader can tell a decision from an oversight.
 
-- **Production allows SSH login as root** (key only), deferred by the operator.
-  `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets
-  `PermitRootLogin yes`, and **sshd keeps the first value it reads**, so the
-  `common` role's `PermitRootLogin no` has no effect (`sshd -T`, 2026-09-15).
-  The fix would be for the role to manage the drop-ins and assert the
-  effective value.
-- **No restore rehearsal onto a fresh host, and no always-on puller** (declined
-  2026-09-18). The rehearsal that was done restored into a scratch database on
-  the same machine, so rebuilding the host from nothing is untested — and since
-  2G that also means the key set a restore needs
-  ([0038](adr/0038-encryption-keys-are-separate-and-rotatable.md)) has never
-  been exercised anywhere but the machine that holds it. Off-host copies arrive
-  only while the workstation is running.
-- **Publishing the release to a registry** is left open by
-  [0037](adr/0037-the-deploy-builds-on-the-server-again.md), so the operator's
-  machine could verify a digest and the server pull the bytes over its own
-  link. Only worth doing if the artifact ever has to reach the server again.
+- **Production allows SSH login as root** (key only), deferred by the
+  operator: a drop-in sets `PermitRootLogin yes`, and sshd keeps the first
+  value it reads, so the `common` role's `no` has no effect. The fix is for
+  the role to manage the drop-ins and assert the effective value.
+- **No restore rehearsal onto a fresh host, and no always-on puller**
+  (2026-09-18). The rehearsal restored into a scratch database on the same
+  machine, so rebuilding from nothing — including the key set a restore needs
+  (ADR 0038) — is untested; off-host copies arrive only while the workstation
+  runs.
+- **Publishing releases to a registry** stays open under ADR 0037; worth it
+  only if the artifact must reach the server again.
+- **Profile text is not filtered** (outside ADR 0065's scope); **a refusal is
+  an oracle by bisection**, slowed only by rate limits; **nothing classifies
+  content by machine**, and there are no per-board filters or trust and no
+  held DMs.
 
-### Decisions (made 2026-09-17)
+## Left standing on purpose
 
-- **P2-D1. No metrics endpoint.** The loopback-only health report (2D) is the
-  one place an operator polls; a metrics endpoint is more surface to secure
-  for history this instance does not need yet.
-- **P2-D2. No error reporting service.** Errors go to the logs. A third party
-  would receive request data, and with no metrics endpoint there is no error
-  counter either.
-- **P2-D3. Releases are built in CI** on a project-owned image matching
-  production, attested and attached to the GitHub release. **Amended by
-  [0037](adr/0037-the-deploy-builds-on-the-server-again.md):** the deploy
-  builds on the server instead, so the attestation now guards a manual install
-  rather than the deploy.
-- **P2-D4. Retention periods:** timeline items nobody interacted with, 90 days;
-  announces, 180 days; soft-deleted rows, after the 90-day evidence window.
+- The article history cannot show the most recent edit (a revision holds the
+  state *before* a change); comments render the live text as a version, the
+  article page does not.
+- The article edit composer has no server draft — deferred, not refused (ADR
+  0062's rejected alternatives).
+- A remote poll a member voted in sends no notice when it closes (ADR 0069).
+- Local comments from before `/comments/:id` keep their stored `url`;
+  `ObjectBuilder` ignores it.
+- The AP followers collection lists remote followers to anyone while
+  `ap_authorized_fetch` is off (ADR 0070).
+- No DM images to or from other servers; reporting an image-only message
+  copies an empty text (ADR 0071).
+- A deleted account's timeline replies stay, under "deleted account" (ADR 0072).
+- `search_comments` lists comments on unlisted articles (ADR 0073).
+- Muted words fold text, not images; titles-only lists are not folded.
+- There is no About page; the contact line is in the footer and on the
+  policy pages.
+- A moved article's remote copies stay where they were (ADR 0075).
+- A bot's skipped entries are skipped for good; re-posting one means deleting
+  its `bot_syndication_items` row. The dry run uses the *saved* settings, and
+  a bot keeps no fetch history.
+- Announcements are plain text, at most three show, with no scheduled start.
+- The comment tree (an EEx `for`) is not keyed (P8-D6).
 
----
+## Settled — do not re-file
 
-## Phase 3 — Federation reach — **complete** (v1.31.0)
+- **The Aqua themes keep their `.card > .card-body` selectors** (operator,
+  2026-09-19). They normalise the shape of *any* card with an Aqua title bar
+  — the component, not an element that could carry a handle — so they are
+  not the structural selectors ADR 0018 refuses.
+- **No `/admin/roles` screen:** roles are four and fixed (ADR 0042); revisiting
+  it supersedes 0042 and needs a migration backfilling grants.
+- **`Baudrate.Content.Feed` keeps its name** (operator, 2026-09-19).
+- **Retention keeps a timeline item that has likes, boosts or replies** —
+  P2-D4 said "bookmarked", but a timeline item cannot be bookmarked.
+- **The home page's empty state never says whether boards exist**: "none for
+  you" is exactly what `min_role_to_view` keeps.
 
-**The aim it served:** conversations, mentions, profile changes and groups
-behaving the way Mastodon and Lemmy users expect — so that what leaves this
-instance arrives as the thing it is, rather than as something the receiving
-server has to guess at.
+## How the phases were worked
 
-All five goals are met **in code**: a reply threads under the comment it
-answers; a mentioned remote user is notified; Lemmy community activity
-arriving through a group appears here; profile and board edits reach
-followers; content warnings survive in both directions. None of the five has
-been seen working against a real peer, which is the phase's one open item
-below.
-
-### Done
-
-Released as v1.31.0 and deployed 2026-09-20. v1.31.1 followed the same day
-with a `sobelow_skip` annotation and nothing else (`CHANGELOG.md`). Each
-stage's reasoning is in its record; this table is the index, so that "3C" in a
-commit or an ADR resolves to something.
-
-| Stage | What | Recorded in |
-|-------|------|-------------|
-| 3A | `inReplyTo` names the parent comment; `@user@domain` is its own syntax, resolved behind the board gate | [0051](adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md), `mentions_test.exs` |
-| 3B | Comments and polls are objects with their own URIs; every existing fragment id rewritten, `legacy_ap_id` keeping what peers already hold | [0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md), `object_identity_test.exs`, and [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md) for what an `Update` may name |
-| 3C | A group's `Announce` is a carrier, unwrapped one level, and the group speaks only for its own host | [0053](adr/0053-a-group-announce-is-a-carrier.md), `group_announce_test.exs` |
-| 3D | `Update(Person)`/`Update(Group)` on any rendered-document change; a closed poll announces its final counts once | no ADR; `CLAUDE.md` |
-| 3E | `summary`/`sensitive` are fields, never a body prefix; video and audio are links | [0052](adr/0052-a-content-warning-is-a-field-not-a-prefix.md), `content_warning_test.exs` |
-| 3F | NodeInfo counts honestly and serves 2.0 as well as 2.1; every `baudrate:` term is declared | no ADR; `protocol_hygiene_test.exs` |
-
-Three decisions were taken and all three are now records, which hold the
-reasoning: **P3-D1** — comment and poll ids were rewritten for **existing**
-rows too, not only new ones as originally drafted; leaving the old ones would
-have left every conversation this instance had already had permanently
-unthreadable ([0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md)).
-**P3-D2** — an unknown `@user@domain` resolves by WebFinger at post time, rate
-limited per user, and one that does not resolve stays plain text, silently;
-`@alice` with no domain is still a local mention.
-**P3-D3** — a mention addresses and never widens the audience: it is a surface
-*of* [0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md)'s
-outbound gate rather than an exception to it, or typing a handle would be a
-one-step way to get a private board's article to any instance. Both live in
-[0051](adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md).
-
-### Only recorded here
-
-Everything else is in those records, in `CHANGELOG.md`, `doc/api.md` and
-`doc/sysop.md` — including the two refusals that were noted here while they
-had nowhere else to live: a carried activity is never fetched when it is not
-embedded ([0053](adr/0053-a-group-announce-is-a-carrier.md), decision 6), and
-`Update(Person)` is never debounced (`CLAUDE.md`). Both read as obvious
-improvements from outside, and both records say why they are not. These are
-the facts that are still nowhere else.
-
-- **Interop is unverified, and it is this phase's one open item.** Against a
-  real Mastodon account and a real Lemmy community: thread a reply, send a
-  mention, edit a display name, post with a content warning, follow a
-  community. Only a peer can prove interop, so "met in code" is not "seen
-  working". It has outlived Phase 4 and 6A's first half untouched — which is
-  the signal, not a reproach: nothing has ever depended on it, so nothing will
-  make it happen by itself.
-
-- **The `ap_id` backfill has been run here** (2026-09-20: 47 comments, 0
-  articles, 0 polls; a re-run reports `0/0`), so there is nothing left to do.
-  Worth a line only because `doc/sysop.md` writes the procedure for an
-  operator who still has to run it, and this one does not.
+- **A stage's list is a prompt to go and read, never a specification.**
+  Reading it against the code changed every stage of Phases 4 and 5.
+- **A fix drifts to wherever a rule is written twice**; a gate over one of two
+  copies reports a rule half enforced.
+- **A number in a TODO goes stale**; recurring chores become gates
+  (`translation_coverage_test.exs`).
 
 ---
 
-## Phase 4 — Discovery and onboarding — **complete**
+## Decisions
 
-**The aim it served:** a boring but friendly environment for online discussion
-([ADR 0056](adr/0056-boring-but-friendly.md)). Discovery here means helping
-someone find the board they want, never deciding what they should look at
-today.
+| Id | Decision | Recorded in |
+|---|---|---|
+| D1 | Local posts are Public or Unlisted only; DMs are the private channel | `CLAUDE.md` (AP visibility) |
+| D2 | One server | ADR 0033 |
+| D3 | No email; recovery is anchored on an OpenPGP key | ADR 0058, 0067, 0068 |
+| D4 | Export and move need TOTP enabled ≥ 7 days | ADR 0023, 0025 |
+| P1-D1 – D9 | Trust and safety: blocks, sanctions, domain blocks, terms, rules, cross-posted moderation (P1-D5), evidence copies (P1-D6); no outbound `Block` (P1-D1) | ADR 0026–0032, `CLAUDE.md` |
+| P2-D1 | No metrics endpoint: the loopback health report is the one place to poll | ADR 0035 |
+| P2-D2 | No error-reporting service: a third party would receive request data | ADR 0035 |
+| P2-D3 | Releases built and attested in CI — amended: the deploy builds on the server | ADR 0036, 0037 |
+| P2-D4 | Retention: untouched timeline items 90 days, announces 180, soft-deleted rows after the 90-day evidence window | ADR 0040 |
+| P3-D1 – D3 | Rewrite existing fragment ids; unknown handles resolve by WebFinger; a mention never widens the audience | ADR 0050, 0051 |
+| P4-D1 – D3 | Nothing ranked or rivered; registering signs you in; recovery via a verified OpenPGP signature | ADR 0054–0056, 0058 |
+| P5-D1 – D3 | Proof of work, not a CAPTCHA; trust is three days and three posts; filters block, hold or flag | ADR 0063–0065 |
+| P6-D1 – D2 | Editing comments; what account deletion removes | ADR 0060, 0072 |
+| P7-D1 – D4 | Three releases; announcements dismissed per member or browser; moving needs both boards' rights; the last-board leak fixed first (v1.42.1) | ADR 0075, `CLAUDE.md` |
+| P8-D1 | Rust stays required: no precompiled NIFs; the dev container is the easy path | `CLAUDE.md` (CI) |
+| P8-D2 | Vulnerabilities reported by email with OpenPGP | `SECURITY.md` |
+| P8-D3 | `doc/door-apps-development.md` removed | Backlog |
+| P8-D4 | Keyset pagination for the ActivityPub collections only | `CLAUDE.md`, `doc/api.md` |
+| P8-D5 | Phase 8 as one major release | v2.0.0 |
+| P8-D6 | Keyed comprehensions, not streams, for bounded lists | `CLAUDE.md` |
+| P8-D7 | One Erlang/Elixir version everywhere; the type checker is followed | `CLAUDE.md` |
 
-All four goals are met: a guest's first page shows the site's purpose and its
-boards; search engines index public content without duplicates; a new member
-is signed in and guided after registering; and a locked-out member has a
-documented way back in.
+## Phases
 
-### Done
+Stage ids resolve here; the detail is in the records and `CHANGELOG.md`.
 
-| Stage | What | Released | Recorded in |
-|-------|------|----------|-------------|
-| 4A | Home and navigation: the boards-only home page, last activity on a board card, `site_description`, guest branding, footer feed links | empty state v1.32.0, rest v1.33.0 | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md), [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) |
-| 4B | SEO and syndication feeds: `sitemap.xml`, a real `robots.txt`, canonical/description/`noindex`, 404 for a missing account, per-page and tag feeds | v1.33.0 | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
-| 4C | Search: relevance or date sorting, a board and date filter, the same operators on the Comments tab, a paged Users tab capped at five pages | v1.33.0 | `doc/development.md` (Search), spec rows under [0054](adr/0054-attention-follows-the-board-not-a-ranking.md)/[0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)/[0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md) |
-| 4D | Onboarding and account recovery: sign-in on registering, `/welcome`, private pages that bring you back, replaceable recovery codes, OpenPGP recovery contacts, admin-issued reset links | v1.33.0 | [0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md), `doc/sysop.md` (the operator's procedure) |
-| 4E | Sharing and PWA: the service worker on every page with an offline fallback, a copy-link share fallback, follow-from-your-instance | v1.34.0 | [0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md), `doc/development.md` (the service worker; Follow from your instance) |
-| 4F | Privacy and language: the footer language switcher and a one-year `locale` cookie | v1.32.0 | `doc/development.md` (resolution order, cookie inventory) |
+| Phase | Stages | Released | Records |
+|---|---|---|---|
+| 0 Correctness | the review's twelve bugs | v1.18.2 | `CHANGELOG.md` |
+| 1 Trust and safety | 1A blocks, 1B report queue, 1C sanctions, 1D domain blocks, 1E terms, 1F rules | v1.19.0 – v1.21.0 | ADR 0026, 0029–0032 |
+| 2 Operability | 2A backups and alerts, 2B one node, 2C committed federation, 2D health report, 2E deploy safety, 2F retention, 2G keys, 2H PostgreSQL drift | v1.23.0 – v1.30.0 | ADR 0028, 0033–0038, 0040, 0044 |
+| 3 Federation reach | 3A threading and mentions, 3B object ids, 3C group announces, 3D actor updates, 3E content warnings, 3F NodeInfo | v1.31.0 | ADR 0050–0053 |
+| 4 Discovery and onboarding | 4A home, 4B SEO and feeds, 4C search, 4D onboarding and recovery, 4E sharing and PWA, 4F language | v1.32.0 – v1.34.0 | ADR 0054–0059 |
+| 5 Anti-spam | 5A proof of work, 5B new-account limits, 5C held posts, 5D filters, 5E IP bans | v1.37.0 – v1.39.0 | ADR 0063–0066 |
+| 6 Member depth | 6A editing, alt text, drafts; 6B reading; 6C watching; 6D DMs; 6E-1 account pages, 6E-2 deletion, 6E-3 privacy | v1.35.0 – v1.42.0 | ADR 0060–0062, 0069–0073 |
+| 7 Admin and content tools | 7A dashboard, 7B announcements, 7C moves, 7D bots, 7E delivery queue | v1.43.0 – v1.45.0 | ADR 0074, 0075 |
+| 8 Contributor health | 8A CI checks, 8B repository files, 8C dev container, 8D performance | v2.0.0 | `CLAUDE.md`, `CONTRIBUTING.md` |
 
-Three decisions were taken and all three are now records, which hold the
-reasoning and what is deliberately unaffected: **P4-D1** — the site ranks
-nothing and rivers nothing ([0054](adr/0054-attention-follows-the-board-not-a-ranking.md),
-narrowed by [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md),
-premised on [0056](adr/0056-boring-but-friendly.md)); **P4-D2** — registering
-signs you in, with the recovery codes still in front of the session;
-**P4-D3** — an admin verifies an OpenPGP signature from a pre-registered
-address before resetting an account ([0058](adr/0058-account-recovery-is-anchored-outside-the-instance.md)).
-Reversing any of it needs a superseding record, not a patch.
-
-### Only recorded here
-
-Everything else lives in those records, in `CHANGELOG.md` and in the
-moduledocs — including two lessons that started here and have since moved to
-where the code is: why changing language on `/profile` used to render dead
-HTML (`CLAUDE.md`, the locale gotcha) and why a board's last-activity time
-shares the unread badge's filters (`Content.Boards.last_activity_by_board/1`).
-These are the facts that are still nowhere else.
-
-- **Reading a stage's list against the code changed the stage, every time.**
-  Not once in six. 4F's YouTube item had already shipped and its translation
-  item counted the PO header. 4B's items were right, but what "Unlisted"
-  *means* was not among them. None of 4C's three described the real work:
-  relevance ranking was written and thrown away on the next line, the Comments
-  tab had been ordered oldest-first for its whole life, and
-  `?q=after:2026-01-01` returned every article the viewer could see —
-  `/recent` through the search box, which
-  [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) had refused
-  through the router. Half of 4D's six were worse than written and one was not
-  implemented at all: no way existed to mint recovery codes after account
-  creation, so a member who spent all ten had lost the account, in a system
-  with no email. 4E's three were all understated — registration was gated on a
-  **VAPID key**, so an instance that never configured push could not be
-  installed at all; the share button's "fallback" was two bugs, the second in
-  the clipboard hook it would reuse; and the WebFinger lookup behind
-  follow-from-your-instance was missing `refuse_blocked: true`, covered only
-  by a downstream re-check that flow does not have.
-  **The list is a prompt to go and read, never a specification.**
-
-- **A fix drifts to wherever the rule is written twice.** 4E found
-  `doc/examples/nginx.conf.example` still carrying both bugs the Ansible
-  template had lost hours earlier, because the new gate watched one of the two
-  files. A gate over one of two copies reports a rule that is half enforced.
-
-- **A number in a TODO goes stale the next time anyone runs
-  `gettext.extract`,** so the translation chore became a gate
-  (`translation_coverage_test.exs`) rather than a recurring line here.
-
-- **"An empty state when there are no boards" was the wrong question.** No
-  boards cannot happen — setup seeds SysOp and `delete_board/1` refuses to
-  remove it. **No board this *viewer* may see** can: nothing stops an admin
-  raising SysOp's `min_role_to_view`, which empties the list for every guest,
-  who was then told to "browse the boards below" with nothing below. The empty
-  state never distinguishes "none exist" from "none for you", because that
-  difference is what `min_role_to_view` is keeping.
-
-- **4A added no new page.** `/recent` and `/popular` went with P4-D1;
-  `/unanswered` and a `/tags` index with
-  [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md). All four
-  are in `@ranking_paths`, so mounting one fails the build. `/tags/:tag`
-  already existed and is untouched — the reader named the tag.
-
----
-
-## Phase 5 — Anti-spam — **complete** (v1.37.0 – v1.39.0)
-
-**The aim it served:** an instance with open registration survives a spam wave
-without an admin deleting posts one by one.
-
-All three goals are met: automated sign-ups are slowed down, new accounts
-cannot mass-post links, and moderators can stop a wave with filters and IP
-bans. A wave is now slowed at the door, capped per account, held for review,
-and stopped by what it says.
-
-### Done
-
-| Stage | What | Released | Recorded in |
-|-------|------|----------|-------------|
-| 5A | A self-hosted proof-of-work challenge on registration in every mode; banning an account with the accounts it invited, each one ticked | v1.37.0 | [0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md), `registration_challenge_test.exs`, `invite_chain_ban_test.exs` |
-| 5B | Limits on new accounts, decided from the clock and a count: one link and one image a post, ten posts an hour in one bucket, DMs only where not unsolicited, nothing added to the signature | v1.38.0 | [0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md), `trust_test.exs` |
-| 5C | First posts held for review, as submissions of their own; approval is publication, once | v1.39.0 | [0065](adr/0065-what-waits-for-review-is-not-content-yet.md), `held_post_test.exs`, `submit_path_test.exs` |
-| 5D | Word, text and domain filters — never regular expressions — on posts, their edits and inbound content | v1.39.0 | [0065](adr/0065-what-waits-for-review-is-not-content-yet.md), [0066](adr/0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md), `content_filter_test.exs` |
-| 5E | IP and CIDR bans on registration and sign-in, checked where every sign-in ends | v1.37.0 | [0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md), `ip_ban_test.exs` |
-
-Three decisions were taken and all three are now records, which hold the
-reasoning: **P5-D1** — a self-hosted proof-of-work challenge rather than a
-CAPTCHA, in all three registration modes, since `approval_required` still lets
-a bot mint pending accounts that each notify every admin
-([0063](adr/0063-the-door-is-defended-by-work-not-by-a-third-party.md));
-**P5-D2** — trust is three days *and* three posts still up, staff always
-trusted and an invite granting nothing
-([0064](adr/0064-a-new-account-is-slowed-down-not-shut-out.md)); **P5-D3** —
-a filter blocks, holds or flags, and remote content can only be dropped or
-flagged ([0065](adr/0065-what-waits-for-review-is-not-content-yet.md)).
-Reversing any of it needs a superseding record, not a patch.
-
-### Only recorded here
-
-Everything else is in those records, in `CHANGELOG.md` and the guides —
-including what each stage's plan got wrong, which every one of the three
-records lists, and the five gaps the security audit found in 5C and 5D's own
-code before v1.39.0 (`CHANGELOG.md`; the four in screening are
-[0066](adr/0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md)).
-This is the one fact that is still nowhere else.
-
-- **The plan's shape changed at every stage, as Phase 4's did** — per-kind
-  rate limits in LiveViews became one bucket at the context boundary, a
-  "Held" tab on two queues became one page scoped per reviewer, and filter
-  matches left the moderation log for a table of their own. The list is a
-  prompt to go and read, never a specification.
-
-### Accepted knowingly
-
-- **Profile text is not filtered.** Display name, bio and profile fields are
-  outside ADR 0065's scope; the bio and fields render as plain text (why
-  ADR 0064 does not limit them), but they are still text other people read.
-- **A refusal is still an oracle by bisection.** It names nothing, but a
-  spammer can split a post until it passes. The composer rate limits make
-  that slow, not impossible.
-- **Nothing here classifies content by machine**, and there are no per-board
-  filters or per-board trust and no held DMs — the plan's "not in this phase",
-  none of which has a record yet. (The automatic invite cascade and the
-  shadow-ban, from the same list, are refused in 0063 and 0064.)
-
----
-
-## Phase 6 — Member depth — **complete** (v1.35.0 – v1.42.0)
-
-**The aim it served:** members who stay find that the site keeps up with
-them — they can fix mistakes, follow what matters, and control their account.
-
-All five exit criteria are met: comments can be edited, notifications lead to
-the comment they are about, members can watch boards and threads, DMs
-notify, and members can delete their account and manage their sessions.
-
-### Done
-
-| Stage | What | Released | Recorded in |
-|-------|------|----------|-------------|
-| 6A | Comment editing with a public history; image descriptions; server-side article drafts beside the localStorage autosave | v1.35.0, v1.36.0 | [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md), [0061](adr/0061-an-image-description-is-not-a-form-field.md), [0062](adr/0062-a-draft-is-kept-in-two-places-on-purpose.md) |
-| 6B | "New since your last visit" per comment with a jump across pages; a "N new posts" offer on boards; a sign-in prompt for guests; notifications that open the comment's page, group likes and boosts, filter by kind and announce a closed poll | v1.41.0 | [0069](adr/0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md) (amends 0048), `comments_test.exs` (browser), `poll_anonymity_test.exs` |
-| 6C | Watching a board or a thread, only by the member's own toggle; `/followers`, with removal by `Reject(Follow)` | v1.41.0 | [0070](adr/0070-a-member-hears-about-what-they-chose.md), `watch_test.exs` |
-| 6D | A DM push naming only the sender, with no notification row; private images between members here, rationed before processing; search of one's own conversations | v1.41.0 | [0071](adr/0071-a-direct-message-stays-between-the-two-people-in-it.md), `dm_privacy_test.exs` |
-| 6E-1 | `/profile` as five pages; a session list with addresses and per-session sign-out behind the step-up unlock; the member's own time zone, and `<time datetime>` in UTC; eligibility dates on the export and move pages | v1.42.0 | `session_list_test.exs`, `profile_pages_test.exs`, `profile_time_zone_test.exs` |
-| 6E-2 | Deleting one's own account: step-up re-authentication, a seven-day wait signing in cancels, a resumable sweep to a tombstone with `Delete(Person)` in the same transaction; banned accounts served bare over ActivityPub | v1.42.0 | [0072](adr/0072-a-deleted-account-leaves-a-tombstone.md), `account_deletion_test.exs` |
-| 6E-3 | Muting a server and words (collapsed, never removed); approving followers manually (a request is a follower nowhere); opting out of discovery | v1.42.0 | [0073](adr/0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md), `privacy_settings_test.exs` |
-
-**P6-D1** (editing comments) is [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md);
-**P6-D2** (what account deletion removes) is [0072](adr/0072-a-deleted-account-leaves-a-tombstone.md).
-Bugs the stages found on the way — every link to a comment pointing at page 1,
-remote replies dropped from notifications as duplicates, cross-posts
-announced to no board, the in-app switch discarding the push setting, a
-deleted DM keeping its link preview, the reply-image sweep unlinking nothing
-after a deploy, CI jobs failing after their tests passed, remote non-public
-replies in the timeline's comment strand, and unlisted articles in search —
-are in `CHANGELOG.md`.
-
-### Left standing
-
-Deliberately not done, and recorded nowhere else:
-
-- **The article history cannot show the most recent edit** — a revision
-  holds the state *before* a change. `CommentHistoryLive` renders the live
-  text as a version to close that; the article page was left alone.
-- **The article edit composer has no server draft.** The localStorage hook
-  covers it and the published text is never at risk, so this is deferred
-  rather than refused: it needs a draft that belongs to an article and a rule
-  for a concurrent edit (ADR 0062's rejected alternatives).
-- **A remote poll a member voted in sends no notice when it closes** — there
-  is no local sweep for remote polls (ADR 0069 decision 3).
-- **Local comments from before `/comments/:id` keep their stored `url`.**
-  `ObjectBuilder` publishes the permalink for every local comment, so this
-  matters only if the column is read somewhere new.
-- **The AP followers collection still lists remote followers to anyone**
-  while `ap_authorized_fetch` is off — a federation setting, which ADR 0070
-  leaves it to.
-- **No images to or from other servers in DMs.** Incoming ones stay proxied
-  inline images; outgoing ones are refused rather than published at a public
-  URL (ADR 0071, rejected alternative). Reporting an image-only message
-  copies an empty text; the moderator sees the image through the report.
-- **A deleted account's timeline replies stay** under "deleted account":
-  replies to posts on other servers have no local withdrawal path (ADR 0072).
-- **`search_comments` still lists comments on unlisted articles** — a
-  smaller gap than the articles themselves, accepted in ADR 0073.
-- **Muted words fold text, not images**, and titles-only lists (search, tag
-  pages) are not folded: they answer the member's own query.
-
----
-
-## Phase 7 — Admin and content tools — **complete** (v1.43.0 – v1.45.0)
-
-**The aim it served:** running the site doesn't need a shell or SQL.
-
-Both exit criteria are met: an admin sees the site's state on one page
-(`/admin`), and can announce, reorganise content and fix bots from the UI.
-
-### Decisions (made 2026-09-24)
-
-- **P7-D1. Three releases:** 7A with 7E, then 7B with 7C, then 7D.
-- **P7-D2. Announcements** are seen by everyone; a member's dismissal is
-  stored on their account, a guest's in the browser.
-- **P7-D3. Moving an article** needs staff, or a moderator of both boards
-  (P1-D5).
-- **P7-D4.** The planning survey found that taking an article out of its
-  last board published it; fixed first, in v1.42.1.
-
-### Done
-
-| Stage | What | Released | Recorded in |
-|-------|------|----------|-------------|
-| — | An article taken out of its last board is refused unless that board federates (it used to become public) | v1.42.1 | `CLAUDE.md` (P1-D5 bullet), `content_test.exs` |
-| 7A | `/admin`, the dashboard: members, moderation queues, federation, and each health check's status for admins behind sudo mode | v1.43.0 | [0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md) (refines 0035), `dashboard_test.exs` |
-| 7E | `/admin/federation/delivery`: the queue by domain, retrying or abandoning jobs, closing a circuit | v1.43.0 | [0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md), `delivery_live_test.exs` |
-| 7B | `/admin/announcements`, optionally sent as a notification to active members; the site contact line in the footer and on the policy pages | v1.44.0 | `announcements_test.exs`, `features/announcement_notice_test.exs` |
-| 7C | Moving an article between boards, emptying a board before deleting it, ordering boards with Move up / Move down | v1.44.0 | [0075](adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md), `article_move_test.exs` |
-| 7D | Bots: next fetch and post counts, **Fetch now**, a dry run, include and exclude patterns, a first-fetch limit, switching a bot off after 10 failures with an admin notice, conditional GET | v1.45.0 | `CLAUDE.md` ("A feed entry is judged once"), `fetcher_test.exs` |
-
-The `admin.view_dashboard` item was already void: ADR 0042 removed the
-permission. The project-wide code review run between 7A and 7B found three
-more state bugs — an inbox fallback that matched a comment id by prefix,
-approving a registration that was no longer pending, and resolving a report
-twice — all fixed in v1.43.0 and listed in `CHANGELOG.md`.
-
-### Left standing
-
-Deliberately not done, and recorded nowhere else:
-
-- **There is no About page.** The contact line sits in the footer and on the
-  policy pages; custom pages beyond Rules, Terms and Privacy stay in the
-  Backlog.
-- **A moved article's remote copies stay where they were.** No peer re-homes
-  a post it already holds, so the old board's followers keep it
-  (ADR 0075's rejected alternatives).
-- **A bot's skipped entries are skipped for good.** An entry filtered out or
-  left in the first fetch's backlog is recorded like a posted one; loosening
-  the patterns affects new entries only. Re-posting one means deleting its
-  `bot_syndication_items` row by hand.
-- **The dry run uses the saved settings**, not the form being edited: save
-  the patterns first, then run it.
-- **A bot keeps no fetch history** — only its last error and its counts.
-- **Announcements are plain text** and at most three show at once; there is
-  no scheduling of a future start.
-
----
-
-## Phase 8 — Contributor health — **complete** (v2.0.0)
-
-Someone other than the maintainer can now set up, test and contribute: one
-documented toolchain or a dev container on the CI image (8B, 8C), a Static
-checks job and a coverage report (8A), and ActivityPub collections at a fixed
-query cost with keyset pages (8D). `CHANGELOG.md` has the detail.
-
-**Open: the security contact key expires on 2027-05-25.** Extend it or
-replace it (`doc/security-contact.asc`) and update `SECURITY.md` before then.
-
-### Decisions (made 2026-09-24)
-
-- **P8-D1. Rust stays required.** No `rustler_precompiled`: a binary
-  downloaded at compile time is a second trust path beside the CI image
-  (ADR 0027), and production builds on the server anyway (ADR 0037). The
-  cost is met instead by documenting the toolchain and shipping a **dev
-  container built on the CI image**, which already carries the pinned Rust.
-- **P8-D2. Vulnerabilities are reported by email** to
-  hiroshi@ghostsinthelab.org, with an OpenPGP key, published in
-  `SECURITY.md`.
-- **P8-D3. `doc/door-apps-development.md` is removed**; the idea becomes one
-  Backlog line.
-- **P8-D4. Keyset pagination for the ActivityPub collections only**
-  (outboxes, followers, replies). Human pages keep numbered pages — the
-  pager, `PaginationScrollHook`, focus handling and shared `?page` links all
-  rest on them — and only their per-item queries get cheaper.
-- **P8-D5. One major release for the whole phase** (changed 2026-09-25 by the
-  operator from three releases).
-- **P8-D6. Keyed comprehensions instead of LiveView streams** for the
-  timeline, board, notification and conversation lists: all four are bounded,
-  and streams would have meant rewriting their focus and announcement code.
-  Streams remain the tool for a list that grows without bound; the comment
-  tree (an EEx `for`) is not keyed yet.
-- **P8-D7. One Erlang and Elixir version everywhere, and the type checker is
-  followed** (2026-09-25). `.tool-versions` is the pin for development, the CI
-  images, the dev container and production, and CI checks all four; the
-  deploy installs the release's pins when the server lacks them. Elixir
-  1.20's type warnings are fixed, never suppressed (CLAUDE.md, "Follow the
-  type checker").
-
----
-
-## Closed by the ADR audit (2026-09-19)
-
-A record-by-record check of all 46 ADRs against the code. Most held; seven did
-not, and all seven are now closed. Kept as a short index because each left
-something behind that is not obvious from the record it fixed.
-
-- **Origin binding had no ADR** → [0046](adr/0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md).
-  Sixteen call sites, seven distinct attacks, one rule. Writing it turned up a
-  second, divergent `same_host?/2` private to `InboxHandler` that accepted two
-  hostless URIs as same-origin where the Validator's rejects them — and it was
-  the copy guarding the fetched-Announce object id and the `attributedTo`
-  binding. It now delegates.
-- **ADR 0016's invariant did not hold for article moderation** → fixed by
-  taking the actor into `toggle_pin_article/2`, `toggle_lock_article/2`,
-  `soft_delete_article/2` and `soft_delete_comment/2`, which reload it.
-  Reloading is not incidental: `can_delete_article?` matches on
-  `%{role: %{name: "admin"}}`, so an admin passed in with `:role` unloaded
-  would have fallen to the board-moderator branch and been silently denied.
-  A delete must now name its actor or say `remote: true`.
-- **ADR 0002's facade rule was stricter than the code** →
-  [0047](adr/0047-the-facade-lists-every-way-a-context-changes-the-world.md)
-  narrows it to the operations that change the world and names the five exempt
-  categories; `Federation` gains the five mutating moderation delegates the
-  admin LiveViews were bypassing it for. Deliberately no acceptance gate —
-  "changes the world" is a judgement, and the record says so.
-- **Poll anonymity had no ADR** →
-  [0048](adr/0048-a-poll-records-who-voted-and-nothing-reads-it-back.md), with
-  `test/baudrate/content/poll_anonymity_test.exs` as the gate. The record is
-  explicit that this is anonymity from other members, not from the operator.
-- **Changeset allow-lists had no ADR** →
-  [0049](adr/0049-user-facing-changesets-are-allow-lists.md). It is the local
-  half of 0046: that record stops a remote host minting our URIs, this stops a
-  member minting theirs, and the unique `ap_id` column needs both.
-- **ADR 0036 decision 1 lost its third enforcer** → the deploy asserts the
-  host's Debian release again. What it defends changed with
-  [0037](adr/0037-the-deploy-builds-on-the-server-again.md) and got stronger:
-  the release is built here now, so a drifted host silently becomes the system
-  the binary is built against, and `debian_version` also fixes the PostgreSQL
-  client major — a 17+ `pg_dump` against the 15 server breaks the pre-deploy
-  dump and the nightly backups rather than the deploy.
-- **ADR 0018 was violated by `app.css`** → the three `.card:has(> .card-body >
-  .stretched-link)` rule sets now hang off a `tappable-card` semantic class on
-  the five cards that are pressable as a whole. The pressed selector keeps two
-  branches on purpose: an article card holds independently clickable links and
-  `:active` propagates to ancestors, so a bare `:active` would flash the card
-  when you press the author.
-- **ADR 0024 §6** → `totp_setup_live.html.heex` carries the single-use hint,
-  and `test/baudrate_web/totp_code_hint_test.exs` is the gate that notices the
-  next one. Eight templates had it and nothing checked the ninth.
-
-**Settled, not open: the Aqua themes keep their `.card > .card-body`
-selectors** (`aquaosx.css:235,245`, `aquaosx-dark.css:217,222`; operator's
-call, 2026-09-19). The audit listed them with the `app.css` rule sets, and
-that was an overreach. They are imported into `app.css`, so the file-scope
-reading does not save them — but their subject does: `[data-theme="aquaosx"]
-.card > .card-body:has(> .card-title)` normalises padding for **any** card
-carrying an Aqua title bar, so that the full-bleed bar below it meets the
-border flush whether the card uses `p-4` or daisyUI's default. The rule is
-about the component's shape, and naming a specific element is what would
-break it. ADR 0018's concern is custom CSS hooked onto structure *in place
-of* a semantic handle the element could have had; there is no such handle
-here, and adding one per card body would touch dozens of templates while the
-theme still had to target the component. Do not re-file this.
+The 2026-09-19 ADR audit (ADR 0046–0049) is in `CHANGELOG.md` (v1.29.0–v1.30.0).
 
 ---
 
 ## Backlog (not planned)
 
-Kept so the review is complete. None of these are scheduled; propose moving one into a phase before working on it.
+None of these are scheduled; propose moving one into a phase before working on it.
 
-- **Scale and storage:** multi-node clustering (ruled out by D2), S3-compatible storage, CDN integration.
+- **Scale and storage:** multi-node clustering (ruled out by D2), S3-compatible storage, a CDN.
 - **APIs:** a Mastodon-compatible client API, OAuth, a REST API, webhooks, plugins or themes.
-- **Federation extras:**
-  - custom emoji and quote posts;
-  - relays and backfilling remote outboxes or threads;
-  - the `featured` collection, `Add`/`Remove` and `contentMap`;
-  - RFC 9421 signatures;
-  - silence and reject-media domain levels;
-  - outbound `Block` (ruled out by P1-D1).
+- **Federation:** custom emoji and quote posts; relays and backfilling remote outboxes or threads; the `featured` collection, `Add`/`Remove` and `contentMap`; RFC 9421 signatures; silence and reject-media domain levels; outbound `Block` (ruled out by P1-D1).
 - **Members:** group DMs, read receipts, emoji reactions, inline image placement, reply depth beyond 5, RTL layout, `hreflang` links.
 - **Content tools:** splitting and merging threads, custom pages beyond Rules, Terms and Privacy.
-- **Extensions:** interactive "door apps" (the removed
-  `doc/door-apps-development.md` sketched WASM plug-ins; P8-D3).
+- **Extensions:** interactive "door apps" (WASM plug-ins; P8-D3).
 - **Legal:** a takedown and legal-request workflow, age gating.
 - **Email:** ruled out by D3.
-
----
-
-## Recently completed
-
-`CHANGELOG.md` has the detail and each ADR has the reasoning; this is only the
-shape of where the project has been.
-
-| Release | What | Recorded in |
-|---|---|---|
-| v2.0.0 | Phase 8, contributor health: contributor files and a dev container, a Static checks job and coverage, collections at a fixed query cost with keyset pages; a security audit (timing oracles on sign-in and password reset); Erlang/OTP 29 and Elixir 1.20 with one version everywhere | `CHANGELOG.md`, CLAUDE.md |
-| v1.43.0–v1.45.0 | Phase 7, admin and content tools: the `/admin` dashboard and delivery queue page, announcements and a contact line, moving articles and ordering boards, and bots an admin can inspect and fix; v1.42.1 first closed the last-board leak | [0074](adr/0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md), [0075](adr/0075-moving-an-article-arrives-and-withdraws-only-what-changed.md) |
-| v1.40.0–v1.42.0 | Recovery challenges issued by the instance; Phase 6B–6E: reading and notifications, watches, private DMs, the account pages, deleting one's own account, privacy settings | [0067](adr/0067-the-instance-issues-the-challenge-the-admin-still-verifies-it.md)–[0073](adr/0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md) |
-| v1.35.0–v1.39.1 | Phase 6A (comment editing with public history, image descriptions, server drafts) and Phase 5, anti-spam: proof-of-work registration and IP bans, limits on new accounts, held posts and content filters | [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md)–[0066](adr/0066-a-filter-reads-what-is-stored-not-what-the-object-claims.md) |
-| v1.32.0–v1.34.0 | Phase 4, discovery and onboarding: the language switcher, crawlers and the sitemap, search with operators, account recovery anchored on OpenPGP, installability and remote follow | [0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md)–[0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md) |
-| v1.31.0 | Phase 3, federation reach: comment and poll ids at paths, mentions, threading, content warnings as fields, Lemmy group announces, profile updates reaching followers | [0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md)–[0053](adr/0053-a-group-announce-is-a-carrier.md) |
-| v1.29.0–v1.30.0 | The instance alerts its admins when a health check fails, closing Phase 2; an ADR-by-ADR audit of what the instance claimed against what it did | [0044](adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md), [0046](adr/0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md)–[0049](adr/0049-user-facing-changesets-are-allow-lists.md) |
-| v1.28.2 | What a documentation audit found by reading the guides against the code: a fourth copy of the article visibility check on the edit-history page, and a periodic worker the health report could not see | [0035](adr/0035-operational-visibility-stays-on-the-host.md) |
-| v1.28.1 | Two authorization fixes from the RBAC investigation: a ban checked neither the permission nor the rank rule; article visibility had four implementations, three missing the remote refusals (the fourth was found in v1.28.2) | [0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md), [0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md) |
-| v1.28.0 | Phase 2F retention; the personal stream became the timeline and RSS/Atom became syndication; the outbound board gate completed at five surfaces; a security audit, an a11y sweep and a code review | [0039](adr/0039-the-personal-stream-is-a-timeline.md), [0040](adr/0040-retention-deletes-what-nobody-touched.md), [0041](adr/0041-rss-and-atom-are-syndication.md) |
-| v1.27.0 | Phase 2G: secrets at rest keyed per class and every key rotatable. `SECRET_KEY_BASE` had keyed all four at-rest secrets and could never be changed; two were written down nowhere — the recovery-code hashes, which made the documented remedy for a lost TOTP secret circular, and the Web Push key | [0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
-| v1.26.0 | Phase 2E: releases built, smoke-tested and attested in CI on production's Debian. Closed a live hole — the co-hosted account could read the Erlang cookie while distribution listened on every interface. Installing the tarball then cost 13 minutes against 2 for an incremental build, so the deploy compiles on the server again | [0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
-| v1.25.0 | Phase 2D: a loopback-only detailed health report, and optional JSON logs with a metadata allow-list | [0035](adr/0035-operational-visibility-stays-on-the-host.md) |
-| v1.24.0 | Phase 2C: a change and its outgoing activities commit together, so a restart no longer drops them; deliveries wake on commit, a per-domain circuit breaker, an inbound queue ordered per remote account | [0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
-| v1.23.0 | Phase 2B and 2H: one node officially — the old guide called running several "idempotent" when it would have delivered every job twice; CI tests production's PostgreSQL 15, server and client | [0033](adr/0033-baudrate-runs-on-one-node.md) |
-| v1.22.x | Backups that prove they are intact (per-file checksums verified off-host); bilingual privacy policy and EUA; two ways the accept card failed silently, including an id ad blockers hid because `#policy-accept` looks like a cookie bar | [0028](adr/0028-backups-are-complete-folders-with-count-based-retention.md) |
-| v1.19.x–v1.21.0 | Phase 1, trust and safety: blocks that stop interaction both ways, a report queue board moderators can use, sanctions with an explicit end, domain blocks as reversible rows, public terms and rules with versioned acceptance. Production backups started in v1.19.5 | [0026](adr/0026-blocks-stop-interaction-locally.md), [0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)–[0032](adr/0032-rules-are-records-and-retired-not-deleted.md) |
-| v1.17.0–v1.18.2 | Data portability (self-service export and account migration; import was dropped) and Phase 0, the twelve correctness bugs from the 2026-09-14 review | [0023](adr/0023-data-export-threat-model.md), [0025](adr/0025-account-migration.md) |
