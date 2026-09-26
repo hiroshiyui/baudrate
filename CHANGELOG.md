@@ -9,6 +9,11 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.0.3] — 2026-09-26
+
+A maintenance release: a stylesheet change for mixed CJK and Latin text. There
+are no migrations, and deploying it needs nothing by hand.
+
 ### Changed
 
 - **Automatic spacing between CJK and Latin text.** The stylesheet sets CSS
