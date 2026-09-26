@@ -425,7 +425,8 @@ All board moderator actions are logged in the moderation log.
 
 User avatars are processed server-side for security:
 
-1. Client selects image → Cropper.js provides interactive crop UI
+1. Client selects image → Cropper.js 2 (web components, loaded on demand by
+   `AvatarCropHook`) provides a square selection kept on the image
 2. Normalized crop coordinates (percentages) are sent to the server
 3. Server validates magic bytes, re-encodes as WebP (destroying polyglots),
    strips all EXIF/metadata, and produces 120×120, 48×48, 36×36, and 24×24 thumbnails

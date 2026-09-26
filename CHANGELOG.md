@@ -9,6 +9,16 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Changed
+
+- **Cropper.js 1.6.3 → 2.2.0** (avatar cropping). 2.x is a rewrite as web
+  components, so the avatar editor is rebuilt on it: the image is fitted and
+  stays still, and a square selection starts as the largest centred square
+  and cannot be moved or resized off the image, as before. The editor waits
+  for the dialog to finish opening before it measures the page. Its styles
+  now travel with the cropper script, so every page's stylesheet sheds the
+  old `cropper.min.css`.
+
 ## [2.0.1] — 2026-09-25
 
 A maintenance release: no behaviour a member or operator sees changes, there

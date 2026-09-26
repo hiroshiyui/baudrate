@@ -1,7 +1,6 @@
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
-@import "../vendor/cropperjs/cropper.min.css";
 @import "tailwindcss" source(none);
 @source "../css";
 @source "../js";
@@ -376,4 +375,10 @@ a:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 4px;
   border-radius: var(--radius-box);
+}
+
+/* The avatar editor's cropper (Cropper.js 2): its elements style themselves in
+   shadow roots, but the canvas takes its height from the page. */
+.avatar-crop-canvas {
+  height: min(24rem, 60vh);
 }

@@ -46,7 +46,37 @@ defmodule BaudrateWeb.Features.AvatarCropTest do
     session
     |> assert_has(Query.css("#crop-modal[open]"))
     |> assert_has(Query.css("script[src*='cropper']", visible: false))
-    |> assert_has(Query.css("#avatar-crop-container .cropper-container"))
+    |> assert_has(Query.css("#avatar-crop-container #avatar-crop-canvas"))
+    # The square selection starts on the image: shown once the image is ready.
+    |> assert_has(Query.css("#avatar-crop-canvas cropper-selection:not([hidden])"))
+    |> execute_script(
+      """
+      const canvas = document.getElementById("avatar-crop-canvas").getBoundingClientRect();
+      const image = document.querySelector("#avatar-crop-canvas cropper-image").getBoundingClientRect();
+      const s = document.querySelector("#avatar-crop-canvas cropper-selection");
+      return [image.left - canvas.left, image.top - canvas.top, image.width, image.height,
+              s.x, s.y, s.width, s.height];
+      """,
+      [],
+      fn [ix, iy, iw, ih, sx, sy, sw, sh] ->
+        # The largest square on the image, centred on it (a 4:3 image here).
+        assert sw == sh
+        assert_in_delta sw, min(iw, ih), 1
+        assert_in_delta sx + sw / 2, ix + iw / 2, 1
+        assert_in_delta sy + sh / 2, iy + ih / 2, 1
+      end
+    )
+    # The selection cannot leave the image.
+    |> execute_script(
+      """
+      const s = document.querySelector("#avatar-crop-canvas cropper-selection");
+      const before = [s.x, s.y];
+      s.$moveTo(-500, -500);
+      return [before, [s.x, s.y]];
+      """,
+      [],
+      fn [before, moved] -> assert before == moved end
+    )
     |> click(Query.css("#crop-modal .modal-action .btn-primary"))
 
     assert wait_until(fn -> Repo.get!(User, user.id).avatar_id != nil end),
@@ -88,7 +118,7 @@ defmodule BaudrateWeb.Features.AvatarCropTest do
 
     session
     |> assert_has(Query.css("#crop-modal[open]"))
-    |> refute_has(Query.css("#avatar-crop-container .cropper-container"))
+    |> refute_has(Query.css("#avatar-crop-container #avatar-crop-canvas"))
     |> click(Query.css("#crop-modal .modal-action .btn-primary"))
 
     assert wait_until(fn -> Repo.get!(User, user.id).avatar_id != nil end),
