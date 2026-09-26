@@ -178,6 +178,27 @@
   white-space: nowrap;
 }
 
+/* Automatic spacing between CJK and Latin/digit runs (CSS Text 4), so the gap
+   comes from the stylesheet rather than literal spaces typed into posts. See
+   https://www.w3.org/International/articles/styling/inline-space.html
+   Full support in Blink; Gecko is partial, WebKit spaces only before the
+   alphanumeric run. Stick to `normal`: `replace` is unimplemented everywhere
+   and interferes with other spacing. */
+html {
+  text-autospace: normal;
+}
+
+/* Never inside code, where a gap would misrepresent the literal text, nor in
+   form fields, where the author would see a space they did not type. */
+pre,
+code,
+kbd,
+samp,
+input,
+textarea {
+  text-autospace: no-autospace;
+}
+
 /* The site name/logo always renders in Roboto Slab (the default themes' body
    font), even under themes that override `--font-sans` — e.g. the Aqua theme
    uses the Apple system stack, but the brand should stay consistent. */

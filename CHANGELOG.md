@@ -9,6 +9,14 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Changed
+
+- **Automatic spacing between CJK and Latin text.** The stylesheet sets CSS
+  Text 4 `text-autospace: normal`, so a gap appears between Chinese or
+  Japanese and letters or digits without a space typed into the post. It is
+  off in code and in form fields, where it would show a space that is not in
+  the text. Browsers without the property are unchanged.
+
 ## [2.0.2] — 2026-09-26
 
 A maintenance release: the avatar cropper moves to Cropper.js 2. There are no
