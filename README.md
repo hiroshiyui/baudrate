@@ -182,6 +182,8 @@ Built with these excellent open-source projects:
 - [Phoenix LiveView](https://hexdocs.pm/phoenix_live_view/)
 - [Ecto](https://hexdocs.pm/ecto/)
 - [Tailwind CSS](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/)
+- [Cropper.js](https://fengyuanchen.github.io/cropperjs/) (avatar cropping, loaded only on the avatar editor)
+- [topbar](https://buunguyen.github.io/topbar/) (page-load progress bar)
 - [NimbleTOTP](https://hexdocs.pm/nimble_totp/)
 - [wax_](https://hexdocs.pm/wax_/) (WebAuthn / FIDO2 relying party)
 - [Hammer](https://hexdocs.pm/hammer/)
