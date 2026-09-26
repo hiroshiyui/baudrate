@@ -66,6 +66,20 @@ defmodule BaudrateWeb.Features.AvatarCropTest do
         assert_in_delta sy + sh / 2, iy + ih / 2, 1
       end
     )
+    # The guide lines are decorative: no empty `role="grid"` for a screen
+    # reader, and the image keeps its localized name.
+    |> execute_script(
+      """
+      const canvas = document.getElementById("avatar-crop-canvas");
+      return [canvas.querySelectorAll("[role='grid']").length,
+              canvas.querySelector("cropper-image").getAttribute("alt")];
+      """,
+      [],
+      fn [grids, alt] ->
+        assert grids == 0
+        assert alt == "Avatar preview"
+      end
+    )
     # The selection cannot leave the image.
     |> execute_script(
       """

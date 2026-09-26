@@ -24,15 +24,17 @@ function loadCropper(src) {
 }
 
 // The editor: a fitted, fixed image under a movable, resizable square
-// selection, with the outside shaded. No `keyboard` attribute: Cropper.js
+// selection, with the outside shaded. The guide lines are decorative (the
+// upstream template calls them `role="grid"`, with no rows or cells, so a
+// screen reader would announce an empty grid). No `keyboard` attribute: Cropper.js
 // binds it on the whole document, where Delete would remove the selection.
 const CROP_TEMPLATE =
   '<cropper-canvas id="avatar-crop-canvas" class="avatar-crop-canvas" background>' +
   '<cropper-image initial-fit="contain"></cropper-image>' +
   "<cropper-shade></cropper-shade>" +
   '<cropper-selection aspect-ratio="1" movable resizable outlined hidden>' +
-  '<cropper-grid role="grid" bordered covered></cropper-grid>' +
-  "<cropper-crosshair centered></cropper-crosshair>" +
+  '<cropper-grid aria-hidden="true" bordered covered></cropper-grid>' +
+  '<cropper-crosshair aria-hidden="true" centered></cropper-crosshair>' +
   '<cropper-handle action="move" theme-color="rgba(255, 255, 255, 0.35)"></cropper-handle>' +
   '<cropper-handle action="ne-resize"></cropper-handle>' +
   '<cropper-handle action="nw-resize"></cropper-handle>' +
