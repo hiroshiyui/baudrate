@@ -9,15 +9,31 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.0.2] — 2026-09-26
+
+A maintenance release: the avatar cropper moves to Cropper.js 2. There are no
+migrations, and deploying it needs nothing by hand.
+
 ### Changed
 
 - **Cropper.js 1.6.3 → 2.2.0** (avatar cropping). 2.x is a rewrite as web
   components, so the avatar editor is rebuilt on it: the image is fitted and
   stays still, and a square selection starts as the largest centred square
-  and cannot be moved or resized off the image, as before. The editor waits
-  for the dialog to finish opening before it measures the page. Its styles
-  now travel with the cropper script, so every page's stylesheet sheds the
-  old `cropper.min.css`.
+  and cannot be moved or resized off the image, as before. The image itself
+  can no longer be dragged or zoomed; resize the square instead. The editor
+  waits for the dialog to finish opening before it measures the page. Its
+  styles now travel with the cropper script, so every page's stylesheet
+  sheds the old `cropper.min.css`.
+- `CLAUDE.md` keeps each rule to a line or two; the full text of each, with
+  the bug behind it, moves to `doc/gotchas.md`. `doc/development.md` maps the
+  directories instead of listing every file.
+- The README credits the vendored Cropper.js and topbar.
+
+### Fixed
+
+- **The cropper's guide lines are decorative.** Cropper.js's own template
+  marks them `role="grid"` with no rows or cells, which a screen reader
+  announces as an empty grid; they are now hidden from assistive technology.
 
 ## [2.0.1] — 2026-09-25
 
