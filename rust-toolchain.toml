@@ -5,8 +5,9 @@
 #
 # rustup installs a listed component on first use when the toolchain lacks it,
 # so both CI images carry exactly these (ci/image/Dockerfile); otherwise CI
-# would fetch them at run time.
+# would fetch them at run time. `profile` applies only when rustup installs
+# the toolchain, so the images' minimal install (no rust-docs) stays as it is.
 [toolchain]
 channel = "1.98.1"
-profile = "minimal"
+profile = "default"
 components = ["rustfmt", "clippy"]
