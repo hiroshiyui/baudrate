@@ -45,8 +45,8 @@ disagree, and `verify-toolchain.sh` checks the running image.
 | Erlang/OTP | both | upstream source tarball, built in the image | SHA-256 |
 | Elixir | both | upstream precompiled release (`elixir-otp-29.zip`, BEAM bytecode) | SHA-256 |
 | Hex, Rebar | both | `mix local.hex` / `mix local.rebar` | Mix checks the signed installer index |
-| Rust | both | `rustup-init`, one pinned toolchain | SHA-256; rustup verifies components against the channel manifest |
-| clippy | `ci` | `rustup component add` for the pinned toolchain (Phase 8A) | rustup verifies it against the channel manifest |
+| Rust | both | `rustup-init`, the toolchain pinned in `rust-toolchain.toml` | SHA-256; rustup verifies components against the channel manifest |
+| rustfmt, clippy | both | components of the pinned toolchain, listed in `rust-toolchain.toml` (the build image needs them too, or cargo would fetch them at run time) | rustup verifies them against the channel manifest |
 | esbuild | both | npm registry package | SHA-256 |
 | Tailwind CSS | both | GitHub release | SHA-256 |
 | Selenium Server | `ci` | GitHub release | SHA-256 |

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Run inside a CI image (baudrate-ci or baudrate-build), from the repository
 # root. Fails when the image's tools differ from what the project pins, so a
-# version bump in .tool-versions, config/config.exs,
+# version bump in .tool-versions, rust-toolchain.toml, config/config.exs,
 # lib/mix/tasks/selenium_setup.ex or the Ansible inventory cannot silently run
 # on an old image. The test tools are checked only in baudrate-ci.
 set -eu
@@ -54,6 +54,11 @@ check ansible-erlang "$(ansible_pin erlang_version)" "$(pinned_tool erlang)"
 check ansible-elixir "$(ansible_pin elixir_version)" "$pinned_elixir"
 check esbuild "$esbuild_version" "$(pinned_asset esbuild)"
 check tailwind "$tailwind_version" "$(pinned_asset tailwind)"
+
+# rust-toolchain.toml pins the NIF toolchain; rustup would otherwise download
+# it at run time instead of using the image's.
+rustc_version="$(rustc --version | sed -nE 's/^rustc ([^ ]+).*/\1/p')"
+check rust "$rustc_version" "$(sed -nE 's/^channel = "([^"]+)".*/\1/p' rust-toolchain.toml)"
 
 # Debian: production's release, because the release built here carries its
 # own Erlang runtime and NIFs linked against this system (ADR 0036).

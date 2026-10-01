@@ -39,7 +39,7 @@ own Erlang runtime and NIFs.
 | Erlang/OTP | the version in `.tool-versions` (29.1.1) | VM |
 | PostgreSQL | 15+ | Database (requires `pg_trgm` extension) |
 | libvips | any | Avatar and image processing |
-| Rust toolchain | stable | Three Rustler NIFs: HTML sanitizer (Ammonia), HTML parser (scraper), feed parser (feedparser-rs) |
+| Rust toolchain | `rust-toolchain.toml` (installed by the deploy) | Three Rustler NIFs: HTML sanitizer (Ammonia), HTML parser (scraper), feed parser (feedparser-rs) |
 
 ### Installing build dependencies
 

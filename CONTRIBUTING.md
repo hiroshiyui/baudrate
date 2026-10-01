@@ -30,9 +30,10 @@ has to be installed on your machine.
 - **Erlang and Elixir** at the versions in `.tool-versions` (asdf or mise
   read it). They are the versions CI, the dev container and production run;
   CI fails when any of them differs.
-- **Rust**, stable: three NIF crates in `native/` are compiled from source by
-  `mix compile`. There are no precompiled binaries, on purpose (decision
-  P8-D1 in `doc/TODOs.md`).
+- **Rust** at the version in `rust-toolchain.toml` (rustup installs it, with
+  rustfmt and clippy, on first use): three NIF crates
+  in `native/` are compiled from source by `mix compile`. There are no
+  precompiled binaries, on purpose (decision P8-D1 in `doc/TODOs.md`).
 - **PostgreSQL 15** (production's version; newer servers work for
   development, but CI runs 15), with the `pg_trgm` extension available.
 - **libvips** for image processing.

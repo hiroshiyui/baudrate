@@ -257,10 +257,10 @@ that kind goes in it.
 - CI runs only in the project's attested images (`ci/image/`, ADR 0027/0036): pinned
   digests in `image.lock` / `build-image.lock`; no third-party actions, `curl | sh` or
   unpinned downloads; GitHub-owned actions pinned by SHA.
-- **One Erlang/Elixir version everywhere**: `.tool-versions` is the pin; the Dockerfile,
-  dev container and Ansible `erlang_version`/`elixir_version` must equal it
-  (`verify-toolchain.sh`). The deploy installs the tag's pins and builds on the server
-  (ADR 0037).
+- **One toolchain everywhere**: `.tool-versions` pins Erlang/Elixir and
+  `rust-toolchain.toml` pins Rust; the Dockerfile, dev container and Ansible
+  `erlang_version`/`elixir_version` must equal them (`verify-toolchain.sh`). The deploy
+  installs the tag's pins and builds on the server (ADR 0037).
 - CI tests production's PostgreSQL major, server and client; never upgrade ahead of
   production.
 - The release cookie is a public placeholder; distribution is loopback-only.

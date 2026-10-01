@@ -23,8 +23,10 @@
 #   * Elixir: the upstream precompiled release for this OTP major (SHA-256
 #     pinned; it is BEAM bytecode, not native code). Hex and Rebar are
 #     installed by Mix, which checks the signed installer index.
-#   * Rust: rustup-init (SHA-256 pinned) installs one pinned toolchain; rustup
-#     verifies the toolchain components against the channel manifest.
+#   * Rust: rustup-init (SHA-256 pinned) installs one pinned toolchain with
+#     the components rust-toolchain.toml lists (rustfmt, clippy), so cargo
+#     never fetches them at run time; rustup verifies every component against
+#     the channel manifest.
 #   * esbuild, Tailwind, Selenium Server: SHA-256 pinned.
 #   * GeckoDriver: built from its crates.io source crate (SHA-256 pinned) with
 #     the Cargo.lock it ships, so every dependency is checksum-verified.
@@ -118,8 +120,11 @@ RUN set -eux; \
       "https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/x86_64-unknown-linux-gnu/rustup-init"; \
     echo "${RUSTUP_SHA256}  /tmp/rustup-init" | sha256sum -c -; \
     chmod +x /tmp/rustup-init; \
-    /tmp/rustup-init -y --no-modify-path --profile minimal --default-toolchain "${RUST_TOOLCHAIN}"; \
-    rm /tmp/rustup-init
+    /tmp/rustup-init -y --no-modify-path --profile minimal --default-toolchain "${RUST_TOOLCHAIN}" \
+      --component rustfmt --component clippy; \
+    rm /tmp/rustup-init; \
+    cargo fmt --version; \
+    cargo clippy --version
 
 RUN set -eux; \
     mkdir -p /opt/assets; \
@@ -206,13 +211,11 @@ RUN set -eux; \
     mv /tmp/advisories "$dest"; \
     test -n "$(find "$dest/packages" -name '*.yml' | head -n1)"
 
-# Static checks (Phase 8A). clippy is a rustup component of the pinned
-# toolchain, verified against the channel manifest like the rest of it.
+# Static checks (Phase 8A). clippy comes with the toolchain above.
 # ansible-lint and the collections the playbooks use (the `ansible` package:
 # community.general, community.postgresql, community.sops, ansible.posix) come
 # from Debian's signed archive, like Firefox and the PostgreSQL client above.
 RUN set -eux; \
-    rustup component add clippy; \
     apt-get update; \
     apt-get install -y --no-install-recommends ansible-lint ansible; \
     rm -rf /var/lib/apt/lists/*

@@ -207,6 +207,19 @@
     PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
   changed_when: false
 
+# The tag's rust-toolchain.toml pins the NIF toolchain; with no argument,
+# `rustup toolchain install` installs exactly that one (skipped when present),
+# so the NIFs are built with the Rust CI tested.
+- name: Install the tag's Rust toolchain
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.cargo/bin/rustup toolchain install --no-self-update"
+    chdir: "{{ deploy_path }}/src"
+  environment:
+    CARGO_HOME: "{{ baudrate_home }}/.cargo"
+    RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
+  register: deploy_rust_toolchain_install
+  changed_when: "'using existing install' not in deploy_rust_toolchain_install.stderr"
+
 - name: Read the toolchain the build will use
   ansible.builtin.command:
     cmd: >-

@@ -1,0 +1,12 @@
+# The Rust toolchain that builds the NIFs in native/. rustup reads this file
+# from any crate below the repository root. It must equal RUST_TOOLCHAIN in
+# ci/image/Dockerfile (ci-image.yml and ci/image/verify-toolchain.sh check it);
+# the deploy installs it on the server before compiling (ADR 0037).
+#
+# rustup installs a listed component on first use when the toolchain lacks it,
+# so both CI images carry exactly these (ci/image/Dockerfile); otherwise CI
+# would fetch them at run time.
+[toolchain]
+channel = "1.98.1"
+profile = "minimal"
+components = ["rustfmt", "clippy"]
