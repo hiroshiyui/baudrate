@@ -3789,7 +3789,7 @@ which already carries all of these at the pinned versions. Outside it:
 #### Setup
 
 ```bash
-mix selenium.setup    # Selenium Server 4.49.0 + GeckoDriver 0.37.1 (built from source)
+mix selenium.setup    # Selenium Server 4.51.0 + GeckoDriver 0.37.1 (built from source)
 ```
 
 Both inputs are checked against pinned SHA-256s. GeckoDriver is compiled from
