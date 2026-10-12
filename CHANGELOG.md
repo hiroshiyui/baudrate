@@ -17,6 +17,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - Cropper.js 2.3.0 (from 2.2.0), from the dependency drift report (#18). The
   avatar editor uses none of the new options; the release's selection
   boundary and image-load fixes apply as they are.
+- The NIF Rust toolchain is 1.99.0 (from 1.98.1), in `rust-toolchain.toml`
+  and the CI images; the deploy installs it on the server before compiling.
 
 ### Security
 

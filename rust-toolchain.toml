@@ -8,6 +8,6 @@
 # would fetch them at run time. `profile` applies only when rustup installs
 # the toolchain, so the images' minimal install (no rust-docs) stays as it is.
 [toolchain]
-channel = "1.98.1"
+channel = "1.99.0"
 profile = "default"
 components = ["rustfmt", "clippy"]
