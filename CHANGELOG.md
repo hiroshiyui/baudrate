@@ -14,6 +14,9 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - daisyUI 5.7.47 (from 5.7.46), from the dependency drift report (#18).
   `.btn-disabled` now styles only elements that are also a `.btn`; every
   use here is, so nothing visible changes.
+- Cropper.js 2.3.0 (from 2.2.0), from the dependency drift report (#18). The
+  avatar editor uses none of the new options; the release's selection
+  boundary and image-load fixes apply as they are.
 
 ### Security
 

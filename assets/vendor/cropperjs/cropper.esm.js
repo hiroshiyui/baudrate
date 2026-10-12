@@ -1,4 +1,4 @@
-/*! Cropper.js v2.2.0 | (c) 2015-present Chen Fengyuan | MIT */
+/*! Cropper.js v2.3.0 | (c) 2015-present Chen Fengyuan | MIT */
 const IS_BROWSER = typeof window !== 'undefined' && typeof window.document !== 'undefined';
 const WINDOW = IS_BROWSER ? window : {};
 const IS_TOUCH_DEVICE = IS_BROWSER ? 'ontouchstart' in WINDOW.document.documentElement : false;
@@ -283,6 +283,108 @@ function toAngleInRadian(angle) {
         }
     }
     return value;
+}
+const REGEXP_INSET_LENGTH = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?(?:px)?$/i;
+const REGEXP_INSET_PERCENTAGE = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?%$/i;
+/**
+ * Split an inset value into its top-level tokens, keeping functions such as `calc()` intact.
+ * @param {string} value The inset value to split.
+ * @returns {Array} Returns the tokens.
+ */
+function splitInsetValue(value) {
+    const tokens = [];
+    let depth = 0;
+    let token = '';
+    String(value).split('').forEach((char) => {
+        if (char === '(') {
+            depth += 1;
+        }
+        else if (char === ')') {
+            depth = Math.max(0, depth - 1);
+        }
+        if (depth === 0 && /\s/.test(char)) {
+            if (token) {
+                tokens.push(token);
+                token = '';
+            }
+        }
+        else {
+            token += char;
+        }
+    });
+    if (token) {
+        tokens.push(token);
+    }
+    return tokens;
+}
+/**
+ * Convert a CSS `inset` value to pixel distances in the order of top, right, bottom, and left.
+ * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/inset}
+ * @param {string} value The inset value, supports 1 to 4 values.
+ * @param {number} width The reference width for percentages on the left and right sides.
+ * @param {number} height The reference height for percentages on the top and bottom sides.
+ * @param {Function} [resolve] Resolves the values that are neither numbers, pixels, nor percentages.
+ * @returns {Array} Returns the distances, `null` stands for `auto` (unlimited).
+ */
+function toInsetValues(value, width, height, resolve) {
+    const tokens = splitInsetValue(value);
+    if (tokens.length === 0 || tokens.length > 4) {
+        return [null, null, null, null];
+    }
+    const [top, right = top, bottom = top, left = right] = tokens;
+    return [top, right, bottom, left].map((token, index) => {
+        const horizontal = index % 2 === 1;
+        if (REGEXP_INSET_LENGTH.test(token)) {
+            return parseFloat(token);
+        }
+        if (REGEXP_INSET_PERCENTAGE.test(token)) {
+            return (parseFloat(token) / 100) * (horizontal ? width : height);
+        }
+        if (token.toLowerCase() === 'auto' || !isFunction(resolve)) {
+            return null;
+        }
+        const result = resolve(token, horizontal);
+        return isNumber(result) ? result : null;
+    });
+}
+/**
+ * Check if the distances to the edges of a container are out of the `maxInset` or `minInset` limits.
+ * @param {Array} distances The distances to the top, right, bottom, and left edges.
+ * @param {string} maxInset The max inset value.
+ * @param {string} minInset The min inset value.
+ * @param {Element} container The container element.
+ * @param {DOMRect} containerRect The bounding client rect of the container.
+ * @returns {boolean} Returns `true` if any distance is out of the limits, else `false`.
+ */
+function exceedsInset(distances, maxInset, minInset, container, containerRect) {
+    const resolve = (token, horizontal) => {
+        const property = horizontal ? 'left' : 'top';
+        const probe = container.ownerDocument.createElement('div');
+        probe.style.cssText = 'position: absolute; visibility: hidden; pointer-events: none;';
+        probe.style.setProperty(property, token);
+        // An invalid value is dropped by the browser.
+        if (!probe.style.getPropertyValue(property)) {
+            return null;
+        }
+        container.appendChild(probe);
+        const rect = probe.getBoundingClientRect();
+        const result = horizontal
+            ? rect.left - containerRect.left - container.clientLeft
+            : rect.top - containerRect.top - container.clientTop;
+        container.removeChild(probe);
+        return result;
+    };
+    const { width, height } = containerRect;
+    const maxInsets = toInsetValues(maxInset, width, height, resolve);
+    const minInsets = toInsetValues(minInset, width, height, resolve);
+    // Tolerates floating-point errors from the transformed rects.
+    const tolerance = 0.001;
+    return distances.some((distance, index) => {
+        const max = maxInsets[index];
+        const min = minInsets[index];
+        return (max !== null && distance > max + tolerance)
+            || (min !== null && distance < min - tolerance);
+    });
 }
 const SIZE_ADJUSTMENT_TYPE_CONTAIN = 'contain';
 const SIZE_ADJUSTMENT_TYPE_COVER = 'cover';
@@ -579,7 +681,7 @@ class CropperElement extends HTMLElement {
         }
     }
 }
-CropperElement.$version = '2.2.0';
+CropperElement.$version = '2.3.0';
 
 var style$7 = `:host{display:block;min-height:100px;min-width:200px;overflow:hidden;position:relative;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}:host([background]){background-color:#fff;background-image:repeating-linear-gradient(45deg,#ccc 25%,transparent 0,transparent 75%,#ccc 0,#ccc),repeating-linear-gradient(45deg,#ccc 25%,transparent 0,transparent 75%,#ccc 0,#ccc);background-image:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%);background-position:0 0,.5rem .5rem;background-size:1rem 1rem}:host([disabled]){pointer-events:none}:host([disabled]):after{bottom:0;content:"";cursor:not-allowed;display:block;left:0;pointer-events:none;position:absolute;right:0;top:0}`;
 
@@ -1038,7 +1140,7 @@ class CropperCanvas extends CropperElement {
     }
 }
 CropperCanvas.$name = CROPPER_CANVAS;
-CropperCanvas.$version = '2.2.0';
+CropperCanvas.$version = '2.3.0';
 
 var style$6 = `:host{display:inline-block}img{display:block;height:100%;max-height:none!important;max-width:none!important;min-height:0!important;min-width:0!important;width:100%}`;
 
@@ -1059,6 +1161,7 @@ class CropperImage extends CropperElement {
     constructor() {
         super(...arguments);
         this.$isReady = false;
+        this.$insetRejected = false;
         this.$matrix = [1, 0, 0, 1, 0, 0];
         this.$onLoad = null;
         this.$onCanvasAction = null;
@@ -1074,6 +1177,9 @@ class CropperImage extends CropperElement {
         this.initialFit = OBJECT_FIT_CONTAIN;
         this.maxFit = '';
         this.minFit = '';
+        this.maxInset = 'auto';
+        this.minInset = 'auto';
+        this.zoomAroundCenter = false;
         this.rotatable = false;
         this.scalable = false;
         this.skewable = false;
@@ -1102,11 +1208,14 @@ class CropperImage extends CropperElement {
             'initial-center-size',
             'initial-fit',
             'max-fit',
+            'max-inset',
             'min-fit',
+            'min-inset',
             'rotatable',
             'scalable',
             'skewable',
             'translatable',
+            'zoom-around-center',
         ]);
     }
     attributeChangedCallback(name, oldValue, newValue) {
@@ -1140,6 +1249,8 @@ class CropperImage extends CropperElement {
                 break;
             case 'maxFit':
             case 'minFit':
+            case 'maxInset':
+            case 'minInset':
                 this.$nextTick(() => {
                     if (this.$isReady && this.$canvas) {
                         this.$resetTransform();
@@ -1178,8 +1289,13 @@ class CropperImage extends CropperElement {
             on($canvas, EVENT_ACTION_END, this.$onCanvasActionEnd);
             on($canvas, EVENT_ACTION, this.$onCanvasAction);
         }
-        this.$onLoad = this.$handleLoad.bind(this);
-        on($image, EVENT_LOAD, this.$onLoad);
+        if ($image.complete) {
+            this.$handleLoad();
+        }
+        else {
+            this.$onLoad = this.$handleLoad.bind(this);
+            on($image, EVENT_LOAD, this.$onLoad);
+        }
         this.$getShadowRoot().appendChild($image);
     }
     disconnectedCallback() {
@@ -1204,6 +1320,71 @@ class CropperImage extends CropperElement {
         }
         this.$getShadowRoot().removeChild($image);
         super.disconnectedCallback();
+    }
+    $exceedsFit(imageRect, canvasRect) {
+        const { naturalWidth, naturalHeight } = this.$image;
+        let { maxFit, minFit } = this;
+        if (maxFit === OBJECT_FIT_SCALE_DOWN) {
+            if (naturalWidth >= canvasRect.width || naturalHeight >= canvasRect.height) {
+                maxFit = OBJECT_FIT_CONTAIN;
+            }
+            else {
+                maxFit = OBJECT_FIT_NONE;
+            }
+        }
+        switch (maxFit) {
+            case OBJECT_FIT_COVER:
+                if (imageRect.width > canvasRect.width && imageRect.height > canvasRect.height) {
+                    return true;
+                }
+                break;
+            case OBJECT_FIT_FILL:
+            case OBJECT_FIT_CONTAIN:
+                if (imageRect.width > canvasRect.width || imageRect.height > canvasRect.height) {
+                    return true;
+                }
+                break;
+            case OBJECT_FIT_NONE:
+                if (imageRect.width > naturalWidth || imageRect.height > naturalHeight) {
+                    return true;
+                }
+                break;
+        }
+        if (minFit === OBJECT_FIT_SCALE_DOWN) {
+            if (naturalWidth >= canvasRect.width || naturalHeight >= canvasRect.height) {
+                minFit = OBJECT_FIT_CONTAIN;
+            }
+            else {
+                minFit = OBJECT_FIT_NONE;
+            }
+        }
+        switch (minFit) {
+            case OBJECT_FIT_COVER:
+            case OBJECT_FIT_FILL:
+                if (imageRect.width < canvasRect.width || imageRect.height < canvasRect.height) {
+                    return true;
+                }
+                break;
+            case OBJECT_FIT_CONTAIN:
+                if (imageRect.width < canvasRect.width && imageRect.height < canvasRect.height) {
+                    return true;
+                }
+                break;
+            case OBJECT_FIT_NONE:
+                if (imageRect.width < naturalWidth || imageRect.height < naturalHeight) {
+                    return true;
+                }
+                break;
+        }
+        return false;
+    }
+    $exceedsInset(imageRect, canvasRect) {
+        return exceedsInset([
+            imageRect.top - canvasRect.top,
+            canvasRect.right - imageRect.right,
+            canvasRect.bottom - imageRect.bottom,
+            imageRect.left - canvasRect.left,
+        ], this.maxInset, this.minInset, this.$canvas, canvasRect);
     }
     $handleLoad() {
         const { $image } = this;
@@ -1275,8 +1456,13 @@ class CropperImage extends CropperElement {
                             if (!$selection
                                 || !$selection.zoomable
                                 || ($selection.zoomable && $selection.dynamic)) {
-                                const { x, y } = this.getBoundingClientRect();
-                                this.$zoom(detail.scale, relatedEvent.clientX - x, relatedEvent.clientY - y);
+                                if (this.zoomAroundCenter) {
+                                    this.$zoom(detail.scale);
+                                }
+                                else {
+                                    const { x, y } = this.getBoundingClientRect();
+                                    this.$zoom(detail.scale, relatedEvent.clientX - x, relatedEvent.clientY - y);
+                                }
                             }
                         }
                         else {
@@ -1513,7 +1699,13 @@ class CropperImage extends CropperElement {
             const [a, b, c, d] = this.$matrix;
             const e = ((x * d) - (c * y)) / ((a * d) - (c * b));
             const f = ((y * a) - (b * x)) / ((a * d) - (c * b));
+            const { $matrix } = this;
             this.$translate(e, f);
+            // Slides along the inset limit instead of sticking when only one axis breaks it.
+            if (this.$matrix === $matrix && this.$insetRejected && x !== 0 && y !== 0) {
+                this.$move(x, 0);
+                this.$move(0, y);
+            }
         }
         return this;
     }
@@ -1688,6 +1880,7 @@ class CropperImage extends CropperElement {
      * @returns {CropperImage} Returns `this` for chaining.
      */
     $setTransform(a, b, c, d, e, f) {
+        this.$insetRejected = false;
         if (this.rotatable || this.scalable || this.skewable || this.translatable) {
             if (Array.isArray(a)) {
                 [a, b, c, d, e, f] = a;
@@ -1706,69 +1899,12 @@ class CropperImage extends CropperElement {
                     this.style.transform = `matrix(${newMatrix.join(', ')})`;
                     const imageRect = this.$image.getBoundingClientRect();
                     this.style.transform = `matrix(${oldMatrix.join(', ')})`;
-                    let { maxFit, minFit } = this;
-                    if (maxFit || minFit) {
-                        // Check if the image is completely outside the canvas after transformation,
-                        // if so, skip the transformation to avoid losing the image.
-                        if (imageRect.top > canvasRect.bottom
-                            || imageRect.right < canvasRect.left
-                            || imageRect.bottom < canvasRect.top
-                            || imageRect.left > canvasRect.right) {
-                            return this;
-                        }
-                        const { naturalWidth, naturalHeight } = this.$image;
-                        if (maxFit === OBJECT_FIT_SCALE_DOWN) {
-                            if (naturalWidth >= canvasRect.width || naturalHeight >= canvasRect.height) {
-                                maxFit = OBJECT_FIT_CONTAIN;
-                            }
-                            else {
-                                maxFit = OBJECT_FIT_NONE;
-                            }
-                        }
-                        switch (maxFit) {
-                            case OBJECT_FIT_COVER:
-                                if (imageRect.width > canvasRect.width && imageRect.height > canvasRect.height) {
-                                    return this;
-                                }
-                                break;
-                            case OBJECT_FIT_FILL:
-                            case OBJECT_FIT_CONTAIN:
-                                if (imageRect.width > canvasRect.width || imageRect.height > canvasRect.height) {
-                                    return this;
-                                }
-                                break;
-                            case OBJECT_FIT_NONE:
-                                if (imageRect.width > naturalWidth || imageRect.height > naturalHeight) {
-                                    return this;
-                                }
-                                break;
-                        }
-                        if (minFit === OBJECT_FIT_SCALE_DOWN) {
-                            if (naturalWidth >= canvasRect.width || naturalHeight >= canvasRect.height) {
-                                minFit = OBJECT_FIT_CONTAIN;
-                            }
-                            else {
-                                minFit = OBJECT_FIT_NONE;
-                            }
-                        }
-                        switch (minFit) {
-                            case OBJECT_FIT_COVER:
-                            case OBJECT_FIT_FILL:
-                                if (imageRect.width < canvasRect.width || imageRect.height < canvasRect.height) {
-                                    return this;
-                                }
-                                break;
-                            case OBJECT_FIT_CONTAIN:
-                                if (imageRect.width < canvasRect.width && imageRect.height < canvasRect.height) {
-                                    return this;
-                                }
-                                break;
-                            case OBJECT_FIT_NONE:
-                                if (imageRect.width < naturalWidth || imageRect.height < naturalHeight) {
-                                    return this;
-                                }
-                                break;
-                        }
+                    if (this.$exceedsFit(imageRect, canvasRect)) {
+                        return this;
+                    }
+                    if (this.$exceedsInset(imageRect, canvasRect)) {
+                        this.$insetRejected = true;
+                        return this;
                     }
                     if (this.$emit(EVENT_CHANGE, {
                         x: imageRect.x - canvasRect.x,
@@ -1809,7 +1945,7 @@ class CropperImage extends CropperElement {
     }
 }
 CropperImage.$name = CROPPER_IMAGE;
-CropperImage.$version = '2.2.0';
+CropperImage.$version = '2.3.0';
 
 var style$5 = `:host{display:block;height:0;left:0;outline:var(--theme-color) solid 1px;position:relative;top:0;width:0}:host([transparent]){outline-color:transparent}`;
 
@@ -1826,6 +1962,7 @@ class CropperShade extends CropperElement {
         this.y = 0;
         this.width = 0;
         this.height = 0;
+        this.borderRadius = '';
         this.slottable = false;
         this.themeColor = 'rgba(0, 0, 0, 0.65)';
     }
@@ -1837,11 +1974,23 @@ class CropperShade extends CropperElement {
     }
     static get observedAttributes() {
         return super.observedAttributes.concat([
+            'border-radius',
             'height',
             'width',
             'x',
             'y',
         ]);
+    }
+    $propertyChangedCallback(name, oldValue, newValue) {
+        if (Object.is(newValue, oldValue)) {
+            return;
+        }
+        super.$propertyChangedCallback(name, oldValue, newValue);
+        if (name === 'borderRadius') {
+            this.$nextTick(() => {
+                this.$render();
+            });
+        }
     }
     connectedCallback() {
         super.connectedCallback();
@@ -1851,6 +2000,7 @@ class CropperShade extends CropperElement {
             this.style.position = 'absolute';
             const $selection = $canvas.querySelector(this.$getTagNameOf(CROPPER_SELECTION));
             if ($selection) {
+                this.borderRadius = $selection.borderRadius;
                 this.$onWindowResize = this.$render.bind(this);
                 this.$onCanvasActionStart = (event) => {
                     if ($selection.hidden && event.detail.action === ACTION_SELECT) {
@@ -1868,6 +2018,7 @@ class CropperShade extends CropperElement {
                         return;
                     }
                     const { x, y, width, height, } = event.defaultPrevented ? $selection : event.detail;
+                    this.borderRadius = event.target.borderRadius;
                     this.$change(x, y, width, height);
                     if ($selection.hidden || (x === 0 && y === 0 && width === 0 && height === 0)) {
                         this.hidden = true;
@@ -1944,12 +2095,13 @@ class CropperShade extends CropperElement {
             transform: `translate(${this.x}px, ${this.y}px)`,
             width: this.width,
             height: this.height,
+            borderRadius: this.borderRadius,
             outlineWidth: WINDOW.innerWidth * WINDOW.devicePixelRatio,
         });
     }
 }
 CropperShade.$name = CROPPER_SHADE;
-CropperShade.$version = '2.2.0';
+CropperShade.$version = '2.3.0';
 
 var style$4 = `:host{background-color:var(--theme-color);display:block}:host([action=move]),:host([action=select]){height:100%;left:0;position:absolute;top:0;width:100%}:host([action=move]){cursor:move}:host([action=select]){cursor:crosshair}:host([action$=-resize]){background-color:transparent;height:15px;position:absolute;width:15px}:host([action$=-resize]):after{background-color:var(--theme-color);content:"";display:block;height:5px;left:50%;position:absolute;top:50%;transform:translate(-50%,-50%);width:5px}:host([action=n-resize]),:host([action=s-resize]){cursor:ns-resize;left:50%;transform:translateX(-50%);width:100%}:host([action=n-resize]){top:-8px}:host([action=s-resize]){bottom:-8px}:host([action=e-resize]),:host([action=w-resize]){cursor:ew-resize;height:100%;top:50%;transform:translateY(-50%)}:host([action=e-resize]){right:-8px}:host([action=w-resize]){left:-8px}:host([action=ne-resize]){cursor:nesw-resize;right:-8px;top:-8px}:host([action=nw-resize]){cursor:nwse-resize;left:-8px;top:-8px}:host([action=se-resize]){bottom:-8px;cursor:nwse-resize;right:-8px}:host([action=se-resize]):after{height:15px;width:15px}@media (pointer:coarse){:host([action=se-resize]):after{height:10px;width:10px}}@media (pointer:fine){:host([action=se-resize]):after{height:5px;width:5px}}:host([action=sw-resize]){bottom:-8px;cursor:nesw-resize;left:-8px}:host([plain]){background-color:transparent}`;
 
@@ -1972,11 +2124,85 @@ class CropperHandle extends CropperElement {
     }
 }
 CropperHandle.$name = CROPPER_HANDLE;
-CropperHandle.$version = '2.2.0';
+CropperHandle.$version = '2.3.0';
+
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
+
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
 
 var style$3 = `:host{display:block;left:0;position:relative;right:0}:host([outlined]){outline:1px solid var(--theme-color)}:host([multiple]){outline:1px dashed hsla(0,0%,100%,.5)}:host([multiple]):after{bottom:0;content:"";cursor:pointer;display:block;left:0;position:absolute;right:0;top:0}:host([multiple][active]){outline-color:var(--theme-color);z-index:1}:host([multiple])>*{visibility:hidden}:host([multiple][active])>*{visibility:visible}:host([multiple][active]):after{display:none}`;
 
 const canvasCache$1 = new WeakMap();
+const imageCache$1 = new WeakMap();
+/**
+ * Converts a px or % length to pixels.
+ * @param {string} value The length.
+ * @param {number} base The base for percentages.
+ * @param {number} scale The scale for pixel values.
+ * @returns {number} The length in pixels.
+ */
+function toLength(value, base, scale) {
+    const number = parseFloat(value);
+    if (Number.isNaN(number)) {
+        return 0;
+    }
+    return value.trim().endsWith('%') ? (number / 100) * base : number * scale;
+}
+/**
+ * Expands 1 to 4 values into top-left, top-right, bottom-right and bottom-left.
+ * @param {string[]} values The values.
+ * @returns {string[]} The four values.
+ */
+function expandCorners(values) {
+    const [a, b = a, c = a, d = b] = values;
+    return [a, b, c, d];
+}
+/**
+ * Resolves a CSS `border-radius` value into pixel radii of the four corners.
+ * @param {string} value The border radius.
+ * @param {number} width The width of the box.
+ * @param {number} height The height of the box.
+ * @param {number} scale The scale for pixel values.
+ * @returns {Radius[]} The radii.
+ */
+function resolveBorderRadius(value, width, height, scale) {
+    const [horizontal, vertical = horizontal] = value.split('/').map((part) => {
+        const values = part.trim().split(/\s+/).filter(Boolean).slice(0, 4);
+        return values.length > 0 ? values : ['0'];
+    });
+    const xs = expandCorners(horizontal).map((item) => toLength(item, width, scale));
+    const ys = expandCorners(vertical).map((item) => toLength(item, height, scale));
+    const radii = xs.map((x, i) => [Math.max(x, 0), Math.max(ys[i], 0)]);
+    const [tl, tr, br, bl] = radii;
+    const ratio = Math.min(1, width / (tl[0] + tr[0] || 1), width / (bl[0] + br[0] || 1), height / (tl[1] + bl[1] || 1), height / (tr[1] + br[1] || 1));
+    return ratio < 1 ? radii.map(([x, y]) => [x * ratio, y * ratio]) : radii;
+}
 class CropperSelection extends CropperElement {
     constructor() {
         super(...arguments);
@@ -1986,7 +2212,9 @@ class CropperSelection extends CropperElement {
         this.$onDocumentKeyDown = null;
         this.$action = '';
         this.$actionStartTarget = null;
+        this.$resizeStart = null;
         this.$changing = false;
+        this.$insetRejected = false;
         this.$style = style$3;
         this.$initialSelection = {
             x: 0,
@@ -1994,11 +2222,13 @@ class CropperSelection extends CropperElement {
             width: 0,
             height: 0,
         };
+        this.$changingAroundCenter = false;
         this.x = 0;
         this.y = 0;
         this.width = 0;
         this.height = 0;
         this.aspectRatio = NaN;
+        this.borderRadius = '';
         this.initialAspectRatio = NaN;
         this.initialCoverage = NaN;
         this.active = false;
@@ -2006,8 +2236,12 @@ class CropperSelection extends CropperElement {
         this.linked = false;
         this.dynamic = false;
         this.movable = false;
+        this.maxInset = 'auto';
+        this.minInset = 'auto';
         this.resizable = false;
+        this.resizeAroundCenter = false;
         this.zoomable = false;
+        this.zoomAroundCenter = false;
         this.multiple = false;
         this.keyboard = false;
         this.outlined = false;
@@ -2019,24 +2253,35 @@ class CropperSelection extends CropperElement {
     get $canvas() {
         return canvasCache$1.get(this);
     }
+    set $image(element) {
+        imageCache$1.set(this, element);
+    }
+    get $image() {
+        return imageCache$1.get(this);
+    }
     static get observedAttributes() {
         return super.observedAttributes.concat([
             'active',
             'aspect-ratio',
+            'border-radius',
             'dynamic',
             'height',
             'initial-aspect-ratio',
             'initial-coverage',
             'keyboard',
             'linked',
+            'max-inset',
+            'min-inset',
             'movable',
             'multiple',
             'outlined',
             'precise',
             'resizable',
+            'resize-around-center',
             'width',
             'x',
             'y',
+            'zoom-around-center',
             'zoomable',
         ]);
     }
@@ -2046,6 +2291,18 @@ class CropperSelection extends CropperElement {
         }
         super.$propertyChangedCallback(name, oldValue, newValue);
         switch (name) {
+            case 'borderRadius':
+                this.$nextTick(() => {
+                    this.$render();
+                    // Lets the shade follow the new border radius
+                    this.$emit(EVENT_CHANGE, {
+                        x: this.x,
+                        y: this.y,
+                        width: this.width,
+                        height: this.height,
+                    });
+                });
+                break;
             case 'x':
             case 'y':
             case 'width':
@@ -2065,7 +2322,7 @@ class CropperSelection extends CropperElement {
             case 'initialCoverage':
                 this.$nextTick(() => {
                     if (isPositiveNumber(newValue) && newValue <= 1) {
-                        this.$initSelection(true, true);
+                        this.$initSelection(true, isPositiveNumber(oldValue));
                     }
                 });
                 break;
@@ -2128,6 +2385,10 @@ class CropperSelection extends CropperElement {
         const $canvas = this.closest(this.$getTagNameOf(CROPPER_CANVAS));
         if ($canvas) {
             this.$canvas = $canvas;
+            const $image = $canvas.querySelector(this.$getTagNameOf(CROPPER_IMAGE));
+            if ($image) {
+                this.$image = $image;
+            }
             this.$setStyles({
                 position: 'absolute',
                 transform: `translate(${this.x}px, ${this.y}px)`,
@@ -2165,6 +2426,22 @@ class CropperSelection extends CropperElement {
         }
         super.disconnectedCallback();
     }
+    $exceedsInset(x, y, width, height) {
+        const { parentElement, maxInset, minInset } = this;
+        // An empty selection (e.g. cleared) is never limited.
+        if (!parentElement
+            || (width === 0 && height === 0)
+            || (maxInset === 'auto' && minInset === 'auto')) {
+            return false;
+        }
+        const parentRect = parentElement.getBoundingClientRect();
+        return exceedsInset([
+            y,
+            parentRect.width - (x + width),
+            parentRect.height - (y + height),
+            x,
+        ], maxInset, minInset, parentElement, parentRect);
+    }
     $getSelections() {
         let selections = [];
         if (this.parentElement) {
@@ -2172,27 +2449,50 @@ class CropperSelection extends CropperElement {
         }
         return selections;
     }
-    $initSelection(center = false, resize = false) {
-        const { initialCoverage, parentElement } = this;
-        if (isPositiveNumber(initialCoverage) && parentElement) {
-            const aspectRatio = this.aspectRatio || this.initialAspectRatio;
-            let width = (resize ? 0 : this.width) || parentElement.offsetWidth * initialCoverage;
-            let height = (resize ? 0 : this.height) || parentElement.offsetHeight * initialCoverage;
-            if (isPositiveNumber(aspectRatio)) {
-                ({ width, height } = getAdjustedSizes({ aspectRatio, width, height }));
+    $initSelection() {
+        return __awaiter(this, arguments, void 0, function* (center = false, resize = false) {
+            const { initialCoverage, parentElement } = this;
+            if (isPositiveNumber(initialCoverage) && parentElement) {
+                const { $canvas } = this;
+                let $image = this.$image || null;
+                if ($image) {
+                    try {
+                        yield $image.$ready();
+                    }
+                    catch (_a) {
+                        $image = null;
+                    }
+                    if (this.parentElement !== parentElement || this.initialCoverage !== initialCoverage) {
+                        return;
+                    }
+                }
+                const boundsElement = $image || $canvas || parentElement;
+                const bounds = boundsElement.getBoundingClientRect();
+                const offsetElement = $canvas || parentElement;
+                const offset = offsetElement.getBoundingClientRect();
+                const boundsX = $image ? bounds.left - offset.left : 0;
+                const boundsY = $image ? bounds.top - offset.top : 0;
+                const aspectRatio = this.aspectRatio || this.initialAspectRatio;
+                let width = (resize ? 0 : this.width) || bounds.width * initialCoverage;
+                let height = (resize ? 0 : this.height) || bounds.height * initialCoverage;
+                if (isPositiveNumber(aspectRatio)) {
+                    ({ width, height } = getAdjustedSizes({ aspectRatio, width, height }));
+                }
+                if (center) {
+                    this.$change(boundsX + (bounds.width - width) / 2, boundsY + (bounds.height - height) / 2, width, height);
+                }
+                else {
+                    this.$change(this.x, this.y, width, height);
+                }
+                // Overrides the initial position and size
+                this.$initialSelection = {
+                    x: this.x,
+                    y: this.y,
+                    width: this.width,
+                    height: this.height,
+                };
             }
-            this.$change(this.x, this.y, width, height);
-            if (center) {
-                this.$center();
-            }
-            // Overrides the initial position and size
-            this.$initialSelection = {
-                x: this.x,
-                y: this.y,
-                width: this.width,
-                height: this.height,
-            };
-        }
+        });
     }
     $createSelection() {
         const newSelection = this.cloneNode(true);
@@ -2230,13 +2530,37 @@ class CropperSelection extends CropperElement {
         }
     }
     $handleActionStart(event) {
-        var _a, _b;
         if (event.defaultPrevented) {
             return;
         }
-        const relatedTarget = (_b = (_a = event.detail) === null || _a === void 0 ? void 0 : _a.relatedEvent) === null || _b === void 0 ? void 0 : _b.target;
+        const { action, relatedEvent } = event.detail || {};
+        const relatedTarget = relatedEvent === null || relatedEvent === void 0 ? void 0 : relatedEvent.target;
         this.$action = '';
         this.$actionStartTarget = relatedTarget;
+        this.$resizeStart = typeof action === 'string'
+            && action.endsWith('-resize')
+            && relatedEvent
+            ? {
+                action,
+                pageX: relatedEvent.pageX,
+                pageY: relatedEvent.pageY,
+                x: this.x,
+                y: this.y,
+                width: this.width,
+                height: this.height,
+            }
+            : null;
+        if (action === ACTION_SELECT
+            && !this.resizable
+            && (!this.multiple || this.active)
+            && isPositiveNumber(this.width)
+            && isPositiveNumber(this.height)
+            && relatedEvent
+            && event.currentTarget) {
+            const offset = getOffset(event.currentTarget);
+            const selection = this.multiple && !this.hidden ? this.$createSelection() : this;
+            selection.$change(relatedEvent.pageX - offset.left, relatedEvent.pageY - offset.top, this.width, this.height);
+        }
         if (!this.hidden
             && this.multiple
             && !this.active
@@ -2255,6 +2579,7 @@ class CropperSelection extends CropperElement {
         }
     }
     $handleAction(event) {
+        var _a, _b;
         const { currentTarget, detail } = event;
         if (event.defaultPrevented || !currentTarget || !detail) {
             return;
@@ -2279,12 +2604,27 @@ class CropperSelection extends CropperElement {
         let moveX = detail.endX - detail.startX;
         let moveY = detail.endY - detail.startY;
         let { aspectRatio } = this;
+        let resizeStart = null;
+        if (this.$resizeStart && action.endsWith('-resize')) {
+            const start = this.$resizeStart;
+            action = start.action;
+            moveX = detail.endX - start.pageX;
+            moveY = detail.endY - start.pageY;
+            resizeStart = start;
+        }
         // Locking aspect ratio by holding shift key
         if (!isPositiveNumber(aspectRatio) && relatedEvent.shiftKey) {
-            aspectRatio = isPositiveNumber(width) && isPositiveNumber(height) ? width / height : 1;
+            const ratioWidth = (_a = resizeStart === null || resizeStart === void 0 ? void 0 : resizeStart.width) !== null && _a !== void 0 ? _a : width;
+            const ratioHeight = (_b = resizeStart === null || resizeStart === void 0 ? void 0 : resizeStart.height) !== null && _b !== void 0 ? _b : height;
+            aspectRatio = isPositiveNumber(ratioWidth) && isPositiveNumber(ratioHeight)
+                ? ratioWidth / ratioHeight
+                : 1;
         }
         switch (action) {
             case ACTION_SELECT:
+                if (!this.resizable && isPositiveNumber(this.width) && isPositiveNumber(this.height)) {
+                    break;
+                }
                 if (moveX !== 0 || moveY !== 0) {
                     // Force to create a square selection for better user experience
                     if (moveX === 0) {
@@ -2331,8 +2671,13 @@ class CropperSelection extends CropperElement {
             case ACTION_TRANSFORM:
                 if (relatedEvent && this.zoomable && (this.dynamic
                     || this.contains(relatedEvent.target))) {
-                    const offset = getOffset(currentTarget);
-                    this.$zoom(detail.scale, relatedEvent.pageX - offset.left, relatedEvent.pageY - offset.top);
+                    if (this.zoomAroundCenter) {
+                        this.$zoom(detail.scale);
+                    }
+                    else {
+                        const offset = getOffset(currentTarget);
+                        this.$zoom(detail.scale, relatedEvent.pageX - offset.left, relatedEvent.pageY - offset.top);
+                    }
                 }
                 break;
             default:
@@ -2342,6 +2687,7 @@ class CropperSelection extends CropperElement {
     $handleActionEnd() {
         this.$action = '';
         this.$actionStartTarget = null;
+        this.$resizeStart = null;
     }
     $handleKeyDown(event) {
         if (event.defaultPrevented
@@ -2429,7 +2775,13 @@ class CropperSelection extends CropperElement {
         if (!this.movable) {
             return this;
         }
-        return this.$change(x, y);
+        this.$change(x, y);
+        // Slides along the inset limit instead of sticking when only one axis breaks it.
+        if (this.$insetRejected && x !== this.x && y !== this.y) {
+            this.$change(x, this.y);
+            this.$change(this.x, y);
+        }
+        return this;
     }
     /**
      * Adjusts the size the selection on a specific side or corner.
@@ -2445,7 +2797,7 @@ class CropperSelection extends CropperElement {
         }
         const hasValidAspectRatio = isPositiveNumber(aspectRatio);
         const { $canvas } = this;
-        let { x, y, width, height, } = this;
+        let { x, y, width, height, } = this.$resizeStart || this;
         switch (action) {
             case ACTION_RESIZE_NORTH:
                 y += offsetY;
@@ -2621,7 +2973,14 @@ class CropperSelection extends CropperElement {
         if ($canvas) {
             $canvas.$setAction(action);
         }
-        return this.$change(x, y, width, height);
+        const previousChangingAroundCenter = this.$changingAroundCenter;
+        this.$changingAroundCenter = this.resizeAroundCenter || previousChangingAroundCenter;
+        try {
+            return this.$change(x, y, width, height);
+        }
+        finally {
+            this.$changingAroundCenter = previousChangingAroundCenter;
+        }
     }
     /**
      * Zooms the selection.
@@ -2654,7 +3013,15 @@ class CropperSelection extends CropperElement {
             newX -= (newWidth - width) / 2;
             newY -= (newHeight - height) / 2;
         }
-        return this.$change(newX, newY, newWidth, newHeight);
+        const previousChangingAroundCenter = this.$changingAroundCenter;
+        this.$changingAroundCenter = (this.zoomAroundCenter
+            && !(isNumber(x) && isNumber(y))) || previousChangingAroundCenter;
+        try {
+            return this.$change(newX, newY, newWidth, newHeight);
+        }
+        finally {
+            this.$changingAroundCenter = previousChangingAroundCenter;
+        }
     }
     /**
      * Changes the position and/or size of the selection.
@@ -2667,6 +3034,7 @@ class CropperSelection extends CropperElement {
      * @returns {CropperSelection} Returns `this` for chaining.
      */
     $change(x, y, width = this.width, height = this.height, aspectRatio = this.aspectRatio, _force = false) {
+        this.$insetRejected = false;
         if (this.$changing
             || !isNumber(x)
             || !isNumber(y)
@@ -2679,11 +3047,26 @@ class CropperSelection extends CropperElement {
         if (isPositiveNumber(aspectRatio)) {
             ({ width, height } = getAdjustedSizes({ aspectRatio, width, height }, 'cover'));
         }
-        if (!this.precise) {
-            x = Math.round(x);
-            y = Math.round(y);
+        if (this.$changingAroundCenter) {
+            if (!this.precise) {
+                width = Math.round(width);
+                height = Math.round(height);
+                if ((width - this.width) % 2 !== 0) {
+                    width += width < this.width ? -1 : 1;
+                }
+                if ((height - this.height) % 2 !== 0) {
+                    height += height < this.height ? -1 : 1;
+                }
+            }
+            const resizeStart = this.$resizeStart || this;
+            x = resizeStart.x + (resizeStart.width - width) / 2;
+            y = resizeStart.y + (resizeStart.height - height) / 2;
+        }
+        else if (!this.precise) {
             width = Math.round(width);
             height = Math.round(height);
+            x = Math.round(x);
+            y = Math.round(y);
         }
         if (x === this.x
             && y === this.y
@@ -2691,6 +3074,10 @@ class CropperSelection extends CropperElement {
             && height === this.height
             && Object.is(aspectRatio, this.aspectRatio)
             && !_force) {
+            return this;
+        }
+        if (this.$exceedsInset(x, y, width, height)) {
+            this.$insetRejected = true;
             return this;
         }
         if (this.hidden) {
@@ -2738,6 +3125,7 @@ class CropperSelection extends CropperElement {
             transform: `translate(${this.x}px, ${this.y}px)`,
             width: this.width,
             height: this.height,
+            borderRadius: this.borderRadius,
         });
     }
     /**
@@ -2772,15 +3160,15 @@ class CropperSelection extends CropperElement {
                 resolve(canvas);
                 return;
             }
-            const cropperImage = this.$canvas.querySelector(this.$getTagNameOf(CROPPER_IMAGE));
-            if (!cropperImage) {
+            const { $image } = this;
+            if (!$image) {
                 resolve(canvas);
                 return;
             }
-            cropperImage.$ready().then((image) => {
+            $image.$ready().then((image) => {
                 const context = canvas.getContext('2d');
                 if (context) {
-                    const [a, b, c, d, e, f] = cropperImage.$getTransform();
+                    const [a, b, c, d, e, f] = $image.$getTransform();
                     const offsetX = -this.x;
                     const offsetY = -this.y;
                     const translateX = ((offsetX * d) - (c * offsetY)) / ((a * d) - (c * b));
@@ -2803,6 +3191,23 @@ class CropperSelection extends CropperElement {
                         options.beforeDraw.call(this, context, canvas);
                     }
                     context.save();
+                    const radii = resolveBorderRadius(this.borderRadius, width, height, scale);
+                    if (radii.some(([rx, ry]) => rx > 0 && ry > 0)) {
+                        const [[tlx, tly], [trx, tryy], [brx, bry], [blx, bly]] = radii;
+                        const half = Math.PI / 2;
+                        context.beginPath();
+                        context.moveTo(tlx, 0);
+                        context.lineTo(width - trx, 0);
+                        context.ellipse(width - trx, tryy, trx, tryy, 0, -half, 0);
+                        context.lineTo(width, height - bry);
+                        context.ellipse(width - brx, height - bry, brx, bry, 0, 0, half);
+                        context.lineTo(blx, height);
+                        context.ellipse(blx, height - bly, blx, bly, 0, half, Math.PI);
+                        context.lineTo(0, tly);
+                        context.ellipse(tlx, tly, tlx, tly, 0, Math.PI, Math.PI + half);
+                        context.closePath();
+                        context.clip();
+                    }
                     // Move the transform origin to the center of the image.
                     // https://developer.mozilla.org/en-US/docs/Web/CSS/transform-origin
                     context.translate(centerX, centerY);
@@ -2818,7 +3223,7 @@ class CropperSelection extends CropperElement {
     }
 }
 CropperSelection.$name = CROPPER_SELECTION;
-CropperSelection.$version = '2.2.0';
+CropperSelection.$version = '2.3.0';
 
 var style$2 = `:host{display:flex;flex-direction:column;position:relative;touch-action:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}:host([bordered]){border:1px dashed var(--theme-color)}:host([covered]){bottom:0;left:0;position:absolute;right:0;top:0}:host>span{display:flex;flex:1}:host>span+span{border-top:1px dashed var(--theme-color)}:host>span>span{flex:1}:host>span>span+span{border-left:1px dashed var(--theme-color)}`;
 
@@ -2877,7 +3282,7 @@ class CropperGrid extends CropperElement {
     }
 }
 CropperGrid.$name = CROPPER_GIRD;
-CropperGrid.$version = '2.2.0';
+CropperGrid.$version = '2.3.0';
 
 var style$1 = `:host{display:inline-block;height:1em;position:relative;touch-action:none;-webkit-user-select:none;-moz-user-select:none;user-select:none;vertical-align:middle;width:1em}:host:after,:host:before{background-color:var(--theme-color);content:"";display:block;position:absolute}:host:before{height:1px;left:0;top:50%;transform:translateY(-50%);width:100%}:host:after{height:100%;left:50%;top:0;transform:translateX(-50%);width:1px}:host([centered]){left:50%;position:absolute;top:50%;transform:translate(-50%,-50%)}`;
 
@@ -2896,7 +3301,7 @@ class CropperCrosshair extends CropperElement {
     }
 }
 CropperCrosshair.$name = CROPPER_CROSSHAIR;
-CropperCrosshair.$version = '2.2.0';
+CropperCrosshair.$version = '2.3.0';
 
 var style = `:host{display:block;height:100%;overflow:hidden;position:relative;width:100%}`;
 
@@ -2920,6 +3325,12 @@ class CropperViewer extends CropperElement {
         this.selection = '';
         this.slottable = false;
     }
+    set $canvas(element) {
+        canvasCache.set(this, element);
+    }
+    get $canvas() {
+        return canvasCache.get(this);
+    }
     set $image(element) {
         imageCache.set(this, element);
     }
@@ -2931,12 +3342,6 @@ class CropperViewer extends CropperElement {
     }
     get $sourceImage() {
         return sourceImageCache.get(this);
-    }
-    set $canvas(element) {
-        canvasCache.set(this, element);
-    }
-    get $canvas() {
-        return canvasCache.get(this);
     }
     set $selection(element) {
         selectionCache.set(this, element);
@@ -3068,6 +3473,9 @@ class CropperViewer extends CropperElement {
                 }
         }
         this.$scale = scale;
+        styles.borderRadius = Number.isFinite(scale) && scale > 0
+            ? ($selection.borderRadius || '').replace(/(-?\d*\.?\d+)px/g, (_, value) => `${parseFloat(value) * scale}px`)
+            : $selection.borderRadius;
         this.$setStyles(styles);
         if (this.$sourceImage) {
             // Transform the image by the selection offset after the next DOM update cycle
@@ -3097,7 +3505,7 @@ class CropperViewer extends CropperElement {
     }
 }
 CropperViewer.$name = CROPPER_VIEWER;
-CropperViewer.$version = '2.2.0';
+CropperViewer.$version = '2.3.0';
 
 var DEFAULT_TEMPLATE = ('<cropper-canvas background>'
     + '<cropper-image rotatable scalable skewable translatable></cropper-image>'
@@ -3132,6 +3540,11 @@ CropperSelection.$define();
 CropperShade.$define();
 CropperViewer.$define();
 class Cropper {
+    /**
+     * Create a new Cropper.
+     * @param {HTMLImageElement|HTMLCanvasElement|string} element - The target image or canvas element to crop.
+     * @param {CropperOptions} [options] - The configuration options.
+     */
     constructor(element, options) {
         var _a;
         this.options = DEFAULT_OPTIONS;
@@ -3229,6 +3642,15 @@ class Cropper {
         }
     }
 }
-Cropper.version = '2.2.0';
+Cropper.version = '2.3.0';
+/**
+ * Create a new Cropper instance.
+ * @param {HTMLImageElement|HTMLCanvasElement|string} element - The target image or canvas element to crop.
+ * @param {CropperOptions} [options] - The configuration options.
+ * @returns {Cropper} A new Cropper instance.
+ */
+function createCropper(element, options) {
+    return new Cropper(element, options);
+}
 
-export { ACTION_MOVE, ACTION_NONE, ACTION_RESIZE_EAST, ACTION_RESIZE_NORTH, ACTION_RESIZE_NORTHEAST, ACTION_RESIZE_NORTHWEST, ACTION_RESIZE_SOUTH, ACTION_RESIZE_SOUTHEAST, ACTION_RESIZE_SOUTHWEST, ACTION_RESIZE_WEST, ACTION_ROTATE, ACTION_SCALE, ACTION_SELECT, ACTION_TRANSFORM, ATTRIBUTE_ACTION, CROPPER_CANVAS, CROPPER_CROSSHAIR, CROPPER_GIRD, CROPPER_HANDLE, CROPPER_IMAGE, CROPPER_SELECTION, CROPPER_SHADE, CROPPER_VIEWER, CropperCanvas, CropperCrosshair, CropperElement, CropperGrid, CropperHandle, CropperImage, CropperSelection, CropperShade, CropperViewer, DEFAULT_TEMPLATE, EVENT_ACTION, EVENT_ACTION_END, EVENT_ACTION_MOVE, EVENT_ACTION_START, EVENT_CHANGE, EVENT_ERROR, EVENT_KEYDOWN, EVENT_LOAD, EVENT_POINTER_DOWN, EVENT_POINTER_MOVE, EVENT_POINTER_UP, EVENT_RESIZE, EVENT_TOUCH_END, EVENT_TOUCH_MOVE, EVENT_TOUCH_START, EVENT_TRANSFORM, EVENT_WHEEL, HAS_POINTER_EVENT, IS_BROWSER, IS_TOUCH_DEVICE, NAMESPACE, OBJECT_FIT_CONTAIN, OBJECT_FIT_COVER, OBJECT_FIT_FILL, OBJECT_FIT_NONE, OBJECT_FIT_SCALE_DOWN, WINDOW, Cropper as default, emit, getAdjustedSizes, getComposedPathTarget, getOffset, getRootDocument, isElement, isFunction, isNaN, isNumber, isObject, isPlainObject, isPositiveNumber, isString, isUndefined, multiplyMatrices, nextTick, off, on, once, toAngleInRadian, toCamelCase, toKebabCase };
+export { ACTION_MOVE, ACTION_NONE, ACTION_RESIZE_EAST, ACTION_RESIZE_NORTH, ACTION_RESIZE_NORTHEAST, ACTION_RESIZE_NORTHWEST, ACTION_RESIZE_SOUTH, ACTION_RESIZE_SOUTHEAST, ACTION_RESIZE_SOUTHWEST, ACTION_RESIZE_WEST, ACTION_ROTATE, ACTION_SCALE, ACTION_SELECT, ACTION_TRANSFORM, ATTRIBUTE_ACTION, CROPPER_CANVAS, CROPPER_CROSSHAIR, CROPPER_GIRD, CROPPER_HANDLE, CROPPER_IMAGE, CROPPER_SELECTION, CROPPER_SHADE, CROPPER_VIEWER, Cropper, CropperCanvas, CropperCrosshair, CropperElement, CropperGrid, CropperHandle, CropperImage, CropperSelection, CropperShade, CropperViewer, DEFAULT_TEMPLATE, EVENT_ACTION, EVENT_ACTION_END, EVENT_ACTION_MOVE, EVENT_ACTION_START, EVENT_CHANGE, EVENT_ERROR, EVENT_KEYDOWN, EVENT_LOAD, EVENT_POINTER_DOWN, EVENT_POINTER_MOVE, EVENT_POINTER_UP, EVENT_RESIZE, EVENT_TOUCH_END, EVENT_TOUCH_MOVE, EVENT_TOUCH_START, EVENT_TRANSFORM, EVENT_WHEEL, HAS_POINTER_EVENT, IS_BROWSER, IS_TOUCH_DEVICE, NAMESPACE, OBJECT_FIT_CONTAIN, OBJECT_FIT_COVER, OBJECT_FIT_FILL, OBJECT_FIT_NONE, OBJECT_FIT_SCALE_DOWN, WINDOW, createCropper, Cropper as default, emit, exceedsInset, getAdjustedSizes, getComposedPathTarget, getOffset, getRootDocument, isElement, isFunction, isNaN, isNumber, isObject, isPlainObject, isPositiveNumber, isString, isUndefined, multiplyMatrices, nextTick, off, on, once, splitInsetValue, toAngleInRadian, toCamelCase, toInsetValues, toKebabCase };
