@@ -9,6 +9,13 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.0.4] — 2026-10-12
+
+A maintenance release: security fixes in Hex dependencies, dependency and
+vendored asset updates, and a pinned Rust toolchain for the NIFs. There are no
+migrations. The first deploy downloads the pinned Rust toolchain on the server
+once; nothing needs doing by hand.
+
 ### Changed
 
 - daisyUI 5.7.47 (from 5.7.46), from the dependency drift report (#18).
