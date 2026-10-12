@@ -319,6 +319,8 @@ that kind goes in it.
   unique name.
 - Rate limits: `RateLimiter.Sandbox.set_global_response({:allow, 1})`; real backend tests
   call `RateLimit.reset_all/0`.
+- Browser tests beside the partitioned suite run as `MIX_TEST_PARTITION=5` (own DB and
+  port; unset shares partition 1's port).
 - Browser tests (`--include feature`): after JS/hook changes run `js_errors_test.exs`;
   after CSS/layout changes `layout_test.exs`. Delete stale `priv/static/assets/*.gz` and
   `cache_manifest.json` first.

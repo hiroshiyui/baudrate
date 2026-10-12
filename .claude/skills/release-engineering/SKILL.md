@@ -14,12 +14,17 @@ description: Run a release — pre-release docs/a11y/l10n audits, version decisi
    - Re-check step 0 afterwards.
 1. **Decide major / minor / patch** (SemVer) from the unreleased commits; confirm with
    the user.
-2. **Run every test.** The partitioned suite, then the browser suite (it is excluded
-   by default; v1.33.0 shipped two stale browser tests that were never named):
+2. **Run every test.** The partitioned suite and the browser suite (it is excluded
+   by default; v1.33.0 shipped two stale browser tests that were never named), in
+   parallel. The browser run takes partition 5: its own database (`baudrate_test5`)
+   and port (4007), where unset it would share partition 1's port 4003. Build first
+   so the five runs do not race on `_build/test`:
    ```bash
-   for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 & done; wait
    rm -f priv/static/assets/{css,js}/*.gz priv/static/cache_manifest.json
-   mix assets.build && mix test --include feature test/baudrate_web/features/
+   mix assets.build && MIX_ENV=test mix compile
+   for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 & done
+   MIX_TEST_PARTITION=5 mix test --include feature test/baudrate_web/features/ &
+   wait
    ```
    Stop on any failure.
 3. **Bump** `version` in `mix.exs`.
