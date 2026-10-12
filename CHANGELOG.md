@@ -17,8 +17,16 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - Cropper.js 2.3.0 (from 2.2.0), from the dependency drift report (#18). The
   avatar editor uses none of the new options; the release's selection
   boundary and image-load fixes apply as they are.
-- The NIF Rust toolchain is 1.99.0 (from 1.98.1), in `rust-toolchain.toml`
-  and the CI images; the deploy installs it on the server before compiling.
+- **The NIF Rust toolchain is pinned** in `rust-toolchain.toml`, now 1.99.0
+  (from 1.98.1), and the CI images carry the same version. The deploy
+  installs the tag's toolchain on the server with `rustup` before compiling,
+  so production builds the NIFs with the Rust that CI tested; the first
+  deploy of this release downloads it once.
+- Dependencies: Phoenix 1.8.15, MDEx 0.14.2, Req 0.7.5, Finch 0.24.0,
+  phoenix_pubsub 2.4.1, phoenix_template 1.1.0, rustler_precompiled 0.10.0,
+  Sobelow 0.16.0 and Ammonia 4.2.1 (sanitizer NIF). Sobelow 0.16 also reads
+  `raw/1` inside HEEx `{...}`; the three reviewed sites now sit in functions
+  that carry the skip.
 - The browser tests run on Selenium Server 4.51.0 (from 4.49.0), in the CI
   image and `mix selenium.setup`.
 

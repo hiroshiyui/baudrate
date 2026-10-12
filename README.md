@@ -100,8 +100,9 @@ runtime is all you need. See [CONTRIBUTING.md](CONTRIBUTING.md). Otherwise:
   what CI, the release build and production all install
 - PostgreSQL 15+
 - libvips (for image processing)
-- Rust toolchain (to compile the scraper, Ammonia, and feedparser-rs NIFs;
-  there are no precompiled binaries, on purpose)
+- Rust via rustup (to compile the scraper, Ammonia, and feedparser-rs NIFs;
+  there are no precompiled binaries, on purpose). `rust-toolchain.toml` pins
+  the version, and rustup installs it on the first build
 
 Development and test databases default to user `baudrate_db_user`, password
 `baudrate_database` on `localhost`; `PGUSER`, `PGPASSWORD`, `PGHOST` and
