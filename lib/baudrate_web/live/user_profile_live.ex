@@ -393,6 +393,18 @@ defmodule BaudrateWeb.UserProfileLive do
     )
   end
 
+  # The bio is plain text, never Markdown: escaped first, then line breaks and
+  # hashtag links (a fixed tag charset) are added. No user HTML reaches `raw/1`.
+  # sobelow_skip ["XSS.Raw"]
+  defp bio_html(bio) do
+    bio
+    |> Phoenix.HTML.html_escape()
+    |> Phoenix.HTML.safe_to_string()
+    |> String.replace("\n", "<br>")
+    |> Baudrate.Content.Markdown.linkify_hashtags()
+    |> raw()
+  end
+
   defp digest(text) do
     plain =
       text

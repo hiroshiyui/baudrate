@@ -77,4 +77,18 @@ defmodule BaudrateWeb.UserContentLive do
          )}
     end
   end
+
+  # "in <article>": a gettext sentence around a link built here, with the
+  # title escaped. No user HTML reaches `raw/1`.
+  # sobelow_skip ["XSS.Raw"]
+  defp in_article(article) do
+    title = Phoenix.HTML.safe_to_string(Phoenix.HTML.html_escape(article.title))
+
+    raw(
+      gettext("in %{article}",
+        article:
+          "<a href=\"#{~p"/articles/#{article.slug}"}\" class=\"link link-hover\">#{title}</a>"
+      )
+    )
+  end
 end

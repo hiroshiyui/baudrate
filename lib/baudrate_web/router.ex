@@ -62,6 +62,8 @@ defmodule BaudrateWeb.Router do
   # hash (`BaudrateWeb.ThemeBootstrap`); everything else must come from 'self'.
   @content_security_policy "default-src 'self'; script-src 'self' #{BaudrateWeb.ThemeBootstrap.csp_source()}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'"
 
+  # Sobelow cannot read the policy from `@content_security_policy`.
+  # sobelow_skip ["Config.CSP"]
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -120,7 +122,8 @@ defmodule BaudrateWeb.Router do
 
   # Share target pipeline — identical to :browser but without CSRF protection.
   # The OS POST from PWA Web Share Target has no CSRF token.
-  # sobelow_skip ["Config.CSRF"]
+  # Sobelow cannot read the policy from `@content_security_policy`.
+  # sobelow_skip ["Config.CSRF", "Config.CSP"]
   pipeline :share_target do
     plug :accepts, ["html"]
     plug :fetch_session

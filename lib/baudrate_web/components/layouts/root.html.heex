@@ -88,7 +88,7 @@
       <link rel="alternate" type="application/activity+json" href={@ap_alternate_url} />
     <% end %>
     <%= if assigns[:linked_data_json] do %>
-      {raw("<script type=\"application/ld+json\">" <> @linked_data_json <> "</script>")}
+      {linked_data_script(@linked_data_json)}
     <% end %>
     <%= for {name, content} <- (assigns[:dc_meta] || []) do %>
       <meta name={name} content={content} />

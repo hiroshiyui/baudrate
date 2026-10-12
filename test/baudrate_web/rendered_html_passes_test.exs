@@ -46,16 +46,16 @@ defmodule BaudrateWeb.RenderedHtmlPassesTest do
 
     # A gettext string with the article title escaped and wrapped in an <a>
     # built here. No user HTML reaches it and there is no image to describe.
-    "lib/baudrate_web/live/user_content_live.html.heex" =>
+    "lib/baudrate_web/live/user_content_live.ex" =>
       "a gettext sentence with an escaped title in a link built in place",
 
     # The bio is escaped first and then linkified; it is plain text, never
     # Markdown, so it carries no <img>.
-    "lib/baudrate_web/live/user_profile_live.html.heex" =>
+    "lib/baudrate_web/live/user_profile_live.ex" =>
       "an escaped plain-text bio with hashtags linkified",
 
     # A JSON-LD <script>, built by LinkedData from typed values.
-    "lib/baudrate_web/components/layouts/root.html.heex" => "the JSON-LD script block",
+    "lib/baudrate_web/components/layouts.ex" => "the JSON-LD script block",
 
     # A compile-time constant script whose SHA-256 is in the CSP (ADR 0018's
     # no-inline-script rule). Nothing user-supplied reaches it, and changing

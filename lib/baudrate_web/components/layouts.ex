@@ -1315,6 +1315,14 @@ defmodule BaudrateWeb.Layouts do
     """
   end
 
+  # The JSON-LD block. `LinkedData.encode_jsonld/1` builds the JSON from typed
+  # values in Jason's `:html_safe` mode, which escapes every `<` and `>`, so
+  # nothing in it can close the <script>.
+  # sobelow_skip ["XSS.Raw"]
+  defp linked_data_script(json) do
+    raw("<script type=\"application/ld+json\">" <> json <> "</script>")
+  end
+
   # Caps a badge count at 99+ so narrow phone screens and header chips
   # don't have the number overflow the badge pill.
   defp display_badge_count(count) when is_integer(count) and count > 99, do: "99+"

@@ -95,14 +95,7 @@
             {format_datetime(comment.inserted_at)}
           </time>
           <span :if={comment.article}>
-            &middot; {raw(
-              gettext("in %{article}",
-                article:
-                  "<a href=\"#{~p"/articles/#{comment.article.slug}"}\" class=\"link link-hover\">" <>
-                    Phoenix.HTML.safe_to_string(Phoenix.HTML.html_escape(comment.article.title)) <>
-                    "</a>"
-              )
-            )}
+            &middot; {in_article(comment.article)}
           </span>
         </div>
       </div>

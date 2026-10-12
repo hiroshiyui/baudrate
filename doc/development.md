@@ -3679,7 +3679,11 @@ directory) and never from request input. Never add one without checking.
 Prefer fixing the code when the fix is simple: an interpolated SQL fragment or
 atom became a parameter or a literal rather than a skip. Sobelow's own skip
 file (`--mark-skip-all`) is not used, because its fingerprints include line
-numbers.
+numbers. A template cannot carry the comment, so a reviewed `raw/1` lives in a
+private function of the template's module, marked `# sobelow_skip
+["XSS.Raw"]`, and the template calls that function (Sobelow 0.16 reads `{...}`
+interpolation as well as `<%= %>`). The router's pipelines carry
+`"Config.CSP"`: Sobelow cannot read the policy from `@content_security_policy`.
 
 `mix deps.audit` (mix_audit) checks `mix.lock` against the advisory list built
 into `baudrate-ci`, recorded in `/opt/mix-audit/ADVISORIES_COMMIT`, without a

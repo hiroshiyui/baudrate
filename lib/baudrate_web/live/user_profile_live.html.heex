@@ -248,12 +248,7 @@
   >
     <h2 id="bio-heading" class="text-lg font-semibold mb-2">{gettext("Bio")}</h2>
     <div class="prose prose-sm max-w-none text-base-content/70 bg-base-200 rounded-lg p-3">
-      {raw(
-        Baudrate.Content.Markdown.linkify_hashtags(
-          Phoenix.HTML.safe_to_string(Phoenix.HTML.html_escape(@profile_user.bio))
-          |> String.replace("\n", "<br>")
-        )
-      )}
+      {bio_html(@profile_user.bio)}
     </div>
   </section>
 
