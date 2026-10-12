@@ -9,6 +9,21 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Changed
+
+- daisyUI 5.7.47 (from 5.7.46), from the dependency drift report (#18).
+  `.btn-disabled` now styles only elements that are also a `.btn`; every
+  use here is, so nothing visible changes.
+
+### Security
+
+- Hex packages with published advisories, updated by Dependabot (#38) and
+  flagged by the dependency drift report (#18): mint 1.11.0 (HTTP/1 response
+  smuggling through a non-final chunked coding, and two HTTP/2 memory
+  exhaustions), lazy_html 0.1.13 (unescaped SVG/MathML `style` and `script`
+  text) and decimal 3.2.0 (unbounded allocation in `Decimal.round/3`).
+  `mix hex.audit` is clean.
+
 ## [2.0.3] — 2026-09-26
 
 A maintenance release: a stylesheet change for mixed CJK and Latin text. There
