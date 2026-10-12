@@ -38,7 +38,7 @@
 # propose digest updates; keep the two lines identical.
 
 # ---------------------------------------------------------------------------
-FROM debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171 AS otp
+FROM debian:bookworm-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251 AS otp
 
 ARG OTP_VERSION=29.1.1
 ARG OTP_SHA256=054e0143e39c780e091107fc9b345792a9c1a55f6bac1eca1c1101510fc06bf6
@@ -65,7 +65,7 @@ RUN set -eux; \
 
 # ---------------------------------------------------------------------------
 # build: the release build toolchain.
-FROM debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171 AS build
+FROM debian:bookworm-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251 AS build
 
 ARG ELIXIR_VERSION=1.20.4
 ARG ELIXIR_OTP_MAJOR=29
