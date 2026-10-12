@@ -3815,7 +3815,7 @@ msgstr "返回個人檔案"
 msgid "Comments by %{username}"
 msgstr "%{username} 的留言"
 
-#: lib/baudrate_web/live/user_content_live.html.heex
+#: lib/baudrate_web/live/user_content_live.ex
 #, elixir-autogen, elixir-format
 msgid "in %{article}"
 msgstr "於 %{article}"

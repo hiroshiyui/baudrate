@@ -3826,7 +3826,7 @@ msgstr ""
 msgid "Comments by %{username}"
 msgstr ""
 
-#: lib/baudrate_web/live/user_content_live.html.heex
+#: lib/baudrate_web/live/user_content_live.ex
 #, elixir-autogen, elixir-format
 msgid "in %{article}"
 msgstr ""

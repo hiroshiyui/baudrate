@@ -3815,7 +3815,7 @@ msgstr "プロフィールに戻る"
 msgid "Comments by %{username}"
 msgstr "%{username} のコメント"
 
-#: lib/baudrate_web/live/user_content_live.html.heex
+#: lib/baudrate_web/live/user_content_live.ex
 #, elixir-autogen, elixir-format
 msgid "in %{article}"
 msgstr "%{article} にて"
