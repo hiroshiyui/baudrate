@@ -1,4 +1,4 @@
-/*! Cropper.js v2.3.0 | (c) 2015-present Chen Fengyuan | MIT */
+/*! Cropper.js v2.3.1 | (c) 2015-present Chen Fengyuan | MIT */
 const IS_BROWSER = typeof window !== 'undefined' && typeof window.document !== 'undefined';
 const WINDOW = IS_BROWSER ? window : {};
 const IS_TOUCH_DEVICE = IS_BROWSER ? 'ontouchstart' in WINDOW.document.documentElement : false;
@@ -681,7 +681,7 @@ class CropperElement extends HTMLElement {
         }
     }
 }
-CropperElement.$version = '2.3.0';
+CropperElement.$version = '2.3.1';
 
 var style$7 = `:host{display:block;min-height:100px;min-width:200px;overflow:hidden;position:relative;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}:host([background]){background-color:#fff;background-image:repeating-linear-gradient(45deg,#ccc 25%,transparent 0,transparent 75%,#ccc 0,#ccc),repeating-linear-gradient(45deg,#ccc 25%,transparent 0,transparent 75%,#ccc 0,#ccc);background-image:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%);background-position:0 0,.5rem .5rem;background-size:1rem 1rem}:host([disabled]){pointer-events:none}:host([disabled]):after{bottom:0;content:"";cursor:not-allowed;display:block;left:0;pointer-events:none;position:absolute;right:0;top:0}`;
 
@@ -1140,7 +1140,7 @@ class CropperCanvas extends CropperElement {
     }
 }
 CropperCanvas.$name = CROPPER_CANVAS;
-CropperCanvas.$version = '2.3.0';
+CropperCanvas.$version = '2.3.1';
 
 var style$6 = `:host{display:inline-block}img{display:block;height:100%;max-height:none!important;max-width:none!important;min-height:0!important;min-width:0!important;width:100%}`;
 
@@ -1289,12 +1289,10 @@ class CropperImage extends CropperElement {
             on($canvas, EVENT_ACTION_END, this.$onCanvasActionEnd);
             on($canvas, EVENT_ACTION, this.$onCanvasAction);
         }
-        if ($image.complete) {
+        this.$onLoad = this.$handleLoad.bind(this);
+        on($image, EVENT_LOAD, this.$onLoad);
+        if ($image.complete && $image.naturalWidth > 0 && $image.naturalHeight > 0) {
             this.$handleLoad();
-        }
-        else {
-            this.$onLoad = this.$handleLoad.bind(this);
-            on($image, EVENT_LOAD, this.$onLoad);
         }
         this.$getShadowRoot().appendChild($image);
     }
@@ -1945,7 +1943,7 @@ class CropperImage extends CropperElement {
     }
 }
 CropperImage.$name = CROPPER_IMAGE;
-CropperImage.$version = '2.3.0';
+CropperImage.$version = '2.3.1';
 
 var style$5 = `:host{display:block;height:0;left:0;outline:var(--theme-color) solid 1px;position:relative;top:0;width:0}:host([transparent]){outline-color:transparent}`;
 
@@ -2101,7 +2099,7 @@ class CropperShade extends CropperElement {
     }
 }
 CropperShade.$name = CROPPER_SHADE;
-CropperShade.$version = '2.3.0';
+CropperShade.$version = '2.3.1';
 
 var style$4 = `:host{background-color:var(--theme-color);display:block}:host([action=move]),:host([action=select]){height:100%;left:0;position:absolute;top:0;width:100%}:host([action=move]){cursor:move}:host([action=select]){cursor:crosshair}:host([action$=-resize]){background-color:transparent;height:15px;position:absolute;width:15px}:host([action$=-resize]):after{background-color:var(--theme-color);content:"";display:block;height:5px;left:50%;position:absolute;top:50%;transform:translate(-50%,-50%);width:5px}:host([action=n-resize]),:host([action=s-resize]){cursor:ns-resize;left:50%;transform:translateX(-50%);width:100%}:host([action=n-resize]){top:-8px}:host([action=s-resize]){bottom:-8px}:host([action=e-resize]),:host([action=w-resize]){cursor:ew-resize;height:100%;top:50%;transform:translateY(-50%)}:host([action=e-resize]){right:-8px}:host([action=w-resize]){left:-8px}:host([action=ne-resize]){cursor:nesw-resize;right:-8px;top:-8px}:host([action=nw-resize]){cursor:nwse-resize;left:-8px;top:-8px}:host([action=se-resize]){bottom:-8px;cursor:nwse-resize;right:-8px}:host([action=se-resize]):after{height:15px;width:15px}@media (pointer:coarse){:host([action=se-resize]):after{height:10px;width:10px}}@media (pointer:fine){:host([action=se-resize]):after{height:5px;width:5px}}:host([action=sw-resize]){bottom:-8px;cursor:nesw-resize;left:-8px}:host([plain]){background-color:transparent}`;
 
@@ -2124,7 +2122,7 @@ class CropperHandle extends CropperElement {
     }
 }
 CropperHandle.$name = CROPPER_HANDLE;
-CropperHandle.$version = '2.3.0';
+CropperHandle.$version = '2.3.1';
 
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -3223,7 +3221,7 @@ class CropperSelection extends CropperElement {
     }
 }
 CropperSelection.$name = CROPPER_SELECTION;
-CropperSelection.$version = '2.3.0';
+CropperSelection.$version = '2.3.1';
 
 var style$2 = `:host{display:flex;flex-direction:column;position:relative;touch-action:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}:host([bordered]){border:1px dashed var(--theme-color)}:host([covered]){bottom:0;left:0;position:absolute;right:0;top:0}:host>span{display:flex;flex:1}:host>span+span{border-top:1px dashed var(--theme-color)}:host>span>span{flex:1}:host>span>span+span{border-left:1px dashed var(--theme-color)}`;
 
@@ -3282,7 +3280,7 @@ class CropperGrid extends CropperElement {
     }
 }
 CropperGrid.$name = CROPPER_GIRD;
-CropperGrid.$version = '2.3.0';
+CropperGrid.$version = '2.3.1';
 
 var style$1 = `:host{display:inline-block;height:1em;position:relative;touch-action:none;-webkit-user-select:none;-moz-user-select:none;user-select:none;vertical-align:middle;width:1em}:host:after,:host:before{background-color:var(--theme-color);content:"";display:block;position:absolute}:host:before{height:1px;left:0;top:50%;transform:translateY(-50%);width:100%}:host:after{height:100%;left:50%;top:0;transform:translateX(-50%);width:1px}:host([centered]){left:50%;position:absolute;top:50%;transform:translate(-50%,-50%)}`;
 
@@ -3301,7 +3299,7 @@ class CropperCrosshair extends CropperElement {
     }
 }
 CropperCrosshair.$name = CROPPER_CROSSHAIR;
-CropperCrosshair.$version = '2.3.0';
+CropperCrosshair.$version = '2.3.1';
 
 var style = `:host{display:block;height:100%;overflow:hidden;position:relative;width:100%}`;
 
@@ -3505,7 +3503,7 @@ class CropperViewer extends CropperElement {
     }
 }
 CropperViewer.$name = CROPPER_VIEWER;
-CropperViewer.$version = '2.3.0';
+CropperViewer.$version = '2.3.1';
 
 var DEFAULT_TEMPLATE = ('<cropper-canvas background>'
     + '<cropper-image rotatable scalable skewable translatable></cropper-image>'
@@ -3642,7 +3640,7 @@ class Cropper {
         }
     }
 }
-Cropper.version = '2.3.0';
+Cropper.version = '2.3.1';
 /**
  * Create a new Cropper instance.
  * @param {HTMLImageElement|HTMLCanvasElement|string} element - The target image or canvas element to crop.
