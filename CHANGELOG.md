@@ -9,10 +9,17 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.0.5] — 2026-10-18
+
+A maintenance release: security fixes in the web server and in the HTML
+sanitizer two NIFs use, and a daisyUI patch. There are no migrations, and
+deploying it needs nothing by hand.
+
 ### Changed
 
-- daisyUI 5.7.50 (from 5.7.47): small component style fixes, and `.loading`
-  stays visible in forced-colors mode.
+- daisyUI 5.7.50 (from 5.7.47): checkboxes, progress bars, timelines, dividers
+  and loading spinners stay visible in forced-colors (high contrast) mode. The
+  theme colours are unchanged.
 
 ### Security
 
