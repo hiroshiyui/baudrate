@@ -9,6 +9,15 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Changed
+
+- Erlang/OTP 29.1.2 (from 29.1.1) and the NIF Rust toolchain 1.99.1 (from
+  1.99.0), in `.tool-versions`, `rust-toolchain.toml`, the CI images and the
+  Ansible inventory. The deploy installs both on the server before building;
+  the first deploy of this release builds OTP 29.1.2 there once.
+- Cropper.js 2.3.1 (from 2.3.0): a broken avatar image that reports itself
+  complete is no longer treated as loaded.
+
 ## [2.0.6] — 2026-10-18
 
 A maintenance release: CI audits the Rust NIF crates for RustSec advisories,
