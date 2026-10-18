@@ -48,6 +48,10 @@ fn clean_content_tags() -> HashSet<&'static str> {
 
 // Each NIF is a one-line wrapper around a plain function, so `cargo test` can
 // exercise the rules without a BEAM (Phase 8A).
+// The NIF glue (`#[rustler::nif]`, `NifStruct`, `init!`) is `cfg(not(test))`:
+// since rustler 0.39 it links the `enif_*` symbols the BEAM provides, which a
+// test binary has no BEAM to supply.
+#[cfg(not(test))]
 #[rustler::nif]
 fn sanitize_federation(html: &str) -> String {
     federation(html)
@@ -153,6 +157,7 @@ fn sanitize_with_markdown_rules(html: &str) -> String {
         .to_string()
 }
 
+#[cfg(not(test))]
 #[rustler::nif]
 fn sanitize_markdown(html: &str) -> String {
     sanitize_with_markdown_rules(html)
@@ -160,6 +165,7 @@ fn sanitize_markdown(html: &str) -> String {
 
 const NBSP: &str = "&nbsp;";
 
+#[cfg(not(test))]
 #[rustler::nif]
 fn strip_tags(html: &str) -> String {
     strip(html)
@@ -180,6 +186,7 @@ fn strip(html: &str) -> String {
     s.to_string()
 }
 
+#[cfg(not(test))]
 #[rustler::nif]
 fn normalize_feed_html(html: &str) -> String {
     normalize_feed(html)
@@ -207,6 +214,7 @@ fn normalize_feed(html: &str) -> String {
     cleaned.trim().to_string()
 }
 
+#[cfg(not(test))]
 rustler::init!("Elixir.Baudrate.Sanitizer.Native");
 
 #[cfg(test)]

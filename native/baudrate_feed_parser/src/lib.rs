@@ -4,8 +4,8 @@ use feedparser_rs::{parse_with_options, Entry, ParseOptions};
 ///
 /// All date/times are encoded as RFC 3339 strings so that Elixir can
 /// parse them with `DateTime.from_iso8601/1`.
-#[derive(rustler::NifStruct)]
-#[module = "Baudrate.Bots.SyndicationFeedParserNative.Entry"]
+#[cfg_attr(not(test), derive(rustler::NifStruct))]
+#[cfg_attr(not(test), module = "Baudrate.Bots.SyndicationFeedParserNative.Entry")]
 struct NifEntry {
     /// Unique identifier (guid / entry id).  `None` means the entry has no
     /// usable id and should be skipped on the Elixir side.
@@ -29,6 +29,7 @@ struct NifEntry {
 /// Parse an RSS 2.0, Atom 1.0, RSS 1.0, or JSON feed.
 ///
 /// Returns `{:ok, entries}` or `{:error, reason}`.
+#[cfg(not(test))]
 #[rustler::nif(schedule = "DirtyCpu")]
 fn parse_feed(data: rustler::Binary) -> Result<Vec<NifEntry>, String> {
     parse(data.as_slice())
@@ -36,6 +37,9 @@ fn parse_feed(data: rustler::Binary) -> Result<Vec<NifEntry>, String> {
 
 // The NIF is a one-line wrapper, so `cargo test` can exercise the parsing
 // without a BEAM (Phase 8A).
+// The NIF glue (`#[rustler::nif]`, `NifStruct`, `init!`) is `cfg(not(test))`:
+// since rustler 0.39 it links the `enif_*` symbols the BEAM provides, which a
+// test binary has no BEAM to supply.
 fn parse(data: &[u8]) -> Result<Vec<NifEntry>, String> {
     // feedparser-rs >= 0.6 sanitizes HTML-bearing fields itself by default.
     // Baudrate runs every title and body through Ammonia on the Elixir side
@@ -153,6 +157,7 @@ fn collect_tags(entry: &Entry) -> Vec<String> {
     tags
 }
 
+#[cfg(not(test))]
 rustler::init!("Elixir.Baudrate.Bots.SyndicationFeedParserNative");
 
 #[cfg(test)]
@@ -175,6 +180,7 @@ mod tests {
             <pubDate>Tue, 01 Sep 2026 10:00:00 +0000</pubDate></item></channel></rss>"#,
         );
         assert_eq!(e.id.as_deref(), Some("g-1"));
+        assert_eq!(e.title.as_deref(), Some("Rust & Ruby"));
         assert_eq!(e.link.as_deref(), Some("https://f.example/1"));
         assert_eq!(e.content.as_deref(), Some("<p>full</p>"));
         assert_eq!(e.summary.as_deref(), Some("short"));

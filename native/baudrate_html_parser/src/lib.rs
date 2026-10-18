@@ -2,8 +2,8 @@ use scraper::{Html, Selector};
 use std::collections::HashSet;
 use url::Url;
 
-#[derive(rustler::NifStruct)]
-#[module = "Baudrate.HtmlParser.Native.OgMetadata"]
+#[cfg_attr(not(test), derive(rustler::NifStruct))]
+#[cfg_attr(not(test), module = "Baudrate.HtmlParser.Native.OgMetadata")]
 struct OgMetadata {
     title: Option<String>,
     description: Option<String>,
@@ -13,8 +13,12 @@ struct OgMetadata {
 
 // Each NIF is a one-line wrapper around a plain function, so `cargo test` can
 // exercise the rules without a BEAM (Phase 8A).
+// The NIF glue (`#[rustler::nif]`, `NifStruct`, `init!`) is `cfg(not(test))`:
+// since rustler 0.39 it links the `enif_*` symbols the BEAM provides, which a
+// test binary has no BEAM to supply.
 
 /// Parse an HTML document and extract Open Graph / Twitter Card / fallback metadata.
+#[cfg(not(test))]
 #[rustler::nif]
 fn parse_og_metadata(html: &str) -> OgMetadata {
     og_metadata(html)
@@ -103,6 +107,7 @@ fn external_links(html: &str, origin: &str) -> Vec<(String, Url)> {
 
 /// Every distinct external URL in an HTML fragment, resolved and without its
 /// fragment, in document order. See `external_links/2` for what counts.
+#[cfg(not(test))]
 #[rustler::nif]
 fn extract_urls(html: &str, origin: &str) -> Vec<String> {
     urls(html, origin)
@@ -124,6 +129,7 @@ fn urls(html: &str, origin: &str) -> Vec<String> {
 /// Returned as written when it is already an absolute http(s) URL, so a link
 /// preview shows `https://例え.jp/` rather than its punycode; resolved
 /// otherwise, because `//host/path` is not something a fetcher can use.
+#[cfg(not(test))]
 #[rustler::nif]
 fn extract_first_url(html: &str, origin: &str) -> Option<String> {
     first_url(html, origin)
@@ -145,6 +151,7 @@ fn first_url(html: &str, origin: &str) -> Option<String> {
 }
 
 /// The number of `<img>` elements in an HTML fragment.
+#[cfg(not(test))]
 #[rustler::nif]
 fn count_images(html: &str) -> usize {
     images(html)
@@ -190,6 +197,7 @@ fn find_tag_text(document: &Html, tag: &str) -> Option<String> {
     })
 }
 
+#[cfg(not(test))]
 rustler::init!("Elixir.Baudrate.HtmlParser.Native");
 
 #[cfg(test)]
