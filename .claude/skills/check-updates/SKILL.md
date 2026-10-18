@@ -34,12 +34,15 @@ for c in ammonia scraper feedparser-rs rustler; do
   echo "$c → $(curl -sS -H 'User-Agent: baudrate-dep-check/1.0' \
     https://crates.io/api/v1/crates/$c | grep -oE '"max_stable_version":"[^"]+"' | head -1)"
 done
+for d in native/*/; do (cd "$d" && cargo audit -q) || echo "^ advisories in $d"; done
 ```
+`cargo audit` reads each `Cargo.lock` (transitive crates too, e.g. `feedparser-rs`'s
+`ammonia`); a hit is Security even when the direct crate is current.
 The Hex `rustler` and every crate's `rustler` move together. `ammonia` and
 `scraper`/`html5ever` are on the XSS boundary: security-relevant.
 
 ## Report (by risk, not ecosystem)
-- **Security:** `hex.audit` hits, advisory fixes, anything on the SSRF / sanitizer /
+- **Security:** `hex.audit` and `cargo audit` hits, advisory fixes, anything on the SSRF / sanitizer /
   auth / crypto boundary.
 - **Framework:** major/minor bumps of Phoenix, LiveView, Ecto, Bandit, Req, Hammer,
   Tailwind/daisyUI, or any constraint edit.
