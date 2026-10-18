@@ -9,6 +9,12 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.0.6] — 2026-10-18
+
+A maintenance release: CI audits the Rust NIF crates for RustSec advisories,
+and a boot-time check no longer logs a crash report when the database goes
+away. There are no migrations, and deploying it needs nothing by hand.
+
 ### Changed
 
 - CI's security job and the weekly dependency drift report also run
