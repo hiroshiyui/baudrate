@@ -9,6 +9,13 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.0.7] — 2026-10-19
+
+A maintenance release: Erlang/OTP 29.1.2, Rust 1.99.1, rustler 0.39 in the
+NIF crates and Cropper.js 2.3.1. There are no migrations, and deploying it
+needs nothing by hand; the first deploy builds OTP 29.1.2 on the server, so
+it takes longer than usual.
+
 ### Changed
 
 - Erlang/OTP 29.1.2 (from 29.1.1) and the NIF Rust toolchain 1.99.1 (from
@@ -17,6 +24,10 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   the first deploy of this release builds OTP 29.1.2 there once.
 - Cropper.js 2.3.1 (from 2.3.0): a broken avatar image that reports itself
   complete is no longer treated as loaded.
+- The three Rust NIF crates use rustler 0.39 (from 0.38); the Hex `rustler`
+  stays at 0.38, the newest published. Since 0.39 the NIF glue links the
+  BEAM's `enif_*` symbols directly on Linux, so it is left out of `cargo test`
+  builds, which test the plain functions behind each NIF.
 
 ## [2.0.6] — 2026-10-18
 
