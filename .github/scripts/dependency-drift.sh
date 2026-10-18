@@ -100,6 +100,9 @@ check_versions "GeckoDriver (CI image)" "ci/image/Dockerfile" "$(dockerfile_arg 
   "$(gh_versions mozilla/geckodriver v)"
 check_versions "Selenium Server (CI image)" "ci/image/Dockerfile" "$(dockerfile_arg SELENIUM_VERSION)" \
   "$(gh_versions SeleniumHQ/selenium selenium-)"
+check_versions "cargo-audit (CI image)" "ci/image/Dockerfile" "$(dockerfile_arg CARGO_AUDIT_VERSION)" \
+  "$(curl -fsSL -H 'User-Agent: baudrate-dependency-drift' https://crates.io/api/v1/crates/cargo-audit/versions |
+    jq -r '.versions[] | select(.yanked | not) | .num' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V)"
 
 cat <<EOF
 Weekly check of dependency pins that Dependabot cannot track

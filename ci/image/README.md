@@ -52,6 +52,8 @@ disagree, and `verify-toolchain.sh` checks the running image.
 | Selenium Server | `ci` | GitHub release | SHA-256 |
 | GeckoDriver | `ci` | crates.io source crate, built in the image with its `Cargo.lock` | SHA-256; `cargo build --locked` checks every dependency's checksum |
 | mix_audit advisory list | `ci` | `mirego/elixir-security-advisories`, cloned when the image is built | git over HTTPS; the commit is recorded in `/opt/mix-audit/ADVISORIES_COMMIT`. YAML data, never executed |
+| cargo-audit | `ci` | crates.io source crate, built in the image with its `Cargo.lock` (without the binary-scanning feature) | SHA-256; `cargo build --locked` checks every dependency's checksum |
+| RustSec advisory database | `ci` | `rustsec/advisory-db`, cloned when the image is built, at `$RUSTSEC_DB` | git over HTTPS; the commit is recorded in `/opt/rustsec/ADVISORIES_COMMIT`. TOML/Markdown data, never executed |
 
 The PostgreSQL client is production's major version, which Debian 12 ships
 itself. Tests must use it: `pg_dump` and `pg_restore` 17+ write
@@ -71,14 +73,16 @@ establish anything. Before using a future release binary instead, check that it
 is signed by a current, unrevoked subkey of Mozilla's release key
 (`14F26682D0916CDD81E37B6D61B7B526D98F0353`).
 
-The advisory list is the one input taken at the latest commit rather than a
-pinned version: its value is being current. It is taken when the image is
-built, so a job fetches nothing: `mix deps.audit` looks for the list under
-`$HOME` and runs `git pull` on a checkout it finds, and the image keeps no
-`.git`, so there is nothing to pull. The security job points `HOME` at
-`MIX_AUDIT_HOME` and fails if the list changed during the run. The list is as
-current as the last image update merged into `image.lock`; Dependabot still
-alerts on GitHub advisories as they are published.
+The advisory lists (mix_audit's and RustSec's) are the inputs taken at the
+latest commit rather than a pinned version: their value is being current. They
+are taken when the image is built, so a job fetches nothing: `mix deps.audit`
+looks for the list under `$HOME` and runs `git pull` on a checkout it finds,
+and the image keeps no `.git`, so there is nothing to pull. The security job
+points `HOME` at `MIX_AUDIT_HOME` and fails if the list changed during the run.
+The RustSec database is a plain directory too, and the drift workflow's `cargo
+audit` runs with `--no-fetch --db "$RUSTSEC_DB"`. The lists are as current as
+the last image update merged into `image.lock`; Dependabot still alerts on
+GitHub advisories as they are published.
 
 Still fetched at run time, outside the images: Hex packages (`mix deps.get`,
 checked against `mix.lock`), Rust crates (checked against `Cargo.lock`), and
@@ -134,8 +138,9 @@ user already has passwordless `sudo` on it.
    `lib/mix/tasks/selenium_setup.ex`) and the matching `ARG` in `Dockerfile`.
 2. Download the new artifact, compute `sha256sum`, compare it with the
    upstream-published checksum, and update the `*_SHA256` argument. For
-   GeckoDriver that is the `.crate` file and the `checksum` crates.io lists for
-   the version (`https://crates.io/api/v1/crates/geckodriver/versions`).
+   GeckoDriver and cargo-audit that is the `.crate` file and the `checksum`
+   crates.io lists for the version
+   (`https://crates.io/api/v1/crates/<crate>/versions`).
 3. Push to `current`; merge the proposed lock file change once the image
    build has passed.
 

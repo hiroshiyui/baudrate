@@ -1,11 +1,12 @@
 # Covers the dependency surface Dependabot cannot read (see the header of
 # .github/dependabot.yml): esbuild/Tailwind binary versions, vendored assets,
-# .tool-versions, and retired Hex packages. Results are kept in one rolling
-# issue, which is closed automatically once everything is current again.
+# .tool-versions, retired Hex packages, and RustSec advisories against the NIF
+# crates' Cargo.lock files. Results are kept in one rolling issue, which is
+# closed automatically once everything is current again.
 #
-# `mix hex.audit` runs inside the project's CI image (ci/image/), so no
-# toolchain is installed at run time; the pin checks only need the runner's
-# curl, jq and gh.
+# `mix hex.audit` and `cargo audit` run inside the project's CI image
+# (ci/image/), so no toolchain or advisory list is fetched at run time; the
+# pin checks only need the runner's curl, jq and gh.
 
 name: Dependency drift
 
@@ -61,9 +62,45 @@ jobs:
           # Base64 keeps arbitrary output intact through the job output.
           echo "report=$(printf '%s' "$out" | base64 -w0)" >> "$GITHUB_OUTPUT"
 
+  cargo-audit:
+    name: Audit the NIF crates
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      status: ${{ steps.cargo.outputs.status }}
+      report: ${{ steps.cargo.outputs.report }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      # The advisory database is the image's (ci/image/README.md); with
+      # --no-fetch nothing is downloaded, and only the lockfiles are read.
+      - name: Audit Cargo.lock files against RustSec
+        id: cargo
+        run: |
+          set +e
+          status=0
+          out="Advisories at $(cat /opt/rustsec/ADVISORIES_COMMIT) ($(cat /opt/rustsec/ADVISORIES_DATE))"
+          for lock in native/*/Cargo.lock; do
+            result=$(cargo audit --no-fetch --db "$RUSTSEC_DB" --file "$lock" 2>&1)
+            [ $? -eq 0 ] || status=1
+            out="$out"$'\n\n'"== $lock"$'\n'"$result"
+          done
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "report=$(printf '%s' "$out" | base64 -w0)" >> "$GITHUB_OUTPUT"
+
   drift:
     name: Check untracked dependency pins
-    needs: hex-audit
+    needs: [hex-audit, cargo-audit]
     # Still report pin drift when the image or the audit failed.
     if: ${{ always() }}
     runs-on: ubuntu-latest
@@ -111,14 +148,38 @@ jobs:
             echo '```'
           } | tee -a report.md >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Add the Cargo audit
+        id: cargo
+        env:
+          CARGO_STATUS: ${{ needs.cargo-audit.outputs.status }}
+          CARGO_REPORT: ${{ needs.cargo-audit.outputs.report }}
+        run: |
+          if [ -z "$CARGO_STATUS" ]; then
+            out="The audit did not run (CI image verification or the audit job failed)."
+            status=1
+          else
+            out=$(printf '%s' "$CARGO_REPORT" | base64 -d)
+            status=$CARGO_STATUS
+          fi
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          {
+            echo
+            echo "### \`cargo audit\` (native/*/Cargo.lock)"
+            echo
+            echo '```'
+            echo "$out"
+            echo '```'
+          } | tee -a report.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Update the rolling drift issue
         run: |
           number=$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" \
             --json number,title --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" | head -n1)
 
-          if [ "${{ steps.pins.outputs.drift }}" = "0" ] && [ "${{ steps.hex.outputs.status }}" = "0" ]; then
+          if [ "${{ steps.pins.outputs.drift }}" = "0" ] && [ "${{ steps.hex.outputs.status }}" = "0" ] &&
+            [ "${{ steps.cargo.outputs.status }}" = "0" ]; then
             if [ -n "$number" ]; then
-              gh issue close "$number" --comment "All untracked dependency pins are current and \`mix hex.audit\` is clean."
+              gh issue close "$number" --comment "All untracked dependency pins are current, and \`mix hex.audit\` and \`cargo audit\` are clean."
             fi
             exit 0
           fi

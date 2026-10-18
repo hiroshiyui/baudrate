@@ -11,7 +11,7 @@
 #     build the production release, and nothing else.
 #   * `ci` (ghcr.io/…/baudrate-ci, the default target): `build` plus the test
 #     jobs' tools (Firefox ESR, Java, Selenium, GeckoDriver, the PostgreSQL
-#     client) and the mix_audit advisory list.
+#     client, cargo-audit) and the mix_audit and RustSec advisory lists.
 #
 # The base is Debian 12 (bookworm), production's release, not Debian stable: a
 # release carries its own Erlang runtime and Rust NIFs, linked against this
@@ -28,8 +28,9 @@
 #     never fetches them at run time; rustup verifies every component against
 #     the channel manifest.
 #   * esbuild, Tailwind, Selenium Server: SHA-256 pinned.
-#   * GeckoDriver: built from its crates.io source crate (SHA-256 pinned) with
-#     the Cargo.lock it ships, so every dependency is checksum-verified.
+#   * GeckoDriver, cargo-audit: built from their crates.io source crates
+#     (SHA-256 pinned) with the Cargo.lock each ships, so every dependency is
+#     checksum-verified.
 #
 # Versions must match .tool-versions and config/config.exs; the image
 # workflow checks this before publishing.
@@ -155,6 +156,8 @@ ARG GECKODRIVER_VERSION=0.37.1
 ARG GECKODRIVER_CRATE_SHA256=79f38cf1541aaf57f6f7eb270f691bcb702485a95dbaaefe740141a8ea46f0ef
 ARG SELENIUM_VERSION=4.51.0
 ARG SELENIUM_SHA256=f4ddbb992fd99c4152934b832c5fe5502a5ca207a1d1cb96af8e5068955c5037
+ARG CARGO_AUDIT_VERSION=0.22.2
+ARG CARGO_AUDIT_CRATE_SHA256=700c2b240f7fd330c24b675fe429f73a5b676531fcc6300400b2b67f155ba12a
 # Production's PostgreSQL major version (`postgres_version` in Ansible), which
 # Debian 12 ships itself.
 ARG POSTGRES_MAJOR=15
@@ -164,7 +167,8 @@ LABEL org.opencontainers.image.title="baudrate-ci" \
 
 ENV BAUDRATE_IMAGE=ci \
     BAUDRATE_SELENIUM_DIR=/opt/selenium \
-    MIX_AUDIT_HOME=/opt/mix-audit/home
+    MIX_AUDIT_HOME=/opt/mix-audit/home \
+    RUSTSEC_DB=/opt/rustsec/advisory-db
 
 # The PostgreSQL client must be production's major version: pg_dump and
 # pg_restore 17 write `SET transaction_timeout`, which a PostgreSQL 15 server
@@ -211,6 +215,33 @@ RUN set -eux; \
     mv /tmp/advisories "$dest"; \
     test -n "$(find "$dest/packages" -name '*.yml' | head -n1)"
 
+# cargo-audit checks the NIF crates' Cargo.lock files against the RustSec
+# advisory database. Built like GeckoDriver: the crates.io source crate and
+# its own Cargo.lock, under `--locked`. Binary scanning (the default feature)
+# is left out; only lockfiles are audited.
+RUN set -eux; \
+    curl -fsSL -o /tmp/cargo-audit.crate \
+      "https://static.crates.io/crates/cargo-audit/cargo-audit-${CARGO_AUDIT_VERSION}.crate"; \
+    echo "${CARGO_AUDIT_CRATE_SHA256}  /tmp/cargo-audit.crate" | sha256sum -c -; \
+    mkdir /tmp/cargo-audit; \
+    tar -xzf /tmp/cargo-audit.crate -C /tmp/cargo-audit --strip-components=1; \
+    cargo build --manifest-path /tmp/cargo-audit/Cargo.toml --release --locked --no-default-features; \
+    install -m 0755 /tmp/cargo-audit/target/release/cargo-audit "${CARGO_HOME}/bin/cargo-audit"; \
+    rm -rf /tmp/cargo-audit /tmp/cargo-audit.crate "${CARGO_HOME}/registry" "${CARGO_HOME}/git"
+
+# The RustSec advisory database, taken when the image is built like the
+# mix_audit list, so the audit fetches nothing: `cargo audit --no-fetch --db`
+# reads a plain directory, and no `.git` is kept. The commit is recorded for
+# the job to print. Advisories are TOML/Markdown data, never executed.
+RUN set -eux; \
+    git clone --quiet --depth 1 https://github.com/rustsec/advisory-db.git /tmp/rustsec; \
+    mkdir -p "$(dirname "$RUSTSEC_DB")"; \
+    git -C /tmp/rustsec rev-parse HEAD > /opt/rustsec/ADVISORIES_COMMIT; \
+    git -C /tmp/rustsec log -1 --format=%cI > /opt/rustsec/ADVISORIES_DATE; \
+    rm -rf /tmp/rustsec/.git; \
+    mv /tmp/rustsec "$RUSTSEC_DB"; \
+    test -n "$(find "$RUSTSEC_DB/crates" -name 'RUSTSEC-*.md' | head -n1)"
+
 # Static checks (Phase 8A). clippy comes with the toolchain above.
 # ansible-lint and the collections the playbooks use (the `ansible` package:
 # community.general, community.postgresql, community.sops, ansible.posix) come
@@ -228,4 +259,6 @@ RUN set -eux; \
     java -version; \
     pg_dump --version; \
     /opt/selenium/geckodriver --version; \
-    cat /opt/mix-audit/ADVISORIES_COMMIT
+    cargo audit --version; \
+    cat /opt/mix-audit/ADVISORIES_COMMIT; \
+    cat /opt/rustsec/ADVISORIES_COMMIT
