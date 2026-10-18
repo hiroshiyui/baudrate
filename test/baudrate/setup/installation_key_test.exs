@@ -1,5 +1,7 @@
 defmodule Baudrate.Setup.InstallationKeyTest do
-  use ExUnit.Case, async: false
+  # log_boot_status/0 reads settings, so the test owns a sandbox connection
+  # rather than borrowing whatever an earlier test left shared.
+  use Baudrate.DataCase, async: false
 
   alias Baudrate.Setup.InstallationKey
 
@@ -91,6 +93,23 @@ defmodule Baudrate.Setup.InstallationKeyTest do
 
       Application.put_env(:baudrate, :installation_key, "s3cret")
       assert InstallationKey.log_boot_status() == :ok
+    end
+
+    test "returns :ok when the database connection cannot be checked out" do
+      Application.put_env(:baudrate, :installation_key_enforced?, true)
+      Application.delete_env(:baudrate, :installation_key)
+
+      # Allowed through an owner that has since exited: checkout exits rather
+      # than raises, as when the database goes away during boot.
+      task =
+        Task.async(fn ->
+          owner = Ecto.Adapters.SQL.Sandbox.start_owner!(Baudrate.Repo, shared: false)
+          Ecto.Adapters.SQL.Sandbox.allow(Baudrate.Repo, owner, self())
+          Ecto.Adapters.SQL.Sandbox.stop_owner(owner)
+          InstallationKey.log_boot_status()
+        end)
+
+      assert Task.await(task) == :ok
     end
   end
 end

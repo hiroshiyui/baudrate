@@ -18,6 +18,14 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   so the audit fetches nothing at run time; the report also tracks the
   cargo-audit pin.
 
+### Fixed
+
+- The boot-time `INSTALLATION_KEY` banner check also survives a database
+  connection that exits during checkout, not only one that raises, as its
+  documentation promised. It runs as a temporary task, so boot never failed,
+  but the exit logged a crash report. Its test now owns a sandbox connection
+  instead of borrowing one another test left shared, which made it flaky.
+
 ## [2.0.5] — 2026-10-18
 
 A maintenance release: security fixes in the web server and in the HTML

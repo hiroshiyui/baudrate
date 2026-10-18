@@ -22,7 +22,7 @@ defmodule Baudrate.Setup.InstallationKey do
       while setup is incomplete and no key is configured.
     * `BaudrateWeb.SetupLive.mount/3` refuses independently, because the plug
       pipeline does not run for the LiveView websocket.
-    * `log_boot_status/0` logs a startup banner. It never raises.
+    * `log_boot_status/0` logs a startup banner. It never raises or exits.
 
   Once setup is complete, `enforced?/0` no longer matters — an operator may
   remove the key, which `doc/sysop.md` has always told them to do.
@@ -91,9 +91,10 @@ defmodule Baudrate.Setup.InstallationKey do
   @doc """
   Logs a startup banner when the wizard is locked by a missing key.
 
-  Never raises: a database error while checking `setup_completed?/0` is logged
-  at debug level and ignored, because failing to boot would be worse than the
-  missing banner.
+  Never raises or exits: a database error while checking `setup_completed?/0`
+  is logged at debug level and ignored, because failing to boot would be worse
+  than the missing banner. A connection that cannot be checked out is an exit,
+  not an exception, so both are caught.
   """
   @spec log_boot_status() :: :ok
   def log_boot_status do
@@ -115,6 +116,10 @@ defmodule Baudrate.Setup.InstallationKey do
   rescue
     error ->
       Logger.debug("installation_key.boot_check_skipped: #{Exception.message(error)}")
+      :ok
+  catch
+    :exit, reason ->
+      Logger.debug("installation_key.boot_check_skipped: exit #{inspect(reason)}")
       :ok
   end
 end
