@@ -84,14 +84,17 @@ jobs:
 
       # The advisory database is the image's (ci/image/README.md); with
       # --no-fetch nothing is downloaded, and only the lockfiles are read.
+      # --no-yanked: yanked status needs the crates.io index, which the image
+      # does not carry; advisories are what this audit is for.
       - name: Audit Cargo.lock files against RustSec
         id: cargo
+        shell: bash
         run: |
           set +e
           status=0
           out="Advisories at $(cat /opt/rustsec/ADVISORIES_COMMIT) ($(cat /opt/rustsec/ADVISORIES_DATE))"
           for lock in native/*/Cargo.lock; do
-            result=$(cargo audit --no-fetch --db "$RUSTSEC_DB" --file "$lock" 2>&1)
+            result=$(cargo audit --no-fetch --no-yanked --db "$RUSTSEC_DB" --file "$lock" 2>&1)
             [ $? -eq 0 ] || status=1
             out="$out"$'\n\n'"== $lock"$'\n'"$result"
           done

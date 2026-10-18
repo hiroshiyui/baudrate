@@ -80,10 +80,10 @@ looks for the list under `$HOME` and runs `git pull` on a checkout it finds,
 and the image keeps no `.git`, so there is nothing to pull. The security job
 points `HOME` at `MIX_AUDIT_HOME` and fails if the list changed during the run.
 The RustSec database is a plain directory too; the security job and the drift
-workflow run `cargo audit --no-fetch --db "$RUSTSEC_DB"`, and the security job
-fails if it changed. The lists are as current as the last image update merged
-into `image.lock`; Dependabot still alerts on GitHub advisories as they are
-published.
+workflow run `cargo audit --no-fetch --no-yanked --db "$RUSTSEC_DB"`, and the
+security job fails if it changed. The lists are as current as the last image
+update merged into `image.lock`; Dependabot still alerts on GitHub advisories
+as they are published.
 
 Still fetched at run time, outside the images: Hex packages (`mix deps.get`,
 checked against `mix.lock`), Rust crates (checked against `Cargo.lock`), and

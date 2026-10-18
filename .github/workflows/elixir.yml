@@ -312,7 +312,8 @@ jobs:
         fi
     # The RustSec database is the image's too; --no-fetch reads it as a plain
     # directory, and it must be unchanged afterwards. Only the NIF crates'
-    # Cargo.lock files are read, so nothing is built.
+    # Cargo.lock files are read, so nothing is built. --no-yanked: yanked
+    # status needs the crates.io index, which the image does not carry.
     - name: cargo audit
       run: |
         set -eu
@@ -321,7 +322,7 @@ jobs:
         status=0
         for lock in native/*/Cargo.lock; do
           echo "== $lock"
-          cargo audit --no-fetch --db "$RUSTSEC_DB" --file "$lock" || status=1
+          cargo audit --no-fetch --no-yanked --db "$RUSTSEC_DB" --file "$lock" || status=1
         done
         after="$(find "$RUSTSEC_DB" -type f | sort | xargs sha256sum | sha256sum)"
         test ! -e "$RUSTSEC_DB/.git"
