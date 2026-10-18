@@ -9,6 +9,23 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Changed
+
+- daisyUI 5.7.50 (from 5.7.47): small component style fixes, and `.loading`
+  stays visible in forced-colors mode.
+
+### Security
+
+- Bandit 1.13.1 (from 1.12.5): an HTTP/2 stream could be held open
+  indefinitely by trickled `WINDOW_UPDATE` frames (CVE-2026-105659), and an
+  HTTP/1 absolute request target could set `conn.host`/`conn.port`
+  (CVE-2026-105660). `mix hex.audit` is clean.
+- Ammonia 4.2.4 in the sanitizer NIF (from 4.2.1) and the feed parser NIF
+  (from 4.1.4, with html5ever 0.40): CSS `url()` matching and escaping in
+  `style` attributes (RUSTSEC-2026-0373, RUSTSEC-2021-0157/0158). The
+  sanitizer drops `style` attributes, so stored content was not exposed;
+  `cargo audit` is clean.
+
 ## [2.0.4] — 2026-10-12
 
 A maintenance release: security fixes in Hex dependencies, dependency and
