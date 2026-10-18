@@ -36,7 +36,7 @@ own Erlang runtime and NIFs.
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
 | Elixir | the version in `.tool-versions` (1.20.4-otp-29) | Application runtime |
-| Erlang/OTP | the version in `.tool-versions` (29.1.1) | VM |
+| Erlang/OTP | the version in `.tool-versions` (29.1.2) | VM |
 | PostgreSQL | 15+ | Database (requires `pg_trgm` extension) |
 | libvips | any | Avatar and image processing |
 | Rust toolchain | `rust-toolchain.toml` (installed by the deploy) | Three Rustler NIFs: HTML sanitizer (Ammonia), HTML parser (scraper), feed parser (feedparser-rs) |

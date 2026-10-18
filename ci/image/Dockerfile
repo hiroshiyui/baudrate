@@ -41,8 +41,8 @@
 # ---------------------------------------------------------------------------
 FROM debian:bookworm-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251 AS otp
 
-ARG OTP_VERSION=29.1.1
-ARG OTP_SHA256=054e0143e39c780e091107fc9b345792a9c1a55f6bac1eca1c1101510fc06bf6
+ARG OTP_VERSION=29.1.2
+ARG OTP_SHA256=c79966661e35fe4aff8ec003db63682e3b33b10b672220d51bf93c0a9244b049
 
 RUN apt-get update \
  && apt-get upgrade -y \
