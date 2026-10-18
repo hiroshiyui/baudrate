@@ -7,7 +7,7 @@
 # Dialyzer against its reviewed baseline, clippy and the Rust unit tests of
 # the three NIF crates, and ansible-lint (Phase 8A); the Coverage job merges
 # each partition's coverage into one report, uploaded as an artifact; the
-# Security job runs Sobelow and mix_audit, and the
+# Security job runs Sobelow, mix_audit and cargo audit, and the
 # Release job builds the production release in the build image
 # (ci/image/build-image.lock) and smoke-tests it, the way release.yml does
 # for a published release, so a change that breaks the release fails here
@@ -257,8 +257,8 @@ jobs:
 
   security:
 
-    # Sobelow (static analysis for Phoenix) and mix_audit (known advisories in
-    # mix.lock). Every Sobelow finding fails the job; a reviewed false positive
+    # Sobelow (static analysis for Phoenix), mix_audit (known advisories in
+    # mix.lock) and cargo audit (RustSec advisories in native/*/Cargo.lock). Every Sobelow finding fails the job; a reviewed false positive
     # is marked with `# sobelow_skip` above its function (.sobelow-conf).
     name: Security checks
     needs: image
@@ -310,6 +310,26 @@ jobs:
           echo "::error::the advisory list changed during mix deps.audit; it must come from the image"
           exit 1
         fi
+    # The RustSec database is the image's too; --no-fetch reads it as a plain
+    # directory, and it must be unchanged afterwards. Only the NIF crates'
+    # Cargo.lock files are read, so nothing is built.
+    - name: cargo audit
+      run: |
+        set -eu
+        before="$(find "$RUSTSEC_DB" -type f | sort | xargs sha256sum | sha256sum)"
+        echo "Advisories at $(cat /opt/rustsec/ADVISORIES_COMMIT) ($(cat /opt/rustsec/ADVISORIES_DATE))"
+        status=0
+        for lock in native/*/Cargo.lock; do
+          echo "== $lock"
+          cargo audit --no-fetch --db "$RUSTSEC_DB" --file "$lock" || status=1
+        done
+        after="$(find "$RUSTSEC_DB" -type f | sort | xargs sha256sum | sha256sum)"
+        test ! -e "$RUSTSEC_DB/.git"
+        if [ "$before" != "$after" ]; then
+          echo "::error::the RustSec database changed during cargo audit; it must come from the image"
+          exit 1
+        fi
+        exit "$status"
 
   release:
 

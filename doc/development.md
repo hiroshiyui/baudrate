@@ -3569,7 +3569,7 @@ images ([ADR 0027](adr/0027-ci-runs-in-a-pinned-attested-image.md),
 |-----|-------|------|
 | Test (4 partitions) | `baudrate-ci` | format check, `compile --warnings-as-errors`, `mix lint`, `mix test --partitions 4 --seed 9527` |
 | Browser tests | `baudrate-ci` | `mix assets.build`, then `mix test --only feature` (Wallaby + Selenium + headless Firefox ESR); failure screenshots and the Selenium log are uploaded |
-| Security checks | `baudrate-ci` | `mix sobelow --config` and `mix deps.audit` ([Security checks](#security-checks)) |
+| Security checks | `baudrate-ci` | `mix sobelow --config`, `mix deps.audit` and `cargo audit` ([Security checks](#security-checks)) |
 | Release build | `baudrate-build` | `ci/release/build.sh`, then `ci/release/smoke-test.sh` against PostgreSQL 15: the production release, built and started exactly as `release.yml` does before publishing one |
 
 **When it runs.** Pushes to `current`, and pull requests to `current` or
@@ -3590,26 +3590,25 @@ Neither branch has required status checks, so a skipped run blocks nothing. If
 that ever changes, `paths-ignore` reports *no* check rather than a passing one,
 and would need replacing with a placeholder job of the same name.
 
-**The images.** `ci/image/Dockerfile` has two targets on Debian 12, production's
-release: `build` (`baudrate-build`: Erlang/OTP, Elixir, Rust, esbuild,
-Tailwind) and `ci` (`baudrate-ci`: the same layers plus Firefox ESR, Java, the
-PostgreSQL client, GeckoDriver, Selenium Server and the mix_audit advisory
-list), all from pinned, checksum-verified inputs. Releases carry their own
-Erlang runtime and NIFs, linked against the system that built them, so the
-base follows production (`debian_version` in the Ansible inventory), and the
-tests run on the same system. GeckoDriver is built from its crates.io source
-crate: its 0.37.x release binaries are signed only by a Mozilla subkey revoked
-as compromised. Jobs use the images only through the digests in
-`ci/image/image.lock` and `ci/image/build-image.lock`, after `ci-image-ref.yml`
-verifies their build provenance, and each job first runs
+**The images.** `ci/image/Dockerfile` has two targets on Debian 12,
+production's release: `build` (`baudrate-build`: Erlang/OTP, Elixir, Rust,
+esbuild, Tailwind) and `ci` (`baudrate-ci`: the same layers plus Firefox ESR,
+Java, the PostgreSQL client, GeckoDriver, Selenium Server, cargo-audit and the
+mix_audit and RustSec advisory lists), all from pinned, checksum-verified
+inputs. Releases carry their own Erlang runtime and NIFs, linked against the
+system that built them, so the base follows production (`debian_version` in the
+Ansible inventory), and the tests run on the same system. GeckoDriver is built
+from its crates.io source crate: its 0.37.x release binaries are signed only by
+a Mozilla subkey revoked as compromised. Jobs use the images only through the
+digests in `ci/image/image.lock` and `ci/image/build-image.lock`, after
+`ci-image-ref.yml` verifies their build provenance, and each job first runs
 `ci/image/verify-toolchain.sh`, which also holds the Ansible inventory's
 `erlang_version`/`elixir_version` to `.tool-versions`, so production builds
 with the versions CI tested (the deploy installs them on the server when
-missing). Only GitHub-owned actions are used, pinned to
-commit SHAs; the PostgreSQL service is pinned by digest. Inside the container
-the database is reached as `postgres` (`PGHOST`), and esbuild, Tailwind and
-Selenium come from the image (`MIX_ESBUILD_PATH`, `MIX_TAILWIND_PATH`,
-`BAUDRATE_SELENIUM_DIR`).
+missing). Only GitHub-owned actions are used, pinned to commit SHAs; the
+PostgreSQL service is pinned by digest. Inside the container the database is
+reached as `postgres` (`PGHOST`), and esbuild, Tailwind and Selenium come from
+the image (`MIX_ESBUILD_PATH`, `MIX_TAILWIND_PATH`, `BAUDRATE_SELENIUM_DIR`).
 
 Changing Erlang, Elixir, Rust, esbuild, Tailwind, GeckoDriver, Selenium or the
 Debian release needs the Dockerfile updated too; see `ci/image/README.md`.
@@ -3688,7 +3687,10 @@ interpolation as well as `<%= %>`). The router's pipelines carry
 `mix deps.audit` (mix_audit) checks `mix.lock` against the advisory list built
 into `baudrate-ci`, recorded in `/opt/mix-audit/ADVISORIES_COMMIT`, without a
 network fetch. Locally, `mix deps.audit` clones or updates the list under
-`~/.local/share` instead.
+`~/.local/share` instead. `cargo audit` checks each `native/*/Cargo.lock`
+(transitive crates included) against the RustSec database built into the same
+image (`$RUSTSEC_DB`, recorded in `/opt/rustsec/ADVISORIES_COMMIT`) with
+`--no-fetch`; each step fails if its list changed during the run.
 
 ## Dependency Monitoring
 

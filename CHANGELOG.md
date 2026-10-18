@@ -11,10 +11,12 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ### Changed
 
-- The weekly dependency drift report also runs `cargo audit` on the three NIF
-  crates' `Cargo.lock` files. The CI image builds cargo-audit 0.22.2 from its
-  crates.io source and carries the RustSec advisory database, so the audit
-  fetches nothing at run time; the report also tracks the cargo-audit pin.
+- CI's security job and the weekly dependency drift report also run
+  `cargo audit` on the three NIF crates' `Cargo.lock` files, so a RustSec
+  advisory fails the push that brings it in. The CI image builds cargo-audit
+  0.22.2 from its crates.io source and carries the RustSec advisory database,
+  so the audit fetches nothing at run time; the report also tracks the
+  cargo-audit pin.
 
 ## [2.0.5] — 2026-10-18
 
