@@ -38,6 +38,19 @@ defmodule BaudrateWeb.Admin.PendingUsersLiveTest do
     assert html =~ "Approve"
   end
 
+  test "each pending username links to the account's profile", %{conn: conn} do
+    conn = log_in_admin(conn, setup_user("admin"))
+    pending = register("profilelinked")
+
+    {:ok, lv, _html} = live(conn, "/admin/pending-users")
+
+    assert has_element?(
+             lv,
+             "#admin-pending-users-profile-#{pending.id}[href='/users/profilelinked']",
+             "profilelinked"
+           )
+  end
+
   test "admin can approve a pending user", %{conn: conn} do
     admin = setup_user("admin")
     conn = log_in_admin(conn, admin)

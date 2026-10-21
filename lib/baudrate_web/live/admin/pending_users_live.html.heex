@@ -36,7 +36,13 @@
           class="admin-pending-users-row"
         >
           <th scope="row" class="admin-pending-users-row-username font-medium">
-            {user.username}
+            <.link
+              id={"admin-pending-users-profile-#{user.id}"}
+              navigate={BaudrateWeb.Helpers.author_path(user)}
+              class="admin-pending-users-profile link link-hover break-words"
+            >
+              {user.username}
+            </.link>
           </th>
           <td>
             <time datetime={datetime_attr(user.inserted_at)}>
