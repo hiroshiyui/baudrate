@@ -59,15 +59,11 @@ defmodule Baudrate.Content.Feed do
   """
   def list_recent_public_articles(limit \\ 20) do
     from(a in Article,
-      join: ba in BoardArticle,
-      on: ba.article_id == a.id,
-      join: b in Board,
-      on: b.id == ba.board_id,
+      as: :article,
       where:
         is_nil(a.deleted_at) and
           not is_nil(a.user_id) and
-          b.min_role_to_view == "guest",
-      distinct: a.id,
+          exists(subquery(in_guest_board())),
       order_by: [desc: a.inserted_at, desc: a.id],
       limit: ^limit,
       preload: [:user, :boards]
@@ -111,15 +107,11 @@ defmodule Baudrate.Content.Feed do
   """
   def list_recent_public_articles_by_user(user_id, limit \\ 20) do
     from(a in Article,
-      join: ba in BoardArticle,
-      on: ba.article_id == a.id,
-      join: b in Board,
-      on: b.id == ba.board_id,
+      as: :article,
       where:
         a.user_id == ^user_id and
           is_nil(a.deleted_at) and
-          b.min_role_to_view == "guest",
-      distinct: a.id,
+          exists(subquery(in_guest_board())),
       order_by: [desc: a.inserted_at, desc: a.id],
       limit: ^limit,
       preload: [:user, :boards]
@@ -136,23 +128,33 @@ defmodule Baudrate.Content.Feed do
   """
   def list_recent_public_articles_by_tag(tag, limit \\ 20) do
     from(a in Article,
+      as: :article,
       join: at in ArticleTag,
       on: at.article_id == a.id,
-      join: ba in BoardArticle,
-      on: ba.article_id == a.id,
-      join: b in Board,
-      on: b.id == ba.board_id,
       where:
         at.tag == ^tag and
           is_nil(a.deleted_at) and
           not is_nil(a.user_id) and
-          b.min_role_to_view == "guest",
-      distinct: a.id,
+          exists(subquery(in_guest_board())),
       order_by: [desc: a.inserted_at, desc: a.id],
       limit: ^limit,
       preload: [:user, :boards]
     )
     |> Repo.all()
+  end
+
+  # The article (named binding `:article`) is in at least one board guests can
+  # see. An `exists`, never a join with `distinct`: Ecto compiles
+  # `distinct: a.id` to `DISTINCT ON (a.id)` and puts `a.id` first in the
+  # `ORDER BY`, which silently replaced the requested newest-first order with
+  # oldest-first — and with a `limit`, the feeds carried the oldest articles.
+  defp in_guest_board do
+    from(ba in BoardArticle,
+      join: b in Board,
+      on: b.id == ba.board_id,
+      where: ba.article_id == parent_as(:article).id and b.min_role_to_view == "guest",
+      select: 1
+    )
   end
 
   # --- User Content Queries ---
@@ -396,8 +398,7 @@ defmodule Baudrate.Content.Feed do
     base_query =
       from(a in Article,
         as: :article,
-        where: a.user_id == ^user_id and is_nil(a.deleted_at),
-        distinct: a.id
+        where: a.user_id == ^user_id and is_nil(a.deleted_at)
       )
       |> where_viewable(viewer)
 
@@ -420,8 +421,7 @@ defmodule Baudrate.Content.Feed do
         join: a in Article,
         as: :article,
         on: a.id == c.article_id,
-        where: c.user_id == ^user_id and is_nil(c.deleted_at) and is_nil(a.deleted_at),
-        distinct: c.id
+        where: c.user_id == ^user_id and is_nil(c.deleted_at) and is_nil(a.deleted_at)
       )
       |> where_viewable(viewer)
 

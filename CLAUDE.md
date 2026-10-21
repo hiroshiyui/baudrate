@@ -226,6 +226,8 @@ that kind goes in it.
 - Pagination: `Baudrate.Pagination`; pages capped at `Pagination.max_page/0` (also
   `Helpers.parse_page/1`). AP collections page by row id; build Article lists with
   `ObjectBuilder.article_objects/1` (`collections_query_count_test.exs`).
+- Never `distinct: x.id` (it becomes `DISTINCT ON`, which overrides `ORDER BY`); test
+  board membership with an `exists` subquery. Gate: `distinct_order_test.exs`.
 - `Repo.sanitize_like/1` for ILIKE input. Avatar sizes are integers `[120, 48, 36, 24]`.
 
 ### Operations and infrastructure

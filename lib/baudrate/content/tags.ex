@@ -107,16 +107,24 @@ defmodule Baudrate.Content.Tags do
     allowed_roles = Filters.allowed_view_roles(user)
     {hidden_uids, hidden_ap_ids} = Filters.hidden_filters(user)
 
-    base_query =
-      from(a in Article,
-        join: at in ArticleTag,
-        on: at.article_id == a.id,
-        join: ba in BoardArticle,
-        on: ba.article_id == a.id,
+    # An `exists`, never a board join with `distinct`: `DISTINCT ON (a.id)`
+    # leads the `ORDER BY` and turned newest-first into oldest-first.
+    # (`article_tags` is unique on article and tag, so the tag join adds no
+    # duplicate.)
+    visible_board =
+      from(ba in BoardArticle,
         join: b in Board,
         on: b.id == ba.board_id,
-        where: at.tag == ^tag and is_nil(a.deleted_at) and b.min_role_to_view in ^allowed_roles,
-        distinct: a.id
+        where: ba.article_id == parent_as(:article).id and b.min_role_to_view in ^allowed_roles,
+        select: 1
+      )
+
+    base_query =
+      from(a in Article,
+        as: :article,
+        join: at in ArticleTag,
+        on: at.article_id == a.id,
+        where: at.tag == ^tag and is_nil(a.deleted_at) and exists(subquery(visible_board))
       )
       |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
       |> Filters.exclude_unservable_remote()

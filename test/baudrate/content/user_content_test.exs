@@ -144,6 +144,37 @@ defmodule Baudrate.Content.UserContentTest do
   end
 
   describe "paginate_articles_by_user/2" do
+    # Regression: `distinct: a.id` became `DISTINCT ON (a.id)`, which led the
+    # ORDER BY and listed the profile's articles oldest first.
+    test "lists newest first, a cross-posted article once", %{user: user, board: board} do
+      {:ok, other_board} =
+        Content.create_board(%{name: "Other", slug: "o-#{System.unique_integer([:positive])}"})
+
+      [old, mid, new] =
+        for {n, boards} <- [{1, [board.id]}, {2, [board.id, other_board.id]}, {3, [board.id]}] do
+          {:ok, %{article: article}} =
+            Content.create_article(
+              %{
+                "title" => "Ordered #{n}",
+                "body" => "Body",
+                "slug" => "ord-#{n}-#{System.unique_integer([:positive])}",
+                "user_id" => user.id
+              },
+              boards
+            )
+
+          article
+        end
+
+      backdate(Baudrate.Content.Article, old.id, 3)
+      backdate(Baudrate.Content.Article, mid.id, 2)
+      backdate(Baudrate.Content.Article, new.id, 1)
+
+      result = Content.paginate_articles_by_user(user.id, page: 1)
+      assert Enum.map(result.articles, & &1.id) == [new.id, mid.id, old.id]
+      assert result.total == 3
+    end
+
     test "returns paginated articles by user", %{user: user, board: board} do
       {:ok, %{article: _}} =
         Content.create_article(
@@ -202,6 +233,37 @@ defmodule Baudrate.Content.UserContentTest do
   end
 
   describe "paginate_comments_by_user/2" do
+    test "lists newest first", %{user: user, board: board} do
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            "title" => "Art",
+            "body" => "Body",
+            "slug" => "pco-#{System.unique_integer([:positive])}",
+            "user_id" => user.id
+          },
+          [board.id]
+        )
+
+      [old, new] =
+        for n <- 1..2 do
+          {:ok, comment} =
+            Content.create_comment(%{
+              "body" => "Comment #{n}",
+              "article_id" => article.id,
+              "user_id" => user.id
+            })
+
+          comment
+        end
+
+      backdate(Baudrate.Content.Comment, old.id, 2)
+      backdate(Baudrate.Content.Comment, new.id, 1)
+
+      result = Content.paginate_comments_by_user(user.id, page: 1)
+      assert Enum.map(result.comments, & &1.id) == [new.id, old.id]
+    end
+
     test "returns paginated comments by user", %{user: user, board: board} do
       {:ok, %{article: article}} =
         Content.create_article(
@@ -279,6 +341,11 @@ defmodule Baudrate.Content.UserContentTest do
       assert %Baudrate.Content.Article{} = comment.article
       assert [%Baudrate.Content.Board{}] = comment.article.boards
     end
+  end
+
+  defp backdate(schema, id, hours) do
+    at = DateTime.add(DateTime.utc_now(:second), -hours * 3600)
+    Repo.update_all(from(r in schema, where: r.id == ^id), set: [inserted_at: at])
   end
 
   defp setup_user(role_name) do

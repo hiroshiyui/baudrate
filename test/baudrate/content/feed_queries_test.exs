@@ -12,6 +12,46 @@ defmodule Baudrate.Content.FeedQueriesTest do
     {:ok, user: user, public_board: public_board, private_board: private_board}
   end
 
+  # Regression: a board join with `distinct: a.id` became `DISTINCT ON
+  # (a.id)`, which led the ORDER BY, so with the `limit` every feed carried
+  # the oldest articles instead of the newest.
+  describe "feed order" do
+    setup %{user: user, public_board: board} do
+      other = insert_board("public-feed-2", min_role_to_view: "guest")
+
+      ids =
+        for {n, extra} <- [{1, []}, {2, [other.id]}, {3, []}] do
+          {:ok, %{article: article}} =
+            insert_article(user, board, "ordered-#{n}", extra_boards: extra)
+
+          Content.sync_article_tags(%{article | body: "#ordered"})
+
+          Repo.update_all(
+            from(a in Baudrate.Content.Article, where: a.id == ^article.id),
+            set: [inserted_at: DateTime.add(DateTime.utc_now(:second), (n - 4) * 3600)]
+          )
+
+          article.id
+        end
+
+      {:ok, newest_first: Enum.reverse(ids)}
+    end
+
+    test "every feed lists newest first", %{user: user, newest_first: [newest, middle, _]} do
+      assert Enum.map(Content.list_recent_public_articles(2), & &1.id) == [newest, middle]
+
+      assert Enum.map(Content.list_recent_public_articles_by_user(user.id, 2), & &1.id) ==
+               [newest, middle]
+
+      assert Enum.map(Content.list_recent_public_articles_by_tag("ordered", 2), & &1.id) ==
+               [newest, middle]
+    end
+
+    test "the tag page lists newest first", %{newest_first: ids} do
+      assert Enum.map(Content.articles_by_tag("ordered").articles, & &1.id) == ids
+    end
+  end
+
   describe "list_recent_public_articles/1" do
     test "returns local articles in public boards", %{user: user, public_board: board} do
       {:ok, %{article: article}} = insert_article(user, board, "public-article")
