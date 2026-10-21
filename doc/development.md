@@ -1632,7 +1632,7 @@ preferences cannot switch off being told your own post was removed, and
 mute of the moderator does not drop it. It never names the moderator: the row
 keeps the remover as its actor, so deleting your own content notifies nobody
 (a notification is never delivered to its own actor), but only the types in
-`Notification.actor_named_types/0` show an actor ([ADR 0076](adr/0076-a-moderation-notice-names-no-moderator-and-a-block-does-not-silence-it.md)).
+`Notification.Notification.actor_named_types/0` show an actor ([ADR 0076](adr/0076-a-moderation-notice-names-no-moderator-and-a-block-does-not-silence-it.md)).
 
 **Moving an article (7C, ADR 0075).** `Content.move_article_to_board/4`
 needs `Permissions.can_move_article?/3` (a moderator of both boards; staff
@@ -1908,7 +1908,7 @@ payload is rendered in the recipient's preferred locale and links to
 - Blocked/muted suppression — notifications from blocked or muted users are silently dropped, except the always-delivered types (ADR 0076)
 - Deduplication via COALESCE-based unique indexes on `(user_id, type, actor_*, article_id, comment_id)` — on conflict returns `{:ok, :duplicate}`
 - Per-notification-type preferences — users can opt out of specific types via `notification_preferences` (JSON column); account security notices cannot be turned off. `Notification.Notification.configurable_types/0` is the single list behind both the preferences changeset and the `/profile/notifications` toggles (they used to drift apart)
-- Web push titles are built from the same translated `Helpers.notification_text/1` as the in-app list, in the recipient's preferred locale: the actor's name leads only for the fragment types in `Notification.actor_named_types/0`, which `/notifications` follows too; every other text is a full sentence and names nobody (a moderation notice never names the moderator, ADR 0076; `web_push_test.exs` keeps the list in step with the texts). The icon is the actor's 120 px avatar rendition
+- Web push titles are built from the same translated `Helpers.notification_text/1` as the in-app list, in the recipient's preferred locale: the actor's name leads only for the fragment types in `Notification.Notification.actor_named_types/0`, which `/notifications` follows too; every other text is a full sentence and names nobody (a moderation notice never names the moderator, ADR 0076; `web_push_test.exs` keeps the list in step with the texts). The icon is the actor's 120 px avatar rendition
 - A push opens where the recipient acts: `/profile/security` only for `Notification.security_types/0` (it once took every always-delivered type, so a pending registration opened the admin's own security page); `pending_registration` opens `/admin/pending-users`, `held_post` `/moderation/held`, `bot_disabled` `/admin/bots`, `post_rejected` `/drafts`
 - Real-time via PubSub events: `:notification_created`, `:notification_read`, `:notifications_all_read`
 - `UnreadNotificationCountHook` on_mount hook maintains `@unread_notification_count` for the nav badge

@@ -293,7 +293,7 @@ defmodule Baudrate.Notification.WebPush do
   # Titles mirror the in-app notification list: the actor's name followed by
   # the same translated `Helpers.notification_text/1` fragment, rendered in the
   # recipient's preferred locale; a full-sentence text stands alone
-  # (`Notification.actor_named_types/0`). Deriving titles from the shared text keeps every
+  # (`Notification.Notification.actor_named_types/0`). Deriving titles from the shared text keeps every
   # notification type covered; a separate hard-coded list of titles here
   # drifted (comment likes and boosts fell through to a generic title) and
   # was English-only.

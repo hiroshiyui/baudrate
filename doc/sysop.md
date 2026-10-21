@@ -1071,7 +1071,10 @@ The `sysop` board is a protected system board:
   stays even if the sender deletes the message
 - **Resolve** — mark resolved with optional notes (logged)
 - **Dismiss** — mark dismissed, no action taken (logged)
-- **Delete** reported content directly from the queue (soft-delete, logged)
+- **Delete** reported content directly from the queue (soft-delete, logged).
+  The author is always told, with the report's reason category, and the notice
+  never names the moderator — who acted is in the moderation log. Blocking or
+  muting the moderator does not stop the notice (ADR 0076)
 - **Flag** — send AP `Flag` activity to remote instances for remote content.
   Available when the report names remote content, a remote account, or a
   message from one (its remote author is recorded as the reported actor). Reports that arrive from other instances
