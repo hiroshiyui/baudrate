@@ -1574,8 +1574,9 @@ worse than the sanction, and a composer that simply vanishes explains nothing.
 **Refusing a pending registration** is a ban with a reason on an account that
 is still `pending`, logged as `reject_user`. Approving stays an admin decision
 (`admin.manage_users`); refusing needs only `moderator.sanction_user`, which is
-why `/admin/pending-users` is open to moderators. Registration that leaves an
-account pending notifies staff.
+why `/admin/pending-users` is open to moderators. Each username there links to
+the account's public profile. Registration that leaves an account pending
+notifies staff, and the notice (in the list and as a push) leads to this page.
 
 **The user detail page** (`/admin/users/:id`) gathers the record a moderator
 needs before deciding about a person rather than a post: role, status, sanction
@@ -1905,7 +1906,8 @@ payload is rendered in the recipient's preferred locale and links to
 - Blocked/muted suppression — notifications from blocked or muted users are silently dropped
 - Deduplication via COALESCE-based unique indexes on `(user_id, type, actor_*, article_id, comment_id)` — on conflict returns `{:ok, :duplicate}`
 - Per-notification-type preferences — users can opt out of specific types via `notification_preferences` (JSON column); account security notices cannot be turned off. `Notification.Notification.configurable_types/0` is the single list behind both the preferences changeset and the `/profile/notifications` toggles (they used to drift apart)
-- Web push titles are built from the same translated `Helpers.notification_text/1` fragment as the in-app list (actor name + text), in the recipient's preferred locale; the icon is the actor's 120 px avatar rendition
+- Web push titles are built from the same translated `Helpers.notification_text/1` as the in-app list, in the recipient's preferred locale: the actor's name leads only for the fragment types in `WebPush.actor_named_types/0`; every other text is a full sentence and names nobody (a moderation notice must not name the moderator; `web_push_test.exs` keeps the list in step with the texts). The icon is the actor's 120 px avatar rendition
+- A push opens where the recipient acts: `/profile/security` only for `Notification.security_types/0` (it once took every always-delivered type, so a pending registration opened the admin's own security page); `pending_registration` opens `/admin/pending-users`, `held_post` `/moderation/held`, `bot_disabled` `/admin/bots`, `post_rejected` `/drafts`
 - Real-time via PubSub events: `:notification_created`, `:notification_read`, `:notifications_all_read`
 - `UnreadNotificationCountHook` on_mount hook maintains `@unread_notification_count` for the nav badge
 - Notification hooks in `Notification.Hooks` are called fire-and-forget from context functions
@@ -2813,7 +2815,7 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 
 - A fixed DaisyUI `dock` component (`id="mobile-bottom-nav"`) appears below `lg` breakpoint (< 1024px), hidden on desktop via `lg:hidden`; background matches the top navbar (`bg-base-200 border-t border-base-300`)
 - Icon-only items with `aria-label` for accessibility (no text labels)
-- Authenticated users see 5 items: Home (`hero-home`), Timeline (`hero-rss`), Search (`hero-magnifying-glass`), Messages (`hero-chat-bubble-left-right` + unread badge), Notifications (`hero-bell` + unread badge)
+- Authenticated users see 6 items: Home (`hero-home`), Timeline (`hero-rss`), Search (`hero-magnifying-glass`), Messages (`hero-chat-bubble-left-right` + unread badge), Notifications (`hero-bell` + unread badge), and their own profile as their avatar (`#dock-me`; active only on their own profile)
 - Guests see 4 items: Home (`hero-home`), Search (`hero-magnifying-glass`), Sign In (`hero-arrow-right-on-rectangle`), Register (`hero-user-plus`)
 - Mobile hamburger menu only shows for authenticated users (admin/user sections); guest nav items are exclusively in the bottom dock
 - Active item gets `dock-active` class and `aria-current="page"` based on `@current_path` (exact match for `/`, prefix match for others)

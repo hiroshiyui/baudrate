@@ -323,9 +323,10 @@ Configure `registration_mode` at `/admin/settings`:
 
 Approve pending users at `/admin/pending-users`. **Approval now tells the
 member** — they used to find out by trying to post and discovering they could.
-Staff are told about a new pending registration the same way, and neither
-notice can be switched off in preferences: an approval queue nobody is told
-about is an approval queue nobody empties.
+Staff are told about a new pending registration the same way — the notice and
+its push open this page, and each username here opens the account's profile —
+and neither notice can be switched off in preferences: an approval queue nobody
+is told about is an approval queue nobody empties.
 
 ### The Registration Challenge
 
