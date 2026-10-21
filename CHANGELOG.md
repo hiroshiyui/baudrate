@@ -9,6 +9,26 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.0.9] — 2026-10-21
+
+A member whose post a moderator removed is no longer shown the moderator's
+name, and blocking that moderator no longer hides the notice. There are no
+migrations, and deploying it needs nothing by hand.
+
+### Fixed
+
+- A "content removed" notice on `/notifications` read "**moderator** A
+  moderator removed your content.", naming the person who removed the post;
+  it now names nobody, as the held-post notices and the push already did. Who
+  acted stays in the moderation log. A notice shows its actor only for the
+  types whose text is written to follow a name
+  (`Notification.Notification.actor_named_types/0`, shared by the page and
+  the push), so a new type is anonymous until listed
+  ([ADR 0076](doc/adr/0076-a-moderation-notice-names-no-moderator-and-a-block-does-not-silence-it.md)).
+- A block or mute of a notice's actor dropped even the always-delivered
+  notices, so a member who blocked a moderator was never told that moderator
+  removed their post. Always-delivered notices now ignore blocks and mutes.
+
 ## [2.0.8] — 2026-10-21
 
 Profiles, tag pages and the RSS/Atom feeds list newest first again, a
