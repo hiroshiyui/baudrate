@@ -10,6 +10,7 @@ sitemap documents under `/sitemap.xml` and `/sitemap/*`
 ([ADR 0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md)), the Web
 Push subscription endpoints `POST/DELETE /api/push-subscriptions`, the PWA Web
 Share Target at `POST /share`, the Mastodon-style `GET /@:handle` redirect, the
+signed-in member's `GET /me` redirect to their own profile, the
 signed media proxy `GET /media/:sig/:encoded`, the footer language switcher's
 `POST /locale`, the service worker's offline page `GET /offline`
 ([ADR 0059](adr/0059-the-service-worker-caches-the-shell-and-never-content.md)),

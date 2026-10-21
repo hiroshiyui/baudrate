@@ -1358,6 +1358,12 @@ and article views are clickable links to the author's profile. A banned or
 nonexistent user answers 404 — the two must stay indistinguishable
 ([ADR 0057](adr/0057-a-sitemap-invites-only-what-a-guest-sees.md)).
 
+A signed-in member's own profile is their avatar beside Notifications, in the
+desktop main menu (`#nav-me`) and the mobile dock (`#dock-me`), both linked
+directly; `/me` redirects to it
+(`MeController`: 302 with `no-store`, since the target depends on who asks; a
+guest, or a banned or deleted session, goes to `/login`).
+
 ### Direct Messages
 
 1-on-1 direct messaging between users, federated via ActivityPub. DMs are

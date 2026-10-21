@@ -649,6 +649,7 @@ msgstr "沒有待審核的使用者。"
 
 #: lib/baudrate_web/components/layouts.ex
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex
+#: lib/baudrate_web/live/notifications_live.ex
 #, elixir-autogen, elixir-format
 msgid "Pending Users"
 msgstr "待審核使用者"
@@ -11874,3 +11875,8 @@ msgstr "這個機器人發佈的內容"
 #, elixir-autogen, elixir-format
 msgid "Would be posted"
 msgstr "會被發佈"
+
+#: lib/baudrate_web/components/layouts.ex
+#, elixir-autogen, elixir-format
+msgid "My public profile"
+msgstr "我的公開個人檔案"

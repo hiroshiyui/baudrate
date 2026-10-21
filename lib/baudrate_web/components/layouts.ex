@@ -4,7 +4,7 @@ defmodule BaudrateWeb.Layouts do
   used by your application.
   """
   use BaudrateWeb, :html
-  import BaudrateWeb.Helpers, only: [translate_role: 1]
+  import BaudrateWeb.Helpers, only: [author_path: 1, translate_role: 1]
 
   alias Baudrate.Setup
   alias BaudrateWeb.Locale
@@ -20,13 +20,15 @@ defmodule BaudrateWeb.Layouts do
   Renders the app layout with navigation bar, footer, and mobile bottom nav.
 
   Applied automatically via `layout:` in `live_session`.
-  Shows nav links and user menu when `@current_user` is present;
+  Shows nav links and user menu when `@current_user` is present — the last
+  desktop link is the member's own profile, shown as their avatar;
   otherwise shows only the logo and theme toggle.
   The footer links the policy documents an admin has published (`/terms`,
   `/rules`, `/privacy`); it renders nothing while all three are unwritten.
 
   On mobile (below `lg` breakpoint), a fixed bottom dock provides quick
-  one-tap navigation: Home, Timeline, Search, Messages, Notifications for
+  one-tap navigation: Home, Timeline, Search, Messages, Notifications and the
+  member's own profile (their avatar) for
   authenticated users; Home, Search, Sign In, Register for guests. The active
   item is highlighted based on `@current_path`.
   """
@@ -287,6 +289,21 @@ defmodule BaudrateWeb.Layouts do
                     count: @unread_notification_count
                   )}
                 </span>
+              </.link>
+            </li>
+            <%!-- The member's own public profile, shown as their avatar. Linked
+            directly rather than through the `/me` alias, which would cost a
+            redirect. --%>
+            <li>
+              <.link
+                navigate={author_path(@current_user)}
+                id="nav-me"
+                class="nav-link nav-me btn btn-ghost"
+                title={gettext("My public profile")}
+                aria-current={if assigns[:current_path] == author_path(@current_user), do: "page"}
+              >
+                <.avatar user={@current_user} size={24} decorative />
+                <span class="sr-only">{gettext("My public profile")}</span>
               </.link>
             </li>
           </ul>
@@ -1272,6 +1289,18 @@ defmodule BaudrateWeb.Layouts do
             </span>
             <.icon name="hero-bell" class="size-[1.2em]" />
           </span>
+        </.link>
+        <.link
+          navigate={author_path(@current_user)}
+          id="dock-me"
+          aria-label={gettext("My public profile")}
+          aria-current={if @current_path == author_path(@current_user), do: "page"}
+          class={[
+            "dock-link dock-me",
+            if(@current_path == author_path(@current_user), do: "dock-active")
+          ]}
+        >
+          <.avatar user={@current_user} size={24} decorative />
         </.link>
       <% else %>
         <.link

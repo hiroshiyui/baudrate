@@ -83,6 +83,22 @@ defmodule BaudrateWeb.LayoutsTest do
       refute feed_tag =~ ~s(aria-current="page")
     end
 
+    test "links the member's own profile as their avatar, named for screen readers",
+         %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, "/search")
+
+      assert has_element?(lv, "#nav-me[href='/users/#{user.username}'] .core-avatar")
+      assert has_element?(lv, "#nav-me .sr-only", "My public profile")
+      refute has_element?(lv, "#nav-me[aria-current]")
+
+      {:ok, lv, _html} = live(conn, "/users/#{user.username}")
+      assert has_element?(lv, "#nav-me[aria-current='page']")
+
+      other = setup_user("user")
+      {:ok, lv, _html} = live(conn, "/users/#{other.username}")
+      refute has_element?(lv, "#nav-me[aria-current]")
+    end
+
     test "user avatar beside the visible username is decorative", %{conn: conn} do
       {:ok, _lv, html} = live(conn, "/profile")
       refute html =~ ~r/id="nav-user-menu-button"[^>]*>\s*<div[^>]*role="img"/
@@ -159,14 +175,28 @@ defmodule BaudrateWeb.LayoutsTest do
   end
 
   describe "mobile bottom nav (authenticated)" do
-    test "renders bottom nav with all 5 items", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, "/profile")
+    test "renders bottom nav with all 6 items", %{conn: conn, user: user} do
+      {:ok, lv, html} = live(conn, "/profile")
       assert html =~ ~s(id="mobile-bottom-nav")
       assert html =~ "hero-home"
       assert html =~ "hero-rss"
       assert html =~ "hero-magnifying-glass"
       assert html =~ "hero-chat-bubble-left-right"
       assert html =~ "hero-bell"
+
+      assert has_element?(
+               lv,
+               "#dock-me[href='/users/#{user.username}'][aria-label='My public profile'] .core-avatar"
+             )
+    end
+
+    test "marks the own-profile dock item active only on the member's profile",
+         %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, "/users/#{user.username}")
+      assert has_element?(lv, "#dock-me.dock-active[aria-current='page']")
+
+      {:ok, lv, _html} = live(conn, "/search")
+      refute has_element?(lv, "#dock-me.dock-active")
     end
 
     test "has lg:hidden class and aria-label", %{conn: conn} do

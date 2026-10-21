@@ -469,6 +469,9 @@ defmodule BaudrateWeb.Router do
 
     get "/@:handle", HandleRedirectController, :show
 
+    # The signed-in member's own profile.
+    get "/me", MeController, :show
+
     # The personal stream moved from /feed to /timeline; members bookmark it.
     get "/feed", PageController, :feed_redirect
 

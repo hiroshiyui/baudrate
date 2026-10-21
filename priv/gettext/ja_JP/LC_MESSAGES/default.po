@@ -649,6 +649,7 @@ msgstr "承認待ちのユーザーはいません。"
 
 #: lib/baudrate_web/components/layouts.ex
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex
+#: lib/baudrate_web/live/notifications_live.ex
 #, elixir-autogen, elixir-format
 msgid "Pending Users"
 msgstr "承認待ちユーザー"
@@ -11874,3 +11875,8 @@ msgstr "このボットが投稿するもの"
 #, elixir-autogen, elixir-format
 msgid "Would be posted"
 msgstr "投稿されます"
+
+#: lib/baudrate_web/components/layouts.ex
+#, elixir-autogen, elixir-format
+msgid "My public profile"
+msgstr "自分の公開プロフィール"

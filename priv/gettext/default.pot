@@ -649,6 +649,7 @@ msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex
+#: lib/baudrate_web/live/notifications_live.ex
 #, elixir-autogen, elixir-format
 msgid "Pending Users"
 msgstr ""
@@ -11914,4 +11915,9 @@ msgstr ""
 #: lib/baudrate_web/live/admin/bots_live.ex
 #, elixir-autogen, elixir-format
 msgid "Would be posted"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex
+#, elixir-autogen, elixir-format
+msgid "My public profile"
 msgstr ""
