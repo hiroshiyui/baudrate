@@ -188,15 +188,50 @@ defmodule Baudrate.Notification.WebPushTest do
 
     test "titles every type from the shared text, including likes and boosts of comments",
          %{user: user, actor: actor} do
-      for type <- Baudrate.Notification.Notification.configurable_types() do
+      for type <- Baudrate.Notification.Notification.valid_types() do
         payload = payload_for(user, actor, type)
+        text = BaudrateWeb.Helpers.notification_text(type)
 
-        assert payload.title ==
-                 "#{actor.username} #{BaudrateWeb.Helpers.notification_text(type)}",
-               "unexpected push title for #{type}: #{payload.title}"
+        expected =
+          if type in WebPush.actor_named_types(), do: "#{actor.username} #{text}", else: text
 
+        assert payload.title == expected, "unexpected push title for #{type}: #{payload.title}"
         refute payload.title =~ "New notification"
       end
+    end
+
+    # A fragment ("replied to your article") needs the actor in front of it; a
+    # sentence ("A moderator removed your content.") must not get one — that
+    # would name the moderator, or read "Someone A poll …".
+    test "names the actor exactly for the types whose text is a fragment" do
+      for type <- Baudrate.Notification.Notification.valid_types() do
+        fragment? = BaudrateWeb.Helpers.notification_text(type) =~ ~r/^[a-z]/
+
+        assert fragment? == type in WebPush.actor_named_types(),
+               "#{type}: update WebPush's @actor_named_types"
+      end
+    end
+
+    # Regression: every always-delivered type was treated as a security
+    # notice, so a pending registration opened the admin's own
+    # /profile/security instead of the approval queue.
+    test "staff notices link to where staff act, never /profile/security",
+         %{user: user, actor: actor} do
+      base = BaudrateWeb.Endpoint.url()
+      security = Baudrate.Notification.Notification.security_types()
+
+      payloads =
+        for type <- Baudrate.Notification.Notification.valid_types() -- security,
+            into: %{},
+            do: {type, payload_for(user, actor, type)}
+
+      assert payloads["pending_registration"].url == base <> "/admin/pending-users"
+      assert payloads["pending_registration"].title =~ actor.username
+      assert payloads["held_post"].url == base <> "/moderation/held"
+      assert payloads["bot_disabled"].url == base <> "/admin/bots"
+      assert payloads["post_rejected"].url == base <> "/drafts"
+
+      for {type, payload} <- payloads, do: refute(payload.url =~ "/profile/security", type)
     end
 
     # A push about a comment opens the comment, on its page, not the top of

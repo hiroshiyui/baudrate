@@ -60,6 +60,32 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       assert html =~ ~s(href="/drafts")
     end
 
+    # The new account is named and linked; the notice leads to the queue
+    # where it is approved.
+    test "a pending registration links the account and the approval queue", %{
+      conn: conn,
+      user: user
+    } do
+      pending = setup_user("user")
+
+      {:ok, notif} =
+        Notification.create_notification(%{
+          type: "pending_registration",
+          user_id: user.id,
+          actor_user_id: pending.id
+        })
+
+      {:ok, lv, _html} = live(conn, "/notifications")
+
+      assert has_element?(
+               lv,
+               "#notification-actor-#{notif.id}[href='/users/#{pending.username}']"
+             )
+
+      assert has_element?(lv, "#notification-target-#{notif.id}[href='/admin/pending-users']")
+      refute has_element?(lv, "#notification-#{notif.id} a[href='/profile/security']")
+    end
+
     test "renders notification with actor name and type text", %{
       conn: conn,
       user: user

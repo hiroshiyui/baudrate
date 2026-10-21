@@ -181,6 +181,7 @@ defmodule BaudrateWeb.NotificationsLive do
 
   defp target_link(%{article: %{slug: slug}}) when not is_nil(slug), do: ~p"/articles/#{slug}"
   defp target_link(%{type: "held_post"}), do: ~p"/moderation/held"
+  defp target_link(%{type: "pending_registration"}), do: ~p"/admin/pending-users"
   defp target_link(%{type: "bot_disabled"}), do: ~p"/admin/bots"
   defp target_link(%{type: "follow_request"}), do: ~p"/followers"
   defp target_link(%{type: "post_rejected"}), do: ~p"/drafts"
@@ -217,6 +218,7 @@ defmodule BaudrateWeb.NotificationsLive do
     do: gettext("Destination: %{label}", label: label)
 
   defp target_title(%{type: "held_post"}), do: gettext("Review held posts")
+  defp target_title(%{type: "pending_registration"}), do: gettext("Pending Users")
 
   defp target_title(%{type: "bot_disabled", data: %{"username" => username}}),
     do: gettext("Review bot @%{username}", username: username)

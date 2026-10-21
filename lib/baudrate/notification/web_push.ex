@@ -31,7 +31,19 @@ defmodule Baudrate.Notification.WebPush do
   alias Baudrate.Notification.PushSubscription
   alias Baudrate.Notification.VAPID
 
-  @security_types Baudrate.Notification.Notification.always_delivered_types()
+  @security_types Baudrate.Notification.Notification.security_types()
+
+  # Types whose `Helpers.notification_text/1` is a fragment that follows the
+  # actor's name ("Alice replied to your article"). Every other type is a full
+  # sentence and its title names nobody: an actorless notice would read
+  # "Someone …", and a moderation notice must not name the moderator. A new
+  # type is therefore titled without an actor until it is listed here.
+  @actor_named_types ~w(
+    reply_to_article reply_to_comment mention new_follower follow_request
+    actor_moved board_actor_moved article_liked comment_liked article_boosted
+    comment_boosted article_forwarded moderation_report admin_announcement
+    pending_registration watched_board_post watched_thread_reply
+  )
   alias Baudrate.Notification.VapidVault
   alias Baudrate.Repo
   alias Baudrate.Setup
@@ -259,16 +271,25 @@ defmodule Baudrate.Notification.WebPush do
   end
 
   @doc """
+  The types whose push title starts with the actor's name; every other type's
+  text is a full sentence.
+  """
+  @spec actor_named_types() :: [String.t()]
+  def actor_named_types, do: @actor_named_types
+
+  @doc """
   Builds the push payload map (`title`, `body`, `url`, `type`, `icon`) for a
   notification whose `:user`, `:actor_user`, `:actor_remote_actor`,
   `:article` and `:comment` associations are preloaded. A notification about
   a comment links to the page of the thread it is on.
 
-  Account security notices (`Notification.security_types/0`) are rendered in
-  the recipient's preferred locale and link to `/profile/security`, where the security
-  keys and TOTP settings live. Data export notices link to `/profile/export`
-  `totp_login_failed` to `/profile/password`, and `account_*` notices to
-  `/profile/move`.
+  Titles are rendered in the recipient's preferred locale. Account security
+  notices (`Notification.security_types/0`) link to `/profile/security`, where
+  the security keys and TOTP settings live; data export notices to
+  `/profile/export`, `totp_login_failed` to `/profile/password`, and
+  `account_*` notices to `/profile/move`. Staff notices lead to where staff
+  act: `pending_registration` to `/admin/pending-users`, `held_post` to
+  `/moderation/held`, `bot_disabled` to `/admin/bots`.
   """
   def build_payload(notification) do
     title = notification_title(notification)
@@ -287,19 +308,19 @@ defmodule Baudrate.Notification.WebPush do
 
   # Titles mirror the in-app notification list: the actor's name followed by
   # the same translated `Helpers.notification_text/1` fragment, rendered in the
-  # recipient's preferred locale. Account security notices have no actor and
-  # their text is already a full sentence. Deriving titles from the shared
-  # text keeps every notification type covered; a separate hard-coded list
-  # here drifted (comment likes and boosts fell through to a generic title)
-  # and was English-only.
-  defp notification_title(%{type: type} = notification) when type in @security_types do
-    with_recipient_locale(notification, fn -> BaudrateWeb.Helpers.notification_text(type) end)
-  end
-
-  defp notification_title(%{type: type} = notification) do
+  # recipient's preferred locale; a full-sentence text stands alone (see
+  # `@actor_named_types`). Deriving titles from the shared text keeps every
+  # notification type covered; a separate hard-coded list of titles here
+  # drifted (comment likes and boosts fell through to a generic title) and
+  # was English-only.
+  defp notification_title(%{type: type} = notification) when type in @actor_named_types do
     with_recipient_locale(notification, fn ->
       "#{actor_display_name(notification)} #{BaudrateWeb.Helpers.notification_text(type)}"
     end)
+  end
+
+  defp notification_title(%{type: type} = notification) do
+    with_recipient_locale(notification, fn -> BaudrateWeb.Helpers.notification_text(type) end)
   end
 
   defp notification_body(%{type: type} = notification) when type in @security_types do
@@ -369,6 +390,15 @@ defmodule Baudrate.Notification.WebPush do
 
       notification.type == "bot_disabled" ->
         "#{base}/admin/bots"
+
+      notification.type == "pending_registration" ->
+        "#{base}/admin/pending-users"
+
+      notification.type == "held_post" ->
+        "#{base}/moderation/held"
+
+      notification.type == "post_rejected" ->
+        "#{base}/drafts"
 
       true ->
         "#{base}/notifications"
