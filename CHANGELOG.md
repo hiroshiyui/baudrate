@@ -9,6 +9,38 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.0.8] — 2026-10-21
+
+Profiles, tag pages and the RSS/Atom feeds list newest first again, a
+pending-registration notice opens the approval queue, and a member's own
+profile is one tap away. There are no migrations, and deploying it needs
+nothing by hand.
+
+### Added
+
+- `/me` redirects a signed-in member to their own profile (a 302 kept out of
+  caches; a guest goes to `/login`), and the member's avatar sits beside
+  Notifications in the desktop menu and the mobile dock, named "My public
+  profile" for screen readers.
+- On `/admin/pending-users` each username links to the account's profile, and
+  a pending-registration entry on `/notifications` links to the queue.
+
+### Fixed
+
+- A profile's article and comment lists and the tag page were listed oldest
+  first, and the site, user and tag RSS/Atom feeds carried the **oldest** 20
+  articles instead of the newest: `distinct: a.id` became `DISTINCT ON`, which
+  PostgreSQL makes lead the `ORDER BY`. The board test is an `exists` now, and
+  `distinct_order_test.exs` refuses the pattern anywhere in `lib/`.
+- A push notification about a pending registration opened the recipient's own
+  `/profile/security`, as did held posts, disabled bots and declined posts:
+  every always-delivered type was treated as a security notice. Each now opens
+  where staff act (`/admin/pending-users`, `/moderation/held`, `/admin/bots`,
+  `/drafts`), and a pending registration's push names the new account.
+- Push titles put an actor's name only before texts written to follow one, so
+  actorless notices no longer read "Someone A poll you wrote…", and a
+  moderation notice never names the moderator.
+
 ## [2.0.7] — 2026-10-19
 
 A maintenance release: Erlang/OTP 29.1.2, Rust 1.99.1, rustler 0.39 in the
