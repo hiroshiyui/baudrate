@@ -30,7 +30,10 @@ defmodule Baudrate.Notification do
   Silently skips (returns `{:ok, :skipped}`) when:
 
     * The recipient is the actor (self-notification)
-    * The recipient has blocked or muted the actor
+    * The recipient has blocked or muted the actor — never for an
+      always-delivered type (`Notification.always_delivered_types/0`): blocking
+      the moderator who removed your post must not hide that it was removed
+      (ADR 0076)
     * The recipient has disabled in-app notifications for this type (never
       for account security notices, see `Notification.security_types/0`)
 
@@ -48,7 +51,7 @@ defmodule Baudrate.Notification do
     attrs = normalize_attrs(attrs)
 
     with :ok <- check_self_notification(attrs),
-         :ok <- check_blocked_or_muted(attrs),
+         :ok <- check_blocked_or_muted(attrs, attrs[:type] in @security_types),
          {:ok, user} <- fetch_recipient(attrs),
          :ok <- check_in_app_preference(attrs, user) do
       %Notification{}
@@ -388,7 +391,9 @@ defmodule Baudrate.Notification do
 
   defp check_self_notification(_attrs), do: :ok
 
-  defp check_blocked_or_muted(%{user_id: user_id, actor_user_id: actor_user_id})
+  defp check_blocked_or_muted(_attrs, true = _always_delivered?), do: :ok
+
+  defp check_blocked_or_muted(%{user_id: user_id, actor_user_id: actor_user_id}, false)
        when not is_nil(actor_user_id) do
     recipient = %User{id: user_id}
     actor = %User{id: actor_user_id}
@@ -400,7 +405,7 @@ defmodule Baudrate.Notification do
     end
   end
 
-  defp check_blocked_or_muted(%{user_id: user_id, actor_remote_actor_id: remote_id})
+  defp check_blocked_or_muted(%{user_id: user_id, actor_remote_actor_id: remote_id}, false)
        when not is_nil(remote_id) do
     alias Baudrate.Federation.RemoteActor
 
@@ -421,7 +426,7 @@ defmodule Baudrate.Notification do
     end
   end
 
-  defp check_blocked_or_muted(_attrs), do: :ok
+  defp check_blocked_or_muted(_attrs, false), do: :ok
 
   defp fetch_recipient(%{user_id: user_id}) when not is_nil(user_id) do
     case Repo.get(User, user_id) do

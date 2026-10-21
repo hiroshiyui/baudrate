@@ -26,6 +26,7 @@ defmodule BaudrateWeb.NotificationsLive do
   # Account security notices link to /profile; moderation notices do not, so
   # this is deliberately the security list, not always_delivered_types/0.
   @security_types Baudrate.Notification.Notification.security_types()
+  @actor_named_types Baudrate.Notification.Notification.actor_named_types()
 
   @impl true
   def mount(_params, _session, socket) do
@@ -150,10 +151,16 @@ defmodule BaudrateWeb.NotificationsLive do
   defp page_params(filter), do: %{"filter" => filter}
 
   # The actors named in a group's line: all of them when there are one or
-  # two, otherwise the two newest and a count of the rest.
+  # two, otherwise the two newest and a count of the rest. A full-sentence
+  # notice names nobody, even when its row stores an actor — the moderator who
+  # removed a post is never shown to its author (ADR 0076).
+  defp shown_actors(%{notification: %{type: type}}) when type not in @actor_named_types,
+    do: []
+
   defp shown_actors(%{count: count, actors: actors}) when count <= 2, do: actors
   defp shown_actors(%{actors: actors}), do: Enum.take(actors, 2)
 
+  defp other_count(%{notification: %{type: type}}) when type not in @actor_named_types, do: 0
   defp other_count(group), do: group.count - length(shown_actors(group))
 
   defp actor_name(%{actor_user: %{username: _} = user}),

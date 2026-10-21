@@ -197,6 +197,8 @@ that kind goes in it.
 - A locked or soft-deleted article refuses inbound replies.
 - Only the author edits a comment; edits keep a revision (ADR 0060). Image descriptions
   save against the upload row, never as form fields (ADR 0061).
+- A notice shows its actor only for `Notification.actor_named_types/0`; moderation notices
+  name no moderator, and always-delivered types ignore blocks and mutes (ADR 0076).
 - Poll votes are anonymous (ADR 0048, `poll_anonymity_test.exs`); inbound votes go
   through `handle_poll_vote_for_article/3`.
 - DM authorization is enforced in `Messaging.create_message/3`. DMs make no

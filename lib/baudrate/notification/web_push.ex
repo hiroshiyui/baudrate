@@ -33,17 +33,8 @@ defmodule Baudrate.Notification.WebPush do
 
   @security_types Baudrate.Notification.Notification.security_types()
 
-  # Types whose `Helpers.notification_text/1` is a fragment that follows the
-  # actor's name ("Alice replied to your article"). Every other type is a full
-  # sentence and its title names nobody: an actorless notice would read
-  # "Someone …", and a moderation notice must not name the moderator. A new
-  # type is therefore titled without an actor until it is listed here.
-  @actor_named_types ~w(
-    reply_to_article reply_to_comment mention new_follower follow_request
-    actor_moved board_actor_moved article_liked comment_liked article_boosted
-    comment_boosted article_forwarded moderation_report admin_announcement
-    pending_registration watched_board_post watched_thread_reply
-  )
+  # The actor's name leads a title only for these (ADR 0076).
+  @actor_named_types Baudrate.Notification.Notification.actor_named_types()
   alias Baudrate.Notification.VapidVault
   alias Baudrate.Repo
   alias Baudrate.Setup
@@ -271,13 +262,6 @@ defmodule Baudrate.Notification.WebPush do
   end
 
   @doc """
-  The types whose push title starts with the actor's name; every other type's
-  text is a full sentence.
-  """
-  @spec actor_named_types() :: [String.t()]
-  def actor_named_types, do: @actor_named_types
-
-  @doc """
   Builds the push payload map (`title`, `body`, `url`, `type`, `icon`) for a
   notification whose `:user`, `:actor_user`, `:actor_remote_actor`,
   `:article` and `:comment` associations are preloaded. A notification about
@@ -308,8 +292,8 @@ defmodule Baudrate.Notification.WebPush do
 
   # Titles mirror the in-app notification list: the actor's name followed by
   # the same translated `Helpers.notification_text/1` fragment, rendered in the
-  # recipient's preferred locale; a full-sentence text stands alone (see
-  # `@actor_named_types`). Deriving titles from the shared text keeps every
+  # recipient's preferred locale; a full-sentence text stands alone
+  # (`Notification.actor_named_types/0`). Deriving titles from the shared text keeps every
   # notification type covered; a separate hard-coded list of titles here
   # drifted (comment likes and boosts fell through to a generic title) and
   # was English-only.

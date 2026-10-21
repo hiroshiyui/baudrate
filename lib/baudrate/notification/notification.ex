@@ -246,6 +246,13 @@ defmodule Baudrate.Notification.Notification do
   # by accident is not an alert.
   @operational_notice_types ~w(health_alert health_recovered pending_registration held_post bot_disabled)
 
+  @actor_named_types ~w(
+    reply_to_article reply_to_comment mention new_follower follow_request
+    actor_moved board_actor_moved article_liked comment_liked article_boosted
+    comment_boosted article_forwarded moderation_report admin_announcement
+    pending_registration watched_board_post watched_thread_reply
+  )
+
   # Likes and boosts of one thing are one notification on the page, however
   # many people sent them (6B). Everything else stands alone: a reply or a
   # mention carries its own text, and a notice is about one event.
@@ -268,6 +275,21 @@ defmodule Baudrate.Notification.Notification do
 
   @doc "Returns the list of valid notification type strings."
   def valid_types, do: @valid_types
+
+  @doc """
+  Types whose `Helpers.notification_text/1` is a fragment that follows the
+  actor's name ("Alice replied to your article"), on `/notifications` and in a
+  push title alike.
+
+  Every other type is a full sentence and names nobody, even when a row stores
+  an actor: an actorless notice would read "Someone …", and a moderation
+  notice never names the moderator (ADR 0076) — `content_removed` keeps the
+  remover as its actor only so a moderator removing their own post is not
+  told. A new type is therefore shown without an actor until it is listed
+  here; `web_push_test.exs` fails when the list and the texts disagree.
+  """
+  @spec actor_named_types() :: [String.t()]
+  def actor_named_types, do: @actor_named_types
 
   @doc """
   Returns the account security notice types. These are always delivered and

@@ -95,6 +95,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0073](0073-privacy-settings-shape-what-a-member-sees-and-who-finds-them.md) | A member's privacy settings shape what they see and who finds them, never what others may read | Accepted |
 | [0074](0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md) | The dashboard reads the health checks behind the admin session | Accepted |
 | [0075](0075-moving-an-article-arrives-and-withdraws-only-what-changed.md) | Moving an article arrives where it goes, and withdraws only what stopped being public | Accepted |
+| [0076](0076-a-moderation-notice-names-no-moderator-and-a-block-does-not-silence-it.md) | A moderation notice names no moderator, and a block does not silence it | Accepted |
 
 ## Writing a new ADR
 

@@ -193,7 +193,9 @@ defmodule Baudrate.Notification.WebPushTest do
         text = BaudrateWeb.Helpers.notification_text(type)
 
         expected =
-          if type in WebPush.actor_named_types(), do: "#{actor.username} #{text}", else: text
+          if type in Baudrate.Notification.Notification.actor_named_types(),
+            do: "#{actor.username} #{text}",
+            else: text
 
         assert payload.title == expected, "unexpected push title for #{type}: #{payload.title}"
         refute payload.title =~ "New notification"
@@ -207,8 +209,8 @@ defmodule Baudrate.Notification.WebPushTest do
       for type <- Baudrate.Notification.Notification.valid_types() do
         fragment? = BaudrateWeb.Helpers.notification_text(type) =~ ~r/^[a-z]/
 
-        assert fragment? == type in WebPush.actor_named_types(),
-               "#{type}: update WebPush's @actor_named_types"
+        assert fragment? == type in Baudrate.Notification.Notification.actor_named_types(),
+               "#{type}: update Notification.Notification's @actor_named_types"
       end
     end
 

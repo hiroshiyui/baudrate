@@ -105,6 +105,22 @@ defmodule Baudrate.NotificationTest do
                })
     end
 
+    # ADR 0076: blocking the moderator who removed your post must not hide
+    # that it was removed; an always-delivered notice ignores blocks and mutes.
+    test "delivers an always-delivered notice despite a block or mute of its actor",
+         %{user: user, actor: actor} do
+      {:ok, _block} = Auth.block_user(user, actor)
+      {:ok, _mute} = Auth.mute_user(user, actor)
+
+      assert {:ok, %NotificationSchema{}} =
+               Notification.create_notification(%{
+                 type: "content_removed",
+                 user_id: user.id,
+                 actor_user_id: actor.id,
+                 data: %{"content_type" => "article", "title" => "Gone"}
+               })
+    end
+
     test "skips when recipient has muted actor", %{user: user, actor: actor} do
       {:ok, _mute} = Auth.mute_user(user, actor)
 

@@ -86,6 +86,27 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       refute has_element?(lv, "#notification-#{notif.id} a[href='/profile/security']")
     end
 
+    # ADR 0076: the row keeps the remover as its actor, but the page never
+    # shows the moderator to the author.
+    test "a removal notice names no moderator", %{conn: conn, user: user} do
+      moderator = setup_user("moderator")
+
+      {:ok, notif} =
+        Notification.create_notification(%{
+          type: "content_removed",
+          user_id: user.id,
+          actor_user_id: moderator.id,
+          data: %{"content_type" => "article", "title" => "Gone"}
+        })
+
+      {:ok, lv, html} = live(conn, "/notifications")
+
+      assert html =~ "A moderator removed your content."
+      refute html =~ moderator.username
+      refute has_element?(lv, "#notification-#{notif.id} .notification-actor")
+      refute has_element?(lv, "#notification-others-#{notif.id}")
+    end
+
     test "renders notification with actor name and type text", %{
       conn: conn,
       user: user
