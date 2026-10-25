@@ -9,6 +9,31 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.0.10] — 2026-10-25
+
+A dependency release: it closes a secret-leak advisory in `plug_crypto` and
+holds Phoenix back from a version that leaves a signed-out browser on a dead
+page. There are no migrations, and deploying it needs nothing by hand.
+
+### Security
+
+- `plug_crypto` 2.2.0 → 2.2.1 ([CVE-2026-105963](https://osv.dev/vulnerability/EEF-CVE-2026-105963)):
+  a wrong-typed argument to `Plug.Crypto` could expose the secret key base in a
+  stack trace's arguments.
+
+### Changed
+
+- Phoenix is **held at 1.8.15** in `mix.lock`. Phoenix 1.8.16 stops sending close
+  code 1001 on the `"disconnect"` broadcast, and LiveView's client treats the
+  resulting 1000 as a failsafe: it reloads after a 5–10 s random delay instead of
+  reconnecting at once, so a browser signed out from another device sat on a dead
+  page for up to ten seconds before reaching `/login`. The browser suite's
+  session-revocation test is the gate for lifting the hold (`doc/gotchas.md`).
+- Phoenix LiveView 1.2.12 → 1.2.13, MDEx 0.14.2 → 0.14.3, and the `tailwind` and
+  `esbuild` installer wrappers (the downloaded binaries are unchanged).
+- Rust NIFs: `scraper` 0.27 → 0.29 (link previews and URL extraction, with newer
+  `html5ever`), `feedparser-rs` 0.7.0 → 0.7.1.
+
 ## [2.0.9] — 2026-10-21
 
 A member whose post a moderator removed is no longer shown the moderator's
