@@ -11,7 +11,8 @@ Cover all three ecosystems. **Report only**: edit nothing (`mix.exs`,
 mix hex.outdated   # Status: "Update possible" vs "Update not possible" (constraint pins it)
 mix hex.audit      # retired / insecure: ALWAYS run, top priority
 ```
-`mix hex.outdated <dep>` for each blocked dep. Extra care even on minors: `phoenix`,
+`mix hex.outdated <dep>` for each blocked dep. **Phoenix is held at 1.8.15** (lock only; `doc/gotchas.md`,
+"Phoenix is held"): report a newer Phoenix as blocked until that entry is lifted. Extra care even on minors: `phoenix`,
 `phoenix_live_view`, `req` (the SSRF guard and DNS pinning use its internals), `bandit`,
 `ecto_sql`/`postgrex`, `bcrypt_elixir`, `wax_`, `nimble_totp`, `hammer`, `rustler`.
 

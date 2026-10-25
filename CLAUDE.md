@@ -30,7 +30,8 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 
 ## Stack
 
-Elixir 1.20 / OTP 29 (pinned in `.tool-versions`) · Phoenix 1.8 / LiveView 1.2 · Bandit ·
+Elixir 1.20 / OTP 29 (pinned in `.tool-versions`) · Phoenix 1.8 (**held at 1.8.15** in
+`mix.lock`: 1.8.16 makes a revoked session's page linger, see `gotchas.md`) / LiveView 1.2 · Bandit ·
 PostgreSQL 15 (production's major) · Tailwind + DaisyUI · esbuild · **Req only** (never
 HTTPoison, Tesla, httpc) · libvips via `image` (WebP re-encode, EXIF strip) · Hammer 7 ·
 MDEx · wax_ · Rust NIFs (Ammonia, scraper, feedparser-rs) · Gettext (en, zh_TW, ja_JP).
