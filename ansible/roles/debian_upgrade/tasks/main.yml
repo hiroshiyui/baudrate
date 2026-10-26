@@ -92,8 +92,8 @@
       - apt_sources_text is search(new_codename if resuming else old_codename)
       # Conditionals mangle backslash escapes (\b), so suites are matched by
       # the spaces or slashes around them.
-      - apt_sources_text is not search('(?m)^.* (old)?stable( |/|$)')
-      - apt_sources_text is not search('(?m)^.* (testing|unstable|sid)( |/|$)')
+      - apt_sources_text is not search('(?m)^.* (old)?stable( |/|-|$)')
+      - apt_sources_text is not search('(?m)^.* (testing|unstable|sid)( |/|-|$)')
       - foreign_hosts | length == 0
     fail_msg: >-
       The apt sources must name {{ old_codename }} by codename (never a
