@@ -9,6 +9,17 @@ debian_codenames:
   "13": trixie
   "14": forky
 
+# apt hosts other than Debian's own that the pre-flight accepts. A host that
+# is not Debian's and not listed here stops the run: a third-party repository
+# (a PGDG PostgreSQL, say) has no suite for the new codename and would break
+# the upgrade or be left behind. These two come with Vultr's Debian images:
+# their Debian mirror, which carries every release and takes the codename
+# rewrite like deb.debian.org, and their own repository for the cloud-init
+# build they ship, whose suite ("universal") names no release at all.
+apt_hosts_allowed:
+  - debian.mirror.constant.com
+  - apprepo.vultr.com
+
 # Drop the old PostgreSQL cluster and purge its packages once the upgraded
 # cluster has been checked. Off by default: the old cluster is the rollback
 # until the operator has looked at the site. Re-run with

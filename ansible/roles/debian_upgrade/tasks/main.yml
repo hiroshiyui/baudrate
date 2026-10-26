@@ -60,30 +60,36 @@
   register: apt_sources_raw
 
 - name: Join the sources into one text, comments removed
+  vars:
+    newline: "\n"
   ansible.builtin.set_fact:
     apt_sources_text: >-
       {{ apt_sources_raw.results
-         | map(attribute='content') | map('b64decode') | join('\n')
+         | map(attribute='content') | map('b64decode') | join(newline)
          | regex_replace('(?m)^\s*#.*$', '') }}
 
-# Only Debian's own signed repositories: a third-party repository (a PGDG
-# PostgreSQL, say) has no release named for the new codename and would be left
-# behind or break the upgrade. Suites named by channel are refused outright,
-# see defaults/main.yml.
+# Only Debian's own signed repositories, plus the hosts apt_hosts_allowed
+# names (defaults/main.yml): any other third-party repository has no suite for
+# the new codename and would be left behind or break the upgrade. Suites named
+# by channel are refused outright.
 - name: Check the sources are Debian's, pinned by codename
+  vars:
+    foreign_hosts: >-
+      {{ apt_sources_text
+         | regex_findall('https?://([^/\s]+)')
+         | reject('search', '(^|\.)debian\.org$')
+         | difference(apt_hosts_allowed) }}
   ansible.builtin.assert:
     that:
       - apt_sources_text is search(old_codename)
-      - apt_sources_text is not search('(?m)^(?!\s*#).*\b(old)?stable\b')
-      - apt_sources_text is not search('(?m)^(?!\s*#).*\b(testing|unstable|sid)\b')
-      - >-
-        apt_sources_text
-        | regex_findall('https?://([^/\s]+)')
-        | reject('search', '(^|\.)debian\.org$')
-        | list | length == 0
+      - apt_sources_text is not search('(?m)^.*\b(old)?stable\b')
+      - apt_sources_text is not search('(?m)^.*\b(testing|unstable|sid)\b')
+      - foreign_hosts | length == 0
     fail_msg: >-
-      The apt sources must name {{ old_codename }} by codename and point only
-      at debian.org hosts. Found: {{ apt_sources_text | trim }}
+      The apt sources must name {{ old_codename }} by codename (never a
+      channel) and point only at debian.org hosts or apt_hosts_allowed.
+      Hosts not allowed: {{ foreign_hosts | join(', ') }}.
+      Sources: {{ apt_sources_text | trim }}
 
 # A newer kernel can rename the interface (eth0 → ens3 on some KVM hosts),
 # and an ifupdown stanza for a name that no longer exists is no network after
