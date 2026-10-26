@@ -260,6 +260,18 @@ provider (Vultr: Snapshots) and to keep the web console open for the reboot;
 `-e confirm=yes` skips both questions. Expect the site to be down for over an
 hour.
 
+### Rebuilding Erlang on demand
+
+`upgrade-debian.yml` rebuilds Erlang on its first run. To do the same at any other
+time (a toolchain that was built on a different system, say), run the elixir role
+with the switch; it removes every installed Erlang build, kerl's cache and
+`_build/prod` before installing the pinned version again, and the next deploy
+rebuilds the release on it:
+
+```bash
+ansible-playbook playbooks/setup-server.yml --tags elixir -e rebuild_erlang=yes
+```
+
 ## Selective Execution
 
 Run specific roles using tags:

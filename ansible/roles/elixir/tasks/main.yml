@@ -88,6 +88,44 @@
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
 
+# After a Debian release upgrade the installed Erlang is linked against the old
+# system's glibc and OpenSSL, and the deploy's NIFs and BEAM files belong to
+# it. upgrade-debian.yml does this on its first run; `-e rebuild_erlang=yes`
+# does the same here on demand: every Erlang build, kerl's cache and
+# registries (kerl refuses to install at a path its registry still lists) and
+# the previous build artifacts go, so the install below runs again on the
+# current system. The running release keeps its own copy of the runtime and
+# is unaffected until the next deploy replaces it. Elixir is bytecode and
+# needs no rebuild.
+- name: Find the Erlang builds to rebuild
+  ansible.builtin.find:
+    paths: "{{ baudrate_home }}/.asdf/installs/erlang"
+    file_type: directory
+    recurse: false
+  register: erlang_builds
+  when: rebuild_erlang | default('') == 'yes'
+
+- name: Remove the Erlang builds from the previous system
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ erlang_builds.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+  when: rebuild_erlang | default('') == 'yes'
+
+- name: Remove kerl's cache and registries along with the builds
+  ansible.builtin.file:
+    path: "{{ baudrate_home }}/.asdf/plugins/erlang/kerl-home"
+    state: absent
+  when: rebuild_erlang | default('') == 'yes'
+
+- name: Remove build artifacts made with the previous Erlang
+  ansible.builtin.file:
+    path: "{{ deploy_path }}/src/_build/prod"
+    state: absent
+  when: rebuild_erlang | default('') == 'yes'
+
 - name: Install Erlang {{ erlang_version }}
   become: true
   become_user: "{{ baudrate_user }}"
