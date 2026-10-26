@@ -3,6 +3,7 @@
 # Replaced by baudrate.conf.j2 after certbot obtains the certificate.
 
 server {
+    server_tokens off;
     listen 80;
     listen [::]:80;
     server_name {{ domain }};

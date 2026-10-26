@@ -2,8 +2,9 @@
 # Baudrate — nginx reverse proxy configuration
 # Derived from doc/examples/nginx.conf.example
 
-# Hide nginx version in response headers and error pages
-server_tokens off;
+# nginx's version is hidden per server block below. Debian 13's packaged
+# nginx.conf already sets `server_tokens off` at the http level, and setting it
+# again there is a duplicate-directive error, so this file never does.
 
 upstream baudrate {
     server 127.0.0.1:{{ app_port }};
@@ -14,6 +15,7 @@ upstream baudrate {
 
 # Redirect HTTP → HTTPS
 server {
+    server_tokens off;
     listen 80;
     listen [::]:80;
     server_name {{ domain }};
@@ -28,8 +30,10 @@ server {
 }
 
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    server_tokens off;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
     server_name {{ domain }};
 
     # --- TLS (Let's Encrypt) ---
