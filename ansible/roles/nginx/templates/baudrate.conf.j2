@@ -51,10 +51,6 @@ server {
     # ssl_dhparam /etc/nginx/dhparam.pem;
 
     # OCSP stapling — nginx fetches and caches OCSP responses, avoiding
-    # client-side OCSP lookups that add latency and leak browsing data.
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    ssl_trusted_certificate /etc/letsencrypt/live/{{ domain }}/chain.pem;
     resolver 1.1.1.1 8.8.8.8 valid=300s;
     resolver_timeout 5s;
 
