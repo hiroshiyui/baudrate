@@ -33,3 +33,11 @@ rebuild_erlang: true
 
 # `-e confirm=yes` skips the interactive confirmation.
 confirm: ""
+
+# `-e resume=yes` continues a run that failed after the sources were switched
+# and the host already reports the target release (a package's configure
+# step failed, say): fix the cause by hand, then re-run. The backup, the
+# sources rewrite and the minimal upgrade are skipped; `dpkg --configure -a`,
+# the full upgrade, the reboot and everything after run again, each step
+# idempotent. A PostgreSQL cluster already on the new major is left alone.
+resume: ""

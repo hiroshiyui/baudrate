@@ -16,8 +16,14 @@
 
 - name: Resolve the current and target releases
   ansible.builtin.set_fact:
-    current_debian: "{{ ansible_facts.distribution_major_version }}"
+    resuming: "{{ resume == 'yes' }}"
     target_debian: "{{ debian_version | string }}"
+    # On a resume the host already reports the target; the release it came
+    # from is the one before it.
+    current_debian: >-
+      {{ (ansible_facts.distribution_major_version | int - 1) | string
+         if resume == 'yes' and ansible_facts.distribution_major_version == (debian_version | string)
+         else ansible_facts.distribution_major_version }}
 
 - name: Check the host is one release behind the inventory
   ansible.builtin.assert:
@@ -29,10 +35,12 @@
       - current_debian in debian_codenames
       - target_debian in debian_codenames
     fail_msg: >-
-      This host runs {{ ansible_facts.distribution }} {{ current_debian }} and
-      the inventory pins debian_version {{ target_debian }}. Debian upgrades
-      one release at a time; bump debian_version (with the CI image) to exactly
-      the next major, or the host is already there and nothing needs doing.
+      This host runs {{ ansible_facts.distribution }}
+      {{ ansible_facts.distribution_major_version }} and the inventory pins
+      debian_version {{ target_debian }}. Debian upgrades one release at a
+      time; bump debian_version (with the CI image) to exactly the next major,
+      or the host is already there and nothing needs doing (a run that failed
+      after the sources were switched continues with -e resume=yes).
 
 - name: Name the codenames
   ansible.builtin.set_fact:
@@ -81,7 +89,7 @@
          | difference(apt_hosts_allowed) }}
   ansible.builtin.assert:
     that:
-      - apt_sources_text is search(old_codename)
+      - apt_sources_text is search(new_codename if resuming else old_codename)
       - apt_sources_text is not search('(?m)^.*\b(old)?stable\b')
       - apt_sources_text is not search('(?m)^.*\b(testing|unstable|sid)\b')
       - foreign_hosts | length == 0
@@ -171,7 +179,16 @@
   register: pg_clusters_before
   changed_when: false
 
+# A resumed run may find the cluster already moved: the new major's main is
+# online on 5432 and the old one stopped. Then the PostgreSQL phase is skipped.
+- name: Note whether the cluster is already on PostgreSQL {{ postgres_version }}
+  ansible.builtin.set_fact:
+    pg_already_upgraded: >-
+      {{ resuming
+         and pg_clusters_before.stdout is search('(?m)^' ~ postgres_version ~ '\\s+main\\s+5432\\s+online\\b') }}
+
 - name: Check PostgreSQL is one cluster on the old major
+  when: not pg_already_upgraded
   ansible.builtin.assert:
     that:
       - pg_clusters_before.stdout_lines | length == 1
@@ -184,15 +201,20 @@
 
 - name: Record the old PostgreSQL major
   ansible.builtin.set_fact:
-    old_postgres_version: "{{ pg_clusters_before.stdout_lines[0].split()[0] }}"
+    old_postgres_version: >-
+      {{ (pg_clusters_before.stdout_lines | map('split') | map('first')
+          | reject('equalto', postgres_version | string) | list | first | default('none'))
+         if pg_already_upgraded else pg_clusters_before.stdout_lines[0].split()[0] }}
 
 - name: Measure the old cluster
+  when: not pg_already_upgraded
   ansible.builtin.command:
     cmd: "du -sb /var/lib/postgresql/{{ old_postgres_version }}/main"
   register: pg_cluster_size
   changed_when: false
 
 - name: Measure free space for the upgraded cluster
+  when: not pg_already_upgraded
   ansible.builtin.command:
     cmd: df --output=avail -B1 /var/lib/postgresql
   register: pg_free_space
@@ -201,6 +223,7 @@
 # pg_upgrade copies the cluster (no --link, so the old cluster stays a valid
 # rollback), plus headroom for the package upgrade itself.
 - name: Check free space for a copy of the cluster
+  when: not pg_already_upgraded
   ansible.builtin.assert:
     that: (pg_free_space.stdout_lines[1] | int) > (pg_cluster_size.stdout.split()[0] | int) * 1.5 + 2 * 1024 * 1024 * 1024
     fail_msg: >-
@@ -241,6 +264,7 @@
     state: stopped
 
 - name: Take a backup now (ADR 0028)
+  when: not resuming
   ansible.builtin.systemd:
     name: baudrate-backup.service
     state: started
@@ -248,12 +272,14 @@
   changed_when: true
 
 - name: Read the backup result
+  when: not resuming
   ansible.builtin.command:
     cmd: journalctl -u baudrate-backup --since "-30 min" --no-pager -o cat
   register: upgrade_backup_log
   changed_when: false
 
 - name: Check the backup completed
+  when: not resuming
   ansible.builtin.assert:
     that: upgrade_backup_log.stdout is search('backup')
     fail_msg: "The backup left no record in the journal; read `journalctl -u baudrate-backup` before continuing."
@@ -268,6 +294,7 @@
 # ============================================================
 
 - name: Bring the current release fully up to date
+  when: not resuming
   ansible.builtin.apt:
     update_cache: true
     upgrade: dist
@@ -277,6 +304,7 @@
     DEBIAN_FRONTEND: noninteractive
 
 - name: Point the sources at {{ new_codename }}
+  when: not resuming
   ansible.builtin.replace:
     path: "{{ item.path }}"
     regexp: '\b{{ old_codename }}\b'
@@ -293,11 +321,23 @@
 # full upgrade. Modified configuration files (sshd_config, pg_hba.conf) keep
 # the version on disk.
 - name: Minimal upgrade (existing packages only)
+  when: not resuming
   ansible.builtin.apt:
     upgrade: safe
     dpkg_options: force-confdef,force-confold
   environment:
     DEBIAN_FRONTEND: noninteractive
+
+# A package whose configure step failed (nginx refusing a config, say) leaves
+# dpkg half-done; after the operator fixes the cause this finishes it, and the
+# full upgrade below then has nothing to redo.
+- name: Finish any interrupted package configuration
+  ansible.builtin.command:
+    cmd: dpkg --configure -a
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  register: dpkg_configure
+  changed_when: dpkg_configure.stdout | length > 0
 
 - name: Full upgrade to {{ new_codename }}
   ansible.builtin.apt:
@@ -343,70 +383,73 @@
 # role installs a versioned server, not the metapackage). Installing them
 # creates an empty `main` cluster on the next free port, which is dropped so
 # pg_upgradecluster can create the real one in its place, on port 5432.
-- name: Install PostgreSQL {{ postgres_version }}
-  ansible.builtin.apt:
-    name:
-      - "postgresql-{{ postgres_version }}"
-      - "postgresql-contrib-{{ postgres_version }}"
-      - libpq-dev
-      - python3-psycopg2
-    state: present
+- name: Move the cluster to PostgreSQL {{ postgres_version }}
+  when: not pg_already_upgraded
+  block:
+    - name: Install PostgreSQL {{ postgres_version }}
+      ansible.builtin.apt:
+        name:
+          - "postgresql-{{ postgres_version }}"
+          - "postgresql-contrib-{{ postgres_version }}"
+          - libpq-dev
+          - python3-psycopg2
+        state: present
 
-- name: List PostgreSQL clusters after the install
-  ansible.builtin.command:
-    cmd: pg_lsclusters --no-header
-  register: pg_clusters_installed
-  changed_when: false
+    - name: List PostgreSQL clusters after the install
+      ansible.builtin.command:
+        cmd: pg_lsclusters --no-header
+      register: pg_clusters_installed
+      changed_when: false
 
-- name: Drop the empty cluster the package created for PostgreSQL {{ postgres_version }}
-  ansible.builtin.command:
-    cmd: "pg_dropcluster --stop {{ postgres_version }} main"
-  when: pg_clusters_installed.stdout is search('(?m)^' ~ postgres_version ~ '\s+main\b')
-  changed_when: true
+    - name: Drop the empty cluster the package created for PostgreSQL {{ postgres_version }}
+      ansible.builtin.command:
+        cmd: "pg_dropcluster --stop {{ postgres_version }} main"
+      when: pg_clusters_installed.stdout is search('(?m)^' ~ postgres_version ~ '\s+main\b')
+      changed_when: true
 
-- name: Upgrade the main cluster with pg_upgrade (copy) to PostgreSQL {{ postgres_version }}
-  ansible.builtin.command:
-    cmd: "pg_upgradecluster -m upgrade {{ old_postgres_version }} main"
-  async: 14400
-  poll: 60
-  changed_when: true
+    - name: Upgrade the main cluster with pg_upgrade (copy) to PostgreSQL {{ postgres_version }}
+      ansible.builtin.command:
+        cmd: "pg_upgradecluster -m upgrade {{ old_postgres_version }} main"
+      async: 14400
+      poll: 60
+      changed_when: true
 
-- name: List PostgreSQL clusters after the upgrade
-  ansible.builtin.command:
-    cmd: pg_lsclusters --no-header
-  register: pg_clusters_after
-  changed_when: false
+    - name: List PostgreSQL clusters after the upgrade
+      ansible.builtin.command:
+        cmd: pg_lsclusters --no-header
+      register: pg_clusters_after
+      changed_when: false
 
-- name: Check the new cluster serves on 5432 and the old one is down
-  ansible.builtin.assert:
-    that:
-      - pg_clusters_after.stdout is search('(?m)^' ~ postgres_version ~ '\s+main\s+5432\s+online\b')
-      - pg_clusters_after.stdout is search('(?m)^' ~ old_postgres_version ~ '\s+main\s+\d+\s+down\b')
-    fail_msg: "Unexpected cluster state after pg_upgradecluster:\n{{ pg_clusters_after.stdout }}"
+    - name: Check the new cluster serves on 5432 and the old one is down
+      ansible.builtin.assert:
+        that:
+          - pg_clusters_after.stdout is search('(?m)^' ~ postgres_version ~ '\s+main\s+5432\s+online\b')
+          - pg_clusters_after.stdout is search('(?m)^' ~ old_postgres_version ~ '\s+main\s+\d+\s+down\b')
+        fail_msg: "Unexpected cluster state after pg_upgradecluster:\n{{ pg_clusters_after.stdout }}"
 
-- name: Rebuild planner statistics (pg_upgrade carries none)
-  become: true
-  become_user: postgres
-  ansible.builtin.command:
-    cmd: vacuumdb --all --analyze-in-stages
-  changed_when: true
+    - name: Rebuild planner statistics (pg_upgrade carries none)
+      become: true
+      become_user: postgres
+      ansible.builtin.command:
+        cmd: vacuumdb --all --analyze-in-stages
+      changed_when: true
 
-- name: Check the application database answers
-  become: true
-  become_user: postgres
-  community.postgresql.postgresql_query:
-    db: "{{ postgres_db_name }}"
-    query: >-
-      SELECT (SELECT count(*) FROM users) AS users,
-             (SELECT count(*) FROM pg_extension WHERE extname = 'pg_trgm') AS pg_trgm
-  register: db_check
+    - name: Check the application database answers
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        db: "{{ postgres_db_name }}"
+        query: >-
+          SELECT (SELECT count(*) FROM users) AS users,
+                 (SELECT count(*) FROM pg_extension WHERE extname = 'pg_trgm') AS pg_trgm
+      register: db_check
 
-- name: Check the data and the extension came across
-  ansible.builtin.assert:
-    that:
-      - db_check.query_result[0].users | int > 0
-      - db_check.query_result[0].pg_trgm | int == 1
-    fail_msg: "The upgraded database has {{ db_check.query_result[0].users }} users and pg_trgm={{ db_check.query_result[0].pg_trgm }}."
+    - name: Check the data and the extension came across
+      ansible.builtin.assert:
+        that:
+          - db_check.query_result[0].users | int > 0
+          - db_check.query_result[0].pg_trgm | int == 1
+        fail_msg: "The upgraded database has {{ db_check.query_result[0].users }} users and pg_trgm={{ db_check.query_result[0].pg_trgm }}."
 
 - name: Ensure PostgreSQL starts at boot
   ansible.builtin.systemd:

@@ -234,8 +234,17 @@ The target is the inventory, so the order is:
 ```bash
 ansible-playbook playbooks/upgrade-debian.yml                     # interactive confirmation
 ansible-playbook playbooks/upgrade-debian.yml -e confirm=yes
+ansible-playbook playbooks/upgrade-debian.yml -e confirm=yes -e resume=yes   # after a failure past the sources switch
 ansible-playbook playbooks/upgrade-debian.yml -e drop_old_cluster=true   # step 4
 ```
+
+A run that fails after the sources were switched (a package's configure step
+refusing, say) leaves the host reporting the new release. Fix the cause by
+hand, then re-run with `-e resume=yes`: the backup, sources rewrite and
+minimal upgrade are skipped, `dpkg --configure -a` finishes what was
+interrupted, and the full upgrade, reboot, PostgreSQL move, Erlang rebuild and
+restart run again, each idempotent (a cluster already on the new major is left
+alone).
 
 It refuses a host that is not exactly one major behind `debian_version`,
 sources that name a channel (`stable`, `oldstable`, `testing`), any
