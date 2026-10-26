@@ -590,7 +590,9 @@
       Site on the existing release: {{ 'up' if health_check.status | default(0) == 200 else 'NOT answering — deploy now' }}.
       Old PostgreSQL {{ old_postgres_version }} cluster:
       {{ 'dropped' if drop_old_cluster | bool else 'kept, stopped (re-run with -e drop_old_cluster=true once satisfied)' }}.
-      cloud-init: {{ 'switched off (it no longer ran on this release)' if cloud_init_status.rc not in [0, 2, 127] else ('absent' if cloud_init_status.rc == 127 else 'left as it was') }}.
+      cloud-init: {{ 'absent' if cloud_init_status.rc == 127
+                     else ('left as it was' if cloud_init_status.rc in [0, 2]
+                     else 'switched off (it no longer ran on this release)') }}.
       Obsolete packages:
       {{ obsolete_packages.stdout | default('none') | trim | default('none', true) }}
 
