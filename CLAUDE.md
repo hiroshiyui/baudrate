@@ -18,8 +18,8 @@ every invariant → record → enforcement → gate (`test/doc/spec_index_test.e
 ## Quick Reference
 
 ```bash
-# Requires: Elixir 1.20 / OTP 29 (.tool-versions), PostgreSQL 15, libvips, Rust (NIFs)
-# — or .devcontainer/ (the CI image by digest + PostgreSQL 15)
+# Requires: Elixir 1.20 / OTP 29 (.tool-versions), PostgreSQL 17, libvips, Rust (NIFs)
+# — or .devcontainer/ (the CI image by digest + PostgreSQL 17)
 # Dev/test DB: baudrate_db_user / baudrate_database; PGUSER, PGPASSWORD, PGHOST, PGPORT override
 mix setup              # deps, DB, assets
 mix phx.server         # https://localhost:4001
@@ -32,7 +32,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 
 Elixir 1.20 / OTP 29 (pinned in `.tool-versions`) · Phoenix 1.8 (**held at 1.8.15** in
 `mix.lock`: 1.8.16 makes a revoked session's page linger, see `gotchas.md`) / LiveView 1.2 · Bandit ·
-PostgreSQL 15 (production's major) · Tailwind + DaisyUI · esbuild · **Req only** (never
+PostgreSQL 17 (production's major) · Tailwind + DaisyUI · esbuild · **Req only** (never
 HTTPoison, Tesla, httpc) · libvips via `image` (WebP re-encode, EXIF strip) · Hammer 7 ·
 MDEx · wax_ · Rust NIFs (Ammonia, scraper, feedparser-rs) · Gettext (en, zh_TW, ja_JP).
 Contexts and architecture: `doc/development.md`.
@@ -267,7 +267,9 @@ that kind goes in it.
   `erlang_version`/`elixir_version` must equal them (`verify-toolchain.sh`). The deploy
   installs the tag's pins and builds on the server (ADR 0037).
 - CI tests production's PostgreSQL major, server and client; never upgrade ahead of
-  production.
+  production. Production is Debian 13 / PostgreSQL 17 (ADR 0077): `debian_version`,
+  `postgres_version`, the Dockerfile and the service images change together; the host
+  moves one major at a time with `upgrade-debian.yml`, sources by codename, never `stable`.
 - The release cookie is a public placeholder; distribution is loopback-only.
 - Static checks: gettext up to date, Dialyzer (fix new warnings; `.dialyzer_ignore.exs`
   holds only opaque-type and compile-flag notices, by file and kind), clippy + cargo test,

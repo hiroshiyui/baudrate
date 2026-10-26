@@ -3580,7 +3580,7 @@ images ([ADR 0027](adr/0027-ci-runs-in-a-pinned-attested-image.md),
 | Test (4 partitions) | `baudrate-ci` | format check, `compile --warnings-as-errors`, `mix lint`, `mix test --partitions 4 --seed 9527` |
 | Browser tests | `baudrate-ci` | `mix assets.build`, then `mix test --only feature` (Wallaby + Selenium + headless Firefox ESR); failure screenshots and the Selenium log are uploaded |
 | Security checks | `baudrate-ci` | `mix sobelow --config`, `mix deps.audit` and `cargo audit` ([Security checks](#security-checks)) |
-| Release build | `baudrate-build` | `ci/release/build.sh`, then `ci/release/smoke-test.sh` against PostgreSQL 15: the production release, built and started exactly as `release.yml` does before publishing one |
+| Release build | `baudrate-build` | `ci/release/build.sh`, then `ci/release/smoke-test.sh` against PostgreSQL 17: the production release, built and started exactly as `release.yml` does before publishing one |
 
 **When it runs.** Pushes to `current`, and pull requests to `current` or
 `main`. Three things deliberately do *not* start a run:

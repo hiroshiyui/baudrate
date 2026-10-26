@@ -16,7 +16,7 @@ You have two options.
 ### The dev container (recommended)
 
 `.devcontainer/` runs the **same image CI tests in**, pinned by digest, with a
-PostgreSQL 15 service beside it. You need Docker (or Podman) and an editor
+PostgreSQL 17 service beside it. You need Docker (or Podman) and an editor
 that opens dev containers (VS Code, or the `devcontainer` CLI). Nothing else
 has to be installed on your machine.
 
@@ -34,8 +34,8 @@ has to be installed on your machine.
   rustfmt and clippy, on first use): three NIF crates
   in `native/` are compiled from source by `mix compile`. There are no
   precompiled binaries, on purpose (decision P8-D1 in `doc/TODOs.md`).
-- **PostgreSQL 15** (production's version; newer servers work for
-  development, but CI runs 15), with the `pg_trgm` extension available.
+- **PostgreSQL 17** (production's version; newer servers work for
+  development, but CI runs 17), with the `pg_trgm` extension available.
 - **libvips** for image processing.
 
 The database settings default to user `baudrate_db_user`, password

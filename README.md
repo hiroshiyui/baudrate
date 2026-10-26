@@ -93,12 +93,12 @@ third party on your behalf.
 ### Prerequisites
 
 The quickest route is the **dev container** in `.devcontainer/`: the image CI
-tests in, pinned by digest, with PostgreSQL 15 beside it, so a container
+tests in, pinned by digest, with PostgreSQL 17 beside it, so a container
 runtime is all you need. See [CONTRIBUTING.md](CONTRIBUTING.md). Otherwise:
 
 - Elixir 1.20 and Erlang/OTP 29 — the versions in `.tool-versions`, which is
   what CI, the release build and production all install
-- PostgreSQL 15+
+- PostgreSQL 17 (production's version and the one CI tests; older servers are untested)
 - libvips (for image processing)
 - Rust via rustup (to compile the scraper, Ammonia, and feedparser-rs NIFs;
   there are no precompiled binaries, on purpose). `rust-toolchain.toml` pins
