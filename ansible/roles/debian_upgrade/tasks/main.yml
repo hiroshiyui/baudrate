@@ -401,13 +401,6 @@
     purge: true
     clean: true
 
-- name: List packages no longer in any repository
-  ansible.builtin.shell:
-    cmd: set -o pipefail && apt list '~o' 2>/dev/null | grep -v '^Listing' || true
-    executable: /bin/bash
-  register: obsolete_packages
-  changed_when: false
-
 # ============================================================
 # Phase 4: Move the PostgreSQL cluster to the new major
 # ============================================================
@@ -602,6 +595,17 @@
     name: baudrate-backup.timer
     state: started
     enabled: true
+
+# Listed last, after the old PostgreSQL may have been purged, so the report
+# names only what is still installed from the old release. These get no
+# security updates; `apt purge '~o'` removes them once the operator has read
+# the list.
+- name: List packages no longer in any repository
+  ansible.builtin.shell:
+    cmd: set -o pipefail && apt list '~o' 2>/dev/null | grep -v '^Listing' || true
+    executable: /bin/bash
+  register: obsolete_packages
+  changed_when: false
 
 - name: Report
   ansible.builtin.debug:
