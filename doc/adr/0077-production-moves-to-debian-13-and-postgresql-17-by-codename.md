@@ -69,6 +69,14 @@ that follows is what makes the host conform to 0036 again.
 - Downgrading the PostgreSQL major is not possible once the old cluster is
   dropped; until then, the old cluster and the backup taken by the playbook
   are the way back.
+- Vultr's images ship their own cloud-init, installed under `/usr/local` for
+  the old release's Python; on the new release it cannot start, and every
+  cloud-init unit fails at boot. The playbook switches off a cloud-init that
+  no longer runs, with the marker file it honours: a provisioned server has
+  no further use for it, and a repaired one could rewrite network or SSH
+  settings on a later boot. Debian 13's packaged `nginx.conf` sets
+  `server_tokens off` at the http level, so the site fragment sets it per
+  server block instead.
 - Java in the CI image moves from OpenJDK 17 to 21, the only runtime Debian 13
   ships; Selenium Server runs on it unchanged.
 - Debian 14 will repeat this record's steps with the next codename; nothing

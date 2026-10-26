@@ -226,7 +226,9 @@ The target is the inventory, so the order is:
    minimal then full upgrade, reboots, installs the new PostgreSQL major and
    runs `pg_upgradecluster -m upgrade` (a copy, so the old cluster stays a
    rollback), rebuilds Erlang against the new libraries, wipes `_build/prod`,
-   and starts the existing release again so the site is up meanwhile.
+   switches off a cloud-init the new release broke (Vultr's, built for the
+   old Python), and starts the existing release again so the site is up
+   meanwhile.
 3. Deploy a tag that carries the new pins right away (`deploy-baudrate.yml`).
 4. Once satisfied, re-run with `-e drop_old_cluster=true` to drop the old
    PostgreSQL cluster and purge its packages.

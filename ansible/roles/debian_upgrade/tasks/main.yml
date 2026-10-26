@@ -364,6 +364,37 @@
       After the reboot the host reports Debian
       {{ ansible_facts.distribution_major_version }}, not {{ target_debian }}.
 
+# Vultr's images ship their own cloud-init under /usr/local, built for the
+# old release's Python; under the new one it cannot even report its status,
+# and every cloud-init unit fails at boot. A provisioned server has no further
+# use for it (first boot is long past), so a cloud-init that no longer runs is
+# switched off with the marker file it honours, rather than repaired. One that
+# still works is left alone.
+- name: Check whether cloud-init still runs on the new release
+  ansible.builtin.command:
+    cmd: cloud-init status
+  register: cloud_init_status
+  changed_when: false
+  failed_when: false
+
+- name: Switch off a cloud-init the new release broke
+  when: cloud_init_status.rc not in [0, 2] and cloud_init_status.rc != 127
+  block:
+    - name: Place the cloud-init.disabled marker
+      ansible.builtin.file:
+        path: /etc/cloud/cloud-init.disabled
+        state: touch
+        mode: "0644"
+        modification_time: preserve
+        access_time: preserve
+
+    - name: Disable the cloud-init units
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: false
+      loop: [cloud-init-local, cloud-init, cloud-config, cloud-final]
+      failed_when: false
+
 - name: Remove packages the new release no longer needs
   ansible.builtin.apt:
     autoremove: true
@@ -559,6 +590,7 @@
       Site on the existing release: {{ 'up' if health_check.status | default(0) == 200 else 'NOT answering — deploy now' }}.
       Old PostgreSQL {{ old_postgres_version }} cluster:
       {{ 'dropped' if drop_old_cluster | bool else 'kept, stopped (re-run with -e drop_old_cluster=true once satisfied)' }}.
+      cloud-init: {{ 'switched off (it no longer ran on this release)' if cloud_init_status.rc not in [0, 2, 127] else ('absent' if cloud_init_status.rc == 127 else 'left as it was') }}.
       Obsolete packages:
       {{ obsolete_packages.stdout | default('none') | trim | default('none', true) }}
 
