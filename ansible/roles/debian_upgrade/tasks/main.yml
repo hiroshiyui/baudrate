@@ -90,8 +90,10 @@
   ansible.builtin.assert:
     that:
       - apt_sources_text is search(new_codename if resuming else old_codename)
-      - apt_sources_text is not search('(?m)^.*\b(old)?stable\b')
-      - apt_sources_text is not search('(?m)^.*\b(testing|unstable|sid)\b')
+      # Conditionals mangle backslash escapes (\b), so suites are matched by
+      # the spaces or slashes around them.
+      - apt_sources_text is not search('(?m)^.* (old)?stable( |/|$)')
+      - apt_sources_text is not search('(?m)^.* (testing|unstable|sid)( |/|$)')
       - foreign_hosts | length == 0
     fail_msg: >-
       The apt sources must name {{ old_codename }} by codename (never a
@@ -185,7 +187,7 @@
   ansible.builtin.set_fact:
     pg_already_upgraded: >-
       {{ resuming
-         and pg_clusters_before.stdout is search('(?m)^' ~ postgres_version ~ '\\s+main\\s+5432\\s+online\\b') }}
+         and pg_clusters_before.stdout is search('(?m)^' ~ postgres_version ~ ' +main +5432 +online ') }}
 
 - name: Check PostgreSQL is one cluster on the old major
   when: not pg_already_upgraded
@@ -404,7 +406,7 @@
     - name: Drop the empty cluster the package created for PostgreSQL {{ postgres_version }}
       ansible.builtin.command:
         cmd: "pg_dropcluster --stop {{ postgres_version }} main"
-      when: pg_clusters_installed.stdout is search('(?m)^' ~ postgres_version ~ '\s+main\b')
+      when: pg_clusters_installed.stdout is search('(?m)^' ~ postgres_version ~ ' +main ')
       changed_when: true
 
     - name: Upgrade the main cluster with pg_upgrade (copy) to PostgreSQL {{ postgres_version }}
@@ -423,33 +425,36 @@
     - name: Check the new cluster serves on 5432 and the old one is down
       ansible.builtin.assert:
         that:
-          - pg_clusters_after.stdout is search('(?m)^' ~ postgres_version ~ '\s+main\s+5432\s+online\b')
-          - pg_clusters_after.stdout is search('(?m)^' ~ old_postgres_version ~ '\s+main\s+\d+\s+down\b')
+          # Conditionals mangle backslash escapes (\s, \b), so these use spaces.
+          - pg_clusters_after.stdout is search('(?m)^' ~ postgres_version ~ ' +main +5432 +online ')
+          - pg_clusters_after.stdout is search('(?m)^' ~ old_postgres_version ~ ' +main +[0-9]+ +down ')
         fail_msg: "Unexpected cluster state after pg_upgradecluster:\n{{ pg_clusters_after.stdout }}"
 
-    - name: Rebuild planner statistics (pg_upgrade carries none)
-      become: true
-      become_user: postgres
-      ansible.builtin.command:
-        cmd: vacuumdb --all --analyze-in-stages
-      changed_when: true
+# Both run on a resume too: idempotent, and a run that failed between the
+# cluster move and here never reached them.
+- name: Rebuild planner statistics (pg_upgrade carries none)
+  become: true
+  become_user: postgres
+  ansible.builtin.command:
+    cmd: vacuumdb --all --analyze-in-stages
+  changed_when: true
 
-    - name: Check the application database answers
-      become: true
-      become_user: postgres
-      community.postgresql.postgresql_query:
-        db: "{{ postgres_db_name }}"
-        query: >-
-          SELECT (SELECT count(*) FROM users) AS users,
-                 (SELECT count(*) FROM pg_extension WHERE extname = 'pg_trgm') AS pg_trgm
-      register: db_check
+- name: Check the application database answers
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_query:
+    db: "{{ postgres_db_name }}"
+    query: >-
+      SELECT (SELECT count(*) FROM users) AS users,
+             (SELECT count(*) FROM pg_extension WHERE extname = 'pg_trgm') AS pg_trgm
+  register: db_check
 
-    - name: Check the data and the extension came across
-      ansible.builtin.assert:
-        that:
-          - db_check.query_result[0].users | int > 0
-          - db_check.query_result[0].pg_trgm | int == 1
-        fail_msg: "The upgraded database has {{ db_check.query_result[0].users }} users and pg_trgm={{ db_check.query_result[0].pg_trgm }}."
+- name: Check the data and the extension came across
+  ansible.builtin.assert:
+    that:
+      - db_check.query_result[0].users | int > 0
+      - db_check.query_result[0].pg_trgm | int == 1
+    fail_msg: "The upgraded database has {{ db_check.query_result[0].users }} users and pg_trgm={{ db_check.query_result[0].pg_trgm }}."
 
 - name: Ensure PostgreSQL starts at boot
   ansible.builtin.systemd:
