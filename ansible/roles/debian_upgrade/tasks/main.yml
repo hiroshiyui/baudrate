@@ -538,11 +538,15 @@
     path: "{{ deploy_path }}/src/_build/prod"
     state: absent
 
+# chdir: a become_user command otherwise runs from Ansible's temp directory
+# under root's home, which the service user cannot read, and asdf (a Go
+# binary) exits 1 without a word when it cannot stat its working directory.
 - name: Build on the new release Erlang {{ erlang_version }}
   become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf install erlang {{ erlang_version }}"
+    chdir: "{{ baudrate_home }}"
     creates: "{{ baudrate_home }}/.asdf/installs/erlang/{{ erlang_version }}/bin/erl"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"

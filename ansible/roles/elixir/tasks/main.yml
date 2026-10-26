@@ -40,6 +40,7 @@
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf version"
+    chdir: "{{ baudrate_home }}"
   register: asdf_version_check
   changed_when: false
 
@@ -63,11 +64,16 @@
     create: true
     mode: "0644"
 
+# chdir on every asdf command: a become_user command otherwise runs from
+# Ansible's temp directory under root's home, which the service user cannot
+# read, and asdf (a Go binary) exits 1 without a word when it cannot stat its
+# working directory.
 - name: Install asdf erlang plugin
   become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf plugin add erlang"
+    chdir: "{{ baudrate_home }}"
     creates: "{{ baudrate_home }}/.asdf/plugins/erlang"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
@@ -77,6 +83,7 @@
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf plugin add elixir"
+    chdir: "{{ baudrate_home }}"
     creates: "{{ baudrate_home }}/.asdf/plugins/elixir"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
@@ -86,6 +93,7 @@
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf install erlang {{ erlang_version }}"
+    chdir: "{{ baudrate_home }}"
     creates: "{{ baudrate_home }}/.asdf/installs/erlang/{{ erlang_version }}"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
@@ -96,6 +104,7 @@
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf set --home erlang {{ erlang_version }}"
+    chdir: "{{ baudrate_home }}"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
   changed_when: true
@@ -105,6 +114,7 @@
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf install elixir {{ elixir_version }}"
+    chdir: "{{ baudrate_home }}"
     creates: "{{ baudrate_home }}/.asdf/installs/elixir/{{ elixir_version }}"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
@@ -115,6 +125,7 @@
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf set --home elixir {{ elixir_version }}"
+    chdir: "{{ baudrate_home }}"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
   changed_when: true
@@ -124,6 +135,7 @@
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix local.hex --force"
+    chdir: "{{ baudrate_home }}"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
     PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
@@ -134,6 +146,7 @@
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix local.rebar --force"
+    chdir: "{{ baudrate_home }}"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
     PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
