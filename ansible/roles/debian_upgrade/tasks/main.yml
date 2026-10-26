@@ -1,0 +1,436 @@
+---
+# Baudrate — Debian release upgrade (one major at a time)
+#
+# The target is the inventory: bump `debian_version` and `postgres_version` in
+# group_vars/all.yml (with the CI image, ci/image/README.md) before running
+# this, and run it before the first deploy of a tag that carries the new pins.
+# The deploy's own pre-flight then accepts the host again.
+#
+# Order: confirm → fresh backup → stop the site → upgrade in place → reboot →
+# move the PostgreSQL cluster to the new major → rebuild Erlang → start the old
+# release again until the deploy replaces it.
+
+# ============================================================
+# Phase 1: Pre-flight
+# ============================================================
+
+- name: Resolve the current and target releases
+  ansible.builtin.set_fact:
+    current_debian: "{{ ansible_facts.distribution_major_version }}"
+    target_debian: "{{ debian_version | string }}"
+
+- name: Check the host is one release behind the inventory
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Debian'
+      - ansible_facts.architecture == 'x86_64'
+      - current_debian != target_debian
+      - (current_debian | int) + 1 == (target_debian | int)
+      - current_debian in debian_codenames
+      - target_debian in debian_codenames
+    fail_msg: >-
+      This host runs {{ ansible_facts.distribution }} {{ current_debian }} and
+      the inventory pins debian_version {{ target_debian }}. Debian upgrades
+      one release at a time; bump debian_version (with the CI image) to exactly
+      the next major, or the host is already there and nothing needs doing.
+
+- name: Name the codenames
+  ansible.builtin.set_fact:
+    old_codename: "{{ debian_codenames[current_debian] }}"
+    new_codename: "{{ debian_codenames[target_debian] }}"
+
+- name: Find apt source files
+  ansible.builtin.find:
+    paths:
+      - /etc/apt
+      - /etc/apt/sources.list.d
+    patterns:
+      - sources.list
+      - "*.list"
+      - "*.sources"
+    recurse: false
+  register: apt_source_files
+
+- name: Read apt source files
+  ansible.builtin.slurp:
+    src: "{{ item.path }}"
+  loop: "{{ apt_source_files.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: apt_sources_raw
+
+- name: Join the sources into one text, comments removed
+  ansible.builtin.set_fact:
+    apt_sources_text: >-
+      {{ apt_sources_raw.results
+         | map(attribute='content') | map('b64decode') | join('\n')
+         | regex_replace('(?m)^\s*#.*$', '') }}
+
+# Only Debian's own signed repositories: a third-party repository (a PGDG
+# PostgreSQL, say) has no release named for the new codename and would be left
+# behind or break the upgrade. Suites named by channel are refused outright,
+# see defaults/main.yml.
+- name: Check the sources are Debian's, pinned by codename
+  ansible.builtin.assert:
+    that:
+      - apt_sources_text is search(old_codename)
+      - apt_sources_text is not search('(?m)^(?!\s*#).*\b(old)?stable\b')
+      - apt_sources_text is not search('(?m)^(?!\s*#).*\b(testing|unstable|sid)\b')
+      - >-
+        apt_sources_text
+        | regex_findall('https?://([^/\s]+)')
+        | reject('search', '(^|\.)debian\.org$')
+        | list | length == 0
+    fail_msg: >-
+      The apt sources must name {{ old_codename }} by codename and point only
+      at debian.org hosts. Found: {{ apt_sources_text | trim }}
+
+- name: Check the site and its release are in place
+  ansible.builtin.stat:
+    path: "{{ deploy_path }}/current/bin/baudrate"
+  register: current_release
+
+- name: Fail without a deployed release
+  ansible.builtin.assert:
+    that: current_release.stat.exists
+    fail_msg: "{{ deploy_path }}/current has no release; deploy first so the backup below can run."
+
+- name: List PostgreSQL clusters
+  ansible.builtin.command:
+    cmd: pg_lsclusters --no-header
+  register: pg_clusters_before
+  changed_when: false
+
+- name: Check PostgreSQL is one cluster on the old major
+  ansible.builtin.assert:
+    that:
+      - pg_clusters_before.stdout_lines | length == 1
+      - pg_clusters_before.stdout_lines[0].split()[0] != (postgres_version | string)
+      - pg_clusters_before.stdout_lines[0].split()[1] == 'main'
+    fail_msg: >-
+      Expected exactly one PostgreSQL cluster, "main", on a major older than
+      postgres_version {{ postgres_version }}. pg_lsclusters shows:
+      {{ pg_clusters_before.stdout }}
+
+- name: Record the old PostgreSQL major
+  ansible.builtin.set_fact:
+    old_postgres_version: "{{ pg_clusters_before.stdout_lines[0].split()[0] }}"
+
+- name: Measure the old cluster
+  ansible.builtin.command:
+    cmd: "du -sb /var/lib/postgresql/{{ old_postgres_version }}/main"
+  register: pg_cluster_size
+  changed_when: false
+
+- name: Measure free space for the upgraded cluster
+  ansible.builtin.command:
+    cmd: df --output=avail -B1 /var/lib/postgresql
+  register: pg_free_space
+  changed_when: false
+
+# pg_upgrade copies the cluster (no --link, so the old cluster stays a valid
+# rollback), plus headroom for the package upgrade itself.
+- name: Check free space for a copy of the cluster
+  ansible.builtin.assert:
+    that: (pg_free_space.stdout_lines[1] | int) > (pg_cluster_size.stdout.split()[0] | int) * 1.5 + 2 * 1024 * 1024 * 1024
+    fail_msg: >-
+      /var/lib/postgresql has {{ (pg_free_space.stdout_lines[1] | int) // 1048576 }} MiB free; the
+      {{ old_postgres_version }} cluster is {{ (pg_cluster_size.stdout.split()[0] | int) // 1048576 }} MiB and
+      pg_upgradecluster copies it. Free space first.
+
+- name: Confirm the upgrade
+  ansible.builtin.pause:
+    prompt: |
+      About to upgrade {{ inventory_hostname }} from Debian {{ current_debian }} ({{ old_codename }})
+      to Debian {{ target_debian }} ({{ new_codename }}) and move PostgreSQL
+      {{ old_postgres_version }} → {{ postgres_version }}. The site will be down
+      for the whole run (expect well over an hour: the reboot, the cluster copy
+      and the Erlang build). Press Enter to continue, Ctrl+C then A to abort
+  when: confirm != 'yes'
+
+# ============================================================
+# Phase 2: Fresh backup, then stop the site
+# ============================================================
+
+- name: Stop the nightly backup timer for the duration
+  ansible.builtin.systemd:
+    name: baudrate-backup.timer
+    state: stopped
+
+- name: Take a backup now (ADR 0028)
+  ansible.builtin.systemd:
+    name: baudrate-backup.service
+    state: started
+  register: upgrade_backup
+  changed_when: true
+
+- name: Read the backup result
+  ansible.builtin.command:
+    cmd: journalctl -u baudrate-backup --since "-30 min" --no-pager -o cat
+  register: upgrade_backup_log
+  changed_when: false
+
+- name: Check the backup completed
+  ansible.builtin.assert:
+    that: upgrade_backup_log.stdout is search('backup')
+    fail_msg: "The backup left no record in the journal; read `journalctl -u baudrate-backup` before continuing."
+
+- name: Stop the site
+  ansible.builtin.systemd:
+    name: baudrate
+    state: stopped
+
+# ============================================================
+# Phase 3: Upgrade the current release fully, then switch sources
+# ============================================================
+
+- name: Bring the current release fully up to date
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: dist
+    autoremove: true
+    dpkg_options: force-confdef,force-confold
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Point the sources at {{ new_codename }}
+  ansible.builtin.replace:
+    path: "{{ item.path }}"
+    regexp: '\b{{ old_codename }}\b'
+    replace: "{{ new_codename }}"
+  loop: "{{ apt_source_files.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Refresh the package index for {{ new_codename }}
+  ansible.builtin.apt:
+    update_cache: true
+
+# Debian's release notes: a minimal upgrade first (no new packages), then the
+# full upgrade. Modified configuration files (sshd_config, pg_hba.conf) keep
+# the version on disk.
+- name: Minimal upgrade (existing packages only)
+  ansible.builtin.apt:
+    upgrade: safe
+    dpkg_options: force-confdef,force-confold
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Full upgrade to {{ new_codename }}
+  ansible.builtin.apt:
+    upgrade: dist
+    dpkg_options: force-confdef,force-confold
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  async: 7200
+  poll: 30
+
+- name: Reboot into the new release
+  ansible.builtin.reboot:
+    reboot_timeout: 900
+
+- name: Gather facts again
+  ansible.builtin.setup:
+
+- name: Check the host now runs Debian {{ target_debian }}
+  ansible.builtin.assert:
+    that: ansible_facts.distribution_major_version == target_debian
+    fail_msg: >-
+      After the reboot the host reports Debian
+      {{ ansible_facts.distribution_major_version }}, not {{ target_debian }}.
+
+- name: Remove packages the new release no longer needs
+  ansible.builtin.apt:
+    autoremove: true
+    purge: true
+    clean: true
+
+- name: List packages no longer in any repository
+  ansible.builtin.shell:
+    cmd: set -o pipefail && apt list '~o' 2>/dev/null | grep -v '^Listing' || true
+    executable: /bin/bash
+  register: obsolete_packages
+  changed_when: false
+
+# ============================================================
+# Phase 4: Move the PostgreSQL cluster to the new major
+# ============================================================
+
+# The new major's packages are not pulled in by the upgrade (the postgresql
+# role installs a versioned server, not the metapackage). Installing them
+# creates an empty `main` cluster on the next free port, which is dropped so
+# pg_upgradecluster can create the real one in its place, on port 5432.
+- name: Install PostgreSQL {{ postgres_version }}
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ postgres_version }}"
+      - "postgresql-contrib-{{ postgres_version }}"
+      - libpq-dev
+      - python3-psycopg2
+    state: present
+
+- name: List PostgreSQL clusters after the install
+  ansible.builtin.command:
+    cmd: pg_lsclusters --no-header
+  register: pg_clusters_installed
+  changed_when: false
+
+- name: Drop the empty cluster the package created for PostgreSQL {{ postgres_version }}
+  ansible.builtin.command:
+    cmd: "pg_dropcluster --stop {{ postgres_version }} main"
+  when: pg_clusters_installed.stdout is search('(?m)^' ~ postgres_version ~ '\s+main\b')
+  changed_when: true
+
+- name: Upgrade the main cluster with pg_upgrade (copy) to PostgreSQL {{ postgres_version }}
+  ansible.builtin.command:
+    cmd: "pg_upgradecluster -m upgrade {{ old_postgres_version }} main"
+  async: 14400
+  poll: 60
+  changed_when: true
+
+- name: List PostgreSQL clusters after the upgrade
+  ansible.builtin.command:
+    cmd: pg_lsclusters --no-header
+  register: pg_clusters_after
+  changed_when: false
+
+- name: Check the new cluster serves on 5432 and the old one is down
+  ansible.builtin.assert:
+    that:
+      - pg_clusters_after.stdout is search('(?m)^' ~ postgres_version ~ '\s+main\s+5432\s+online\b')
+      - pg_clusters_after.stdout is search('(?m)^' ~ old_postgres_version ~ '\s+main\s+\d+\s+down\b')
+    fail_msg: "Unexpected cluster state after pg_upgradecluster:\n{{ pg_clusters_after.stdout }}"
+
+- name: Rebuild planner statistics (pg_upgrade carries none)
+  become: true
+  become_user: postgres
+  ansible.builtin.command:
+    cmd: vacuumdb --all --analyze-in-stages
+  changed_when: true
+
+- name: Check the application database answers
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_query:
+    db: "{{ postgres_db_name }}"
+    query: >-
+      SELECT (SELECT count(*) FROM users) AS users,
+             (SELECT count(*) FROM pg_extension WHERE extname = 'pg_trgm') AS pg_trgm
+  register: db_check
+
+- name: Check the data and the extension came across
+  ansible.builtin.assert:
+    that:
+      - db_check.query_result[0].users | int > 0
+      - db_check.query_result[0].pg_trgm | int == 1
+    fail_msg: "The upgraded database has {{ db_check.query_result[0].users }} users and pg_trgm={{ db_check.query_result[0].pg_trgm }}."
+
+- name: Ensure PostgreSQL starts at boot
+  ansible.builtin.systemd:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: Drop the old cluster and purge its packages
+  when: drop_old_cluster | bool
+  block:
+    - name: Drop the main cluster of PostgreSQL {{ old_postgres_version }}
+      ansible.builtin.command:
+        cmd: "pg_dropcluster {{ old_postgres_version }} main"
+      changed_when: true
+
+    - name: Purge PostgreSQL {{ old_postgres_version }}
+      ansible.builtin.apt:
+        name:
+          - "postgresql-{{ old_postgres_version }}"
+          - "postgresql-contrib-{{ old_postgres_version }}"
+          - "postgresql-client-{{ old_postgres_version }}"
+        state: absent
+        purge: true
+        autoremove: true
+
+# ============================================================
+# Phase 5: Rebuild Erlang against the new system libraries
+# ============================================================
+
+- name: Find Erlang builds from the old release
+  ansible.builtin.find:
+    paths: "{{ baudrate_home }}/.asdf/installs/erlang"
+    file_type: directory
+    recurse: false
+  register: old_erlang_builds
+
+- name: Remove Erlang builds from the old release
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ old_erlang_builds.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+  when: rebuild_erlang | bool
+
+# The build artefacts belong to that Erlang as well; the deploy also wipes them
+# when the toolchain stamp differs, but the stamp cannot see a libc change.
+- name: Remove the previous build's artifacts
+  ansible.builtin.file:
+    path: "{{ deploy_path }}/src/_build/prod"
+    state: absent
+
+- name: Build on the new release Erlang {{ erlang_version }}
+  become: true
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf install erlang {{ erlang_version }}"
+    creates: "{{ baudrate_home }}/.asdf/installs/erlang/{{ erlang_version }}/bin/erl"
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
+  async: 5400
+  poll: 60
+  when: rebuild_erlang | bool
+
+# ============================================================
+# Phase 6: Bring the site back
+# ============================================================
+
+# The deployed release carries the Erlang runtime it was built with on the old
+# Debian. glibc and OpenSSL 3 keep their ABI, so it normally starts, and the
+# site is up until the deploy of a tag built on this release replaces it. If it
+# does not start, the deploy is the fix; this play only reports it.
+- name: Start the site on the existing release
+  ansible.builtin.systemd:
+    name: baudrate
+    state: started
+  register: site_start
+  failed_when: false
+
+- name: Wait for the site to answer
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ app_port }}/health"
+    status_code: 200
+  register: health_check
+  until: health_check.status == 200
+  retries: 30
+  delay: 2
+  failed_when: false
+
+- name: Start the nightly backup timer again
+  ansible.builtin.systemd:
+    name: baudrate-backup.timer
+    state: started
+    enabled: true
+
+- name: Report
+  ansible.builtin.debug:
+    msg: |
+      {{ inventory_hostname }} now runs Debian {{ target_debian }} ({{ new_codename }}),
+      PostgreSQL {{ postgres_version }} on 5432.
+      Site on the existing release: {{ 'up' if health_check.status | default(0) == 200 else 'NOT answering — deploy now' }}.
+      Old PostgreSQL {{ old_postgres_version }} cluster:
+      {{ 'dropped' if drop_old_cluster | bool else 'kept, stopped (re-run with -e drop_old_cluster=true once satisfied)' }}.
+      Obsolete packages:
+      {{ obsolete_packages.stdout | default('none') | trim | default('none', true) }}
+
+      Next: deploy a tag whose debian_version is {{ target_debian }}
+      (ansible-playbook playbooks/deploy-baudrate.yml -e release_tag=...),
+      then consider `apt modernize-sources` for deb822 sources.

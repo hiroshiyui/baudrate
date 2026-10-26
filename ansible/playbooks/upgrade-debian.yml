@@ -1,0 +1,25 @@
+---
+# Baudrate — Debian release upgrade playbook
+#
+# Upgrades the production host one Debian major (bookworm → trixie, …) and
+# moves the PostgreSQL cluster to the major the inventory pins, keeping the
+# sources pinned by codename. The target is the inventory, never `stable`:
+# bump `debian_version` and `postgres_version` in group_vars/all.yml together
+# with the CI image (ci/image/README.md, "Changing the Debian or PostgreSQL
+# release") before running this, and deploy a tag built on the new release
+# right after. See roles/debian_upgrade/tasks/main.yml for the order and
+# ansible/README.md, "Upgrading the Debian release".
+#
+# Usage:
+#   ansible-playbook playbooks/upgrade-debian.yml
+#   ansible-playbook playbooks/upgrade-debian.yml -e confirm=yes
+#   ansible-playbook playbooks/upgrade-debian.yml -e drop_old_cluster=true   # after checking the site
+#
+- name: Upgrade the Debian release
+  hosts: production
+  become: true
+  serial: 1
+
+  roles:
+    - role: debian_upgrade
+      tags: [debian_upgrade]

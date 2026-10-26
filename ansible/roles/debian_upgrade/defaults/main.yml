@@ -1,0 +1,24 @@
+---
+# Debian release codenames by major version. Sources are pinned by codename,
+# never by the `stable` channel: the release carries an Erlang runtime and Rust
+# NIFs built against this system's glibc and OpenSSL, and the deploy refuses
+# any host but `debian_version` (ADR 0036 decision 1). A channel pin would move
+# the host under the running release at Debian's next transition.
+debian_codenames:
+  "12": bookworm
+  "13": trixie
+  "14": forky
+
+# Drop the old PostgreSQL cluster and purge its packages once the upgraded
+# cluster has been checked. Off by default: the old cluster is the rollback
+# until the operator has looked at the site. Re-run with
+# `-e drop_old_cluster=true` to remove it.
+drop_old_cluster: false
+
+# Rebuild the asdf Erlang after the reboot, against the new glibc and OpenSSL.
+# The deploy skips an Erlang that is already installed, so a build from the old
+# release would otherwise be reused.
+rebuild_erlang: true
+
+# `-e confirm=yes` skips the interactive confirmation.
+confirm: ""

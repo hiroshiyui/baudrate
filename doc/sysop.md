@@ -32,6 +32,9 @@ The deploy builds on the server, so a server needs all of these. A host that
 installs a [release built in CI](#release-artifacts) by hand needs only
 PostgreSQL, its client and the Debian 12 base system: the release carries its
 own Erlang runtime and NIFs.
+Moving an Ansible-managed host to the next Debian release (and PostgreSQL
+major) is `ansible/playbooks/upgrade-debian.yml`; see `ansible/README.md`,
+"Upgrading the Debian release".
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|

@@ -158,6 +158,8 @@ Debian packages still exist under their names (`openjdk-17-jre-headless`,
 `postgresql-client-15`). Deploy the first release built on the new base only
 to a host already upgraded: the deploy refuses a host whose Debian release
 differs from `debian_version`.
+`ansible/playbooks/upgrade-debian.yml` does that upgrade, PostgreSQL cluster
+included, and reads the same two inventory pins as its target.
 
 To inspect an image locally:
 

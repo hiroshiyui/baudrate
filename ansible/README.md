@@ -11,7 +11,8 @@ Ansible automation for provisioning Baudrate servers.
   ```bash
   ansible-galaxy collection install community.general community.postgresql community.sops
   ```
-- **Target server:** Debian 12 (Bookworm) with SSH access
+- **Target server:** Debian 12 (Bookworm, `debian_version`) with SSH access; see
+  [Upgrading the Debian release](#upgrading-the-debian-release) to move on
 - **DNS:** domain pointed at the server's IP (required for Let's Encrypt)
 
 ## Quick Start
@@ -205,6 +206,42 @@ that tag from source with the Erlang/Elixir versions pinned in *that tag's*
 migrations step; prefer the rollback playbook for a release still on the
 server.
 
+### Upgrading the Debian release
+
+`upgrade-debian.yml` moves the host one Debian major (bookworm → trixie, …) and
+its PostgreSQL cluster to the majors the inventory pins. Sources stay pinned by
+codename, never by the `stable` channel: the release carries an Erlang runtime
+and Rust NIFs built against the host's glibc and OpenSSL, the deploy refuses a
+host that is not `debian_version` (ADR 0036 decision 1), and a channel pin
+would move the host under the running release at Debian's next transition.
+
+The target is the inventory, so the order is:
+
+1. In one commit on `current`, bump `debian_version` and `postgres_version` in
+   `inventory/group_vars/all.yml` together with the CI image and the
+   PostgreSQL service images (`ci/image/README.md`, "PostgreSQL" and
+   "Debian"); let CI pass on the new base.
+2. Run the playbook. It confirms, takes a backup, stops the site, upgrades the
+   current release fully, rewrites the sources to the new codename, runs the
+   minimal then full upgrade, reboots, installs the new PostgreSQL major and
+   runs `pg_upgradecluster -m upgrade` (a copy, so the old cluster stays a
+   rollback), rebuilds Erlang against the new libraries, wipes `_build/prod`,
+   and starts the existing release again so the site is up meanwhile.
+3. Deploy a tag that carries the new pins right away (`deploy-baudrate.yml`).
+4. Once satisfied, re-run with `-e drop_old_cluster=true` to drop the old
+   PostgreSQL cluster and purge its packages.
+
+```bash
+ansible-playbook playbooks/upgrade-debian.yml                     # interactive confirmation
+ansible-playbook playbooks/upgrade-debian.yml -e confirm=yes
+ansible-playbook playbooks/upgrade-debian.yml -e drop_old_cluster=true   # step 4
+```
+
+It refuses a host that is not exactly one major behind `debian_version`,
+sources that name a channel (`stable`, `oldstable`, `testing`), any
+non-debian.org repository, more than one PostgreSQL cluster, and too little
+free space for the cluster copy. Expect the site to be down for over an hour.
+
 ## Selective Execution
 
 Run specific roles using tags:
@@ -238,6 +275,7 @@ ansible-playbook playbooks/setup-server.yml --tags "common,postgresql"
 ansible-playbook playbooks/setup-server.yml --syntax-check
 ansible-playbook playbooks/deploy-baudrate.yml --syntax-check
 ansible-playbook playbooks/rollback-baudrate.yml --syntax-check
+ansible-playbook playbooks/upgrade-debian.yml --syntax-check
 
 # Dry run (connects to server, shows what would change)
 ansible-playbook playbooks/setup-server.yml --check --diff
@@ -311,6 +349,7 @@ ansible/
     setup-server.yml                       # Server provisioning playbook
     deploy-baudrate.yml                    # Application deployment playbook
     rollback-baudrate.yml                  # Return to a release kept on the server
+    upgrade-debian.yml                     # Move the host one Debian major (and PostgreSQL)
   roles/
     common/                                # System packages, firewall, SSH
     postgresql/                            # PostgreSQL 15 setup
@@ -319,5 +358,6 @@ ansible/
     nginx/                                 # nginx + Let's Encrypt SSL
     deploy/                                # Build, release, and activate Baudrate
     rollback/                              # Point current back at a kept release
+    debian_upgrade/                        # Debian release + PostgreSQL major upgrade
     backup/                                # Nightly backup timer, backup dirs, pull access
 ```
