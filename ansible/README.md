@@ -239,9 +239,10 @@ ansible-playbook playbooks/upgrade-debian.yml -e drop_old_cluster=true   # step 
 
 It refuses a host that is not exactly one major behind `debian_version`,
 sources that name a channel (`stable`, `oldstable`, `testing`), any
-non-debian.org repository, more than one PostgreSQL cluster, too little free
-space for the cluster copy, and a network stanza on a legacy `eth*` name that a
-new kernel could rename (switch to the predictable name, or pin `net.ifnames=0`
+repository outside debian.org and `apt_hosts_allowed` (Vultr's mirror and
+cloud-init repository by default), more than one PostgreSQL cluster, too little
+free space for the cluster copy, a default-route interface with no ifupdown
+stanza, and a stanza on a legacy `eth*` name that a new kernel could rename (switch to the predictable name, or pin `net.ifnames=0`
 in GRUB first). The confirmation asks you to take a whole-disk snapshot at the
 provider (Vultr: Snapshots) and to keep the web console open for the reboot;
 `-e confirm=yes` skips both questions. Expect the site to be down for over an

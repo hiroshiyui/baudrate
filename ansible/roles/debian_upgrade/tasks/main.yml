@@ -92,10 +92,13 @@
       Sources: {{ apt_sources_text | trim }}
 
 # A newer kernel can rename the interface (eth0 → ens3 on some KVM hosts),
-# and an ifupdown stanza for a name that no longer exists is no network after
-# the reboot, on a host reached only over SSH. Predictable names (enp*, ens*)
+# and an ifupdown stanza that no longer matches is no network after the
+# reboot, on a host reached only over SSH. Predictable names (enp*, ens*)
 # survive the upgrade; a legacy eth* name is refused unless the kernel
-# command line pins it with net.ifnames=0.
+# command line pins it with net.ifnames=0. What must be configured is the
+# interface the default route uses; a stanza for an interface the host does
+# not have (Vultr's template carries one for an optional private network) is
+# ignored at boot and only reported here.
 - name: Read the interface networking is configured on
   ansible.builtin.shell:
     cmd: >-
@@ -118,24 +121,39 @@
     src: /proc/cmdline
   register: kernel_cmdline
 
-- name: Check every configured interface exists and keeps its name after the reboot
+- name: Read the interface the default route uses
+  ansible.builtin.shell:
+    cmd: set -o pipefail && ip -4 route show default | sed -nE 's/.*\bdev\s+(\S+).*/\1/p' | head -1
+    executable: /bin/bash
+  register: default_route_interface
+  changed_when: false
+
+- name: Check the route interface is configured and keeps its name after the reboot
   vars:
     kernel_names: "{{ kernel_interfaces.stdout_lines | map('regex_replace', '^(\\S+)\\s.*$', '\\1') | map('regex_replace', '@.*$', '') | list }}"
-    missing: "{{ configured_interfaces.stdout_lines | difference(kernel_names) }}"
+    route_interface: "{{ default_route_interface.stdout | trim }}"
+    absent: "{{ configured_interfaces.stdout_lines | difference(kernel_names) }}"
     legacy: "{{ configured_interfaces.stdout_lines | select('match', '^eth[0-9]+$') | list }}"
     names_pinned: "{{ 'net.ifnames=0' in (kernel_cmdline.content | b64decode) }}"
   ansible.builtin.assert:
     that:
-      - missing | length == 0
+      - route_interface | length > 0
+      - route_interface in configured_interfaces.stdout_lines
       - legacy | length == 0 or names_pinned
+    success_msg: >-
+      Default route on {{ route_interface }}, configured in /etc/network/interfaces
+      {{ '(net.ifnames=0 pinned)' if names_pinned else '(predictable naming on)' }}.
+      {{ ('Stanzas for interfaces this host does not have: ' ~ (absent | join(', ')) ~ '; ignored at boot.') if absent | length > 0 else '' }}
     fail_msg: >-
+      The default route uses {{ route_interface | default('no interface') }};
       /etc/network/interfaces configures {{ configured_interfaces.stdout_lines | join(', ') }};
       the kernel has {{ kernel_names | join(', ') }}
       {{ '(net.ifnames=0 pinned)' if names_pinned else '(predictable naming on)' }}.
-      A legacy eth* name can change under the new kernel and leave the host
-      unreachable: switch the stanza to the predictable name, or add
-      net.ifnames=0 to GRUB_CMDLINE_LINUX_DEFAULT and run update-grub first.
-      Vultr's console (noVNC) is the way back in if this is wrong.
+      The route interface must have a stanza, and a legacy eth* name can change
+      under the new kernel and leave the host unreachable: switch the stanza to
+      the predictable name, or add net.ifnames=0 to GRUB_CMDLINE_LINUX_DEFAULT
+      and run update-grub first. Vultr's console (noVNC) is the way back in if
+      this is wrong.
 
 - name: Check the site and its release are in place
   ansible.builtin.stat:
