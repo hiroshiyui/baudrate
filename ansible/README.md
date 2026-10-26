@@ -246,7 +246,8 @@ hand, then re-run with `-e resume=yes`: the backup, sources rewrite and
 minimal upgrade are skipped, `dpkg --configure -a` finishes what was
 interrupted, and the full upgrade, reboot, PostgreSQL move, Erlang rebuild and
 restart run again, each idempotent (a cluster already on the new major is left
-alone).
+alone, and so is the Erlang the first run built; `-e rebuild_erlang=yes` forces
+a rebuild).
 
 It refuses a host that is not exactly one major behind `debian_version`,
 sources that name a channel (`stable`, `oldstable`, `testing`), any

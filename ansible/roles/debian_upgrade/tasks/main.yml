@@ -515,6 +515,12 @@
 # Phase 5: Rebuild Erlang against the new system libraries
 # ============================================================
 
+- name: Decide whether Erlang is rebuilt in this run
+  ansible.builtin.set_fact:
+    erlang_rebuild_wanted: >-
+      {{ (rebuild_erlang | string | lower) in ['yes', 'true']
+         or ((rebuild_erlang | string | lower) == 'auto' and not resuming) }}
+
 - name: Find Erlang builds from the old release
   ansible.builtin.find:
     paths: "{{ baudrate_home }}/.asdf/installs/erlang"
@@ -529,7 +535,7 @@
   loop: "{{ old_erlang_builds.files }}"
   loop_control:
     label: "{{ item.path }}"
-  when: rebuild_erlang | bool
+  when: erlang_rebuild_wanted | bool
 
 # kerl (the asdf plugin's builder) registers every installation by path in its
 # own directory; with the install gone and the entry left, kerl 4.4 refuses to
@@ -539,7 +545,7 @@
   ansible.builtin.file:
     path: "{{ baudrate_home }}/.asdf/plugins/erlang/kerl-home"
     state: absent
-  when: rebuild_erlang | bool
+  when: erlang_rebuild_wanted | bool
 
 # The build artefacts belong to that Erlang as well; the deploy also wipes them
 # when the toolchain stamp differs, but the stamp cannot see a libc change.
@@ -547,6 +553,7 @@
   ansible.builtin.file:
     path: "{{ deploy_path }}/src/_build/prod"
     state: absent
+  when: erlang_rebuild_wanted | bool
 
 # chdir: a become_user command otherwise runs from Ansible's temp directory
 # under root's home, which the service user cannot read, and asdf (a Go
@@ -563,7 +570,7 @@
     PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
   async: 5400
   poll: 60
-  when: rebuild_erlang | bool
+  when: erlang_rebuild_wanted | bool
 
 # ============================================================
 # Phase 6: Bring the site back

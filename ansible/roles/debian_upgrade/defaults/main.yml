@@ -28,8 +28,10 @@ drop_old_cluster: false
 
 # Rebuild the asdf Erlang after the reboot, against the new glibc and OpenSSL.
 # The deploy skips an Erlang that is already installed, so a build from the old
-# release would otherwise be reused.
-rebuild_erlang: true
+# release would otherwise be reused. "auto" rebuilds on the first run only: a
+# resumed run (or a later drop_old_cluster run) keeps the Erlang the first run
+# built. "yes" forces it, "no" skips it.
+rebuild_erlang: auto
 
 # `-e confirm=yes` skips the interactive confirmation.
 confirm: ""
