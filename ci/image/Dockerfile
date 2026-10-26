@@ -13,7 +13,7 @@
 #     jobs' tools (Firefox ESR, Java, Selenium, GeckoDriver, the PostgreSQL
 #     client, cargo-audit) and the mix_audit and RustSec advisory lists.
 #
-# The base is Debian 12 (bookworm), production's release, not Debian stable: a
+# The base is Debian 13 (trixie), production's release, not Debian stable: a
 # release carries its own Erlang runtime and Rust NIFs, linked against this
 # system's glibc and OpenSSL, so it must be built on the system it runs on
 # (`debian_version` in the Ansible inventory; the image workflow checks it).
@@ -39,7 +39,7 @@
 # propose digest updates; keep the two lines identical.
 
 # ---------------------------------------------------------------------------
-FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587 AS otp
+FROM debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad AS otp
 
 ARG OTP_VERSION=29.1.2
 ARG OTP_SHA256=c79966661e35fe4aff8ec003db63682e3b33b10b672220d51bf93c0a9244b049
@@ -66,7 +66,7 @@ RUN set -eux; \
 
 # ---------------------------------------------------------------------------
 # build: the release build toolchain.
-FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587 AS build
+FROM debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad AS build
 
 ARG ELIXIR_VERSION=1.20.4
 ARG ELIXIR_OTP_MAJOR=29
@@ -142,7 +142,7 @@ RUN set -eux; \
 
 # Fail the build if any tool is missing or does not start.
 RUN set -eux; \
-    grep -q '^VERSION_CODENAME=bookworm$' /etc/os-release; \
+    grep -q '^VERSION_CODENAME=trixie$' /etc/os-release; \
     erl -noshell -eval 'io:format("OTP ~s~n", [erlang:system_info(otp_release)]), halt().'; \
     elixir --version; \
     cargo --version; \
@@ -159,8 +159,8 @@ ARG SELENIUM_SHA256=f4ddbb992fd99c4152934b832c5fe5502a5ca207a1d1cb96af8e5068955c
 ARG CARGO_AUDIT_VERSION=0.22.2
 ARG CARGO_AUDIT_CRATE_SHA256=700c2b240f7fd330c24b675fe429f73a5b676531fcc6300400b2b67f155ba12a
 # Production's PostgreSQL major version (`postgres_version` in Ansible), which
-# Debian 12 ships itself.
-ARG POSTGRES_MAJOR=15
+# Debian 13 ships itself.
+ARG POSTGRES_MAJOR=17
 
 LABEL org.opencontainers.image.title="baudrate-ci" \
       org.opencontainers.image.description="Toolchain for Baudrate's CI test and browser-test jobs"
@@ -170,12 +170,13 @@ ENV BAUDRATE_IMAGE=ci \
     MIX_AUDIT_HOME=/opt/mix-audit/home \
     RUSTSEC_DB=/opt/rustsec/advisory-db
 
-# The PostgreSQL client must be production's major version: pg_dump and
-# pg_restore 17 write `SET transaction_timeout`, which a PostgreSQL 15 server
-# rejects, so the backup restore test cannot pass with a newer client.
+# The PostgreSQL client must be production's major version: a newer pg_dump
+# or pg_restore writes settings the older server rejects (17's
+# `SET transaction_timeout` against 15), so the backup restore test cannot
+# pass with a newer client.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      rsync firefox-esr openjdk-17-jre-headless "postgresql-client-${POSTGRES_MAJOR}" \
+      rsync firefox-esr openjdk-21-jre-headless "postgresql-client-${POSTGRES_MAJOR}" \
  && ln -s /usr/bin/firefox-esr /usr/local/bin/firefox \
  && rm -rf /var/lib/apt/lists/* \
  && pg_dump --version | grep -q " ${POSTGRES_MAJOR}\."

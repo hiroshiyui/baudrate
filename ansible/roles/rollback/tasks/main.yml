@@ -75,6 +75,7 @@
 # ============================================================
 
 - name: Read the migrations applied to the database
+  become: true
   become_user: postgres
   ansible.builtin.command:
     argv:
@@ -91,10 +92,11 @@
 - name: Read the migrations the target release contains
   ansible.builtin.shell:
     cmd: |
-      set -eu
+      set -eu -o pipefail
       find "{{ deploy_path }}/releases/{{ rollback_target.name }}/lib" \
         -path '*/priv/repo/migrations/*.exs' -printf '%f\n' \
         | sed -nE 's/^([0-9]+)_.*/\1/p' | sort -u
+    executable: /bin/bash
   register: rollback_known
   changed_when: false
   check_mode: false
@@ -156,7 +158,8 @@
 
 - name: Find priv/static in the target release
   ansible.builtin.shell:
-    cmd: "readlink -f {{ deploy_path }}/releases/{{ rollback_target.name }}/lib/baudrate-*/priv/static | tail -1"
+    cmd: "set -o pipefail && readlink -f {{ deploy_path }}/releases/{{ rollback_target.name }}/lib/baudrate-*/priv/static | tail -1"
+    executable: /bin/bash
   register: rollback_static
   changed_when: false
   check_mode: false
@@ -169,6 +172,7 @@
     force: true
 
 - name: Restart baudrate
+  become: true
   become_user: root
   ansible.builtin.systemd:
     name: baudrate

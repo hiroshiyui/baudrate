@@ -23,7 +23,7 @@ pinned only by movable tags. Any of them could run code with the workflow's
 token. The images move all of that to one reviewed, reproducible build
 (ADR 0027).
 
-## Why Debian 12
+## Why Debian 13
 
 The base is production's Debian release (`debian_version` in
 `ansible/inventory/group_vars/all.yml`), not the newest Debian. A release built
@@ -38,7 +38,7 @@ disagree, and `verify-toolchain.sh` checks the running image.
 
 | Input | Image | Source | Verification |
 |---|---|---|---|
-| Base OS | both | `debian:bookworm-slim` | pinned by digest; Dependabot proposes updates |
+| Base OS | both | `debian:trixie-slim` | pinned by digest; Dependabot proposes updates |
 | Build tools, libssl, ncurses, git | both | Debian apt | Debian's signed repositories |
 | Firefox ESR, OpenJDK 17, PostgreSQL 15 client | `ci` | Debian apt | Debian's signed repositories |
 | ansible-lint, and `ansible` for the collections the playbooks use (Phase 8A) | `ci` | Debian apt | Debian's signed repositories |
@@ -55,10 +55,10 @@ disagree, and `verify-toolchain.sh` checks the running image.
 | cargo-audit | `ci` | crates.io source crate, built in the image with its `Cargo.lock` (without the binary-scanning feature) | SHA-256; `cargo build --locked` checks every dependency's checksum |
 | RustSec advisory database | `ci` | `rustsec/advisory-db`, cloned when the image is built, at `$RUSTSEC_DB` | git over HTTPS; the commit is recorded in `/opt/rustsec/ADVISORIES_COMMIT`. TOML/Markdown data, never executed |
 
-The PostgreSQL client is production's major version, which Debian 12 ships
-itself. Tests must use it: `pg_dump` and `pg_restore` 17+ write
-`SET transaction_timeout`, which a 15 server rejects, so a newer client fails
-the backup restore test.
+The PostgreSQL client is production's major version, which Debian 13 ships
+itself. Tests must use it: a newer `pg_dump`/`pg_restore` writes settings the
+older server rejects (17 wrote `SET transaction_timeout` against 15), so a
+newer client fails the backup restore test.
 
 Every SHA-256 was cross-checked against the checksums the project publishes
 (OTP `MD5.txt`, Elixir `.sha256sum`, rustup `.sha256`, npm `integrity`,
@@ -154,8 +154,8 @@ current index digest. `verify-toolchain.sh` fails while any of them disagree.
 **Debian** also follows production. When production moves to a new release,
 change `debian_version` in the inventory and both base `FROM` lines in
 `Dockerfile` (the tag and its index digest) in the same commit, and check the
-Debian packages still exist under their names (`openjdk-17-jre-headless`,
-`postgresql-client-15`). Deploy the first release built on the new base only
+Debian packages still exist under their names (`openjdk-21-jre-headless`,
+`postgresql-client-17`). Deploy the first release built on the new base only
 to a host already upgraded: the deploy refuses a host whose Debian release
 differs from `debian_version`.
 `ansible/playbooks/upgrade-debian.yml` does that upgrade, PostgreSQL cluster

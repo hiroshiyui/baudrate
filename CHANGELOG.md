@@ -9,6 +9,24 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+Production moves from Debian 12 (bookworm) with PostgreSQL 15 to Debian 13
+(trixie) with PostgreSQL 17 ([ADR 0077](doc/adr/0077-production-moves-to-debian-13-and-postgresql-17-by-codename.md)).
+Deploying this version needs the host upgraded first: run
+`ansible/playbooks/upgrade-debian.yml` (`ansible/README.md`, "Upgrading the
+Debian release"), then deploy. A by-hand install needs the `debian13` tarball
+on a Debian 13 host.
+
+### Changed
+
+- CI images, the PostgreSQL service containers, the dev container and the
+  Ansible inventory move to Debian 13 and PostgreSQL 17 together; the
+  deploy's pre-flight now refuses a Debian 12 host.
+- `ansible/playbooks/upgrade-debian.yml` upgrades a host one Debian major in
+  place, by codename, moves the PostgreSQL cluster with `pg_upgradecluster`
+  (copy mode; the old cluster stays until `-e drop_old_cluster=true`),
+  rebuilds Erlang on the new libraries and starts the existing release again
+  until the deploy replaces it.
+
 ## [2.0.10] — 2026-10-25
 
 A dependency release: it closes a secret-leak advisory in `plug_crypto` and

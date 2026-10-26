@@ -12,6 +12,7 @@
     state: present
 
 - name: Create asdf bin directory
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.file:
     path: "{{ baudrate_home }}/.asdf/bin"
@@ -19,6 +20,7 @@
     mode: "0755"
 
 - name: Download asdf binary
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.get_url:
     url: "https://github.com/asdf-vm/asdf/releases/download/v{{ asdf_version }}/asdf-v{{ asdf_version }}-linux-amd64.tar.gz"
@@ -26,6 +28,7 @@
     mode: "0644"
 
 - name: Extract asdf binary
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.unarchive:
     src: "/tmp/asdf-v{{ asdf_version }}.tar.gz"
@@ -33,6 +36,7 @@
     remote_src: true
 
 - name: Verify asdf version
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf version"
@@ -40,6 +44,7 @@
   changed_when: false
 
 - name: Remove legacy asdf shell init (pre-0.16)
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.lineinfile:
     path: "{{ baudrate_home }}/.bashrc"
@@ -47,6 +52,7 @@
     state: absent
 
 - name: Add asdf to shell profile
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.blockinfile:
     path: "{{ baudrate_home }}/.bashrc"
@@ -58,6 +64,7 @@
     mode: "0644"
 
 - name: Install asdf erlang plugin
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf plugin add erlang"
@@ -66,6 +73,7 @@
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
 
 - name: Install asdf elixir plugin
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf plugin add elixir"
@@ -74,6 +82,7 @@
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
 
 - name: Install Erlang {{ erlang_version }}
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf install erlang {{ erlang_version }}"
@@ -83,6 +92,7 @@
     PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
 
 - name: Set the global default Erlang to {{ erlang_version }}
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf set --home erlang {{ erlang_version }}"
@@ -91,6 +101,7 @@
   changed_when: true
 
 - name: Install Elixir {{ elixir_version }}
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf install elixir {{ elixir_version }}"
@@ -100,6 +111,7 @@
     PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
 
 - name: Set the global default Elixir to {{ elixir_version }}
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf set --home elixir {{ elixir_version }}"
@@ -108,6 +120,7 @@
   changed_when: true
 
 - name: Install Hex
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix local.hex --force"
@@ -117,6 +130,7 @@
   changed_when: false
 
 - name: Install Rebar
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix local.rebar --force"

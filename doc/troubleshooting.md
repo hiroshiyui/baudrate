@@ -1229,7 +1229,7 @@ fails; this is what makes deploying a very old tag awkward, and why the
 rollback playbook exists. The deploy wipes `_build/prod` by itself when the
 tag's toolchain differs from the last build's.
 
-### "CI builds and tests on Debian 12/x86_64, and this host runs …"
+### "CI builds and tests on Debian 13/x86_64, and this host runs …"
 
 The deploy's pre-flight refuses a host whose Debian release or architecture
 disagrees with `debian_version` in `ansible/inventory/group_vars/all.yml`
@@ -1239,10 +1239,13 @@ check matters: the host would silently become the system the binary is built
 against, while CI keeps building and testing on the other one.
 
 `debian_version` also fixes the PostgreSQL client major that
-`ci/image/Dockerfile` installs. A Debian 13 host ships a 17 client, whose
-`pg_dump` writes `SET transaction_timeout` — which the PostgreSQL 15 server
-rejects. So the first thing a drifted host breaks is not the deploy but the
-pre-deploy dump and the nightly backups (ADR 0028).
+`ci/image/Dockerfile` installs. A host on the next Debian ships a newer
+client, whose `pg_dump` writes settings the older server rejects (a 17 client
+against a 15 server wrote `SET transaction_timeout`). So the first thing a
+drifted host breaks is not the deploy but the pre-deploy dump and the nightly
+backups (ADR 0028). Moving the host deliberately is
+`ansible/playbooks/upgrade-debian.yml` (`ansible/README.md`, "Upgrading the
+Debian release").
 
 Do not work around it by deleting the assert. Either move the host back, or
 change `debian_version`, `POSTGRES_MAJOR` in `ci/image/Dockerfile` and the

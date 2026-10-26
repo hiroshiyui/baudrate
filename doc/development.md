@@ -3600,7 +3600,7 @@ Neither branch has required status checks, so a skipped run blocks nothing. If
 that ever changes, `paths-ignore` reports *no* check rather than a passing one,
 and would need replacing with a placeholder job of the same name.
 
-**The images.** `ci/image/Dockerfile` has two targets on Debian 12,
+**The images.** `ci/image/Dockerfile` has two targets on Debian 13,
 production's release: `build` (`baudrate-build`: Erlang/OTP, Elixir, Rust,
 esbuild, Tailwind) and `ci` (`baudrate-ci`: the same layers plus Firefox ESR,
 Java, the PostgreSQL client, GeckoDriver, Selenium Server, cargo-audit and the
@@ -3623,12 +3623,12 @@ the image (`MIX_ESBUILD_PATH`, `MIX_TAILWIND_PATH`, `BAUDRATE_SELENIUM_DIR`).
 Changing Erlang, Elixir, Rust, esbuild, Tailwind, GeckoDriver, Selenium or the
 Debian release needs the Dockerfile updated too; see `ci/image/README.md`.
 
-**PostgreSQL in CI is production's major version (15), server and client.**
+**PostgreSQL in CI is production's major version (17), server and client.**
 Development machines usually run something newer, which is exactly why CI must
 not: SQL that needs a newer server passes locally and has to fail somewhere
-before production. The client matters too, since `pg_dump`/`pg_restore` 17+
-write `SET transaction_timeout`, which a 15 server rejects. Debian 12 ships
-`postgresql-client-15` itself, and `verify-toolchain.sh` fails when the client,
+before production. The client matters too, since a newer `pg_dump`/`pg_restore`
+writes settings the older server rejects (17 wrote `SET transaction_timeout`
+against 15). Debian 13 ships `postgresql-client-17` itself, and `verify-toolchain.sh` fails when the client,
 the service images in `elixir.yml` and `release.yml`, or Ansible's
 `postgres_version` disagree.
 `.github/workflows/ci-image.yml` rebuilds both images on Dockerfile changes and
@@ -3641,7 +3641,7 @@ Publishing a GitHub release starts `.github/workflows/release.yml`
 Its build job builds and smoke-tests the release in `baudrate-build`, with a
 read-only token and no caches. Its publish job checks the tarball's digest,
 records a build-provenance attestation and attaches
-`baudrate-<version>-debian12-x86_64.tar.gz` and its `.sigstore.json` bundle to
+`baudrate-<version>-debian13-x86_64.tar.gz` and its `.sigstore.json` bundle to
 the release; it runs no third-party code. The build refuses a tag that does not
 match the version in `mix.exs`.
 
@@ -3772,7 +3772,7 @@ run production's major version in a container and point the suite at it with
 ```bash
 podman run -d --rm --name baudrate-pg15 -p 127.0.0.1:5433:5432 \
   -e POSTGRES_USER=baudrate_db_user -e POSTGRES_PASSWORD=baudrate_database \
-  postgres:15 -c max_connections=400    # 4 local partitions exceed the default 100
+  postgres:17 -c max_connections=400    # 4 local partitions exceed the default 100
 
 for p in 1 2 3 4; do PGHOST=localhost PGPORT=5433 MIX_TEST_PARTITION=$p \
   mix test --partitions 4 --seed 9527 & done; wait

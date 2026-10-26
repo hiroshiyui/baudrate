@@ -1,7 +1,7 @@
 ---
 # Baudrate — Server provisioning playbook
 #
-# Provisions a Debian 12 server with all infrastructure Baudrate needs.
+# Provisions a Debian 13 server with all infrastructure Baudrate needs.
 # Does NOT deploy the application itself (that will be a separate playbook).
 #
 # Secrets are decrypted automatically from all.sops.yml via your GPG key.

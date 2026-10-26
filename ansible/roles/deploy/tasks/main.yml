@@ -377,9 +377,10 @@
 # only by the service user.
 - name: Generate this server's Erlang distribution cookie (once)
   ansible.builtin.shell:
-    cmd: umask 077 && head -c 48 /dev/urandom | base64 | tr -d '/+=\n' > release_cookie
+    cmd: set -o pipefail && umask 077 && head -c 48 /dev/urandom | base64 | tr -d '/+=\n' > release_cookie
     chdir: "{{ deploy_path }}/env"
     creates: "{{ deploy_path }}/env/release_cookie"
+    executable: /bin/bash
 
 - name: Read the Erlang distribution cookie
   ansible.builtin.slurp:
@@ -406,6 +407,7 @@
 # ============================================================
 
 - name: Deploy systemd service unit
+  become: true
   become_user: root
   ansible.builtin.template:
     src: baudrate.service.j2
@@ -416,6 +418,7 @@
     - Restart baudrate
 
 - name: Enable baudrate service
+  become: true
   become_user: root
   ansible.builtin.systemd:
     name: baudrate
@@ -484,7 +487,8 @@
 
 - name: Find priv/static path in active release
   ansible.builtin.shell:
-    cmd: "readlink -f {{ deploy_path }}/releases/{{ release_timestamp }}/lib/baudrate-*/priv/static | tail -1"
+    cmd: "set -o pipefail && readlink -f {{ deploy_path }}/releases/{{ release_timestamp }}/lib/baudrate-*/priv/static | tail -1"
+    executable: /bin/bash
   register: static_path_result
   changed_when: false
 

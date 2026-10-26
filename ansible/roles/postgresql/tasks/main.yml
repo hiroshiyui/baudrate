@@ -15,6 +15,7 @@
     enabled: true
 
 - name: Create baudrate database user
+  become: true
   become_user: postgres
   community.postgresql.postgresql_user:
     name: "{{ postgres_db_user }}"
@@ -22,6 +23,7 @@
     role_attr_flags: CREATEDB
 
 - name: Create baudrate database
+  become: true
   become_user: postgres
   community.postgresql.postgresql_db:
     name: "{{ postgres_db_name }}"
@@ -31,6 +33,7 @@
     lc_ctype: en_US.UTF-8
 
 - name: Enable pg_trgm extension
+  become: true
   become_user: postgres
   community.postgresql.postgresql_ext:
     name: pg_trgm

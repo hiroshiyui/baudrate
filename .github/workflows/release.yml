@@ -3,7 +3,7 @@
 # The deploy playbook installs only a tarball whose attestation says this
 # workflow built it from the release's tag.
 #
-# The build runs in the project's build image (ci/image/, Debian 12 like
+# The build runs in the project's build image (ci/image/, Debian 13 like
 # production), without caches, and is smoke-tested against PostgreSQL before
 # anything is published. Building and publishing are separate jobs: the build
 # runs code from Hex packages and crates, so it gets a read-only token, and the
@@ -54,7 +54,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15@sha256:9b1d34adbce1dd07ee6e94b4a2cf698884b89bd44a6c9c12f5da8f3acbfe4957
+        image: postgres:17@sha256:b8faeff7712663c2773a190181e1246e37e364b887611c04658c28b44e2408fe
         env:
           POSTGRES_USER: baudrate_smoke
           POSTGRES_PASSWORD: baudrate_smoke

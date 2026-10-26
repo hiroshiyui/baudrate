@@ -1,5 +1,6 @@
 ---
 - name: Check if rustup is installed
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.stat:
     path: "{{ baudrate_home }}/.cargo/bin/rustup"
@@ -9,6 +10,7 @@
 # shell (the CI image installs it the same way).
 - name: Download rustup-init
   when: not rustup_installed.stat.exists
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.get_url:
     url: "https://static.rust-lang.org/rustup/archive/{{ rustup_version }}/x86_64-unknown-linux-gnu/rustup-init"
@@ -18,6 +20,7 @@
 
 - name: Install rustup
   when: not rustup_installed.stat.exists
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/rustup-init -y --profile minimal"
@@ -27,6 +30,7 @@
     RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
 
 - name: Remove rustup-init
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.file:
     path: "{{ baudrate_home }}/rustup-init"
@@ -34,6 +38,7 @@
 
 - name: Update Rust toolchain
   when: rustup_installed.stat.exists
+  become: true
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.cargo/bin/rustup update"

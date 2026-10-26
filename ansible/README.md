@@ -11,7 +11,7 @@ Ansible automation for provisioning Baudrate servers.
   ```bash
   ansible-galaxy collection install community.general community.postgresql community.sops
   ```
-- **Target server:** Debian 12 (Bookworm, `debian_version`) with SSH access; see
+- **Target server:** Debian 13 (Trixie, `debian_version`) with SSH access; see
   [Upgrading the Debian release](#upgrading-the-debian-release) to move on
 - **DNS:** domain pointed at the server's IP (required for Let's Encrypt)
 
@@ -75,7 +75,7 @@ Provisions infrastructure only — does **not** deploy the application.
 | Role | Tag | Purpose |
 |------|-----|---------|
 | `common` | `common` | System packages, `baudrate` user, UFW firewall, SSH hardening, fail2ban, NTP |
-| `postgresql` | `postgresql` | PostgreSQL 15, database + user, `pg_trgm` extension |
+| `postgresql` | `postgresql` | PostgreSQL `postgres_version` (17), database + user, `pg_trgm` extension |
 | `elixir` | `elixir` | asdf + Erlang 29.1.2 + Elixir 1.20.4-otp-29 + Hex/Rebar |
 | `rust` | `rust` | rustup with minimal profile (for the Rust NIFs) |
 | `nginx` | `nginx` | nginx, Let's Encrypt SSL via certbot, reverse proxy config |
@@ -95,7 +95,7 @@ You will be prompted for:
 
 The deploy builds the tag on the server (ADR 0037). CI also builds,
 smoke-tests and attests the release and attaches
-`baudrate-<version>-debian12-x86_64.tar.gz` to the GitHub release; that
+`baudrate-<version>-debian13-x86_64.tar.gz` to the GitHub release; that
 tarball is for installing by hand (`doc/sysop.md`), not for this playbook.
 
 If `secret_key_base` is not in your SOPS secrets file, the playbook
@@ -352,7 +352,7 @@ ansible/
     upgrade-debian.yml                     # Move the host one Debian major (and PostgreSQL)
   roles/
     common/                                # System packages, firewall, SSH
-    postgresql/                            # PostgreSQL 15 setup
+    postgresql/                            # PostgreSQL setup (postgres_version)
     elixir/                                # asdf + Erlang/Elixir
     rust/                                  # rustup + Rust toolchain
     nginx/                                 # nginx + Let's Encrypt SSL

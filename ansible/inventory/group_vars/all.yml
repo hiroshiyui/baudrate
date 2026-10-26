@@ -5,12 +5,12 @@
 # this system's glibc and OpenSSL; the image workflow and
 # ci/image/verify-toolchain.sh check that the two agree, and the deploy
 # refuses a host that runs anything else.
-debian_version: "12"
+debian_version: "13"
 baudrate_user: baudrate
 baudrate_home: /opt/baudrate
 
 # PostgreSQL
-postgres_version: "15"
+postgres_version: "17"
 postgres_db_name: baudrate_prod
 postgres_db_user: baudrate
 # postgres_db_password provided by all.sops.yml (or auto-generated at runtime)

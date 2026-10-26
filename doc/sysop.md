@@ -30,7 +30,7 @@ Operational guide for installing, configuring, and maintaining a Baudrate
 
 The deploy builds on the server, so a server needs all of these. A host that
 installs a [release built in CI](#release-artifacts) by hand needs only
-PostgreSQL, its client and the Debian 12 base system: the release carries its
+PostgreSQL, its client and the Debian 13 base system: the release carries its
 own Erlang runtime and NIFs.
 Moving an Ansible-managed host to the next Debian release (and PostgreSQL
 major) is `ansible/playbooks/upgrade-debian.yml`; see `ansible/README.md`,
@@ -2215,12 +2215,12 @@ builds one for every release, which you can install by hand instead — on a
 host with no toolchain, or to install exactly what CI tested. Publishing a
 GitHub release starts `.github/workflows/release.yml`, which:
 
-1. builds the release in the project's build image (`ci/image/`, Debian 12 on
+1. builds the release in the project's build image (`ci/image/`, Debian 13 on
    x86-64, like production) from the release's tag, without caches;
 2. smoke-tests it: the cookie guard, migrations, `/health`, the detailed
    report, `rpc`, and that nothing but the web port listens beyond loopback;
 3. records a build-provenance attestation and attaches
-   `baudrate-<version>-debian12-x86_64.tar.gz` (and its
+   `baudrate-<version>-debian13-x86_64.tar.gz` (and its
    `.sigstore.json` bundle) to the release.
 
 The same build and smoke test run on every push to `current`, so a change that
@@ -2228,8 +2228,8 @@ breaks the release fails there rather than after tagging.
 
 The tarball holds the release directory itself (`bin/`, `erts-*/`, `lib/`,
 `releases/`), including its own Erlang runtime, so the server needs neither
-Erlang, Elixir nor Rust, only the system libraries a Debian 12 install has
-(`libssl3`, `libtinfo6`) and the PostgreSQL client for backups. It runs only
+Erlang, Elixir nor Rust, only the system libraries a Debian 13 install has
+(`libssl3t64`, `libtinfo6`) and the PostgreSQL client for backups. It runs only
 on the Debian release it was built for.
 
 To install it by hand, verify it first. `--source-digest` is the commit the tag names in your own
@@ -2237,13 +2237,13 @@ clone, so a tag moved on GitHub after you fetched it fails verification:
 
 ```bash
 TAG=v1.40.1
-gh release download "$TAG" --repo hiroshiyui/baudrate --pattern "baudrate-${TAG#v}-debian12-x86_64.tar.gz"
-gh attestation verify "baudrate-${TAG#v}-debian12-x86_64.tar.gz" --repo hiroshiyui/baudrate \
+gh release download "$TAG" --repo hiroshiyui/baudrate --pattern "baudrate-${TAG#v}-debian13-x86_64.tar.gz"
+gh attestation verify "baudrate-${TAG#v}-debian13-x86_64.tar.gz" --repo hiroshiyui/baudrate \
   --signer-workflow hiroshiyui/baudrate/.github/workflows/release.yml \
   --source-ref "refs/tags/$TAG" --source-digest "$(git rev-parse "$TAG^{commit}")" \
   --deny-self-hosted-runners
 DIR="releases/$(date -u +%Y%m%d_%H%M%S)"
-mkdir "$DIR" && tar -xzf "baudrate-${TAG#v}-debian12-x86_64.tar.gz" -C "$DIR"
+mkdir "$DIR" && tar -xzf "baudrate-${TAG#v}-debian13-x86_64.tar.gz" -C "$DIR"
 ```
 
 Then link `lib/baudrate-*/priv/static/uploads` to your persistent uploads directory,

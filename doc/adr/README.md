@@ -96,6 +96,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0074](0074-the-dashboard-reads-the-health-checks-behind-the-admin-session.md) | The dashboard reads the health checks behind the admin session | Accepted |
 | [0075](0075-moving-an-article-arrives-and-withdraws-only-what-changed.md) | Moving an article arrives where it goes, and withdraws only what stopped being public | Accepted |
 | [0076](0076-a-moderation-notice-names-no-moderator-and-a-block-does-not-silence-it.md) | A moderation notice names no moderator, and a block does not silence it | Accepted |
+| [0077](0077-production-moves-to-debian-13-and-postgresql-17-by-codename.md) | Production moves to Debian 13 and PostgreSQL 17, pinned by codename | Accepted |
 
 ## Writing a new ADR
 
