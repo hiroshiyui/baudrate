@@ -85,6 +85,52 @@
       The apt sources must name {{ old_codename }} by codename and point only
       at debian.org hosts. Found: {{ apt_sources_text | trim }}
 
+# A newer kernel can rename the interface (eth0 → ens3 on some KVM hosts),
+# and an ifupdown stanza for a name that no longer exists is no network after
+# the reboot, on a host reached only over SSH. Predictable names (enp*, ens*)
+# survive the upgrade; a legacy eth* name is refused unless the kernel
+# command line pins it with net.ifnames=0.
+- name: Read the interface networking is configured on
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      (cat /etc/network/interfaces /etc/network/interfaces.d/* 2>/dev/null || true)
+      | sed -nE '/^\s*(iface|auto|allow-hotplug)\s+lo(\s|$)/d; s/^\s*(iface|auto|allow-hotplug)\s+([A-Za-z0-9_.-]+).*/\2/p'
+      | sort -u
+    executable: /bin/bash
+  register: configured_interfaces
+  changed_when: false
+
+- name: Read the interfaces the kernel has
+  ansible.builtin.command:
+    cmd: ip -brief link show
+  register: kernel_interfaces
+  changed_when: false
+
+- name: Read the kernel command line
+  ansible.builtin.slurp:
+    src: /proc/cmdline
+  register: kernel_cmdline
+
+- name: Check every configured interface exists and keeps its name after the reboot
+  vars:
+    kernel_names: "{{ kernel_interfaces.stdout_lines | map('regex_replace', '^(\\S+)\\s.*$', '\\1') | map('regex_replace', '@.*$', '') | list }}"
+    missing: "{{ configured_interfaces.stdout_lines | difference(kernel_names) }}"
+    legacy: "{{ configured_interfaces.stdout_lines | select('match', '^eth[0-9]+$') | list }}"
+    names_pinned: "{{ 'net.ifnames=0' in (kernel_cmdline.content | b64decode) }}"
+  ansible.builtin.assert:
+    that:
+      - missing | length == 0
+      - legacy | length == 0 or names_pinned
+    fail_msg: >-
+      /etc/network/interfaces configures {{ configured_interfaces.stdout_lines | join(', ') }};
+      the kernel has {{ kernel_names | join(', ') }}
+      {{ '(net.ifnames=0 pinned)' if names_pinned else '(predictable naming on)' }}.
+      A legacy eth* name can change under the new kernel and leave the host
+      unreachable: switch the stanza to the predictable name, or add
+      net.ifnames=0 to GRUB_CMDLINE_LINUX_DEFAULT and run update-grub first.
+      Vultr's console (noVNC) is the way back in if this is wrong.
+
 - name: Check the site and its release are in place
   ansible.builtin.stat:
     path: "{{ deploy_path }}/current/bin/baudrate"
@@ -138,6 +184,9 @@
       {{ old_postgres_version }} cluster is {{ (pg_cluster_size.stdout.split()[0] | int) // 1048576 }} MiB and
       pg_upgradecluster copies it. Free space first.
 
+# The playbook's own safety nets are the database backup and the kept old
+# cluster. A whole-disk snapshot at the provider (Vultr: Snapshots) is the way
+# back from a host that does not boot, and only the operator can take it.
 - name: Confirm the upgrade
   ansible.builtin.pause:
     prompt: |
@@ -145,8 +194,18 @@
       to Debian {{ target_debian }} ({{ new_codename }}) and move PostgreSQL
       {{ old_postgres_version }} → {{ postgres_version }}. The site will be down
       for the whole run (expect well over an hour: the reboot, the cluster copy
-      and the Erlang build). Press Enter to continue, Ctrl+C then A to abort
+      and the Erlang build).
+
+      Take a whole-disk snapshot of the server at your provider now, and keep
+      its web console open for the reboot. Type "snapshot taken" to continue
+      (anything else aborts)
+  register: snapshot_confirmation
   when: confirm != 'yes'
+
+- name: Stop unless the snapshot was taken
+  ansible.builtin.assert:
+    that: confirm == 'yes' or (snapshot_confirmation.user_input | default('') | trim | lower) == 'snapshot taken'
+    fail_msg: "Aborted: take a provider snapshot of the server first, then run again (or pass -e confirm=yes to skip the question)."
 
 # ============================================================
 # Phase 2: Fresh backup, then stop the site
