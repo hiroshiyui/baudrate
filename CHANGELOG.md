@@ -9,23 +9,37 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Production moves from Debian 12 (bookworm) with PostgreSQL 15 to Debian 13
-(trixie) with PostgreSQL 17 ([ADR 0077](doc/adr/0077-production-moves-to-debian-13-and-postgresql-17-by-codename.md)).
+## [2.1.0] — 2026-10-26
+
+An infrastructure release: production moves from Debian 12 (bookworm) with
+PostgreSQL 15 to Debian 13 (trixie) with PostgreSQL 17
+([ADR 0077](doc/adr/0077-production-moves-to-debian-13-and-postgresql-17-by-codename.md)).
 Deploying this version needs the host upgraded first: run
 `ansible/playbooks/upgrade-debian.yml` (`ansible/README.md`, "Upgrading the
 Debian release"), then deploy. A by-hand install needs the `debian13` tarball
 on a Debian 13 host.
 
-### Changed
+There are no migrations and no application code changes.
 
-- CI images, the PostgreSQL service containers, the dev container and the
-  Ansible inventory move to Debian 13 and PostgreSQL 17 together; the
-  deploy's pre-flight now refuses a Debian 12 host.
+### Added
+
 - `ansible/playbooks/upgrade-debian.yml` upgrades a host one Debian major in
   place, by codename, moves the PostgreSQL cluster with `pg_upgradecluster`
   (copy mode; the old cluster stays until `-e drop_old_cluster=true`),
   rebuilds Erlang on the new libraries and starts the existing release again
-  until the deploy replaces it.
+  until the deploy replaces it. Its pre-flight refuses channel-pinned or
+  third-party apt sources, a network stanza on a legacy `eth*` name the new
+  kernel could rename, and asks for a provider snapshot first.
+- A browser test that a page whose socket the server dropped reconnects.
+
+### Changed
+
+- CI images, the PostgreSQL service containers, the dev container and the
+  Ansible inventory move to Debian 13 and PostgreSQL 17 together; the
+  deploy's pre-flight now refuses a Debian 12 host. The CI image's Java is
+  OpenJDK 21, the only runtime Debian 13 ships.
+- The Ansible roles satisfy Debian 13's newer ansible-lint (`become` beside
+  every `become_user`, `pipefail` on piped shells).
 
 ## [2.0.10] — 2026-10-25
 
