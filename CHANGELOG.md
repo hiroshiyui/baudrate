@@ -9,6 +9,60 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+A security release, from a project-wide audit. Nothing here changes a schema
+or a setting; deploy it.
+
+### Security
+
+- **Federation origin binding, two holes closed** (ADR 0046). An actor
+  document was accepted when its `id` was on the fetched *host*; it must now
+  be exactly the URL the body was finally served from, after redirects, and
+  its `publicKey.owner` must be the actor. A file planted on a peer's origin
+  (an upload path) or an open redirect off it could otherwise mint that
+  peer's users' keys and poison the cached actor (the CVE-2024-23832 class).
+  Objects fetched for an Announce or by URL are bound to the final URL too.
+- An `Announce` carrying an embedded object body (Lemmy's shape) is now
+  believed only when the booster is on the object's own host; from any other
+  booster the body is discarded and the `id` fetched, as a bare-URI Announce
+  is. A followed actor on one host could otherwise publish text of its
+  choosing under any fediverse user's name and URI, squatting the URI so the
+  genuine post was later dropped as a duplicate. The same rule applies to a
+  group-carried `Create` (ADR 0053).
+- Every image this instance re-encodes (uploads, avatars, remote attachments,
+  the media proxy, link previews, favicons) is refused on its header when it
+  declares more than 40 megapixels or 12 000 pixels a side, before libvips
+  decodes a pixel. A sub-kilobyte PNG could otherwise decode to gigabytes.
+- The one unauthenticated request this instance sends — the fetch of an
+  unknown `keyId` named by an inbox POST, needed before the signature can be
+  checked — is bounded per target host (60 a minute) and an unresolvable
+  `keyId` is remembered for ten minutes, so forged POSTs cannot aim a stream
+  of signed GETs at a third party or mint a `remote_actors` row each.
+- Every per-IP rate limit keys an IPv6 client by its /64, not the full
+  address: a single allocation gave one client 2^64 fresh buckets for login,
+  registration, search, the inbox and the rest.
+- The 256 KB federation payload cap is enforced before the JSON is decoded,
+  not after; inbox POSTs were parsed at the 1 MB upload limit first.
+- Outbound requests refuse a URL with userinfo: Req turns `user:pw@host` into
+  an `Authorization` header, so a remote-supplied URL (an actor `id`, an
+  `inReplyTo`, a feed, a redirect) had this instance present attacker-chosen
+  credentials to a third party.
+- Remote article attachments are fetched with the domain-block check, like
+  every other remote fetch (ADR 0030 decision 9).
+- A recovery code at sign-in is refused for an account without TOTP (the
+  codes minted at registration otherwise let a role that requires TOTP past
+  `/totp/setup`), and a wrong code now counts against the account's login
+  throttle and is recorded, as a wrong TOTP code is.
+- Remote poll input is bounded: at most 20 options, counts cast as
+  non-negative integers (a string crashed the worker), and one vote per actor
+  on a single-choice poll.
+- `/uploads/media_cache/` is refused by the application, not only by nginx.
+- A delivery failure's response body is logged `inspect`ed, so a hostile
+  inbox cannot forge log lines with a newline; a search query is cut at 256
+  characters before it reaches PostgreSQL.
+- Dependencies: Bandit 1.13.1 → 1.14.1 (twelve HTTP/2 and WebSocket resource
+  advisories, EEF-CVE-2026-108525 … -116078); hackney 4.4.5 → 4.9.1
+  (test-only, via Wallaby).
+
 ## [2.1.0] — 2026-10-26
 
 An infrastructure release: production moves from Debian 12 (bookworm) with

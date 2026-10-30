@@ -927,7 +927,8 @@ served by `BaudrateWeb.MediaController` from a local re-encoded copy.
 |--------|------|
 | `Media.Proxy` | `url/1` signs a remote URL; `verify/2` checks it |
 | `Media.Cache` | SSRF-safe fetch → magic bytes → libvips WebP → `uploads/media_cache/<sha256>.webp` |
-| `Media.NegativeCache` | 1-hour suppression of retries for URLs that failed |
+| `Media.NegativeCache` | 1-hour suppression of retries for URLs that failed; `ActorResolver` reuses it (`actor:` prefix, 10 min) for unresolvable `keyId`s |
+| `Media.ImageBounds` | `validate/1`: the pixel-count gate (40 MP, 12 000 px a side) in front of every libvips decode, read from the header |
 | `Media.Rewriter` | `rewrite_img_src/1` over already-sanitized HTML |
 | `Media.Warmer` | opportunistic pre-fetch at ingest (disabled in tests) |
 | `BaudrateWeb.SafeHTML` | `body_html/1` for an HTML column, `markdown/1` for a Markdown one — use instead of `raw/1` for any stored content |
@@ -3036,7 +3037,7 @@ Baudrate.Supervisor (one_for_one)
 ├── Baudrate.Setup.SettingsCache            # ETS cache for site settings (must start before DomainBlockCache)
 ├── :installation_key_check (Task)          # Logs a banner when setup is locked by a missing INSTALLATION_KEY
 ├── Baudrate.Content.BoardCache             # ETS cache for board lookups (by ID, slug, hierarchy)
-├── Baudrate.Media.NegativeCache            # ETS cache of media proxy fetch failures (1 h)
+├── Baudrate.Media.NegativeCache            # ETS cache of fetch failures (media 1 h, keyId actors 10 min)
 ├── BaudrateWeb.RateLimit                   # Hammer 7 ETS rate-limit store
 ├── Baudrate.Federation.TaskSupervisor      # Delivery and inbound processing tasks, best-effort background work
 ├── Baudrate.Federation.DomainBlockCache    # ETS cache for domain blocking decisions

@@ -75,11 +75,16 @@ that kind goes in it.
 
 ### Federation — trust and origin (ADR 0046)
 - An identity claim is honoured only from the host that can prove it:
-  `Validator.same_host?/2` is the one primitive. `ActorResolver` rejects an actor `id` on
-  another host; activity `id` host = actor host; `Create`/`Update` objects must live on
-  the signer's host (`validate_object_origin/2`); `ObjectResolver` applies the same.
+  `Validator.same_host?/2` is the one primitive. `ActorResolver` requires the actor `id`
+  to equal the **final** fetched URL exactly (`HTTPClient.get/2` returns `url:`) and
+  `publicKey.owner` to be the actor; activity `id` host = actor host; `Create`/`Update`
+  objects must live on the signer's host (`validate_object_origin/2`); `ObjectResolver`
+  compares against the final URL too. `resolve_by_key_id/1` is the one unauthenticated
+  fetch: bounded per target host, misses negative-cached.
 - Announce: `attributedTo` host must equal the object `id` host; never re-home local URIs
-  or content the booster does not own. `Accept`/`Reject(Follow)` match the signer.
+  or content the booster does not own. An embedded object body is believed only from a
+  booster on the object's own host; otherwise the `id` is fetched (also for a group-carried
+  `Create`). `Accept`/`Reject(Follow)` match the signer.
 - Inbound `Move` needs the target's `alsoKnownAs` and the signer as `object`; followers
   send `Undo(Follow)` + a pending `Follow`; timeline items move with the follow; one Move
   per origin per 30 days (ADR 0025).
@@ -240,7 +245,8 @@ that kind goes in it.
   repeated daily (ADR 0044, `alerts_test.exs`). Workers beat after a completed run.
   `LOG_FORMAT=json` must never raise.
 - Rate limiting: Hammer 7 through the `BaudrateWeb.RateLimiter` behaviour; never call
-  `Hammer.*` directly (ADR 0012, fails open).
+  `Hammer.*` directly (ADR 0012, fails open). Every IP-keyed bucket uses
+  `RateLimits.ip_bucket/1` (IPv6 keyed by /64).
 - Caches: settings (`SettingsCache`), boards (`BoardCache`) and domain blocks refresh via
   their context writes; a direct DB write must refresh manually.
 - Secrets at rest: `Crypto.Keyring` (`:auth`, `:signing`) through `TotpVault`,
@@ -309,8 +315,10 @@ that kind goes in it.
 
 - Never `String.to_atom/1` on user input; never user input in file paths.
 - Validate at every boundary; federation HTML sanitized before storage.
-- Rate limit all public endpoints; uploads checked by magic bytes, avatars re-encoded.
-- Size limits: 256 KB AP payload, 64 KB content body.
+- Rate limit all public endpoints; uploads checked by magic bytes, avatars re-encoded;
+  every libvips decode behind `Media.ImageBounds.validate/1` (40 MP / 12 000 px).
+- Size limits: 256 KB AP payload (enforced in `CacheBodyReader`, before parsing), 64 KB
+  content body, 256-char search query, 20 remote poll options.
 - `INSTALLATION_KEY` required in production until setup completes (503 via
   `EnsureSetup`, never a boot-time raise).
 - `RealIp` is fail closed; client IPs only via `RealIp.client_ip/2` or
