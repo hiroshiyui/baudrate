@@ -9,6 +9,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.1.1] — 2026-10-30
+
 A security release, from a project-wide audit. Nothing here changes a schema
 or a setting; deploy it.
 
@@ -68,7 +70,8 @@ or a setting; deploy it.
 
 ### Changed
 
-- Dependencies: Hammer 7.5.0 → 7.5.1, MDEx 0.14.3 → 0.14.5.
+- Dependencies: Hammer 7.5.0 → 7.5.1, MDEx 0.14.3 → 0.14.5. Phoenix stays held
+  at 1.8.15 (the Bandit update had carried it to 1.8.16).
 
 ## [2.1.0] — 2026-10-26
 
