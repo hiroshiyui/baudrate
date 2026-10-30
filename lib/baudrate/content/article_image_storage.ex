@@ -46,6 +46,7 @@ defmodule Baudrate.Content.ArticleImageStorage do
 
     with :ok <- validate_magic_bytes(upload_path),
          {:ok, image} <- Image.open(upload_path, access: :random),
+         :ok <- Baudrate.Media.ImageBounds.validate(image),
          {:ok, {image, _meta}} <- Image.autorotate(image),
          :ok <- validate_min_dimensions(image) do
       {w, h, _bands} = Image.shape(image)

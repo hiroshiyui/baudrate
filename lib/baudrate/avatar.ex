@@ -38,6 +38,7 @@ defmodule Baudrate.Avatar do
   def process_upload(upload_path, crop_params) do
     with :ok <- validate_magic_bytes(upload_path),
          {:ok, image} <- Image.open(upload_path, access: :random),
+         :ok <- Baudrate.Media.ImageBounds.validate(image),
          {:ok, {image, _meta}} <- Image.autorotate(image),
          {:ok, cropped} <- apply_crop(image, crop_params) do
       avatar_id = generate_avatar_id()

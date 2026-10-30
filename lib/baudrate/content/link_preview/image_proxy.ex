@@ -108,6 +108,7 @@ defmodule Baudrate.Content.LinkPreview.ImageProxy do
     File.mkdir_p!(Path.dirname(abs))
 
     with {:ok, image} <- Image.from_binary(body),
+         :ok <- Baudrate.Media.ImageBounds.validate(image),
          {:ok, resized} <- resize_to_fit(image),
          {:ok, _written} <- Image.write(resized, abs, strip_metadata: true) do
       {:ok, serving_path}

@@ -498,7 +498,14 @@ defmodule Baudrate.Content.Images do
   defp fetch_and_store_one(article_id, url, name) when is_binary(url) do
     with :ok <- HTTPClient.validate_url(url),
          {:ok, %{body: body}} <-
-           HTTPClient.get_html(url, headers: [{"accept", "image/*"}], max_size: @max_image_size),
+           HTTPClient.get_html(url,
+             headers: [{"accept", "image/*"}],
+             max_size: @max_image_size,
+             # The attachment `url` is remote-controlled: without this an
+             # allowed peer could point it at a blocked instance and have its
+             # image fetched, re-encoded and stored here (ADR 0030 decision 9).
+             refuse_blocked: true
+           ),
          :ok <- validate_image_size(body),
          {:ok, result} <- process_image_binary(body) do
       %ArticleImage{}

@@ -170,6 +170,7 @@ defmodule Baudrate.Media.Cache do
     tmp = "#{dest}.#{:erlang.unique_integer([:positive])}.tmp.webp"
 
     with {:ok, image} <- Image.from_binary(body),
+         :ok <- Baudrate.Media.ImageBounds.validate(image),
          {:ok, resized} <- resize_to_fit(image),
          {:ok, _written} <- Image.write(resized, tmp, strip_metadata: true),
          :ok <- File.rename(tmp, dest) do
