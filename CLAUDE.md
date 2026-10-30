@@ -80,7 +80,7 @@ that kind goes in it.
   `publicKey.owner` to be the actor; activity `id` host = actor host; `Create`/`Update`
   objects must live on the signer's host (`validate_object_origin/2`); `ObjectResolver`
   compares against the final URL too. `resolve_by_key_id/1` is the one unauthenticated
-  fetch: bounded per target host, misses negative-cached.
+  fetch: bounded per target host, misses negative-cached (ADR 0078).
 - Announce: `attributedTo` host must equal the object `id` host; never re-home local URIs
   or content the booster does not own. An embedded object body is believed only from a
   booster on the object's own host; otherwise the `id` is fetched (also for a group-carried
@@ -316,7 +316,7 @@ that kind goes in it.
 - Never `String.to_atom/1` on user input; never user input in file paths.
 - Validate at every boundary; federation HTML sanitized before storage.
 - Rate limit all public endpoints; uploads checked by magic bytes, avatars re-encoded;
-  every libvips decode behind `Media.ImageBounds.validate/1` (40 MP / 12 000 px).
+  every libvips decode behind `Media.ImageBounds.validate/1` (40 MP / 12 000 px, ADR 0079).
 - Size limits: 256 KB AP payload (enforced in `CacheBodyReader`, before parsing), 64 KB
   content body, 256-char search query, 20 remote poll options.
 - `INSTALLATION_KEY` required in production until setup completes (503 via

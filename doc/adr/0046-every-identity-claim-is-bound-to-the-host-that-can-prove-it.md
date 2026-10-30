@@ -1,6 +1,8 @@
 # 0046 — Every identity claim is bound to the host that can prove it
 
-- **Status:** Accepted
+- **Status:** Accepted; the actor comparison tightened from host to exact URL, and the
+  rejected "full URI" alternative taken for actors, by
+  [0078](0078-a-fetched-document-is-believed-only-from-the-url-that-served-it.md)
 - **Date:** 2026-09-19
 - **Deciders:** Baudrate maintainers
 - **Related:** the admission rules of

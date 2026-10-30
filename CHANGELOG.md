@@ -14,7 +14,9 @@ or a setting; deploy it.
 
 ### Security
 
-- **Federation origin binding, two holes closed** (ADR 0046). An actor
+- **Federation origin binding, two holes closed**
+  ([ADR 0078](doc/adr/0078-a-fetched-document-is-believed-only-from-the-url-that-served-it.md),
+  amending 0046). An actor
   document was accepted when its `id` was on the fetched *host*; it must now
   be exactly the URL the body was finally served from, after redirects, and
   its `publicKey.owner` must be the actor. A file planted on a peer's origin
@@ -31,7 +33,8 @@ or a setting; deploy it.
 - Every image this instance re-encodes (uploads, avatars, remote attachments,
   the media proxy, link previews, favicons) is refused on its header when it
   declares more than 40 megapixels or 12 000 pixels a side, before libvips
-  decodes a pixel. A sub-kilobyte PNG could otherwise decode to gigabytes.
+  decodes a pixel. A sub-kilobyte PNG could otherwise decode to gigabytes
+  ([ADR 0079](doc/adr/0079-a-bound-is-checked-before-the-work-it-bounds.md)).
 - The one unauthenticated request this instance sends — the fetch of an
   unknown `keyId` named by an inbox POST, needed before the signature can be
   checked — is bounded per target host (60 a minute) and an unresolvable

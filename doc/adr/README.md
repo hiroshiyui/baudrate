@@ -65,7 +65,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0043](0043-the-outbound-federation-gate-and-withdrawals.md) | The outbound federation gate, and the withdrawals it must not touch | Accepted; refined by [0051](0051-a-mention-addresses-and-the-board-gate-still-decides.md) |
 | [0044](0044-the-instance-tells-its-admins-when-it-is-unwell.md) | The instance tells its admins when it is unwell | Accepted |
 | [0045](0045-the-video-player-loads-on-a-click.md) | The video player loads on a click, and nothing else is embedded | Accepted |
-| [0046](0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md) | Every identity claim is bound to the host that can prove it | Accepted |
+| [0046](0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md) | Every identity claim is bound to the host that can prove it | Accepted; the actor comparison tightened to the exact URL by [0078](0078-a-fetched-document-is-believed-only-from-the-url-that-served-it.md) |
 | [0047](0047-the-facade-lists-every-way-a-context-changes-the-world.md) | The facade lists every way a context changes the world | Accepted |
 | [0048](0048-a-poll-records-who-voted-and-nothing-reads-it-back.md) | A poll records who voted, and nothing reads it back | Accepted; decision 1 amended by [0069](0069-a-voter-is-told-the-poll-closed-and-that-is-the-only-reader.md) |
 | [0049](0049-user-facing-changesets-are-allow-lists.md) | User-facing changesets are allow-lists | Accepted |
@@ -97,6 +97,8 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0075](0075-moving-an-article-arrives-and-withdraws-only-what-changed.md) | Moving an article arrives where it goes, and withdraws only what stopped being public | Accepted |
 | [0076](0076-a-moderation-notice-names-no-moderator-and-a-block-does-not-silence-it.md) | A moderation notice names no moderator, and a block does not silence it | Accepted |
 | [0077](0077-production-moves-to-debian-13-and-postgresql-17-by-codename.md) | Production moves to Debian 13 and PostgreSQL 17, pinned by codename | Accepted |
+| [0078](0078-a-fetched-document-is-believed-only-from-the-url-that-served-it.md) | A fetched document is believed only from the URL that served it, and an embedded one only from its own host | Accepted |
+| [0079](0079-a-bound-is-checked-before-the-work-it-bounds.md) | A bound is checked before the work it bounds | Accepted |
 
 ## Writing a new ADR
 
