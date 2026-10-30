@@ -380,7 +380,9 @@ defmodule Baudrate.Federation.InboxHandler do
           if has_unique_error?(changeset), do: :ok, else: {:error, :announce_failed}
       end
 
-      # Route boosted content using the embedded object directly
+      # The embedded body is trusted only when the booster's host is the
+      # object's own; anything else is fetched from the host that can prove
+      # it (`handle_announce_content/3`).
       handle_announce_content(ap_id, object_id, remote_actor, embedded_object)
 
       :ok
@@ -1149,7 +1151,9 @@ defmodule Baudrate.Federation.InboxHandler do
   # while attributing the article to `attributedTo`, bound to the object's own
   # origin. So this needs no host comparison and grants no new trust: the
   # object is verified by the host that can prove it, exactly as a Mastodon
-  # boost of the same post would be.
+  # boost of the same post would be: `handle_announce_content/4` takes the
+  # embedded body only from a group on the object's own host and fetches the
+  # `id` from any other.
   defp carry(announce, %{"type" => "Create", "object" => object}, _inner, group_actor, _target)
        when is_map(object) do
     case object["id"] do
@@ -1218,9 +1222,28 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  # Variant with embedded object (Lemmy interop) — skips remote fetch
-  defp handle_announce_content(announce_ap_id, _object_uri, booster_actor, embedded_object) do
-    handle_announce_object(announce_ap_id, embedded_object, booster_actor)
+  # Variant with an embedded object (Lemmy interop). The body is taken as
+  # written only when the booster is on the object's own host, because the
+  # Announce's signature then comes from the host that owns the object. From
+  # any other booster the embedded body is attacker-chosen: a followed actor
+  # on evil.example could Announce `{id: "https://mastodon.social/.../1",
+  # attributedTo: "https://mastodon.social/users/alice", content: …}` and
+  # have this instance store alice's name over its own text, squatting her
+  # URI in `ap_id` so the genuine post is later dropped as a duplicate. The
+  # self-consistency checks in `handle_announce_object/3` (attribution on the
+  # object's host) cannot tell those apart; only the object's host can. So
+  # the body is discarded and the `id` is fetched, as a bare-URI Announce is
+  # (ADR 0046).
+  defp handle_announce_content(announce_ap_id, object_uri, booster_actor, embedded_object) do
+    if Validator.same_host?(object_uri, booster_actor.ap_id) do
+      handle_announce_object(announce_ap_id, embedded_object, booster_actor)
+    else
+      Logger.info(
+        "federation.announce: embedded object on another host than the booster, fetching id=#{object_uri}"
+      )
+
+      handle_announce_content(announce_ap_id, object_uri, booster_actor)
+    end
   end
 
   # Mirrors the reply-chain walk's check, which is the same class of hazard:

@@ -132,14 +132,16 @@ defmodule Baudrate.Federation.GroupAnnounceTest do
       # Not honoured *as an activity* — but the object it names has an origin
       # of its own, so the ordinary announced-content path still applies, with
       # its attribution binding. The post arrives, verified by the host that
-      # can prove it.
+      # can prove it: the embedded body is discarded and the `id` fetched.
       page = page_object(ctx.outsider, "Cross-posted")
+      served = Map.put(page, "content", "<p>As served by its own host</p>")
+      stub_fetch(served)
 
       inner = %{
         "id" => "https://#{@other_host}/activities/create-x",
         "type" => "Create",
         "actor" => ctx.outsider.ap_id,
-        "object" => page
+        "object" => Map.put(page, "content", "<p>As the group claims</p>")
       }
 
       assert :ok = InboxHandler.handle(announce(ctx.community, inner), ctx.community, :shared)
@@ -147,6 +149,24 @@ defmodule Baudrate.Federation.GroupAnnounceTest do
       article = Content.get_article_by_ap_id(page["id"])
       assert article
       assert article.remote_actor_id == ctx.outsider.id
+      assert article.body =~ "As served by its own host"
+      refute article.body =~ "As the group claims"
+    end
+
+    test "a relayed Create from a foreign actor whose host does not serve it leaves nothing",
+         ctx do
+      page = page_object(ctx.outsider, "Never existed")
+      Req.Test.stub(Baudrate.Federation.HTTPClient, &Plug.Conn.send_resp(&1, 404, ""))
+
+      inner = %{
+        "id" => "https://#{@other_host}/activities/create-y",
+        "type" => "Create",
+        "actor" => ctx.outsider.ap_id,
+        "object" => page
+      }
+
+      assert :ok = InboxHandler.handle(announce(ctx.community, inner), ctx.community, :shared)
+      refute Content.get_article_by_ap_id(page["id"])
     end
 
     test "a foreign Create whose object is attributed to a third host is refused", ctx do
@@ -157,6 +177,8 @@ defmodule Baudrate.Federation.GroupAnnounceTest do
         |> page_object("Forged")
         |> Map.put("attributedTo", "https://victim.example/u/carol")
 
+      stub_fetch(page)
+
       inner = %{
         "id" => "https://#{@other_host}/activities/create-forged",
         "type" => "Create",
@@ -165,6 +187,65 @@ defmodule Baudrate.Federation.GroupAnnounceTest do
       }
 
       assert :ok = InboxHandler.handle(announce(ctx.community, inner), ctx.community, :shared)
+      refute Content.get_article_by_ap_id(page["id"])
+    end
+  end
+
+  describe "an embedded object is believed only from its own host" do
+    # A Mastodon-style boost with the object inlined (Lemmy's shape). The
+    # self-consistency checks — attribution on the object's host, no local
+    # URIs — cannot tell a genuine inline copy from a forgery: a followed
+    # actor on evil.example inlines `{id: "https://mastodon.social/…",
+    # attributedTo: alice@mastodon.social, content: <anything>}`. Only the
+    # object's host can, so from any other booster the body is fetched.
+    test "a same-host inline object is taken as written", ctx do
+      page = page_object(ctx.member, "Inline from home")
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn _ -> flunk("must not fetch") end)
+
+      assert :ok = InboxHandler.handle(announce(ctx.community, page), ctx.community, :shared)
+      assert Content.get_article_by_ap_id(page["id"])
+    end
+
+    test "a foreign inline object is replaced by what its host serves", ctx do
+      page = page_object(ctx.outsider, "Genuine")
+      stub_fetch(page)
+      forged = Map.put(page, "content", "<p>Words the author never wrote</p>")
+
+      assert :ok = InboxHandler.handle(announce(ctx.community, forged), ctx.community, :shared)
+
+      article = Content.get_article_by_ap_id(page["id"])
+      assert article
+      assert article.remote_actor_id == ctx.outsider.id
+      assert article.body =~ "Genuine"
+      refute article.body =~ "never wrote"
+    end
+
+    test "a foreign inline object its host disowns is dropped", ctx do
+      page = page_object(ctx.outsider, "Forged")
+      Req.Test.stub(Baudrate.Federation.HTTPClient, &Plug.Conn.send_resp(&1, 404, ""))
+
+      assert :ok = InboxHandler.handle(announce(ctx.community, page), ctx.community, :shared)
+      refute Content.get_article_by_ap_id(page["id"])
+    end
+
+    test "a host serving a document for another origin is refused", ctx do
+      # The fetch of outsider's `id` is answered (after a redirect) by a host
+      # that is not the object's own.
+      page = page_object(ctx.outsider, "Hopped")
+
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        case Plug.Conn.get_req_header(conn, "host") do
+          [@other_host] ->
+            conn
+            |> Plug.Conn.put_resp_header("location", "https://mirror.example/anything")
+            |> Plug.Conn.send_resp(302, "")
+
+          _ ->
+            Plug.Conn.send_resp(conn, 200, Jason.encode!(page))
+        end
+      end)
+
+      assert :ok = InboxHandler.handle(announce(ctx.community, page), ctx.community, :shared)
       refute Content.get_article_by_ap_id(page["id"])
     end
   end
@@ -367,6 +448,14 @@ defmodule Baudrate.Federation.GroupAnnounceTest do
       fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
     })
     |> Repo.insert!()
+  end
+
+  defp stub_fetch(object) do
+    Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+      conn
+      |> Plug.Conn.put_resp_content_type("application/activity+json")
+      |> Plug.Conn.send_resp(200, Jason.encode!(object))
+    end)
   end
 
   defp announce(group, object) do
