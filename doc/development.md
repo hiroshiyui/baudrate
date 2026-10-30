@@ -955,7 +955,8 @@ Design notes:
   allow-list of the `raw/1` calls that remain.
 - **Storage location is forced by ops.** The systemd unit grants write access
   only to `shared/uploads`, and only that directory is symlinked into each
-  release. nginx denies `/uploads/media_cache/` so the signature cannot be
+  release. `BaudrateWeb.Plugs.DenyPrivateUploads` answers 404 for
+  `/uploads/media_cache/` and nginx denies it too, so the signature cannot be
   bypassed.
 - **Eviction** runs hourly in `SessionCleaner`: entries untouched for 30 days,
   then oldest-first until under `:media_cache_max_bytes` (2 GB default). Both
@@ -1141,6 +1142,10 @@ timestamp makes the poll time-limited; after expiry, votes are rejected.
 Polls are created alongside articles via nested `cast_assoc` in the article
 creation form. Options are limited to 2--4 per poll. Option text is capped at
 200 characters. The `closes_at` timestamp must be in the future at creation time.
+A remote `Question` may carry up to 20 options; its vote and voter counts are
+cast as non-negative integers (never `change/2`), and a remote actor holds one
+vote on a single-choice poll (`Content.remote_actor_voted?/2`), since the
+unique index is per option.
 
 **Vote flow:**
 
@@ -1284,7 +1289,8 @@ Operators are `key:value` tokens mixed with free text; remaining text becomes
 the search term. `Baudrate.Content.SearchQuery` is the one definition —
 `parse/1`, `put/3` (set or replace one operator) and `scoped?/1` — because
 there are two ways into the syntax: a reader typing, and the filter controls
-writing.
+writing. `parse/1` cuts the string at `max_length/0` (256 characters) first:
+every lexeme costs a GIN lookup.
 
 | Operator | On an article | On a comment |
 |----------|---------------|--------------|
@@ -2430,11 +2436,11 @@ copy it used to have.
 
 | Claim | Checked in | Refusal |
 |---|---|---|
-| a fetched actor document's own `id` vs. the URL it came from | `ActorResolver` | `:actor_id_origin_mismatch` |
+| a fetched actor document's own `id` vs. the URL that served it (`HTTPClient.get/2`'s `url:`, after redirects) — equal exactly, not same-host; `publicKey.owner` must be the actor | `ActorResolver` | `:actor_id_origin_mismatch`, `:key_owner_mismatch` |
 | an activity's `id` vs. its `actor` | `Validator.validate_activity/1` | `:activity_id_origin_mismatch` |
 | a `Create`/`Update` object's `id` vs. the signer's host | `Validator.validate_object_origin/2`, on every `Create`/`Update` path | `:object_origin_mismatch` |
 | a user-imported object's `id` vs. its fetch URL, and its `attributedTo` vs. that `id` | `ObjectResolver` | `:object_id_origin_mismatch`, `:author_origin_mismatch` |
-| a boosted object's `attributedTo` vs. the object `id` host (and, when fetched, the object `id` vs. its fetch URL) | `InboxHandler.handle_announce_object/3` | dropped, logged |
+| a boosted object's `attributedTo` vs. the object `id` host (and, when fetched, the object `id` vs. its fetch URL); an embedded body is believed only from a booster on the object's host, otherwise the `id` is fetched | `InboxHandler.handle_announce_content/4`, `handle_announce_object/3` | dropped, logged |
 | an actor's `inbox` / `sharedInbox` vs. the actor | `ActorResolver` | `:inbox_origin_mismatch` |
 | the Follow named in an `Accept`/`Reject` vs. the signer | `Follows.accept_*_follow/2`, `reject_*_follow/2` (matched on `remote_actor_id` too) | ignored |
 | an Announce naming a **local** URI | `local_actor?/1`, refused outright rather than compared | dropped |
@@ -2587,7 +2593,7 @@ fetches, media cache warming, link previews).
 - `attributedTo` arrays — extracts first binary URI for validation
 - `sensitive` + `summary` — content warnings stored in their own columns and rendered collapsed (ADR 0052); rows written before v1.31.0 keep the `[CW: …]` prefix they were ingested with
 - Lemmy `Page` objects treated identically to `Article` (Create and Update)
-- Lemmy `Announce` with embedded object maps — extracts inner `id`
+- Lemmy `Announce` with embedded object maps — extracts inner `id`; the body is taken as written only when the booster is on the object's host, otherwise the `id` is fetched as for a bare URI
 - Lemmy group relays (FEP-1b12): an `Announce` wrapping a `Create`, `Update`, `Delete`, `Like` or `Undo` is unwrapped one level. A `Create` is verified through its object's own origin and routed to the boards following the **group**; the rest are honoured only when their actor is on the group's own host (ADR 0053)
 - `Mention` tags with `cc` addressing for `@user@domain` handles, resolved once at post time (ADR 0051)
 - `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) preserved by sanitizer
@@ -2961,7 +2967,7 @@ ActivityPub inbox (POST) requests use a separate pipeline:
 ```
 ApiHeaders → RateLimit (120/min per IP) →
 RequireAPContentType (415 on non-AP types) →
-CacheBody (256 KB max) → VerifyHttpSignature →
+CacheBody (256 KB, applied by CacheBodyReader while the body is read) → VerifyHttpSignature →
 RateLimitDomain (60/min per domain) →
 ActivityPubController (dispatch to InboxHandler)
 ```
@@ -3006,6 +3012,7 @@ these responses loads a subresource.
 | Avatar upload | 5 / hour | per user |
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
+| Actor fetch for an unknown inbox `keyId` | 60 / min | per target host |
 | Feeds (RSS/Atom) | 30 / min | per IP |
 | robots.txt and sitemap documents | 10 / min | per IP |
 | Follow-from-your-instance lookups | 10 / min | per IP |
@@ -3016,6 +3023,8 @@ these responses loads a subresource.
 | Timeline item replies | 20 / 5 min | per user |
 | LiveView mount | 60 / min | per IP |
 
+"Per IP" means per `RateLimits.ip_bucket/1`: the IPv4 address, or the IPv6
+/64, so one residential allocation is one bucket. Logs keep the full address.
 IP-based rate limits use `BaudrateWeb.Plugs.RateLimit` (Plug-based, in the
 router pipeline). Per-user rate limits use `BaudrateWeb.RateLimits` (called
 from LiveView event handlers — except the new-account bucket, which

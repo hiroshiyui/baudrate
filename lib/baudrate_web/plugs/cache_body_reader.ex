@@ -1,6 +1,7 @@
 defmodule BaudrateWeb.Plugs.CacheBodyReader do
   @moduledoc """
-  Custom body reader that caches the raw request body in `conn.assigns.raw_body`.
+  Custom body reader that caches the raw request body in `conn.assigns.raw_body`
+  and caps an inbox POST at the federation payload limit (256 KB).
 
   Used as the `body_reader` option for `Plug.Parsers` so that the original
   unparsed bytes are preserved for HTTP Signature digest verification.
@@ -9,14 +10,14 @@ defmodule BaudrateWeb.Plugs.CacheBodyReader do
   parser matches `application/activity+json` via `+json` subtype), leaving
   `Plug.Conn.read_body/2` returning empty for subsequent readers like
   `CacheBody`.
+
+  The payload cap applies here, before `Plug.Parsers` decodes anything: its
+  own `length` is the 1 MB sized for uploads, and the `:json` parser matches
+  `application/activity+json`, so without this an unauthenticated inbox POST
+  was JSON-decoded at four times the documented limit before `CacheBody` ever
+  saw it. `Plug.Parsers` turns the shortened read into a 413.
   """
 
-  # The federation payload cap (256 KB) applies here, before `Plug.Parsers`
-  # decodes anything: its own `length` is the 1 MB sized for uploads, and the
-  # `:json` parser matches `application/activity+json`, so without this an
-  # unauthenticated inbox POST was JSON-decoded at four times the documented
-  # limit before `CacheBody` ever saw it. `Plug.Parsers` turns the shortened
-  # read into a 413.
   def read_body(conn, opts) do
     opts = if inbox_request?(conn), do: Keyword.put(opts, :length, inbox_max_size()), else: opts
 

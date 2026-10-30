@@ -6,7 +6,11 @@ defmodule Baudrate.Federation.HTTPClient do
     * HTTPS only (except in test/dev for localhost)
     * Private/loopback IP rejection (including IPv6 `::`)
     * DNS-pinned connections to prevent DNS rebinding attacks
-    * Manual redirect following with IP validation at each hop
+    * Manual redirect following with IP validation at each hop; `get/2`
+      returns the final URL as `url:` so a caller can bind a document to the
+      origin that actually served it
+    * URLs carrying userinfo are refused (`:invalid_url`): Req would turn it
+      into an `Authorization` header presented to a third party
     * Configurable timeouts — connect, per-read (`receive_timeout`) **and**
       whole-request (`request_timeout`); without the last one a server
       trickling a byte every 29 s could hold a delivery job or media request

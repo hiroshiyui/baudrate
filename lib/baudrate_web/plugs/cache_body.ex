@@ -4,8 +4,8 @@ defmodule BaudrateWeb.Plugs.CacheBody do
   enforces the federation payload size limit (256 KB by default).
 
   If `CacheBodyReader` already cached the body (via `Plug.Parsers`
-  `body_reader` option), this plug just enforces the size limit.
-  Otherwise, it reads and caches the body directly.
+  `body_reader` option), it was capped while being read and this plug only
+  re-checks the size. Otherwise, it reads and caches the body directly.
   """
 
   import Plug.Conn

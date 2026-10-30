@@ -228,6 +228,10 @@ apk add vips-dev
 **Symptom of missing libvips:** Avatar uploads or article image uploads fail
 with NIF-related errors.
 
+An image refused as too large while well under the byte limit declares more
+than 40 megapixels or 12 000 px a side; the cap is read from the header before
+libvips decodes, on purpose, and is not configurable.
+
 ### Uploads directory
 
 User-uploaded files (avatars, article images) are stored in
@@ -1005,6 +1009,9 @@ Rate limiting uses [Hammer](https://hexdocs.pm/hammer/) with an ETS backend:
 | AP endpoints | 120 requests | 1 minute per IP |
 | AP inbox | 60 requests | 1 minute per remote domain |
 | Direct messages | 20 messages | 1 minute per user |
+
+"Per IP" counts an IPv6 address as its /64, so a household behind one
+allocation shares one bucket, as it does for IPv4.
 
 ### Fails open
 

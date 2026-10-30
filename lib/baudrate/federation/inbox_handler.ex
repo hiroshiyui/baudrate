@@ -32,7 +32,9 @@ defmodule Baudrate.Federation.InboxHandler do
     * `attributedTo` may be an array — the first binary URI is used
     * `sensitive` + `summary` are handled as content warnings
     * Lemmy `Page` objects are treated identically to `Article`
-    * Lemmy `Announce` with embedded object maps extracts the inner `id`
+    * Lemmy `Announce` with embedded object maps extracts the inner `id`; the
+      embedded body is believed only when the booster is on the object's host,
+      otherwise it is discarded and the `id` fetched, as for a bare URI
     * Cross-post deduplication: when a remote article with the same `ap_id`
       arrives via a second board inbox, it is linked to the additional board
       instead of being silently ignored

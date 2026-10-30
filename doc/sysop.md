@@ -1577,6 +1577,7 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | LiveView mount | 60 / min | per IP |
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
+| Actor fetch for an unknown inbox `keyId` | 60 / min | per target host |
 | Feeds (RSS/Atom) | 30 / min | per IP |
 | robots.txt and sitemap documents | 10 / min | per IP |
 | Follow-from-your-instance lookups | 10 / min | per IP |
@@ -1599,7 +1600,9 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | `/health` | 120 / min | per IP |
 | Push subscription, PWA share target | 10 / min each | per IP |
 
-Per-user rate limits are managed by `BaudrateWeb.RateLimits`. Admins are exempt
+"Per IP" counts an IPv6 address as its /64, so one residential allocation is
+one bucket; logs keep the full address. Per-user rate limits are managed by
+`BaudrateWeb.RateLimits`. Admins are exempt
 from the per-user limits on their **own** posting, editing and deletion (their
 actions are already audit-logged), but **not** from the moderation-queue
 deletion bucket: deletes from `/admin/moderation` and `/moderation` count
@@ -1864,7 +1867,10 @@ page. There is no admin action that deletes an account on someone's behalf.
   gap between validation and connect)
 - **Content size limits** — 256 KB AP payload, 64 KB content body
 - **File uploads** — magic byte validation, re-encoding as WebP (strips EXIF,
-  destroys polyglots)
+  destroys polyglots); an image declaring more than 40 megapixels or 12 000 px
+  a side is refused from the header, before libvips decodes a pixel, on every
+  pipeline (uploads, avatars, remote attachments, the media proxy, link
+  previews)
 - **CSP** — restrictive Content-Security-Policy: no eval, `img-src 'self' data: blob:`
   (remote images are served through the local media proxy, so no page contacts a
   third-party host — there is deliberately no `https:` source), `object-src 'none'`
@@ -2435,7 +2441,8 @@ every instance whose content is on the page.
 
 - It is a **cache**: safe to delete at any time, and excluded from backups
   without loss. Entries are re-fetched on next view.
-- nginx must **deny** `/uploads/media_cache/` directly, so the bytes are only
+- The application answers 404 for `/uploads/media_cache/` itself
+  (`DenyPrivateUploads`), and nginx must **deny** it too, so the bytes are only
   reachable through the signed `/media/` route and the HMAC cannot be bypassed.
   Both shipped configs do — the Ansible template
   (`ansible/roles/nginx/templates/baudrate.conf.j2`) and

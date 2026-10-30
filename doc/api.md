@@ -1167,7 +1167,10 @@ Signature: keyId="https://remote.example/users/bob#main-key",
 
 **Key resolution:** The `keyId` value is used to resolve the remote actor.
 The actor's `publicKey.publicKeyPem` field provides the RSA public key for
-verification.
+verification. The fetched document is accepted only when its `id` equals the
+URL that served it (after redirects) and its `publicKey.owner`, if present,
+names the actor. An unknown `keyId` is fetched at most 60 times a minute per
+target host, and a failed fetch is not retried for ten minutes.
 
 ---
 
@@ -1177,13 +1180,13 @@ verification.
 |----------|-------------|--------|
 | `Follow` | actor URI | Creates follower relationship; auto-accepted with `Accept(Follow)` |
 | `Undo` | `Follow` | Removes follower relationship |
-| `Create` | `Article`, `Page` or `Question` | Creates remote article in target board (a `Question` becomes an article with an attached poll) |
-| `Create` | `Note` (vote) | A Note whose `name` matches an option of the poll named by `inReplyTo` is counted as a poll vote, not a comment |
+| `Create` | `Article`, `Page` or `Question` | Creates remote article in target board (a `Question` becomes an article with an attached poll; at most 20 options) |
+| `Create` | `Note` (vote) | A Note whose `name` matches an option of the poll named by `inReplyTo` is counted as a poll vote, not a comment; one vote per actor on a single-choice poll |
 | `Create` | `Note` (public) | Creates comment on local article (resolved via `inReplyTo`). Dropped silently when the target article is not in a federated board, is locked, or has been deleted |
 | `Create` | `Note` (DM) | Creates direct message (see [DM Detection](#dm-detection)) |
 | `Like` | article or comment URI | Records a like on the article or comment |
 | `Undo` | `Like` | Removes the like (from both article and comment likes) |
-| `Announce` | article or comment URI, or embedded object | Records a boost/share (creates article/comment boost for local content) |
+| `Announce` | article or comment URI, or embedded object | Records a boost/share (creates article/comment boost for local content). An embedded object is used as written only when the booster is on its host; otherwise its `id` is fetched |
 | `Undo` | `Announce` | Removes the boost (from announces and article/comment boosts) |
 | `Update` | `Article`, `Page`, or `Note` | Updates remote content (authorship verified) |
 | `Update` | `Question` | Refreshes a remote poll's vote and voter counts |
@@ -1317,7 +1320,7 @@ software:
 - **Mentions** — `@user@domain` handles become `Mention` tags with `cc` addressing, resolved once when the post is written (ADR 0051)
 - **Threading** — a comment's `inReplyTo` names the comment it answers, so a discussion keeps its shape rather than arriving flat
 - **Lemmy `Page` objects** — Treated identically to `Article` for `Create` and `Update`
-- **Lemmy `Announce` with embedded objects** — Extracts the inner `id` field (not just bare URIs)
+- **Lemmy `Announce` with embedded objects** — Extracts the inner `id` field (not just bare URIs); the embedded body is believed only from a booster on the object's own host, otherwise the `id` is fetched
 - **Lemmy group relays (FEP-1b12)** — An `Announce` wrapping a `Create`, `Update`, `Delete`, `Like` or `Undo` is unwrapped one level. A `Create` is verified through its object's own origin and routed to the boards following the group; the others are honoured only when the inner actor is on the group's own host, which is all the group's signature can prove (ADR 0053)
 - **Board WebFinger** — Uses bare slug in `subject` (matching `preferredUsername`) for Mastodon compatibility; includes `properties` with `type: "Group"` for Lemmy-compatible disambiguation; accepts `!` prefix in queries for backward compatibility
 - **Mastodon HTML classes** — `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) are preserved through the HTML sanitizer

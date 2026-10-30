@@ -5,6 +5,13 @@ defmodule Baudrate.Federation.ActorResolver do
   Actors are cached in the `remote_actors` table with a configurable TTL.
   Cached actors are returned directly; stale or missing actors are fetched
   from the remote instance via `HTTPClient`.
+
+  A fetched document is believed only when its `id` equals the URL that served
+  it, after redirects, and its `publicKey.owner` (when present) names the
+  actor (ADR 0078). `resolve_by_key_id/1`, the one fetch an unauthenticated
+  inbox POST can trigger, is bounded per target host
+  (`BaudrateWeb.RateLimits.check_actor_fetch_host/1`) and remembers a miss in
+  `Baudrate.Media.NegativeCache` for ten minutes.
   """
 
   require Logger

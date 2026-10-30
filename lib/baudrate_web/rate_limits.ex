@@ -1,11 +1,14 @@
 defmodule BaudrateWeb.RateLimits do
   @moduledoc """
-  Centralized per-user rate limit checks for authenticated endpoints.
+  Centralized rate limit checks: per user for authenticated endpoints, plus
+  the per-IP, per-domain and per-host buckets that no plug covers.
 
-  Each function takes a `user_id` (integer) and returns `:ok` or
-  `{:error, :rate_limited}`. On backend errors, **fails open** (returns `:ok`)
-  to avoid denying service due to infrastructure issues — consistent with the
-  IP-based `RateLimit` plug.
+  Each function takes a `user_id` (integer), an IP or a host and returns `:ok`
+  or `{:error, :rate_limited}`. On backend errors, **fails open** (returns
+  `:ok`) to avoid denying service due to infrastructure issues — consistent
+  with the IP-based `RateLimit` plug. Every IP-keyed bucket, here and in the
+  plugs and LiveViews, is keyed through `ip_bucket/1` (an IPv6 address counts
+  as its /64).
 
   Admin users are trusted and should be exempted by callers; this module does
   not check roles.
@@ -48,6 +51,12 @@ defmodule BaudrateWeb.RateLimits do
   | `check_recovery_codes/1`      | `recovery_codes:`  | 1 hour  | 5     |
   | `check_remote_follow_domain/1` | `remote_follow_domain:` | 1 min | 10 |
   | `check_remote_import/1`       | `remote_import:`   | 5 min   | 10    |
+  | `check_account_alias/1`       | `account_alias:`   | 1 hour  | 10    |
+  | `check_sanction/1`            | `sanction:`        | 5 min   | 20    |
+  | `check_suggest/1`             | `suggest:`         | 1 min   | 60    |
+  | `check_preview/1`             | `preview:`         | 1 min   | 60    |
+  | `check_installation_key/1`    | `installation_key:` | 15 min | 10    |
+  | `check_actor_fetch_host/1`    | `actor_fetch:`     | 1 min   | 60 (per target host) |
   """
 
   require Logger

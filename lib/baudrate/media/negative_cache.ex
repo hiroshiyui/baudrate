@@ -1,10 +1,12 @@
 defmodule Baudrate.Media.NegativeCache do
   @moduledoc """
-  Short-lived record of media URLs that failed to fetch.
+  Short-lived record of URLs that failed to fetch.
 
   Without it, an image referenced from a popular page whose host is down would
   be re-fetched on every single view. With a one-hour TTL a dead host costs at
-  most one outbound request per URL per hour.
+  most one outbound request per URL per hour. Keys are opaque:
+  `Baudrate.Federation.ActorResolver` stores the unresolvable `keyId`s of
+  inbox signatures here under an `actor:` prefix, for ten minutes.
 
   Backed by ETS with a periodic sweep, matching `Baudrate.Auth.WebAuthnChallenges`.
   """
@@ -36,8 +38,7 @@ defmodule Baudrate.Media.NegativeCache do
 
   @doc """
   Records a failed fetch, suppressing retries for the TTL (one hour unless
-  `ttl_seconds` says otherwise). Keys are opaque: the actor resolver stores
-  its unresolvable `keyId`s here under an `actor:` prefix.
+  `ttl_seconds` says otherwise).
   """
   @spec mark_failed(String.t(), pos_integer()) :: :ok
   def mark_failed(url, ttl_seconds \\ @ttl_seconds) when is_binary(url) do
