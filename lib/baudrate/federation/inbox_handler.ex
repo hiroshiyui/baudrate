@@ -2449,6 +2449,14 @@ defmodule Baudrate.Federation.InboxHandler do
 
             :ok
 
+          # One choice means one choice. The unique index is per option, so
+          # without this a remote actor voted every option of a single-choice
+          # poll; the local path refuses the same in `Content.cast_vote/3`.
+          poll.mode == "single" and Content.remote_actor_voted?(poll.id, remote_actor.id) ->
+            Logger.info("federation.activity: type=Create(Note/PollVote) rejected already_voted")
+
+            :ok
+
           true ->
             case Content.create_remote_poll_vote(%{
                    poll_id: poll.id,

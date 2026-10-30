@@ -425,6 +425,7 @@ defmodule Baudrate.Content do
   defdelegate get_user_poll_votes(poll_id, user_id), to: Polls
   defdelegate cast_vote(poll, user, option_ids), to: Polls
   defdelegate create_remote_poll_vote(attrs), to: Polls
+  defdelegate remote_actor_voted?(poll_id, remote_actor_id), to: Polls
   defdelegate update_remote_poll_counts(poll, data), to: Polls
   defdelegate recalc_poll_counts(poll_id), to: Polls
 

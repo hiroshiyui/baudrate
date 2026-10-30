@@ -39,5 +39,6 @@ defmodule Baudrate.Content.PollOption do
     |> cast(attrs, [:text, :position, :votes_count])
     |> validate_required([:text, :position])
     |> validate_length(:text, max: @max_text_length)
+    |> validate_number(:votes_count, greater_than_or_equal_to: 0)
   end
 end

@@ -157,6 +157,83 @@ defmodule Baudrate.Federation.InboxHandlerPollTest do
       assert opt1.votes_count == 1
     end
 
+    test "one remote actor casts one vote on a single-choice poll" do
+      user = create_user()
+      board = create_board()
+      remote_actor = create_remote_actor()
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "One Choice",
+            body: "Body",
+            slug: "one-choice-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id],
+          poll: %{
+            mode: "single",
+            options: [%{text: "Option 1", position: 0}, %{text: "Option 2", position: 1}]
+          }
+        )
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      vote = fn name ->
+        %{
+          "type" => "Create",
+          "id" => "#{remote_actor.ap_id}#vote-#{System.unique_integer([:positive])}",
+          "actor" => remote_actor.ap_id,
+          "object" => %{
+            "type" => "Note",
+            "id" => "#{remote_actor.ap_id}#vote-note-#{System.unique_integer([:positive])}",
+            "name" => name,
+            "inReplyTo" => article_uri,
+            "attributedTo" => remote_actor.ap_id,
+            "to" => [Federation.actor_uri(:user, user.username)]
+          }
+        }
+      end
+
+      assert :ok = InboxHandler.handle(vote.("Option 1"), remote_actor, :shared)
+      assert :ok = InboxHandler.handle(vote.("Option 2"), remote_actor, :shared)
+
+      poll = Content.get_poll_for_article(article.id)
+      assert poll.voters_count == 1
+      assert Enum.find(poll.options, &(&1.text == "Option 2")).votes_count == 0
+    end
+
+    test "a Question with more options than the cap is not created" do
+      board = create_board()
+      remote_actor = create_remote_actor()
+      ap_id = "https://remote.example/articles/many-#{System.unique_integer([:positive])}"
+      board_uri = Federation.actor_uri(:board, board.slug)
+
+      activity = %{
+        "type" => "Create",
+        "id" => "#{ap_id}#create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "type" => "Question",
+          "id" => ap_id,
+          "name" => "Too many",
+          "content" => "<p>Content</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [board_uri],
+          "audience" => [board_uri],
+          "oneOf" =>
+            Enum.map(1..25, fn n ->
+              %{"type" => "Note", "name" => "Opt #{n}", "replies" => %{"totalItems" => 0}}
+            end),
+          "votersCount" => 0
+        }
+      }
+
+      InboxHandler.handle(activity, remote_actor, :shared)
+      refute Content.get_article_by_ap_id(ap_id)
+    end
+
     test "ignores a vote on a closed poll" do
       # `Content.cast_vote/3` refuses local votes after `closes_at`; the
       # federated path must match, otherwise a remote actor can still move the
@@ -297,6 +374,21 @@ defmodule Baudrate.Federation.InboxHandlerPollTest do
       article = Content.get_article_by_ap_id(ap_id)
       poll = Content.get_poll_for_article(article.id)
       assert poll.voters_count == 17
+
+      # Counts off the wire that are not non-negative integers fail the
+      # changeset rather than raising in the adapter; the numbers stand.
+      bad =
+        put_in(update_activity, ["object", "votersCount"], "lots")
+        |> put_in(["object", "oneOf"], [
+          %{"type" => "Note", "name" => "X", "replies" => %{"totalItems" => -5}}
+        ])
+        |> Map.put("id", "#{ap_id}#update-bad")
+
+      InboxHandler.handle(bad, remote_actor, :shared)
+
+      poll = Content.get_poll_for_article(article.id)
+      assert poll.voters_count == 17
+      assert Enum.find(poll.options, &(&1.text == "X")).votes_count == 10
 
       x_opt = Enum.find(poll.options, &(&1.text == "X"))
       y_opt = Enum.find(poll.options, &(&1.text == "Y"))

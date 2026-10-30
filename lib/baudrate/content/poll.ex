@@ -61,7 +61,9 @@ defmodule Baudrate.Content.Poll do
     |> cast(attrs, [:mode, :closes_at, :voters_count, :ap_id, :article_id])
     |> validate_required([:mode])
     |> validate_inclusion(:mode, @valid_modes)
+    |> validate_number(:voters_count, greater_than_or_equal_to: 0)
     |> cast_assoc(:options, with: &PollOption.remote_changeset/2, required: true)
+    |> validate_remote_option_count()
     |> assoc_constraint(:article)
     |> unique_constraint(:article_id)
     |> unique_constraint(:ap_id)
@@ -85,6 +87,21 @@ defmodule Baudrate.Content.Poll do
         else
           add_error(changeset, :closes_at, "must be in the future")
         end
+    end
+  end
+
+  # A remote Question may offer more choices than a local poll, but not
+  # without end: bounded only by the payload cap, one `Create(Question)` could
+  # carry thousands of option rows.
+  @max_remote_options 20
+
+  defp validate_remote_option_count(changeset) do
+    case get_change(changeset, :options) do
+      options when is_list(options) and length(options) > @max_remote_options ->
+        add_error(changeset, :options, "must have at most #{@max_remote_options} options")
+
+      _ ->
+        changeset
     end
   end
 

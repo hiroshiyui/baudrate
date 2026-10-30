@@ -255,6 +255,15 @@ defmodule Baudrate.Content.Polls do
     end
   end
 
+  @doc "True when the remote actor already holds a vote on the poll."
+  @spec remote_actor_voted?(integer(), integer()) :: boolean()
+  def remote_actor_voted?(poll_id, remote_actor_id) do
+    Repo.exists?(
+      from v in PollVote,
+        where: v.poll_id == ^poll_id and v.remote_actor_id == ^remote_actor_id
+    )
+  end
+
   @doc """
   Creates a remote poll vote received via ActivityPub.
   """
@@ -273,10 +282,15 @@ defmodule Baudrate.Content.Polls do
   def update_remote_poll_counts(%Poll{} = poll, %{} = data) do
     poll = Repo.preload(poll, :options)
 
+    # `cast/3` rather than `change/2`: the counts come off the wire, and a
+    # string, float or negative must fail the changeset, not raise in the
+    # adapter and burn the worker's retries.
     Ecto.Multi.new()
     |> Ecto.Multi.update(
       :poll,
-      Ecto.Changeset.change(poll, voters_count: data[:voters_count] || 0)
+      poll
+      |> Ecto.Changeset.cast(%{voters_count: data[:voters_count] || 0}, [:voters_count])
+      |> Ecto.Changeset.validate_number(:voters_count, greater_than_or_equal_to: 0)
     )
     |> Ecto.Multi.run(:options, fn repo, _ ->
       option_counts = data[:option_counts] || []
@@ -287,7 +301,12 @@ defmodule Baudrate.Content.Polls do
             {:cont, acc}
 
           option ->
-            case repo.update(Ecto.Changeset.change(option, votes_count: count)) do
+            changeset =
+              option
+              |> Ecto.Changeset.cast(%{votes_count: count}, [:votes_count])
+              |> Ecto.Changeset.validate_number(:votes_count, greater_than_or_equal_to: 0)
+
+            case repo.update(changeset) do
               {:ok, _} -> {:cont, acc}
               {:error, changeset} -> {:halt, {:error, changeset}}
             end
