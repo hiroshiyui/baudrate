@@ -63,6 +63,10 @@ or a setting; deploy it.
   advisories, EEF-CVE-2026-108525 … -116078); hackney 4.4.5 → 4.9.1
   (test-only, via Wallaby).
 
+### Changed
+
+- Dependencies: Hammer 7.5.0 → 7.5.1, MDEx 0.14.3 → 0.14.5.
+
 ## [2.1.0] — 2026-10-26
 
 An infrastructure release: production moves from Debian 12 (bookworm) with
