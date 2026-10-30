@@ -96,7 +96,11 @@ defmodule BaudrateWeb.RegisterLive do
        |> assign(:ip_banned, true)
        |> put_flash(:error, BaudrateWeb.Helpers.ip_banned_message())}
     else
-      case BaudrateWeb.RateLimiter.check_rate("register:#{ip}", 3_600_000, 5) do
+      case BaudrateWeb.RateLimiter.check_rate(
+             "register:#{BaudrateWeb.RateLimits.ip_bucket(ip)}",
+             3_600_000,
+             5
+           ) do
         {:deny, _limit} ->
           Logger.warning("rate_limit.denied: action=register ip=#{ip}")
 

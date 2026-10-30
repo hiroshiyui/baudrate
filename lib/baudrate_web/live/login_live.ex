@@ -51,7 +51,11 @@ defmodule BaudrateWeb.LoginLive do
       ) do
     ip = socket.assigns.peer_ip
 
-    case BaudrateWeb.RateLimiter.check_rate("login:#{ip}", 300_000, 10) do
+    case BaudrateWeb.RateLimiter.check_rate(
+           "login:#{BaudrateWeb.RateLimits.ip_bucket(ip)}",
+           300_000,
+           10
+         ) do
       {:deny, _limit} ->
         Logger.warning("rate_limit.denied: action=login ip=#{ip}")
 

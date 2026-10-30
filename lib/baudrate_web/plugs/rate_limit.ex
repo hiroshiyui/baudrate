@@ -73,7 +73,9 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     action = Keyword.fetch!(opts, :action)
     {scale_ms, limit} = Map.fetch!(@limits, action)
     ip = remote_ip(conn)
-    bucket = "#{action}:#{ip}"
+    # The bucket is the /64 for IPv6 (`RateLimits.ip_bucket/1`); the log line
+    # keeps the full address.
+    bucket = "#{action}:#{BaudrateWeb.RateLimits.ip_bucket(conn.remote_ip)}"
 
     case BaudrateWeb.RateLimiter.check_rate(bucket, scale_ms, limit) do
       {:allow, _count} ->

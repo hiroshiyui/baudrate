@@ -4,6 +4,38 @@ defmodule BaudrateWeb.RateLimitsTest do
   alias BaudrateWeb.RateLimits
   alias BaudrateWeb.RateLimiter.Sandbox
 
+  describe "ip_bucket/1" do
+    test "an IPv4 address is its own bucket" do
+      assert RateLimits.ip_bucket({203, 0, 113, 7}) == "203.0.113.7"
+      assert RateLimits.ip_bucket("203.0.113.7") == "203.0.113.7"
+    end
+
+    test "an IPv6 address shares its /64" do
+      a = {0x2001, 0xDB8, 0x1, 0x2, 0x1, 0x2, 0x3, 0x4}
+      b = {0x2001, 0xDB8, 0x1, 0x2, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF}
+      c = {0x2001, 0xDB8, 0x1, 0x3, 0x1, 0x2, 0x3, 0x4}
+
+      assert RateLimits.ip_bucket(a) == "2001:db8:1:2::/64"
+      assert RateLimits.ip_bucket(a) == RateLimits.ip_bucket(b)
+      refute RateLimits.ip_bucket(a) == RateLimits.ip_bucket(c)
+      assert RateLimits.ip_bucket("2001:db8:1:2:1:2:3:4") == "2001:db8:1:2::/64"
+    end
+
+    test "an unparseable string passes through, so it still shares one bucket" do
+      assert RateLimits.ip_bucket("unknown") == "unknown"
+    end
+
+    test "the IP-keyed checks use it" do
+      Sandbox.set_fun(fn bucket, _s, _l ->
+        send(self(), {:bucket, bucket})
+        {:allow, 1}
+      end)
+
+      RateLimits.check_search_by_ip("2001:db8:1:2:1:2:3:4")
+      assert_received {:bucket, "search:ip:2001:db8:1:2::/64"}
+    end
+  end
+
   describe "check_admin_sudo/1" do
     test "allows attempts under the limit" do
       Sandbox.set_fun(fn _b, _s, _l -> {:allow, 1} end)

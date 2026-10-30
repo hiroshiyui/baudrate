@@ -259,7 +259,7 @@ defmodule BaudrateWeb.AuthHooks do
   def on_mount(:rate_limit_mount, _params, _session, socket) do
     if connected?(socket) do
       ip = extract_peer_ip(socket)
-      bucket = "liveview_mount:#{ip}"
+      bucket = "liveview_mount:#{BaudrateWeb.RateLimits.ip_bucket(ip)}"
 
       case BaudrateWeb.RateLimiter.check_rate(bucket, 60_000, 60) do
         {:deny, _} ->

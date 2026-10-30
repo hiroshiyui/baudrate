@@ -108,7 +108,7 @@ defmodule BaudrateWeb.RateLimits do
   """
   @spec check_account_reset_by_ip(String.t()) :: :ok | {:error, :rate_limited}
   def check_account_reset_by_ip(ip) do
-    check("account_reset:ip:#{ip}", 3_600_000, 10, :account_reset_ip)
+    check("account_reset:ip:#{ip_bucket(ip)}", 3_600_000, 10, :account_reset_ip)
   end
 
   @doc "Article creation: 10 per 15 minutes per user."
@@ -218,7 +218,7 @@ defmodule BaudrateWeb.RateLimits do
   """
   @spec check_installation_key(String.t()) :: :ok | {:error, :rate_limited}
   def check_installation_key(ip) do
-    check("installation_key:#{ip}", 900_000, 10, :installation_key)
+    check("installation_key:#{ip_bucket(ip)}", 900_000, 10, :installation_key)
   end
 
   @doc """
@@ -260,7 +260,7 @@ defmodule BaudrateWeb.RateLimits do
   @doc "Search (guest): 10 per minute per IP address."
   @spec check_search_by_ip(String.t()) :: :ok | {:error, :rate_limited}
   def check_search_by_ip(ip) do
-    check("search:ip:#{ip}", 60_000, 10, :search_ip)
+    check("search:ip:#{ip_bucket(ip)}", 60_000, 10, :search_ip)
   end
 
   @doc "Avatar change: 5 per hour per user."
@@ -427,7 +427,7 @@ defmodule BaudrateWeb.RateLimits do
   @doc "Media proxy fetch triggered by one client: 20 per minute per IP."
   @spec check_media_fetch_ip(String.t()) :: :ok | {:error, :rate_limited}
   def check_media_fetch_ip(ip) do
-    check("media_fetch_ip:#{ip}", 60_000, 20, :media_fetch_ip)
+    check("media_fetch_ip:#{ip_bucket(ip)}", 60_000, 20, :media_fetch_ip)
   end
 
   @doc "Instance-wide media proxy egress ceiling: 600 fetches per minute."
