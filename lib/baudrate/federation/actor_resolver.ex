@@ -11,6 +11,7 @@ defmodule Baudrate.Federation.ActorResolver do
 
   import Ecto.Query
 
+  alias Baudrate.Media.NegativeCache
   alias Baudrate.Repo
   alias Baudrate.Federation
 
@@ -22,6 +23,9 @@ defmodule Baudrate.Federation.ActorResolver do
     Sanitizer,
     Validator
   }
+
+  # How long an unresolvable `keyId` is remembered before it is fetched again.
+  @negative_ttl_seconds 600
 
   @doc """
   Resolves a remote actor by their AP ID.
@@ -51,7 +55,49 @@ defmodule Baudrate.Federation.ActorResolver do
   def resolve_by_key_id(key_id_url) when is_binary(key_id_url) do
     # Key IDs are typically "https://remote.example/users/alice#main-key"
     actor_url = key_id_url |> URI.parse() |> Map.put(:fragment, nil) |> URI.to_string()
-    resolve(actor_url)
+
+    # This is the one unauthenticated path that makes this instance send a
+    # request: the `keyId` is read before the signature can be checked, and
+    # an unknown actor must be fetched to check it. Cached actors cost
+    # nothing. For a miss, a recent failure for the same URL is answered from
+    # the negative cache, and fetches are bounded per target host, so a
+    # stream of forged inbox POSTs cannot aim our GETs at a third party or
+    # mint a `remote_actors` row per request.
+    case Repo.one(from r in RemoteActor, where: r.ap_id == ^actor_url) do
+      %RemoteActor{} ->
+        resolve(actor_url)
+
+      nil ->
+        cond do
+          NegativeCache.failed?("actor:" <> actor_url) ->
+            {:error, :actor_fetch_failed_recently}
+
+          actor_fetch_host_limited?(actor_url) ->
+            {:error, :rate_limited}
+
+          true ->
+            case resolve(actor_url) do
+              {:ok, _} = ok ->
+                ok
+
+              {:error, reason} = err ->
+                unless reason in [:domain_blocked, :no_site_key],
+                  do: NegativeCache.mark_failed("actor:" <> actor_url, @negative_ttl_seconds)
+
+                err
+            end
+        end
+    end
+  end
+
+  defp actor_fetch_host_limited?(url) do
+    case URI.parse(url) do
+      %URI{host: host} when is_binary(host) and host != "" ->
+        BaudrateWeb.RateLimits.check_actor_fetch_host(String.downcase(host)) != :ok
+
+      _ ->
+        false
+    end
   end
 
   @doc """
@@ -78,8 +124,8 @@ defmodule Baudrate.Federation.ActorResolver do
       fetch_opts = [headers: [], refuse_blocked: true, timeout: opts[:timeout]]
 
       case HTTPClient.get(actor_ap_id, fetch_opts) do
-        {:ok, %{body: body}} ->
-          parse_and_upsert(body, actor_ap_id)
+        {:ok, %{body: body, url: final_url}} ->
+          parse_and_upsert(body, final_url)
 
         {:error, {:http_error, status, _}} when status in [401, 403, 404] ->
           # Remote requires authorized fetch — retry with signed request.
@@ -97,37 +143,66 @@ defmodule Baudrate.Federation.ActorResolver do
     end
   end
 
-  defp parse_and_upsert(body, actor_ap_id) do
+  # `fetched_url` is where the body was actually served from, after redirects.
+  defp parse_and_upsert(body, fetched_url) do
     with {:ok, json} <- Jason.decode(body),
          {:ok, attrs} <- extract_actor_attrs(json),
-         :ok <- validate_same_origin(attrs.ap_id, actor_ap_id) do
+         :ok <- validate_same_origin(attrs.ap_id, fetched_url),
+         :ok <- validate_key_owner(json, attrs.ap_id) do
       upsert_actor(attrs)
     else
       {:error, reason} = err ->
         Logger.warning(
-          "federation.actor_resolve_failed: url=#{actor_ap_id} reason=#{inspect(reason)}"
+          "federation.actor_resolve_failed: url=#{fetched_url} reason=#{inspect(reason)}"
         )
 
         err
     end
   end
 
-  # Binds the actor document's declared `id` to the origin we actually fetched
-  # from. During signature verification the fetched URL is derived from the
-  # request's `keyId`, so without this check a host controlling any HTTPS
-  # endpoint could serve a document whose `id` claims a victim actor on another
-  # domain (with the attacker's public key), forging the victim and poisoning
-  # the cached `remote_actors` row keyed by `ap_id`. Requiring the `id` host to
-  # match the fetched host closes that key-confusion / actor-forgery hole.
-  defp validate_same_origin(doc_id, fetched_url) do
-    with %URI{host: doc_host} when is_binary(doc_host) <- URI.parse(doc_id),
-         %URI{host: fetched_host} when is_binary(fetched_host) <- URI.parse(fetched_url),
-         true <- String.downcase(doc_host) == String.downcase(fetched_host) do
-      :ok
-    else
-      _ -> {:error, :actor_id_origin_mismatch}
+  # Binds the actor document's declared `id` to the URL it was served from.
+  # During signature verification the fetched URL is derived from the
+  # request's `keyId`, so a host controlling *any* HTTPS endpoint could serve
+  # a document whose `id` claims a victim actor (with the attacker's public
+  # key), forging the victim and poisoning the cached `remote_actors` row
+  # keyed by `ap_id`. A host comparison was not enough: anyone who can place a
+  # file on the victim's origin (user uploads, static paths) or trigger an
+  # open redirect off it passed. The document must come back from exactly the
+  # URL its `id` names — the one request only that actor's host can answer —
+  # which is also what Mastodon requires (the CVE-2024-23832 class).
+  defp validate_same_origin(doc_id, fetched_url)
+       when is_binary(doc_id) and is_binary(fetched_url) do
+    if normalize_uri(doc_id) == normalize_uri(fetched_url),
+      do: :ok,
+      else: {:error, :actor_id_origin_mismatch}
+  end
+
+  defp validate_same_origin(_, _), do: {:error, :actor_id_origin_mismatch}
+
+  # Scheme and host are case-insensitive; the rest of the URI is compared as
+  # written. A `keyId` fragment never reaches here (`resolve_by_key_id/1`).
+  defp normalize_uri(uri) do
+    case URI.parse(uri) do
+      %URI{scheme: scheme, host: host} = parsed when is_binary(scheme) and is_binary(host) ->
+        %URI{parsed | scheme: String.downcase(scheme), host: String.downcase(host), fragment: nil}
+        |> URI.to_string()
+
+      _ ->
+        uri
     end
   end
+
+  # A key that names an owner must name the actor it is embedded in; anything
+  # else is a document lending one actor's key to another. The key `id` is not
+  # compared: implementations differ on its shape, and the `keyId` path already
+  # fetched exactly the URL it names.
+  defp validate_key_owner(%{"publicKey" => %{"owner" => owner}}, ap_id) do
+    if is_binary(owner) and normalize_uri(owner) == normalize_uri(ap_id),
+      do: :ok,
+      else: {:error, :key_owner_mismatch}
+  end
+
+  defp validate_key_owner(_json, _ap_id), do: :ok
 
   defp signed_fetch(actor_ap_id, opts) do
     with {:ok, _} <- KeyStore.ensure_site_keypair(),
@@ -144,8 +219,8 @@ defmodule Baudrate.Federation.ActorResolver do
       signed_opts = [refuse_blocked: true, timeout: opts[:timeout]]
 
       case HTTPClient.signed_get(actor_ap_id, private_key, key_id, signed_opts) do
-        {:ok, %{body: body}} ->
-          parse_and_upsert(body, actor_ap_id)
+        {:ok, %{body: body, url: final_url}} ->
+          parse_and_upsert(body, final_url)
 
         {:error, reason} = err ->
           Logger.warning(

@@ -54,8 +54,8 @@ defmodule Baudrate.Federation.ObjectResolver do
   def fetch(url) when is_binary(url) do
     with :ok <- validate_url(url),
          {:dedup, nil} <- {:dedup, Content.get_article_by_ap_id(url)},
-         {:ok, object} <- fetch_object(url),
-         {:ok, object} <- validate_object(object, url),
+         {:ok, object, final_url} <- fetch_object(url),
+         {:ok, object} <- validate_object(object, final_url),
          {:ok, remote_actor} <- resolve_author(object),
          {:ok, body, body_html} <- sanitize_content(object) do
       title = TitleDeriver.derive_title(object, body)
@@ -100,8 +100,8 @@ defmodule Baudrate.Federation.ObjectResolver do
   def resolve(url) when is_binary(url) do
     with :ok <- validate_url(url),
          {:dedup, nil} <- {:dedup, Content.get_article_by_ap_id(url)},
-         {:ok, object} <- fetch_object(url),
-         {:ok, object} <- validate_object(object, url),
+         {:ok, object, final_url} <- fetch_object(url),
+         {:ok, object} <- validate_object(object, final_url),
          {:ok, remote_actor} <- resolve_author(object),
          {:ok, article} <- materialize(object, remote_actor) do
       {:ok, Baudrate.Repo.preload(article, [:remote_actor, :user, :boards])}
@@ -141,9 +141,9 @@ defmodule Baudrate.Federation.ObjectResolver do
       key_id = "#{site_uri}#main-key"
 
       case HTTPClient.signed_get(url, private_key, key_id, refuse_blocked: true) do
-        {:ok, %{body: body}} ->
+        {:ok, %{body: body, url: final_url}} ->
           case Jason.decode(body) do
-            {:ok, object} when is_map(object) -> {:ok, object}
+            {:ok, object} when is_map(object) -> {:ok, object, final_url}
             _ -> {:error, :invalid_json}
           end
 
@@ -154,7 +154,7 @@ defmodule Baudrate.Federation.ObjectResolver do
   end
 
   # Origin binding, mirroring the inbox Announce path: the document's `id`
-  # must live on the host it was fetched from, and its author on the same host
+  # must live on the host it was finally served from (after redirects), and its author on the same host
   # as the `id`. Without this any signed-in user could paste a URL on
   # evil.example whose document claims `id`/`attributedTo` on mastodon.social,
   # materializing attacker content as a public article under the victim's

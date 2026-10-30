@@ -34,10 +34,14 @@ defmodule Baudrate.Media.NegativeCache do
     ArgumentError -> false
   end
 
-  @doc "Records a failed fetch, suppressing retries for the TTL."
-  @spec mark_failed(String.t()) :: :ok
-  def mark_failed(url) when is_binary(url) do
-    :ets.insert(@table, {url, System.system_time(:second) + @ttl_seconds})
+  @doc """
+  Records a failed fetch, suppressing retries for the TTL (one hour unless
+  `ttl_seconds` says otherwise). Keys are opaque: the actor resolver stores
+  its unresolvable `keyId`s here under an `actor:` prefix.
+  """
+  @spec mark_failed(String.t(), pos_integer()) :: :ok
+  def mark_failed(url, ttl_seconds \\ @ttl_seconds) when is_binary(url) do
+    :ets.insert(@table, {url, System.system_time(:second) + ttl_seconds})
     :ok
   rescue
     ArgumentError -> :ok

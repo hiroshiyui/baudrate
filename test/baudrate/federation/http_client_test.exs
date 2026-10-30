@@ -118,6 +118,61 @@ defmodule Baudrate.Federation.HTTPClientTest do
     end
   end
 
+  describe "get/2 reports where the body came from" do
+    test "url is the final URL after a redirect" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        case conn.request_path do
+          "/users/alice" ->
+            conn
+            |> Plug.Conn.put_resp_header("location", "https://elsewhere.example/doc")
+            |> Plug.Conn.send_resp(302, "")
+
+          _ ->
+            Plug.Conn.send_resp(conn, 200, "{}")
+        end
+      end)
+
+      assert {:ok, %{status: 200, url: "https://elsewhere.example/doc"}} =
+               HTTPClient.get("https://remote.example/users/alice")
+    end
+
+    test "url is the requested URL when nothing redirected" do
+      Req.Test.stub(HTTPClient, &Plug.Conn.send_resp(&1, 200, "{}"))
+
+      assert {:ok, %{url: "https://remote.example/users/alice"}} =
+               HTTPClient.get("https://remote.example/users/alice")
+    end
+  end
+
+  describe "URL userinfo" do
+    # Req turns `user:pw@` into an Authorization header; a remote-supplied URL
+    # must not make this instance present credentials to a third party.
+    test "is refused on the first hop" do
+      Req.Test.stub(HTTPClient, fn _conn -> flunk("must not be requested") end)
+
+      assert {:error, :invalid_url} =
+               HTTPClient.get("https://alice:secret@remote.example/users/alice")
+
+      assert {:error, :invalid_url} = HTTPClient.validate_url("https://x@remote.example/")
+    end
+
+    test "is refused on a redirect hop" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        case Plug.Conn.get_req_header(conn, "authorization") do
+          [] ->
+            conn
+            |> Plug.Conn.put_resp_header("location", "https://u:p@third.example/x")
+            |> Plug.Conn.send_resp(302, "")
+
+          _ ->
+            flunk("credentials were presented")
+        end
+      end)
+
+      assert {:error, :invalid_url} = HTTPClient.get("https://remote.example/users/alice")
+    end
+  end
+
   describe "get/2 redirects" do
     test "follows 301 redirect" do
       {:ok, agent} = Agent.start_link(fn -> 0 end)

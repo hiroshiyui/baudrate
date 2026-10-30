@@ -448,6 +448,47 @@ defmodule BaudrateWeb.RateLimits do
     check("reply_chain_domain:#{domain}", 60_000, 20, :reply_chain_domain)
   end
 
+  @doc """
+  The rate-limit key for a client address: the IPv4 address as written, an
+  IPv6 address truncated to its /64.
+
+  A residential IPv6 allocation is a /64 or larger, so keyed on the full
+  address every per-IP bucket (login, registration, search, the inbox…) hands
+  one client 2^64 fresh buckets. The /64 is the unit an ISP hands out; keying
+  on it costs a legitimate household nothing and takes the free pass away.
+  Audit logs keep the full address; only the bucket is widened.
+
+  Accepts a tuple or a string (`"unknown"` and unparseable strings pass
+  through unchanged, so they still share one bucket).
+  """
+  @spec ip_bucket(:inet.ip_address() | String.t()) :: String.t()
+  def ip_bucket({_, _, _, _} = ip), do: ip |> :inet.ntoa() |> to_string()
+
+  def ip_bucket({a, b, c, d, _, _, _, _}),
+    do: ({a, b, c, d, 0, 0, 0, 0} |> :inet.ntoa() |> to_string()) <> "/64"
+
+  def ip_bucket(ip) when is_binary(ip) do
+    case :inet.parse_strict_address(String.to_charlist(ip)) do
+      {:ok, tuple} -> ip_bucket(tuple)
+      {:error, _} -> ip
+    end
+  end
+
+  @doc """
+  Actor fetch triggered by an inbox signature's `keyId`: 60 per minute per
+  **target** host.
+
+  The inbox is the one unauthenticated request that makes this instance send
+  one: a `keyId` naming an unknown actor is fetched before the signature can
+  be checked, so without a bound anyone could aim a stream of signed GETs
+  (our user agent, our site key) at any host, 120 a minute per source
+  address. Keyed on the host being fetched, like `check_reply_chain_fetch/1`.
+  """
+  @spec check_actor_fetch_host(String.t()) :: :ok | {:error, :rate_limited}
+  def check_actor_fetch_host(host) do
+    check("actor_fetch:#{host}", 60_000, 60, :actor_fetch_host)
+  end
+
   defp check(bucket, scale_ms, limit, action) do
     case BaudrateWeb.RateLimiter.check_rate(bucket, scale_ms, limit) do
       {:allow, _count} ->

@@ -335,6 +335,63 @@ defmodule Baudrate.Federation.ActorResolverTest do
     end
   end
 
+  describe "resolve_by_key_id/1 is the unauthenticated fetch, and is bounded" do
+    # The inbox reads `keyId` before any signature can be checked, so an
+    # unknown key is a request this instance sends on a stranger's say-so.
+    setup do
+      BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
+      :ok
+    end
+
+    test "a keyId that failed recently is not fetched again" do
+      {:ok, agent} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Agent.update(agent, &(&1 + 1))
+        Plug.Conn.send_resp(conn, 500, "")
+      end)
+
+      key_id = "https://flaky.example/users/x-#{System.unique_integer([:positive])}#main-key"
+
+      assert {:error, {:http_error, 500, _}} = ActorResolver.resolve_by_key_id(key_id)
+      assert {:error, :actor_fetch_failed_recently} = ActorResolver.resolve_by_key_id(key_id)
+      assert Agent.get(agent, & &1) == 1
+    end
+
+    test "fetches are bounded per target host" do
+      Req.Test.stub(HTTPClient, fn _conn -> flunk("must not fetch a limited host") end)
+
+      BaudrateWeb.RateLimiter.Sandbox.set_fun(fn bucket, _scale, _limit ->
+        if String.starts_with?(bucket, "actor_fetch:target.example"),
+          do: {:deny, 60},
+          else: {:allow, 1}
+      end)
+
+      assert {:error, :rate_limited} =
+               ActorResolver.resolve_by_key_id("https://target.example/users/anyone#main-key")
+    end
+
+    test "a cached actor costs no fetch and no bucket" do
+      {public_pem, _} = KeyStore.generate_keypair()
+
+      Repo.insert!(%RemoteActor{
+        ap_id: "https://remote.example/users/known",
+        username: "known",
+        domain: "remote.example",
+        public_key_pem: public_pem,
+        inbox: "https://remote.example/users/known/inbox",
+        actor_type: "Person",
+        fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+
+      BaudrateWeb.RateLimiter.Sandbox.set_fun(fn _b, _s, _l -> flunk("no bucket for a hit") end)
+      Req.Test.stub(HTTPClient, fn _conn -> flunk("no fetch for a hit") end)
+
+      assert {:ok, %RemoteActor{username: "known"}} =
+               ActorResolver.resolve_by_key_id("https://remote.example/users/known#main-key")
+    end
+  end
+
   describe "actor id / fetch-origin binding (anti-forgery)" do
     test "rejects a document whose id is on a different host than the fetched URL" do
       {attacker_pem, _} = KeyStore.generate_keypair()
@@ -397,6 +454,84 @@ defmodule Baudrate.Federation.ActorResolverTest do
       # The genuine victim row is untouched — its key was not overwritten.
       reloaded = Repo.get_by(RemoteActor, ap_id: "https://victim.example/users/victim")
       assert reloaded.public_key_pem == victim_pem
+    end
+
+    test "rejects a document whose id is another path on the fetched host" do
+      # Anyone who can place a file on the victim's origin (an upload path, a
+      # static directory) could otherwise mint the victim's key.
+      {attacker_pem, _} = KeyStore.generate_keypair()
+
+      forged_json =
+        Jason.encode!(%{
+          "id" => "https://remote.example/users/victim",
+          "type" => "Person",
+          "preferredUsername" => "victim",
+          "inbox" => "https://remote.example/users/victim/inbox",
+          "publicKey" => %{"publicKeyPem" => attacker_pem}
+        })
+
+      Req.Test.stub(HTTPClient, fn conn -> Plug.Conn.send_resp(conn, 200, forged_json) end)
+
+      assert {:error, :actor_id_origin_mismatch} =
+               ActorResolver.resolve_by_key_id(
+                 "https://remote.example/media/upload.json#main-key"
+               )
+
+      refute Repo.get_by(RemoteActor, ap_id: "https://remote.example/users/victim")
+    end
+
+    test "rejects a document served after a redirect to another host" do
+      # An open redirect on the victim's host: the id matches the URL asked
+      # for, but the body came from somewhere else.
+      {attacker_pem, _} = KeyStore.generate_keypair()
+
+      forged_json =
+        Jason.encode!(%{
+          "id" => "https://remote.example/users/hopped",
+          "type" => "Person",
+          "preferredUsername" => "hopped",
+          "inbox" => "https://remote.example/users/hopped/inbox",
+          "publicKey" => %{"publicKeyPem" => attacker_pem}
+        })
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        case Plug.Conn.get_req_header(conn, "host") do
+          ["remote.example"] ->
+            conn
+            |> Plug.Conn.put_resp_header("location", "https://attacker.example/doc")
+            |> Plug.Conn.send_resp(302, "")
+
+          _ ->
+            Plug.Conn.send_resp(conn, 200, forged_json)
+        end
+      end)
+
+      assert {:error, :actor_id_origin_mismatch} =
+               ActorResolver.resolve("https://remote.example/users/hopped")
+
+      refute Repo.get_by(RemoteActor, ap_id: "https://remote.example/users/hopped")
+    end
+
+    test "rejects a key whose owner is another actor" do
+      {pem, _} = KeyStore.generate_keypair()
+
+      json =
+        Jason.encode!(%{
+          "id" => "https://remote.example/users/lender",
+          "type" => "Person",
+          "preferredUsername" => "lender",
+          "inbox" => "https://remote.example/users/lender/inbox",
+          "publicKey" => %{
+            "id" => "https://remote.example/users/lender#main-key",
+            "owner" => "https://remote.example/users/someone-else",
+            "publicKeyPem" => pem
+          }
+        })
+
+      Req.Test.stub(HTTPClient, fn conn -> Plug.Conn.send_resp(conn, 200, json) end)
+
+      assert {:error, :key_owner_mismatch} =
+               ActorResolver.resolve("https://remote.example/users/lender")
     end
 
     test "accepts a same-host id (normal path) and stores alsoKnownAs" do

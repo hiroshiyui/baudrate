@@ -53,9 +53,14 @@ defmodule Baudrate.Federation.HTTPClient do
   DNS is resolved once and pinned to the connection. Redirects are followed
   manually with full SSRF validation at each hop.
 
-  Returns `{:ok, %{status: status, body: body}}` on success (2xx), or
-  `{:error, {:http_error, status, body}}` on non-2xx responses (body
+  Returns `{:ok, %{status: status, body: body, url: final_url}}` on success
+  (2xx), or `{:error, {:http_error, status, body}}` on non-2xx responses (body
   truncated to 4 KB for diagnostics).
+
+  `url` is the URL the body was actually served from, after redirects. A
+  caller binding a document's `id` to its origin must compare against this,
+  never the URL it asked for: a redirect from the asked-for host to another is
+  otherwise indistinguishable from the asked-for host answering (ADR 0046).
   """
   def get(url, opts \\ []) do
     config = federation_config()
@@ -104,7 +109,7 @@ defmodule Baudrate.Federation.HTTPClient do
 
       case Req.get(req_opts) |> finalize_streamed() do
         {:ok, %Req.Response{status: status, body: body}} when status in 200..299 ->
-          {:ok, %{status: status, body: body}}
+          {:ok, %{status: status, body: body, url: url}}
 
         {:ok, %Req.Response{status: status, headers: resp_headers}}
         when status in [301, 302, 303, 307, 308] ->
@@ -333,6 +338,7 @@ defmodule Baudrate.Federation.HTTPClient do
 
     with :ok <- validate_scheme(uri),
          :ok <- validate_host(uri),
+         :ok <- validate_no_userinfo(uri),
          :ok <- validate_not_blocked(uri.host, block_check?),
          {:ok, ip} <- safe_resolve_ip(uri.host) do
       {:ok, %{ip: ip, host: uri.host, uri: uri}}
@@ -512,6 +518,15 @@ defmodule Baudrate.Federation.HTTPClient do
   defp validate_host(%URI{host: nil}), do: {:error, :invalid_host}
   defp validate_host(%URI{host: ""}), do: {:error, :invalid_host}
   defp validate_host(_), do: :ok
+
+  # Req turns a URL's userinfo into `Authorization: Basic …` on the request it
+  # sends, so a remote-supplied `https://user:pw@target/` (an actor `id`, an
+  # `inReplyTo`, a feed URL, a redirect `Location`) would have this instance
+  # present attacker-chosen credentials to a third party. No URI we fetch
+  # legitimately carries userinfo; refuse rather than strip, so the caller
+  # sees the oddity.
+  defp validate_no_userinfo(%URI{userinfo: nil}), do: :ok
+  defp validate_no_userinfo(_), do: {:error, :invalid_url}
 
   if @bypass_ssrf do
     defp safe_resolve_ip(_host), do: {:ok, {127, 0, 0, 1}}

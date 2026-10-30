@@ -1258,15 +1258,16 @@ defmodule Baudrate.Federation.InboxHandler do
         key_id = "#{site_uri}#main-key"
 
         case HTTPClient.signed_get(object_uri, private_key, key_id, refuse_blocked: true) do
-          {:ok, %{body: body}} ->
+          {:ok, %{body: body, url: final_url}} ->
             case Jason.decode(body) do
               {:ok, object} ->
                 # Origin-binding: the fetched document must be served by its own
-                # authoritative host — its `id` host must match the URL we
-                # fetched it from. Without this, a booster could point
-                # `object_uri` at a host that serves a document `id` claiming a
-                # different origin (id/URL confusion).
-                if same_host?(object["id"], object_uri) do
+                # authoritative host — its `id` host must match the URL it was
+                # finally served from, after redirects. Without this, a booster
+                # could point `object_uri` at a host that serves (or redirects
+                # to a host that serves) a document `id` claiming a different
+                # origin (id/URL confusion).
+                if same_host?(object["id"], final_url) do
                   handle_announce_object(announce_ap_id, object, booster_actor)
                 else
                   Logger.warning(
