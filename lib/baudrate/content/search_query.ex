@@ -60,6 +60,11 @@ defmodule Baudrate.Content.SearchQuery do
     "after" => ~r/\bafter:\S+/
   }
 
+  @max_length 256
+
+  @doc "Longest query string searched; anything beyond is dropped."
+  def max_length, do: @max_length
+
   @doc """
   Splits a query string into `{free_text, operators}`.
 
@@ -77,6 +82,9 @@ defmodule Baudrate.Content.SearchQuery do
   """
   @spec parse(String.t()) :: {String.t(), map()}
   def parse(query_string) when is_binary(query_string) do
+    # Every lexeme costs a GIN lookup; a query is a line, not a document.
+    query_string = String.slice(query_string, 0, @max_length)
+
     operators =
       @operator_re
       |> Regex.scan(query_string)

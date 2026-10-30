@@ -92,6 +92,22 @@ defmodule BaudrateWeb.Plugs.CacheBodyTest do
       assert conn.assigns.raw_body == body
     end
 
+    test "CacheBodyReader caps an inbox POST at the federation limit before Plug.Parsers" do
+      Application.put_env(:baudrate, Baudrate.Federation, max_payload_size: 100)
+      body = String.duplicate("x", 500)
+
+      # The reader is what Plug.Parsers reads through, with its own 1 MB cap.
+      inbox = Plug.Test.conn(:post, "/ap/users/alice/inbox", body)
+
+      assert {:more, _partial, _conn} =
+               BaudrateWeb.Plugs.CacheBodyReader.read_body(inbox, length: 1_000_000)
+
+      other = Plug.Test.conn(:post, "/api/push-subscriptions", body)
+
+      assert {:ok, ^body, _conn} =
+               BaudrateWeb.Plugs.CacheBodyReader.read_body(other, length: 1_000_000)
+    end
+
     test "rejects a streamed body exceeding the configured limit with 413" do
       # No pre-cached raw_body: the read_body path returns {:more, ...} when the
       # body exceeds the length option, which must halt with 413.

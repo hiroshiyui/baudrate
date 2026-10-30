@@ -371,6 +371,39 @@ defmodule BaudrateWeb.SessionControllerTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Too many failed attempts"
     end
 
+    test "a recovery code is no answer for an account without TOTP", %{conn: conn} do
+      # Otherwise an account whose role requires TOTP but has not enrolled
+      # could sign in past `/totp/setup` with the codes minted at registration.
+      user = setup_user("user")
+      [code | _] = Auth.generate_recovery_codes(user)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> post("/auth/recovery-verify", %{"code" => code})
+
+      assert redirected_to(conn) == "/login"
+      assert is_nil(get_session(conn, :session_token))
+    end
+
+    test "a wrong code counts against the account, not only the cookie", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+      Auth.generate_recovery_codes(user)
+
+      conn
+      |> Plug.Test.init_test_session(%{user_id: user.id})
+      |> post("/auth/recovery-verify", %{"code" => "wrong-code-here"})
+
+      assert Repo.exists?(
+               from a in Baudrate.Auth.LoginAttempt,
+                 where:
+                   a.username == ^String.downcase(user.username) and a.factor == "totp" and
+                     a.success == false
+             )
+    end
+
     test "redirects to /login without session", %{conn: conn} do
       conn = post(conn, "/auth/recovery-verify", %{"code" => "some-code"})
       assert redirected_to(conn) == "/login"

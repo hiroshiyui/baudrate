@@ -305,6 +305,33 @@ defmodule BaudrateWeb.SessionController do
         |> put_flash(:error, gettext("Too many failed attempts. Please log in again."))
         |> redirect(to: "/login")
 
+      # A recovery code stands in for a TOTP code, so it is only an answer
+      # when TOTP is the question. An account whose role requires TOTP but has
+      # not enrolled is owed `/totp/setup`, not a session (the policy in
+      # `Auth.login_next_step/1`).
+      not user.totp_enabled ->
+        Logger.warning(
+          "auth.recovery_verify_without_totp: user_id=#{user.id} ip=#{remote_ip(conn)}"
+        )
+
+        conn
+        |> put_flash(:error, gettext("Session expired. Please log in again."))
+        |> redirect(to: "/login")
+
+      # The same per-account throttle as `totp_verify/2`: the attempt counter
+      # above lives in the client's cookie, which the client can replay.
+      seconds = login_throttle_seconds(user) ->
+        Logger.warning("auth.recovery_verify_throttled: user_id=#{user.id} ip=#{remote_ip(conn)}")
+
+        conn
+        |> put_flash(
+          :error,
+          gettext("Account temporarily locked. Try again in %{seconds} seconds.",
+            seconds: seconds
+          )
+        )
+        |> redirect(to: "/totp/recovery")
+
       Auth.verify_recovery_code(user, code) == :ok ->
         Logger.info("auth.recovery_code_used: user_id=#{user.id} ip=#{remote_ip(conn)}")
 
@@ -316,6 +343,8 @@ defmodule BaudrateWeb.SessionController do
         Logger.warning(
           "auth.recovery_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}"
         )
+
+        Auth.record_login_totp_failure(user, remote_ip(conn))
 
         conn
         |> put_session(:totp_attempts, attempts + 1)

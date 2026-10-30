@@ -210,7 +210,7 @@ defmodule Baudrate.Federation.Delivery do
           case reason do
             {:http_error, status, body} when body != "" ->
               Logger.warning(
-                "federation.delivery_fail: inbox=#{job.inbox_url} status=#{status} body=#{String.slice(body, 0, 500)}"
+                "federation.delivery_fail: inbox=#{job.inbox_url} status=#{status} body=#{inspect(String.slice(body, 0, 500))}"
               )
 
             _ ->

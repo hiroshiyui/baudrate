@@ -35,6 +35,12 @@ defmodule Baudrate.Content.SearchQueryTest do
       assert {"hello", %{}} = SearchQuery.parse("before:2026-1-1 hello")
     end
 
+    test "a query is a line, not a document" do
+      long = String.duplicate("word ", 1_000)
+      {text, _ops} = SearchQuery.parse(long)
+      assert String.length(text) <= SearchQuery.max_length()
+    end
+
     test "leaves a URL alone" do
       assert {"https://example.com/notes/1", %{}} =
                SearchQuery.parse("https://example.com/notes/1")
