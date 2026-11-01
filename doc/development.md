@@ -8,7 +8,7 @@ visibility. Design decisions should reflect this philosophy.
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Elixir 1.17+ / OTP 26+ |
+| Language | Elixir 1.20 / OTP 29 (exact versions pinned in `.tool-versions`) |
 | Web framework | Phoenix 1.8 / LiveView 1.2 |
 | HTTP server | Bandit |
 | HTTP client | Req (never HTTPoison, Tesla, or httpc) |
@@ -2516,7 +2516,7 @@ fetches, media cache warming, link previews).
 - Per-domain circuit breaker (`DeliveryCircuits`, `delivery_circuits` table, keyed by `delivery_jobs.domain`): 5 consecutive unreachable results (connection/TLS errors, timeouts, DNS failures, 5xx, 429) open the circuit; its jobs are left out of selection until `open_until`, then sent one probe at a time (probes take at most half the slots). A failed probe reopens it for 5 min → 30 min → 2 h → 6 h → 12 h → 24 h; any response showing the server is reachable deletes the row. Held jobs keep their attempts and are abandoned 7 days after they were queued (`Delivery.expire_held_jobs/0`, hourly)
 - `Accept(Follow)` / `Reject(Follow)` answers are queued too (`Delivery.enqueue_accept/3`, `enqueue_reject/3`), in the transaction that writes the follower row
 - Domain blocklist respected: deliveries to blocked domains are skipped
-- Job deduplication: partial unique index on `(inbox_url, actor_uri, activity_id)` for pending/failed jobs, so the same activity is queued once per inbox while different activities are all queued. `activity_id` is the activity's `id` (MD5 of the JSON when absent), set by `DeliveryJob.create_changeset/2`. The index once omitted `activity_id` and silently dropped every later activity from an actor to an inbox while one job was pending or retrying
+- Job deduplication: partial unique index on `(inbox_url, actor_uri, activity_id)` for pending/failed jobs, so the same activity is queued once per inbox while different activities are all queued. `activity_id` is the activity's `id` (SHA-256 of the JSON when absent; older pending rows may still hold the MD5 the 2026-09 backfill wrote), set by `DeliveryJob.create_changeset/2`. The index once omitted `activity_id` and silently dropped every later activity from an actor to an inbox while one job was pending or retrying
 - `KeyStore.ensure_user_keypair/1` must be called before enqueuing any signed delivery — ensures the user has an RSA keypair for HTTP Signature signing
 
 **Followers collection endpoints** (paginated with `?page=N`):

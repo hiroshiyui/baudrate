@@ -620,8 +620,8 @@ defmodule Baudrate.Auth.Users do
           # the user struct loaded at mount, and `on_mount` never runs again.
           # A demoted admin's open `/admin/users` and `/invites` tabs went on
           # banning accounts and minting unlimited invite codes until they
-          # happened to reload. `delete_all_sessions_for_user/1` broadcasts
-          # "disconnect" to `live_socket_id`, so those sockets die at once.
+          # happened to reload. `delete_all_sessions_for_user/1` sends those
+          # pages to sign-in at once and closes their sockets (ADR 0080).
           Baudrate.Auth.Sessions.delete_all_sessions_for_user(user.id)
 
           {:ok, Repo.preload(user, :role, force: true)}
