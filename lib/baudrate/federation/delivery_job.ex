@@ -57,13 +57,13 @@ defmodule Baudrate.Federation.DeliveryJob do
 
   @doc """
   Returns the activity id used as the dedup key for `activity_json`: its `id`,
-  or an MD5 of the JSON when it has none.
+  or a SHA-256 of the JSON when it has none.
   """
   @spec activity_id_for(String.t()) :: String.t()
   def activity_id_for(json) when is_binary(json) do
     case Jason.decode(json) do
       {:ok, %{"id" => id}} when is_binary(id) and id != "" -> id
-      _ -> :crypto.hash(:md5, json) |> Base.encode16(case: :lower)
+      _ -> :crypto.hash(:sha256, json) |> Base.encode16(case: :lower)
     end
   end
 

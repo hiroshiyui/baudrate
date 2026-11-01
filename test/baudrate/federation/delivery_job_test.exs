@@ -3,6 +3,20 @@ defmodule Baudrate.Federation.DeliveryJobTest do
 
   alias Baudrate.Federation.DeliveryJob
 
+  describe "activity_id_for/1" do
+    test "uses the activity id when there is one" do
+      assert DeliveryJob.activity_id_for(~s({"id":"https://local.example/a/1"})) ==
+               "https://local.example/a/1"
+    end
+
+    test "falls back to a SHA-256 of the JSON when the id is missing or empty" do
+      for json <- [~s({"type":"Create"}), ~s({"id":""}), "not json"] do
+        assert DeliveryJob.activity_id_for(json) ==
+                 Base.encode16(:crypto.hash(:sha256, json), case: :lower)
+      end
+    end
+  end
+
   describe "create_changeset/2" do
     test "valid changeset with all required fields" do
       changeset =
