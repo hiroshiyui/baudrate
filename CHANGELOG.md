@@ -9,6 +9,11 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-11-01
+
+Syndicated articles now send readers to the sites that wrote them. Nothing
+here changes a schema or a setting; deploy it.
+
 ### Changed
 
 - **A syndicated article's page shows its first paragraph and collapses the
@@ -18,6 +23,12 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   and a member's article is never collapsed. Display only: what is stored,
   federated and syndicated is unchanged
   ([ADR 0081](doc/adr/0081-a-syndicated-article-shows-its-lead-and-sends-readers-to-the-source.md)).
+
+### Fixed
+
+- The service worker caches only digested `/assets/` files, as ADR 0059
+  says. In development, where no name is digested, it had cached `app.css`
+  and served the first copy for ever. Production was unaffected.
 
 ## [2.1.2] — 2026-11-01
 
