@@ -39,7 +39,7 @@
 # propose digest updates; keep the two lines identical.
 
 # ---------------------------------------------------------------------------
-FROM debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad AS otp
+FROM debian:trixie-slim@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4 AS otp
 
 ARG OTP_VERSION=29.1.2
 ARG OTP_SHA256=c79966661e35fe4aff8ec003db63682e3b33b10b672220d51bf93c0a9244b049
@@ -66,7 +66,7 @@ RUN set -eux; \
 
 # ---------------------------------------------------------------------------
 # build: the release build toolchain.
-FROM debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad AS build
+FROM debian:trixie-slim@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4 AS build
 
 ARG ELIXIR_VERSION=1.20.5
 ARG ELIXIR_OTP_MAJOR=29
