@@ -9,6 +9,12 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.1.2] — 2026-11-01
+
+A security and maintenance release. Nothing here changes a schema or a
+setting. The deploy installs Elixir 1.20.5 itself (it builds with the tag's
+`.tool-versions`), so no `setup-server.yml` run is needed first.
+
 ### Security
 
 - `phoenix_html` 4.3.0 → 4.4.0 (CVE-2026-117645, attribute injection through
