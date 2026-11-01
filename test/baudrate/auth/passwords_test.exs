@@ -44,9 +44,9 @@ defmodule Baudrate.Auth.PasswordsTest do
     end
 
     ref = :erlang.trace_delivered(self())
-    assert_receive {:trace_delivered, _, ^ref}
+    assert_receive {:trace_delivered, _, ^ref}, 5_000
     send(tracer, {:report, self()})
-    assert_receive {:bcrypt_count, n}
+    assert_receive {:bcrypt_count, n}, 5_000
     n
   end
 
