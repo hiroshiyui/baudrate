@@ -37,7 +37,7 @@ asdf_version: "0.16.7"
 
 # Erlang/Elixir versions (match .tool-versions)
 erlang_version: "29.1.2"
-elixir_version: "1.20.4-otp-29"
+elixir_version: "1.20.5-otp-29"
 
 # --- Backups (roles/backup, ADR 0028) ---
 backup_path: /var/backups/baudrate

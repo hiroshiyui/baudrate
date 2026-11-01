@@ -76,7 +76,7 @@ Provisions infrastructure only — does **not** deploy the application.
 |------|-----|---------|
 | `common` | `common` | System packages, `baudrate` user, UFW firewall, SSH hardening, fail2ban, NTP |
 | `postgresql` | `postgresql` | PostgreSQL `postgres_version` (17), database + user, `pg_trgm` extension |
-| `elixir` | `elixir` | asdf + Erlang 29.1.2 + Elixir 1.20.4-otp-29 + Hex/Rebar |
+| `elixir` | `elixir` | asdf + Erlang 29.1.2 + Elixir 1.20.5-otp-29 + Hex/Rebar |
 | `rust` | `rust` | rustup with minimal profile (for the Rust NIFs) |
 | `nginx` | `nginx` | nginx, Let's Encrypt SSL via certbot, reverse proxy config |
 

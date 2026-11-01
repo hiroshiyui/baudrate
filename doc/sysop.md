@@ -38,7 +38,7 @@ major) is `ansible/playbooks/upgrade-debian.yml`; see `ansible/README.md`,
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
-| Elixir | the version in `.tool-versions` (1.20.4-otp-29) | Application runtime |
+| Elixir | the version in `.tool-versions` (1.20.5-otp-29) | Application runtime |
 | Erlang/OTP | the version in `.tool-versions` (29.1.2) | VM |
 | PostgreSQL | 17 (production's major, the one CI tests) | Database (requires `pg_trgm` extension) |
 | libvips | any | Avatar and image processing |

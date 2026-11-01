@@ -35,6 +35,9 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - **Phoenix 1.8.15 → 1.8.16.** The hold is lifted: 1.8.16 closes a revoked
   session's socket with code 1000, which LiveView answers with a delayed
   reload, and revocation no longer relies on the close.
+- **Elixir 1.20.4 → 1.20.5** (`1.20.5-otp-29`, `.tool-versions` and the
+  Ansible `elixir_version`). The deploy installs the tag's pinned Elixir
+  itself when it is missing.
 - `image` 0.72.0 → 0.73.0 (`vix` 0.42.0), `mdex` 0.14.5 → 0.14.6; `sobelow`
   (dev/test) 0.16.0 → 0.18.1.
 
