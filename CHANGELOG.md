@@ -9,6 +9,35 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Security
+
+- `phoenix_html` 4.3.0 → 4.4.0 (CVE-2026-117645, attribute injection through
+  unvalidated attribute names in `attributes_escape/1`; nothing here passes
+  user-chosen attribute names, but the fix is in).
+- `ssl_verify_fun` 1.1.7 → 1.1.9 (CVE-2026-117666, partial-label wildcard
+  certificates matching across a label boundary). Test-only, through
+  Wallaby's `hackney`; production never loaded it.
+- The dedup key of an outbound delivery whose activity has no `id` is a
+  SHA-256 of the JSON, no longer an MD5 (flagged by Sobelow 0.18).
+
+### Fixed
+
+- **A page signed out from elsewhere leaves at once again**, whatever
+  Phoenix's close code (sign out, sign out everywhere, password change, ban,
+  suspension, demotion, expiry). Each open page of the revoked session is told
+  and goes to sign-in, back to where it was after signing in; the socket close
+  follows a second later as the backstop. A public page browsed while signed in
+  now goes to sign-in too, saying why, instead of turning into a guest's view
+  ([ADR 0080](doc/adr/0080-a-revoked-session-s-pages-leave-by-redirect.md)).
+
+### Changed
+
+- **Phoenix 1.8.15 → 1.8.16.** The hold is lifted: 1.8.16 closes a revoked
+  session's socket with code 1000, which LiveView answers with a delayed
+  reload, and revocation no longer relies on the close.
+- `image` 0.72.0 → 0.73.0 (`vix` 0.42.0), `mdex` 0.14.5 → 0.14.6; `sobelow`
+  (dev/test) 0.16.0 → 0.18.1.
+
 ## [2.1.1] — 2026-10-30
 
 A security release, from a project-wide audit. Nothing here changes a schema
