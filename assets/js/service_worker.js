@@ -16,11 +16,13 @@
 //
 // That invariant is structural rather than a matter of care. A cache is
 // written in exactly three places: the two `cache.add(OFFLINE_URL)` calls,
-// and `cacheAsset()`, which re-checks the /assets/ prefix itself rather than
-// trusting its caller. Nothing else in this file reaches a cache.
+// and `cacheAsset()`, which re-checks that the name is a digested /assets/
+// file itself rather than trusting its caller. Nothing else in this file reaches a cache.
 
 const SHELL_CACHE = "baudrate-shell-v1"
-const ASSET_CACHE = "baudrate-assets-v1"
+// v2: v1 also held undigested development names (see `isDigested`); the
+// rename makes `activate` drop it.
+const ASSET_CACHE = "baudrate-assets-v2"
 const CURRENT_CACHES = [SHELL_CACHE, ASSET_CACHE]
 
 const OFFLINE_URL = "/offline"
@@ -29,6 +31,17 @@ const OFFLINE_URL = "/offline"
 // accumulate for ever. `cache.keys()` returns insertion order, so trimming
 // from the front evicts the least recently added.
 const MAX_ASSET_ENTRIES = 60
+
+// `mix phx.digest` names a file `<name>-<32 hex>.<ext>`. Only such a name is
+// immutable: an undigested one (every asset in development, where
+// `/assets/css/app.css` keeps its name across rebuilds) would be served stale
+// from the cache for ever.
+const DIGESTED = /-[0-9a-f]{32}\.[a-z0-9]+$/
+
+function isDigested(url) {
+  const { pathname } = new URL(url, self.location.origin)
+  return pathname.startsWith("/assets/") && DIGESTED.test(pathname)
+}
 
 function isSameOrigin(url) {
   try {
@@ -81,7 +94,7 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  if (new URL(request.url).pathname.startsWith("/assets/")) {
+  if (isDigested(request.url)) {
     event.respondWith(handleAsset(request))
   }
 
@@ -118,7 +131,7 @@ async function handleAsset(request) {
 }
 
 function cacheAsset(request, response) {
-  if (!new URL(request.url).pathname.startsWith("/assets/")) return
+  if (!isDigested(request.url)) return
 
   caches
     .open(ASSET_CACHE)
