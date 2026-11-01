@@ -373,6 +373,12 @@ reload replaces it. For a reader who cannot do that, the worker calls
 `skipWaiting()` and `clients.claim()`, so the next navigation after the new
 one downloads takes over without every tab being closed.
 
+In development nothing is digested, so the worker caches no asset at all
+(`isDigested` in `service_worker.js`). Before v2.2.0 it cached development's
+`/assets/css/app.css` cache-first and served the first copy for ever, so a CSS
+change never showed; one reload after updating lets the new worker drop that
+cache.
+
 **If you see a new worker at a new URL after each deploy**, something has
 changed `app.js` to register `~p"/service_worker.js"` instead of the bare
 string. That resolves to the digest-stamped filename, so each release installs

@@ -1440,7 +1440,7 @@ defmodule BaudrateWeb.ArticleLive do
     <details :if={@rest} id="article-body-rest" class="article-body-rest group mt-2">
       <summary
         id="article-body-rest-toggle"
-        class="article-body-rest-toggle btn btn-sm btn-ghost"
+        class="article-body-rest-toggle btn btn-sm btn-ghost list-none"
       >
         <span class="group-open:hidden">{gettext("Show the rest")}</span>
         <span class="hidden group-open:inline">{gettext("Hide the rest")}</span>
