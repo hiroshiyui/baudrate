@@ -39,7 +39,7 @@ fi
 check erlang "$otp_version" "$(pinned_tool erlang)"
 
 # `.tool-versions` names the Elixir build compiled for this OTP major
-# (`1.20.4-otp-29`), which is what asdf installs in development and
+# (`1.20.5-otp-29`), which is what asdf installs in development and
 # production; `System.version/0` reports the version alone.
 pinned_elixir="$(pinned_tool elixir)"
 check elixir "$elixir_version" "${pinned_elixir%-otp-*}"

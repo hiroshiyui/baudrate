@@ -55,7 +55,7 @@ jobs:
           fail=0
           check() { if [ "$2" != "$3" ]; then echo "::error::$1: Dockerfile has '$2', project pins '$3'"; fail=1; fi; }
           check erlang   "$(arg OTP_VERSION)"      "$(tool erlang)"
-          # `.tool-versions` may name the build for an OTP major (`1.20.4-otp-29`).
+          # `.tool-versions` may name the build for an OTP major (`1.20.5-otp-29`).
           elixir_pin="$(tool elixir)"
           check elixir   "$(arg ELIXIR_VERSION)"   "${elixir_pin%-otp-*}"
           case "$elixir_pin" in
