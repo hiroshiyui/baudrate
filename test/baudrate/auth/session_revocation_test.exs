@@ -44,20 +44,26 @@ defmodule Baudrate.Auth.SessionRevocationTest do
     {:ok, token, _refresh} = Auth.create_user_session(user.id)
     id = Auth.session_id_by_token(token)
     BaudrateWeb.Endpoint.subscribe(Auth.live_socket_id(id))
+    Phoenix.PubSub.subscribe(Baudrate.PubSub, Auth.revocation_topic(Auth.live_socket_id(id)))
     {token, id}
   end
 
   defp session_ids(user),
     do: Repo.all(from(s in UserSession, where: s.user_id == ^user.id, select: s.id))
 
+  # The session's LiveViews are told at once; the socket close follows a
+  # second later as the backstop (`Sessions`, Phoenix 1.8.16).
   defp assert_disconnected(id) do
     topic = Auth.live_socket_id(id)
-    assert_receive %Broadcast{topic: ^topic, event: "disconnect"}
+    assert_receive {:session_revoked, ^topic}
+    assert_receive %Broadcast{topic: ^topic, event: "disconnect"}, 3_000
   end
 
+  # Both messages leave together in the revoking call, so the immediate one
+  # stands for the pair.
   defp refute_disconnected(id) do
     topic = Auth.live_socket_id(id)
-    refute_receive %Broadcast{topic: ^topic, event: "disconnect"}, 50
+    refute_receive {:session_revoked, ^topic}, 50
   end
 
   test "live_socket_id/1 and session_id_by_token/1", %{user: user} do

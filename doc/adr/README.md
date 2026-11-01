@@ -99,6 +99,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0077](0077-production-moves-to-debian-13-and-postgresql-17-by-codename.md) | Production moves to Debian 13 and PostgreSQL 17, pinned by codename | Accepted |
 | [0078](0078-a-fetched-document-is-believed-only-from-the-url-that-served-it.md) | A fetched document is believed only from the URL that served it, and an embedded one only from its own host | Accepted |
 | [0079](0079-a-bound-is-checked-before-the-work-it-bounds.md) | A bound is checked before the work it bounds | Accepted |
+| [0080](0080-a-revoked-session-s-pages-leave-by-redirect.md) | A revoked session's pages leave by redirect | Accepted |
 
 ## Writing a new ADR
 

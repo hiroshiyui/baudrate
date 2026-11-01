@@ -8,7 +8,9 @@ defmodule BaudrateWeb.AuthHooks do
       present and valid). Used for the `:authenticated` live_session. Assigns
       `@current_user` on success, redirects to `/login` on failure.
       Also resolves the user's preferred locale from `user.preferred_locales`
-      and sets Gettext locale + `@locale` assign.
+      and sets Gettext locale + `@locale` assign. On a connected socket it
+      watches for the session's revocation and then redirects to `/login`
+      (ADR 0080; also for a signed-in `:optional_auth` page).
 
     * `:optional_auth` — loads the user if a valid session exists, but does not
       redirect if unauthenticated. Assigns `@current_user` (may be `nil`).
@@ -117,6 +119,7 @@ defmodule BaudrateWeb.AuthHooks do
                 |> UnreadDmCountHook.attach(user)
                 |> UnreadNotificationCountHook.attach(user)
                 |> attach_page_metadata_hook()
+                |> watch_revocation(session)
 
               {:cont, socket}
           end
@@ -181,6 +184,7 @@ defmodule BaudrateWeb.AuthHooks do
               |> UnreadDmCountHook.attach(user)
               |> UnreadNotificationCountHook.attach(user)
               |> attach_page_metadata_hook()
+              |> watch_revocation(session)
 
             {:cont, socket}
           end
@@ -364,6 +368,53 @@ defmodule BaudrateWeb.AuthHooks do
 
   defp attach_page_metadata_hook(socket), do: socket
 
+  # Sends the page to sign-in when its session is revoked (`Sessions` tells
+  # `Auth.revocation_topic/1`, then closes the socket a second later as the
+  # backstop). The page has to leave by itself: since Phoenix 1.8.16 the
+  # socket close alone gets a reload only after a 5-10 s random delay.
+  #
+  # The session row is checked again rather than the message trusted, so a
+  # page whose session still stands stays put. The redirect carries the page
+  # the member was on (`:revocation_return_to`, kept current across live
+  # navigation), the way a reconnect through `:require_auth` would.
+  defp watch_revocation(
+         %{private: %{lifecycle: _}} = socket,
+         %{"live_socket_id" => live_socket_id, "session_token" => token}
+       )
+       when is_binary(live_socket_id) and is_binary(token) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Baudrate.PubSub, Auth.revocation_topic(live_socket_id))
+
+      socket
+      |> put_private(:revocation_return_to, return_path(socket))
+      |> attach_hook(:session_revocation_path, :handle_params, fn _params, uri, socket ->
+        {:cont, put_private(socket, :revocation_return_to, local_return_path(URI.parse(uri)))}
+      end)
+      |> attach_hook(:session_revocation, :handle_info, fn
+        {:session_revoked, ^live_socket_id}, socket -> {:halt, leave_if_revoked(socket, token)}
+        _message, socket -> {:cont, socket}
+      end)
+    else
+      socket
+    end
+  end
+
+  defp watch_revocation(socket, _session), do: socket
+
+  defp leave_if_revoked(socket, token) do
+    if Auth.session_id_by_token(token) do
+      socket
+    else
+      socket =
+        put_flash(socket, :error, gettext("This session was signed out. Please sign in again."))
+
+      case socket.private[:revocation_return_to] do
+        nil -> redirect(socket, to: "/login")
+        path -> redirect(socket, to: "/login?" <> URI.encode_query(%{"return_to" => path}))
+      end
+    end
+  end
+
   # Applies the locale stored in the session by `BaudrateWeb.Plugs.SetLocale`
   # to the current LiveView process. Without this, anonymous LV mounts run
   # with the default Gettext locale ("en") and cause a visible locale flip
@@ -465,16 +516,14 @@ defmodule BaudrateWeb.AuthHooks do
 
   defp refusal_flash(socket), do: socket
 
-  defp return_path(socket) do
-    case connect_uri(socket) do
-      %URI{path: path, query: query} when is_binary(path) ->
-        candidate = if query in [nil, ""], do: path, else: path <> "?" <> query
-        if BaudrateWeb.Helpers.local_path(candidate, nil), do: candidate
+  defp return_path(socket), do: local_return_path(connect_uri(socket))
 
-      _ ->
-        nil
-    end
+  defp local_return_path(%URI{path: path, query: query}) when is_binary(path) do
+    candidate = if query in [nil, ""], do: path, else: path <> "?" <> query
+    if BaudrateWeb.Helpers.local_path(candidate, nil), do: candidate
   end
+
+  defp local_return_path(_uri), do: nil
 
   # `get_connect_info/2` raises outside `mount/3`. This hook runs at mount in
   # production, but remembering where somebody was going is a convenience and

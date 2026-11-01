@@ -11880,3 +11880,8 @@ msgstr "會被發佈"
 #, elixir-autogen, elixir-format
 msgid "My public profile"
 msgstr "我的公開個人檔案"
+
+#: lib/baudrate_web/live/auth_hooks.ex
+#, elixir-autogen, elixir-format
+msgid "This session was signed out. Please sign in again."
+msgstr "此工作階段已登出，請重新登入。"

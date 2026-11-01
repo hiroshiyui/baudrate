@@ -21,9 +21,21 @@ defmodule BaudrateWeb.Features.SignOutEverywhereTest do
     |> click(Query.css("#profile-sign-out-everywhere-submit"))
     |> assert_has(Query.text("Signed out 1 other session."))
 
-    # The revoked session's LiveView is disconnected and cannot remount, so
-    # the page it had open sends it to sign in without any action.
+    # The revoked session's LiveView is told and sends its page to sign in
+    # without any action (`AuthHooks`); the socket close follows a second
+    # later as the backstop.
     wait_for_path(other_device, "/login")
+
+    # The sign-in page must not inherit the revoked session's socket id
+    # (`ForgetRevokedSession`): if it did, the backstop would close its socket
+    # with code 1000 and LiveView would reload it 5-10 s later. Waiting out
+    # the one-second backstop is the point here, not an ordering shortcut.
+    Process.sleep(2_000)
+
+    assert js_value(other_device, "return window.liveSocket.isConnected()"),
+           "the sign-in page's socket was closed by the revoked session's backstop"
+
+    assert current_path(other_device) == "/login"
 
     session
     |> visit("/bookmarks")

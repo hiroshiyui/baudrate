@@ -278,9 +278,16 @@ defmodule BaudrateWeb.Router do
     get "/sitemap/:name", SitemapController, :child
   end
 
+  # A revoked session's pages are sent to `/login`; this drops its stale
+  # `live_socket_id` from the cookie first, so the sign-in page's socket is
+  # not closed by the revocation's delayed "disconnect".
+  pipeline :forget_revoked_session do
+    plug BaudrateWeb.Plugs.ForgetRevokedSession
+  end
+
   # Public (redirect if already authenticated)
   scope "/", BaudrateWeb do
-    pipe_through :browser
+    pipe_through [:browser, :forget_revoked_session]
 
     live_session :public,
       layout: {BaudrateWeb.Layouts, :app},

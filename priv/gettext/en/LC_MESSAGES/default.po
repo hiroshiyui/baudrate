@@ -11921,3 +11921,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "My public profile"
 msgstr ""
+
+#: lib/baudrate_web/live/auth_hooks.ex
+#, elixir-autogen, elixir-format
+msgid "This session was signed out. Please sign in again."
+msgstr ""

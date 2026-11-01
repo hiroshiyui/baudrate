@@ -81,6 +81,7 @@ defmodule Baudrate.Auth do
   defdelegate delete_other_sessions_for_user(user_id, keep_session_id), to: Sessions
   defdelegate session_id_by_token(raw_token), to: Sessions
   defdelegate live_socket_id(session_id), to: Sessions
+  defdelegate revocation_topic(live_socket_id), to: Sessions
   defdelegate sign_out_other_sessions(user, keep_session_id), to: Sessions
   defdelegate list_sessions(user_id), to: Sessions
   defdelegate revoke_session(user_id, session_id, current_session_id), to: Sessions

@@ -30,8 +30,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 
 ## Stack
 
-Elixir 1.20 / OTP 29 (pinned in `.tool-versions`) · Phoenix 1.8 (**held at 1.8.15** in
-`mix.lock`: 1.8.16 makes a revoked session's page linger, see `gotchas.md`) / LiveView 1.2 · Bandit ·
+Elixir 1.20 / OTP 29 (pinned in `.tool-versions`) · Phoenix 1.8 / LiveView 1.2 · Bandit ·
 PostgreSQL 17 (production's major) · Tailwind + DaisyUI · esbuild · **Req only** (never
 HTTPoison, Tesla, httpc) · libvips via `image` (WebP re-encode, EXIF strip) · Hammer 7 ·
 MDEx · wax_ · Rust NIFs (Ammonia, scraper, feedparser-rs) · Gettext (en, zh_TW, ja_JP).
@@ -167,8 +166,9 @@ that kind goes in it.
   `Auth.verify_totp_code/3` (single-use, ADR 0024).
 - WebAuthn: store the full `Wax.Challenge`; `pop/3` requires the purpose; `wax_` origin
   must equal `window.location.origin` exactly.
-- Session deletion only through `Auth.Sessions` (broadcasts `disconnect`); keep "this"
-  session by row id, never token.
+- Session deletion only through `Auth.Sessions`; keep "this" session by row id, never token.
+  Revoked pages leave by an `AuthHooks` redirect, `disconnect` 1 s later is the backstop;
+  only revocations send `disconnect` (ADR 0080).
 - The permission catalogue is fixed at compile time; four permissions enforce anything
   (ADR 0042, `permissions_are_enforced_test.exs`).
 - Bots cannot log in; managed only by `Baudrate.Bots`.

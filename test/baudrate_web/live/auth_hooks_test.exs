@@ -265,4 +265,51 @@ defmodule BaudrateWeb.AuthHooksTest do
       assert Gettext.get_locale() == "zh_TW"
     end
   end
+
+  # Since Phoenix 1.8.16 the socket close alone reloads a revoked page only
+  # after a 5-10 s delay, so the page is told and leaves by itself.
+  describe "session revocation" do
+    import Phoenix.LiveViewTest
+
+    setup do
+      Baudrate.Repo.insert!(%Baudrate.Setup.Setting{key: "setup_completed", value: "true"})
+      :ok
+    end
+
+    defp live_socket_id(token),
+      do: Baudrate.Auth.live_socket_id(Baudrate.Auth.session_id_by_token(token))
+
+    test "a signed-in page leaves for sign-in, remembering where it was", %{
+      conn: conn,
+      user: user
+    } do
+      conn = log_in_user(conn, user)
+      token = get_session(conn, :session_token)
+      {:ok, view, _html} = live(conn, "/bookmarks")
+
+      :ok = Baudrate.Auth.delete_session_by_token(token)
+
+      assert_redirect(view, "/login?" <> URI.encode_query(%{"return_to" => "/bookmarks"}))
+    end
+
+    test "a public page browsed while signed in leaves too", %{conn: conn, user: user} do
+      conn = log_in_user(conn, user)
+      token = get_session(conn, :session_token)
+      {:ok, view, _html} = live(conn, "/")
+
+      :ok = Baudrate.Auth.delete_session_by_token(token)
+
+      assert_redirect(view, "/login?" <> URI.encode_query(%{"return_to" => "/"}))
+    end
+
+    test "a page whose session still stands stays put", %{conn: conn, user: user} do
+      conn = log_in_user(conn, user)
+      token = get_session(conn, :session_token)
+      {:ok, view, _html} = live(conn, "/bookmarks")
+
+      send(view.pid, {:session_revoked, live_socket_id(token)})
+
+      assert render(view) =~ "bookmarks-heading"
+    end
+  end
 end

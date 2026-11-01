@@ -11880,3 +11880,8 @@ msgstr "投稿されます"
 #, elixir-autogen, elixir-format
 msgid "My public profile"
 msgstr "自分の公開プロフィール"
+
+#: lib/baudrate_web/live/auth_hooks.ex
+#, elixir-autogen, elixir-format
+msgid "This session was signed out. Please sign in again."
+msgstr "このセッションはログアウトされました。もう一度ログインしてください。"

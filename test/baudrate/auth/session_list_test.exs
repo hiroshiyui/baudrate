@@ -73,7 +73,7 @@ defmodule Baudrate.Auth.SessionListTest do
 
       refute Repo.get(UserSession, target)
       assert Repo.get(UserSession, current)
-      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}, 3_000
     end
 
     test "another member's session is a miss", %{user: user, other: other} do

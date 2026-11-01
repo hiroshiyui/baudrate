@@ -3,16 +3,20 @@ defmodule BaudrateWeb.Features.ReconnectTest do
   The server drops a live page's socket while its session stays valid, and the
   page comes back.
 
-  This is what a deploy or a restart does to every open page, and what the
-  `"disconnect"` broadcast does to a session that is *not* being revoked. The
-  client's job is to reconnect, rejoin the LiveView through the auth hooks and
-  resubscribe, so an update made in the meantime still arrives. Nothing but a
-  browser runs that code: the phoenix.js connection layer, LiveView's close
-  handling and the graceful-reconnect flash in `app.js`. Phoenix 1.8.16 rewrote
-  the connection handling and changed the close code (`doc/gotchas.md`, "Phoenix
-  is held"), so this is the gate for phoenix.js and LiveView client bumps beside
-  the revocation tests in `profile_settings_test.exs` and
-  `sign_out_everywhere_test.exs`.
+  This is what a deploy, a restart or a lost network does to every open page.
+  The client's job is to reconnect, rejoin the LiveView through the auth hooks
+  and resubscribe, so an update made in the meantime still arrives. Nothing but
+  a browser runs that code: the phoenix.js connection layer, LiveView's close
+  handling and the graceful-reconnect flash in `app.js`, so this is the gate for
+  phoenix.js and LiveView client bumps beside the revocation tests in
+  `profile_settings_test.exs` and `sign_out_everywhere_test.exs`.
+
+  The drop kills the socket's connection process, so the connection ends with
+  no close code the client could read as an instruction. It is deliberately not
+  the `"disconnect"` broadcast: since Phoenix 1.8.16 that closes with 1000,
+  which LiveView answers with a delayed reload, and the app only ever sends it
+  to a session it is revoking, whose pages leave through `AuthHooks` instead
+  (`doc/gotchas.md`, "A revoked session's pages leave by redirect").
   """
   use BaudrateWeb.FeatureCase, async: false
 
@@ -47,16 +51,16 @@ defmodule BaudrateWeb.Features.ReconnectTest do
       |> assert_has(Query.css("[data-phx-main].phx-connected"))
       |> execute_script(@count_drops)
 
-    # The same broadcast a revocation sends, but the session row stays: the page
-    # must reconnect rather than leave.
-    session_ids =
+    # Every socket process of the member's sessions is subscribed to its
+    # `live_socket_id` topic. The session row stays: the page must reconnect
+    # rather than leave.
+    socket_pids =
       Repo.all(from s in UserSession, where: s.user_id == ^recipient.id, select: s.id)
+      |> Enum.flat_map(&Registry.lookup(Baudrate.PubSub, Auth.live_socket_id(&1)))
+      |> Enum.map(fn {pid, _} -> pid end)
 
-    assert session_ids != []
-
-    for id <- session_ids do
-      BaudrateWeb.Endpoint.broadcast(Auth.live_socket_id(id), "disconnect", %{})
-    end
+    assert socket_pids != []
+    Enum.each(socket_pids, &Process.exit(&1, :kill))
 
     wait_until(session, "return window.__drops > 0", "the socket was never closed")
     assert_has(session, Query.css("[data-phx-main].phx-connected"))

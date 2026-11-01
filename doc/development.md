@@ -177,7 +177,7 @@ Key functions in `Auth`:
 | Concurrency | Max 3 sessions per user; oldest (by `refreshed_at`) evicted |
 | Cleanup | `SessionCleaner` GenServer purges expired sessions every hour. Each hourly step runs through `run_step/2`, so a step that raises is logged (`session_cleaner.step_failed`) and the remaining steps still run |
 | LiveView sockets | Each session's cookie carries `live_socket_id` = `"user_session:<row id>"` (set at login, backfilled by `RefreshSession`); the row id is stable across rotation |
-| Revocation | Every session deletion (`delete_session_by_token/1`, `delete_all_sessions_for_user/1`, `delete_other_sessions_for_user/2`, `revoke_session/3`, eviction, expiry, `purge_expired_sessions/0`) broadcasts `"disconnect"` to the deleted sessions' socket ids **after** the rows are gone, so open LiveView pages remount and hit the auth hooks instead of acting on a dead session |
+| Revocation | Every session deletion (`delete_session_by_token/1`, `delete_all_sessions_for_user/1`, `delete_other_sessions_for_user/2`, `revoke_session/3`, eviction, expiry, `purge_expired_sessions/0`) runs **after** the rows are gone: it broadcasts `{:session_revoked, live_socket_id}` on `Auth.revocation_topic/1`, so each open LiveView of the session re-checks it and redirects to `/login?return_to=…` (`AuthHooks`), then sends `"disconnect"` to the socket ids one second later as the backstop. `ForgetRevokedSession` drops the dead keys on the sign-in pages so their socket is not caught by that backstop ([ADR 0080](adr/0080-a-revoked-session-s-pages-leave-by-redirect.md)) |
 
 **Password change and sign out everywhere** (`/profile/password`, `/profile/security` → Sessions)
 both require step-up re-authentication (`Auth.verify_reauthentication/5`, password

@@ -344,10 +344,6 @@ defmodule Baudrate.Auth.Sessions do
     {:ok, revoked}
   end
 
-  # Deletes the sessions matched by `query`, then broadcasts "disconnect" to
-  # each one's LiveView sockets. The broadcast happens only after the rows are
-  # gone: a socket that reconnects re-runs the auth hooks, which must already
-  # see the session as deleted.
   # Records the *day* this account was last signed in, for NodeInfo's
   # active-user counts. Conditional, so it is at most one write per account
   # per day however often the session is refreshed, and a plain `update_all`
@@ -372,17 +368,57 @@ defmodule Baudrate.Auth.Sessions do
 
   defp touch_last_active(_user_id, _now), do: :ok
 
+  # Deletes the sessions matched by `query`, then tells each one's LiveViews
+  # and closes its sockets. Only after the rows are gone: a page that checks
+  # its session, or a socket that reconnects and re-runs the auth hooks, must
+  # already see the session as deleted.
   defp revoke(query) do
     {count, ids} = query |> select([s], s.id) |> Repo.delete_all()
     disconnect_sockets(ids)
     count
   end
 
+  # How long the "disconnect" backstop waits behind the revocation message.
+  @disconnect_grace_ms 1_000
+
+  # A revoked session's open pages must leave at once, and the "disconnect"
+  # broadcast alone no longer does that: since Phoenix 1.8.16 (PR 6880) it
+  # closes the socket with code 1000, which LiveView's client answers with a
+  # reload after a 5-10 s random delay, leaving a dead page on screen. So each
+  # LiveView of the session is told first (`revocation_topic/1`, watched by
+  # `BaudrateWeb.AuthHooks`) and redirects its own page. "disconnect" follows
+  # as the backstop that closes every socket of the session whatever its
+  # client does; it waits because, sent together, it reaches the socket
+  # process before any LiveView's redirect and the redirect is lost.
   defp disconnect_sockets(session_ids) do
     Enum.each(session_ids, fn id ->
-      BaudrateWeb.Endpoint.broadcast(live_socket_id(id), "disconnect", %{})
+      topic = live_socket_id(id)
+
+      Phoenix.PubSub.broadcast(
+        Baudrate.PubSub,
+        revocation_topic(topic),
+        {:session_revoked, topic}
+      )
+
+      {:ok, _} =
+        :timer.apply_after(@disconnect_grace_ms, BaudrateWeb.Endpoint, :broadcast, [
+          topic,
+          "disconnect",
+          %{}
+        ])
     end)
   end
+
+  @doc """
+  Returns the PubSub topic on which a session's LiveViews hear that it was
+  revoked: `"<live_socket_id>:revoked"`.
+
+  Not the `live_socket_id` topic itself, which the socket process subscribes
+  to for "disconnect".
+  """
+  @spec revocation_topic(String.t()) :: String.t()
+  def revocation_topic(live_socket_id) when is_binary(live_socket_id),
+    do: live_socket_id <> ":revoked"
 
   @doc """
   Purges all expired sessions from the database.
