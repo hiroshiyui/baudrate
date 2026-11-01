@@ -2165,6 +2165,13 @@ Each bot consists of:
    sends every admin an always-delivered `bot_disabled` notice. Switching it
    back on clears the count.
 
+**The article page shows the lead** ([ADR 0081](adr/0081-a-syndicated-article-shows-its-lead-and-sends-readers-to-the-source.md)).
+`ArticleLive`'s `article_body/1` renders a bot's article through `SafeHTML.markdown_lead/1`:
+the body up to its first paragraph with text outside links (`HtmlParser.Native.split_lead/1`,
+which looks inside one wrapper `div`), the rest in `<details id="article-body-rest">`, and
+`#article-source-link` to the entry's https URL. Display only: the stored body, the
+federated object and the outgoing feeds stay whole.
+
 **Admin page.** `/admin/bots` shows each bot's next fetch and post count
 (`Bots.post_counts/0`). **Fetch now** (`Bots.fetch_now/1`) makes an active bot
 due without touching its errors; **Reset & Retry** also clears them. **Dry

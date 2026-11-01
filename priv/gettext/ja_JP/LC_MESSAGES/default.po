@@ -11885,3 +11885,18 @@ msgstr "自分の公開プロフィール"
 #, elixir-autogen, elixir-format
 msgid "This session was signed out. Please sign in again."
 msgstr "このセッションはログアウトされました。もう一度ログインしてください。"
+
+#: lib/baudrate_web/live/article_live.ex
+#, elixir-autogen, elixir-format
+msgid "Hide the rest"
+msgstr "続きを隠す"
+
+#: lib/baudrate_web/live/article_live.ex
+#, elixir-autogen, elixir-format
+msgid "Read the full article on %{site}"
+msgstr "%{site} で記事全文を読む"
+
+#: lib/baudrate_web/live/article_live.ex
+#, elixir-autogen, elixir-format
+msgid "Show the rest"
+msgstr "続きを表示"

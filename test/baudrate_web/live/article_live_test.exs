@@ -1748,4 +1748,75 @@ defmodule BaudrateWeb.ArticleLiveTest do
       assert html =~ "/comments/#{comment.id}/history"
     end
   end
+
+  # ADR 0081: a syndicated article shows its first paragraph and collapses the
+  # rest, pointing the reader at the source.
+  describe "syndicated article body" do
+    defp syndicated_article(board, body, slug) do
+      bot = setup_user("user")
+      Repo.update_all(from(u in Baudrate.Setup.User, where: u.id == ^bot.id), set: [is_bot: true])
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Feed entry",
+            body: body,
+            slug: slug,
+            user_id: bot.id,
+            url: "https://news.example/posts/1"
+          },
+          [board.id],
+          trusted: true
+        )
+
+      article
+    end
+
+    test "shows the first paragraph and collapses the rest", %{conn: conn, board: board} do
+      article =
+        syndicated_article(board, "First paragraph.\n\nSecond paragraph.\n\nThird.", "feed-multi")
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      assert has_element?(lv, ".article-body", "First paragraph.")
+      refute has_element?(lv, ".article-body:not(#article-body-rest *)", "Second paragraph.")
+      assert has_element?(lv, "details#article-body-rest", "Second paragraph.")
+      assert has_element?(lv, "details#article-body-rest", "Third.")
+      assert has_element?(lv, "#article-body-rest-toggle", "Show the rest")
+
+      assert has_element?(
+               lv,
+               ~s(#article-source-link[href="https://news.example/posts/1"]),
+               "news.example"
+             )
+    end
+
+    test "a single paragraph has nothing to collapse", %{conn: conn, board: board} do
+      article = syndicated_article(board, "Only one paragraph.", "feed-single")
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      assert has_element?(lv, ".article-body", "Only one paragraph.")
+      refute has_element?(lv, "#article-body-rest")
+      refute has_element?(lv, "#article-source-notice")
+    end
+
+    test "a member's article is never collapsed", %{conn: conn, user: user, board: board} do
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Mine",
+            body: "One.\n\nTwo.\n\nThree.",
+            slug: "member-multi",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      assert has_element?(lv, ".article-body", "Three.")
+      refute has_element?(lv, "#article-body-rest")
+    end
+  end
 end

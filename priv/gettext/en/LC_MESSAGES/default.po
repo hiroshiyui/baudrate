@@ -11926,3 +11926,18 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "This session was signed out. Please sign in again."
 msgstr ""
+
+#: lib/baudrate_web/live/article_live.ex
+#, elixir-autogen, elixir-format
+msgid "Hide the rest"
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.ex
+#, elixir-autogen, elixir-format
+msgid "Read the full article on %{site}"
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.ex
+#, elixir-autogen, elixir-format
+msgid "Show the rest"
+msgstr ""

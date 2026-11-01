@@ -1420,6 +1420,67 @@ defmodule BaudrateWeb.ArticleLive do
   # Swap the saved row back into the list the composer renders, so the
   # thumbnail's own alt text matches what was just typed. The input itself is
   # `phx-update="ignore"` and is not patched by this.
+  attr :article, :map, required: true
+
+  # An article's body. A syndicated (feed bot) article shows its first paragraph
+  # and collapses the rest behind a native disclosure, with a link to read it at
+  # the source; everything else renders whole (ADR 0081). Display only: the
+  # federated object and the outgoing feeds keep the full text.
+  defp article_body(%{article: %{user: %{is_bot: true}}} = assigns) do
+    {lead, rest} = BaudrateWeb.SafeHTML.markdown_lead(assigns.article.body)
+
+    assigns =
+      assigns
+      |> assign(:lead, lead)
+      |> assign(:rest, rest)
+      |> assign(:source_host, source_host(assigns.article.url))
+
+    ~H"""
+    <div class="article-body prose max-w-none">{@lead}</div>
+    <details :if={@rest} id="article-body-rest" class="article-body-rest group mt-2">
+      <summary
+        id="article-body-rest-toggle"
+        class="article-body-rest-toggle btn btn-sm btn-ghost"
+      >
+        <span class="group-open:hidden">{gettext("Show the rest")}</span>
+        <span class="hidden group-open:inline">{gettext("Hide the rest")}</span>
+      </summary>
+      <div class="article-body prose max-w-none mt-2">{@rest}</div>
+    </details>
+    <p :if={@rest && @source_host} id="article-source-notice" class="article-source-notice mt-3">
+      <a
+        id="article-source-link"
+        href={@article.url}
+        target="_blank"
+        rel="nofollow noopener noreferrer"
+        class="article-source-link link link-primary"
+      >
+        {gettext("Read the full article on %{site}", site: @source_host)}
+      </a>
+    </p>
+    """
+  end
+
+  defp article_body(assigns) do
+    ~H"""
+    <div class="article-body prose max-w-none">
+      {BaudrateWeb.SafeHTML.markdown(@article.body)}
+    </div>
+    """
+  end
+
+  # The host a syndicated entry links to, for the "read on" notice. Only an
+  # https link names a site; anything else gets no notice (the article's
+  # "View original" action still links it).
+  defp source_host(url) when is_binary(url) do
+    case URI.parse(url) do
+      %URI{scheme: "https", host: host} when is_binary(host) and host != "" -> host
+      _ -> nil
+    end
+  end
+
+  defp source_host(_url), do: nil
+
   defp replace_image(socket, key, image) do
     updated = Enum.map(socket.assigns[key], fn i -> if i.id == image.id, do: image, else: i end)
     assign(socket, key, updated)

@@ -61,4 +61,29 @@ defmodule BaudrateWeb.SafeHTML do
     |> BaudrateWeb.ImageAltFallback.fill()
     |> Phoenix.HTML.raw()
   end
+
+  @doc """
+  Renders a Markdown column like `markdown/1`, split after its first paragraph.
+
+  Returns `{lead, rest}`, both marked safe, or `{lead, nil}` when there is
+  nothing after the first paragraph to set apart. Used for syndicated articles,
+  whose page shows the lead and collapses the rest (ADR 0081).
+
+  The split runs on the finished, sanitized HTML, so each part is a
+  re-serialization of markup Ammonia already allowed: html5ever parses and
+  writes it the same way Ammonia's own output was written.
+  """
+  @spec markdown_lead(String.t() | nil) :: {Phoenix.HTML.safe(), Phoenix.HTML.safe() | nil}
+  # sobelow_skip ["XSS.Raw"]
+  def markdown_lead(text) do
+    html =
+      text
+      |> Baudrate.Content.Markdown.to_html()
+      |> BaudrateWeb.ImageAltFallback.fill()
+
+    case Baudrate.HtmlParser.Native.split_lead(html) do
+      {lead, ""} -> {Phoenix.HTML.raw(lead), nil}
+      {lead, rest} -> {Phoenix.HTML.raw(lead), Phoenix.HTML.raw(rest)}
+    end
+  end
 end

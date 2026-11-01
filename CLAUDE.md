@@ -216,6 +216,7 @@ that kind goes in it.
 - Drafts live in localStorage **and** `article_drafts`; the orphan-image sweep spares
   draft images (ADR 0062, `draft_test.exs`).
 - Bots: a feed entry is judged once and recorded (`bot_syndication_items`, never purged).
+  A bot article's page shows its lead and collapses the rest, display only (ADR 0081).
 
 ### Media, crawlers, search
 - **No third-party subresources** (ADR 0006/0045): remote images through

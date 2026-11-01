@@ -9,6 +9,7 @@ defmodule Baudrate.HtmlParser.Native do
     * `extract_urls/2` — every distinct external URL in an HTML fragment
     * `extract_first_url/2` — the first of those
     * `count_images/1` — how many `<img>` elements an HTML fragment holds
+    * `split_lead/1` — a fragment split after its first paragraph
   """
 
   use Rustler, otp_app: :baudrate, crate: "baudrate_html_parser"
@@ -60,4 +61,20 @@ defmodule Baudrate.HtmlParser.Native do
   @doc "The number of `<img>` elements in an HTML fragment."
   @spec count_images(String.t()) :: non_neg_integer()
   def count_images(_html), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Splits an HTML fragment after its first paragraph: `{lead, rest}`.
+
+  The lead is every top-level node up to and including the first `<p>` that
+  holds text, so an image or heading before it stays in the lead; one wrapper
+  (`div`, `section`, `article`, `main`) around the whole fragment is looked
+  into. When there is no such paragraph, or only whitespace after it, the lead
+  is the whole fragment unchanged and `rest` is `""`.
+
+  The parts are re-serialized by html5ever, so their markup is equivalent to
+  the input's but not byte-identical (attributes come out sorted). The input
+  must already be sanitized; this function does not sanitize.
+  """
+  @spec split_lead(String.t()) :: {String.t(), String.t()}
+  def split_lead(_html), do: :erlang.nif_error(:nif_not_loaded)
 end

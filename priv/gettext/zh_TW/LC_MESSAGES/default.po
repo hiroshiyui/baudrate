@@ -11885,3 +11885,18 @@ msgstr "我的公開個人檔案"
 #, elixir-autogen, elixir-format
 msgid "This session was signed out. Please sign in again."
 msgstr "此工作階段已登出，請重新登入。"
+
+#: lib/baudrate_web/live/article_live.ex
+#, elixir-autogen, elixir-format
+msgid "Hide the rest"
+msgstr "隱藏其餘內容"
+
+#: lib/baudrate_web/live/article_live.ex
+#, elixir-autogen, elixir-format
+msgid "Read the full article on %{site}"
+msgstr "前往 %{site} 閱讀全文"
+
+#: lib/baudrate_web/live/article_live.ex
+#, elixir-autogen, elixir-format
+msgid "Show the rest"
+msgstr "顯示其餘內容"

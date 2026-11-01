@@ -9,6 +9,16 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Changed
+
+- **A syndicated article's page shows its first paragraph and collapses the
+  rest**, with "Read the full article on <site>" linking the source, so the
+  site that wrote it keeps the visit. The rest stays one "Show the rest" away;
+  a line of tag links before the text does not count as the first paragraph,
+  and a member's article is never collapsed. Display only: what is stored,
+  federated and syndicated is unchanged
+  ([ADR 0081](doc/adr/0081-a-syndicated-article-shows-its-lead-and-sends-readers-to-the-source.md)).
+
 ## [2.1.2] — 2026-11-01
 
 A security and maintenance release. Nothing here changes a schema or a

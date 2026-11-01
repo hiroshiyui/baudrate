@@ -113,16 +113,9 @@
         id={"article-#{@article.id}-content-warning"}
         summary={@article.summary}
       >
-        <div class="article-body prose max-w-none">
-          {BaudrateWeb.SafeHTML.markdown(@article.body)}
-        </div>
+        <.article_body article={@article} />
       </.content_warning>
-      <div
-        :if={!Baudrate.Content.ContentWarning.warned?(@article)}
-        class="article-body prose max-w-none"
-      >
-        {BaudrateWeb.SafeHTML.markdown(@article.body)}
-      </div>
+      <.article_body :if={!Baudrate.Content.ContentWarning.warned?(@article)} article={@article} />
     </.muted_collapse>
 
     <.link_preview

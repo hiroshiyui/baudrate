@@ -221,4 +221,26 @@ defmodule Baudrate.HtmlParser.NativeTest do
       assert HtmlParser.count_images("") == 0
     end
   end
+
+  # ADR 0081: the lead of a syndicated article.
+  describe "split_lead/1" do
+    test "splits after the first paragraph with text of its own" do
+      assert HtmlParser.split_lead("<p>One.</p><p>Two.</p>") == {"<p>One.</p>", "<p>Two.</p>"}
+    end
+
+    test "a line of links before it stays in the lead without ending it" do
+      html =
+        ~s(<p><a href="/tags/news">News</a></p><p>Text <a href="https://a.example/">link</a>.</p><p>More.</p>)
+
+      assert HtmlParser.split_lead(html) ==
+               {~s(<p><a href="/tags/news">News</a></p><p>Text <a href="https://a.example/">link</a>.</p>),
+                "<p>More.</p>"}
+    end
+
+    test "nothing after the first paragraph leaves the fragment whole" do
+      for html <- ["<p>Only.</p>", "<p>Only.</p>\n", "<ul><li>no paragraph</li></ul>", ""] do
+        assert HtmlParser.split_lead(html) == {html, ""}
+      end
+    end
+  end
 end
