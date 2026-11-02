@@ -132,7 +132,11 @@ defmodule BaudrateWeb.ModerationLiveTest do
     |> form("#moderation-resolve-form-#{first.id}", %{"note" => "Removed the link"})
     |> render_submit()
 
+    # Each action removes its report's row, so focus moves to the heading.
+    assert_push_event(lv, "focus", %{id: "moderation-heading"})
+
     lv |> element("#moderation-dismiss-#{second.id}") |> render_click()
+    assert_push_event(lv, "focus", %{id: "moderation-heading"})
 
     first = Repo.reload!(first)
     second = Repo.reload!(second)

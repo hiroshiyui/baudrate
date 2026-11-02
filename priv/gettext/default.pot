@@ -11941,3 +11941,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Show the rest"
 msgstr ""
+
+#: lib/baudrate_web/live/bookmarks_live.ex
+#, elixir-autogen, elixir-format
+msgid "Could not remove bookmark."
+msgstr ""

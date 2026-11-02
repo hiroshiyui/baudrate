@@ -93,6 +93,7 @@ defmodule BaudrateWeb.FollowingLiveTest do
       html = lv |> element("button[phx-click=unfollow]") |> render_click()
       assert html =~ "Unfollowed successfully"
       refute html =~ "bob"
+      assert_push_event(lv, "focus", %{id: "following-heading"})
 
       refute Federation.user_follows?(user.id, actor.id)
     end
@@ -123,6 +124,7 @@ defmodule BaudrateWeb.FollowingLiveTest do
 
       assert html =~ "Unfollowed successfully"
       refute html =~ followed_user.username
+      assert_push_event(lv, "focus", %{id: "following-heading"})
       refute Federation.local_follows?(user.id, followed_user.id)
     end
 

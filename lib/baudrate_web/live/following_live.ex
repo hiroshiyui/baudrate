@@ -38,7 +38,8 @@ defmodule BaudrateWeb.FollowingLive do
       {:noreply,
        socket
        |> assign(:follows, follows)
-       |> put_flash(:info, gettext("Unfollowed successfully."))}
+       |> put_flash(:info, gettext("Unfollowed successfully."))
+       |> push_event("focus", %{id: "following-heading"})}
     else
       _ ->
         {:noreply, put_flash(socket, :error, gettext("Could not unfollow actor."))}
@@ -58,7 +59,8 @@ defmodule BaudrateWeb.FollowingLive do
       {:noreply,
        socket
        |> assign(:follows, follows)
-       |> put_flash(:info, gettext("Unfollowed successfully."))}
+       |> put_flash(:info, gettext("Unfollowed successfully."))
+       |> push_event("focus", %{id: "following-heading"})}
     else
       _ ->
         {:noreply, put_flash(socket, :error, gettext("Could not unfollow user."))}

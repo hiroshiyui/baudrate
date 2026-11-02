@@ -336,6 +336,7 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       assert html =~ "border-primary"
 
       lv |> element(~s(button[phx-value-id="#{notif.id}"])) |> render_click()
+      assert_push_event(lv, "focus", %{id: "notifications-heading"})
 
       html = render(lv)
       assert html =~ "opacity-75"
@@ -357,6 +358,7 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       assert html =~ "Mark all as read"
 
       lv |> element(~s(button[phx-click="mark_all_read"])) |> render_click()
+      assert_push_event(lv, "focus", %{id: "notifications-heading"})
 
       html = render(lv)
       refute html =~ "border-primary"

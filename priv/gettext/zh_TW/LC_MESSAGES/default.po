@@ -11900,3 +11900,8 @@ msgstr "前往 %{site} 閱讀全文"
 #, elixir-autogen, elixir-format
 msgid "Show the rest"
 msgstr "顯示其餘內容"
+
+#: lib/baudrate_web/live/bookmarks_live.ex
+#, elixir-autogen, elixir-format
+msgid "Could not remove bookmark."
+msgstr "無法移除書籤。"

@@ -9,7 +9,7 @@ defmodule BaudrateWeb.BookmarksLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Content
-  import BaudrateWeb.Helpers, only: [parse_page: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -31,15 +31,21 @@ defmodule BaudrateWeb.BookmarksLive do
   @impl true
   def handle_event("remove_bookmark", %{"id" => id}, socket) do
     user = socket.assigns.current_user
-    Content.delete_bookmark(user.id, id)
 
-    result = Content.list_bookmarks(user.id, page: socket.assigns.page)
+    with {:ok, bookmark_id} <- parse_id(id),
+         {:ok, _} <- Content.delete_bookmark(user.id, bookmark_id) do
+      result = Content.list_bookmarks(user.id, page: socket.assigns.page)
 
-    {:noreply,
-     socket
-     |> assign(:bookmarks, result.bookmarks)
-     |> assign(:total_pages, result.total_pages)
-     |> put_flash(:info, gettext("Bookmark removed."))}
+      # The removed row took the focused button with it.
+      {:noreply,
+       socket
+       |> assign(:bookmarks, result.bookmarks)
+       |> assign(:total_pages, result.total_pages)
+       |> put_flash(:info, gettext("Bookmark removed."))
+       |> push_event("focus", %{id: "bookmarks-heading"})}
+    else
+      _ -> {:noreply, put_flash(socket, :error, gettext("Could not remove bookmark."))}
+    end
   end
 
   defp bookmark_target_link(bookmark) do

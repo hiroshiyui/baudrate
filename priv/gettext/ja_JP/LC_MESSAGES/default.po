@@ -11900,3 +11900,8 @@ msgstr "%{site} で記事全文を読む"
 #, elixir-autogen, elixir-format
 msgid "Show the rest"
 msgstr "続きを表示"
+
+#: lib/baudrate_web/live/bookmarks_live.ex
+#, elixir-autogen, elixir-format
+msgid "Could not remove bookmark."
+msgstr "ブックマークを解除できませんでした。"

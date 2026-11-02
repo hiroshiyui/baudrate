@@ -170,7 +170,8 @@ defmodule BaudrateWeb.BoardFollowsLive do
        socket
        |> assign(:board, board)
        |> assign(:follows, follows)
-       |> put_flash(:info, gettext("Board follow removed."))}
+       |> put_flash(:info, gettext("Board follow removed."))
+       |> push_event("focus", %{id: "board-follows-heading"})}
     else
       _ ->
         {:noreply, put_flash(socket, :error, gettext("Could not unfollow actor."))}

@@ -72,6 +72,18 @@ defmodule BaudrateWeb.BookmarksLiveTest do
     html = render(lv)
     assert html =~ "Bookmark removed."
     assert html =~ "No bookmarks yet."
+    assert_push_event(lv, "focus", %{id: "bookmarks-heading"})
+  end
+
+  test "a tampered or unknown bookmark id is refused, not reported as removed",
+       %{conn: conn} do
+    {:ok, lv, _html} = live(conn, "/bookmarks")
+
+    for id <- ["not-a-number", "999999999"] do
+      html = render_click(lv, "remove_bookmark", %{"id" => id})
+      assert html =~ "Could not remove bookmark."
+      refute html =~ "Bookmark removed."
+    end
   end
 
   test "lists bookmarked comments", %{conn: conn, user: user, board: board} do

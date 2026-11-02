@@ -91,14 +91,18 @@ defmodule BaudrateWeb.NotificationsLive do
         :ok
     end
 
-    {:noreply, socket}
+    {:noreply, focus_heading(socket)}
   end
 
   def handle_event("mark_all_read", _params, socket) do
     user = socket.assigns.current_user
     Notification.mark_all_as_read(user.id)
-    {:noreply, socket}
+    {:noreply, focus_heading(socket)}
   end
+
+  # Both buttons render only while something is unread, so a click removes
+  # the button that had focus.
+  defp focus_heading(socket), do: push_event(socket, "focus", %{id: "notifications-heading"})
 
   # Screen readers do not notice a silently re-rendered list, so a newly
   # arrived notification is announced through the page's `role="status"` node.

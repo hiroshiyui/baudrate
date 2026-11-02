@@ -159,6 +159,7 @@ defmodule BaudrateWeb.BoardFollowsLiveTest do
       lv |> element("button", "Unfollow") |> render_click()
 
       assert is_nil(Federation.get_board_follow(board.id, remote_actor.id))
+      assert_push_event(lv, "focus", %{id: "board-follows-heading"})
     end
   end
 end
