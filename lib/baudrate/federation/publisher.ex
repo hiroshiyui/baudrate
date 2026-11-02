@@ -551,9 +551,13 @@ defmodule Baudrate.Federation.Publisher do
   Only delivers if the board is public (`min_role_to_view == "guest"`) and AP-enabled.
   """
   def publish_article_forwarded(article, board) do
-    article = Repo.preload(article, [:boards, :user])
+    article = Repo.preload(article, [:boards, :user, :remote_actor])
 
-    if Board.federated?(board) do
+    # A remote article that arrived followers-only or direct, or whose author
+    # is now hidden (ADR 0030), is never announced: the board's Announce is
+    # addressed as:Public. Forwarding refuses such rows already, but moving
+    # one between boards reached here without a visibility check.
+    if Board.federated?(board) and Baudrate.Content.Interactions.remote_servable?(article) do
       # For local articles, send Create(Article) from user → board followers
       # For remote articles, skip Create — the original already exists on the origin server
       if article.user_id do

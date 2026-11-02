@@ -32,6 +32,10 @@ defmodule BaudrateWeb.SyndicationFeedXML do
   @doc """
   Returns the display name for an article's author.
   """
+  # A tombstone keeps its username, but everywhere a name is shown it is
+  # "deleted account" (ADR 0072); feeds were the one place that showed the old
+  # name, and a feed reader keeps it.
+  def author_name(%{user: %{status: "deleted"}}), do: gettext("deleted account")
   def author_name(%{user: %{username: username}}) when is_binary(username), do: username
   def author_name(_), do: gettext("Unknown")
 

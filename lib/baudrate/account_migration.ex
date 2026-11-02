@@ -782,6 +782,13 @@ defmodule Baudrate.AccountMigration do
             log_move_ignored(origin, target_uri, "target_moved")
             :ok
 
+          # Members are not moved onto an actor this instance hides — a
+          # suspended one or one on a blocked domain (ADR 0030): they would
+          # follow an account whose posts they can never see.
+          Baudrate.Federation.DomainBlocks.actor_hidden?(target) ->
+            log_move_ignored(origin, target_uri, "target_hidden")
+            :ok
+
           not claim_inbound_move(origin, target.ap_id) ->
             log_move_ignored(origin, target_uri, "recently_moved")
             :ok

@@ -28,6 +28,13 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   approving it.
 - **An unauthenticated request with an impossible `Date` header** (31 February,
   hour 99) answered 500 instead of being refused.
+- **Rank checks used the copy of an account a moderator's page had loaded.**
+  A member promoted after the page opened could still be sanctioned by a
+  moderator who no longer outranked them, and an account-reset link kept
+  working after its account was promoted to the issuer's level. Both are now
+  decided against the account as it stands.
+- **Parallel sign-in codes could slip past the per-account TOTP throttle.**
+  Each account's attempts are now checked one at a time.
 
 ### Fixed
 
@@ -59,6 +66,32 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - **Focus moved to the page heading** when an action removes the button that
   had it (moderation queue, bookmarks, following, board follows,
   notifications).
+- **Repeating an option in a poll vote crashed the article page**; it now
+  counts once.
+- **Comment search found comments on unlisted articles** (and showed their
+  titles); it now leaves them out, as the article search does, except for
+  their author.
+- **Notifications kept showing a deleted article's title** for 90 days; other
+  recipients now see "a removed post", and only the author sees the title.
+- **Feeds named a deleted account by its old username**; they now say
+  "deleted account", as the rest of the site does.
+- **Likes, boosts and poll votes from other servers were accepted on a deleted
+  article**, and an edit could rewrite a deleted remote reply.
+- **Followers were moved onto a suspended or blocked account** when its old
+  account announced a move.
+- **A followers-only remote article moved into a federated board was announced
+  publicly.**
+- **The search page's status messages** (looking up a remote account or post,
+  the result count) are now announced by screen readers that ignore a status
+  region inserted with its text already in it.
+- The timeline's forward-to-board controls have stable ids and classes, and
+  their search field is described by its result count.
+
+### Changed
+
+- **Approving a registration is authorized in the account context**
+  (`Auth.approve_user/3` takes the approving account and writes the audit
+  entry), not only in the admin pages.
 
 ## [2.3.1] — 2026-11-02
 

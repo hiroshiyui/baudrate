@@ -18,19 +18,6 @@ defmodule Baudrate.Federation.Validator do
   def valid_https_url?(_), do: false
 
   @doc """
-  Validates that the raw payload does not exceed the maximum size.
-  """
-  def validate_payload_size(body) when is_binary(body) do
-    max = config(:max_payload_size)
-
-    if byte_size(body) <= max do
-      :ok
-    else
-      {:error, :payload_too_large}
-    end
-  end
-
-  @doc """
   Validates that a content field does not exceed the maximum content size.
   """
   def validate_content_size(content) when is_binary(content) do
@@ -171,22 +158,7 @@ defmodule Baudrate.Federation.Validator do
 
   def local_actor?(_), do: false
 
-  @doc """
-  Validates that the activity's actor matches the object's attributedTo.
-  Returns true if attribution is valid or not applicable.
-  """
-  def valid_attribution?(%{"actor" => actor, "object" => %{"attributedTo" => attributed}}) do
-    actor == attributed
-  end
-
-  def valid_attribution?(%{"actor" => _actor, "object" => object}) when is_binary(object) do
-    # Object is a URI reference, attribution check not applicable
-    true
-  end
-
-  def valid_attribution?(_), do: true
-
-  @config_defaults %{max_payload_size: 262_144, max_content_size: 65_536}
+  @config_defaults %{max_content_size: 65_536}
 
   defp config(key) do
     Application.get_env(:baudrate, Baudrate.Federation, [])

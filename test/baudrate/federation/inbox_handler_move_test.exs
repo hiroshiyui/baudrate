@@ -137,6 +137,25 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       assert actor_id == actor.id
     end
 
+    # Review finding (2026-11-02): followers were moved onto a suspended actor,
+    # whose posts this instance hides from them.
+    test "does not move followers onto a suspended actor", %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      new_actor = create_remote_actor(%{domain: "new.example"})
+
+      Repo.update_all(
+        Ecto.Query.from(ra in RemoteActor, where: ra.id == ^new_actor.id),
+        set: [suspended_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+      )
+
+      stub_target_actor(new_actor, [actor.ap_id])
+
+      assert :ok = InboxHandler.handle(move_activity(actor, new_actor.ap_id), actor, :shared)
+
+      assert Federation.user_follows?(user.id, actor.id)
+      assert is_nil(Federation.get_user_follow(user.id, new_actor.id))
+    end
+
     test "deduplicates when user already follows new actor", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
       new_actor = create_remote_actor(%{domain: "new.example"})

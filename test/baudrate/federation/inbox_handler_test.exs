@@ -977,6 +977,26 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert Content.count_article_likes(article) == 1
     end
 
+    # Replies and quotes were refused on a deleted article, likes, boosts and
+    # votes were not (review finding, 2026-11-02).
+    test "a like on a deleted article is dropped" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      {:ok, _} = Content.soft_delete_article(article, deleted_by: user.id)
+      remote_actor = create_remote_actor()
+
+      activity = %{
+        "id" => "https://remote.example/likes/#{System.unique_integer([:positive])}",
+        "type" => "Like",
+        "actor" => remote_actor.ap_id,
+        "object" => Federation.actor_uri(:article, article.slug)
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.count_article_likes(article) == 0
+    end
+
     test "idempotent — duplicate like returns :ok" do
       user = setup_user_with_role("user")
       board = create_board()

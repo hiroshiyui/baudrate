@@ -380,8 +380,13 @@ defmodule Baudrate.Federation.InboxHandler do
         {:ok, _announce} ->
           Logger.info("federation.activity: type=Announce(embedded) ap_id=#{ap_id}")
 
+        # A repeat is expected. Any other failure only loses the boost record;
+        # the boosted content is still handled below, so it is logged rather
+        # than returned (it used to be computed and silently discarded).
         {:error, %Ecto.Changeset{} = changeset} ->
-          if has_unique_error?(changeset), do: :ok, else: {:error, :announce_failed}
+          unless has_unique_error?(changeset) do
+            Logger.warning("federation.announce: record failed ap_id=#{ap_id}")
+          end
       end
 
       # The embedded body is trusted only when the booster's host is the
@@ -802,6 +807,11 @@ defmodule Baudrate.Federation.InboxHandler do
       case Content.get_comment_by_ap_id(ap_id) do
         # `with`, not `=`: content over the size limit is an error tuple, and
         # a MatchError raised — retrying the job and holding up the sender.
+        # A deleted comment is not rewritten: its text is what a moderator or
+        # its author withdrew, and a revision would bring it back.
+        %{remote_actor_id: actor_id, deleted_at: %DateTime{}} when actor_id == remote_actor.id ->
+          :ok
+
         %{remote_actor_id: actor_id} = comment when actor_id == remote_actor.id ->
           with {:ok, body, body_html} <- sanitize_content(object) do
             body_html =
@@ -2253,6 +2263,10 @@ defmodule Baudrate.Federation.InboxHandler do
   #   (b) their author has remote followers — user-actor federation may have
   #       already published the article via follower fan-out, so inbound
   #       interactions on it must be honored regardless of board AP status.
+  # A deleted article takes no interaction, local or remote: likes, boosts and
+  # poll votes on one were accepted, though replies and quotes were refused.
+  defp article_federated?(%{deleted_at: %DateTime{}}), do: false
+
   defp article_federated?(%{remote_actor_id: remote_actor_id}) when not is_nil(remote_actor_id),
     do: true
 

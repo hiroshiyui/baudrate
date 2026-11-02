@@ -404,6 +404,18 @@ defmodule Baudrate.AccountDeletionTest do
       assert %Comment{deleted_at: %DateTime{}} = Repo.reload!(mine)
     end
 
+    # ADR 0072 §1: everywhere a name is shown, a tombstone is "deleted
+    # account". The feeds showed the old username (review, 2026-11-02).
+    test "a kept article's feed entry names a deleted account, not the old username",
+         %{member: member} do
+      article = article(member, board())
+      carry_out!(request!(member))
+
+      article = Repo.preload(Repo.reload!(article), :user, force: true)
+      assert BaudrateWeb.SyndicationFeedXML.author_name(article) == "deleted account"
+      refute BaudrateWeb.SyndicationFeedXML.author_name(article) == member.username
+    end
+
     test "the text of the member's direct messages always goes", %{member: member} do
       other = setup_user("user")
       {:ok, conv} = Messaging.find_or_create_conversation(member, other)

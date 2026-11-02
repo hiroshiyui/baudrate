@@ -42,25 +42,6 @@ defmodule Baudrate.Federation.ValidatorTest do
     end
   end
 
-  describe "validate_payload_size/1" do
-    test "within limit returns :ok" do
-      body = String.duplicate("x", 1000)
-      assert :ok = Validator.validate_payload_size(body)
-    end
-
-    test "at exact limit returns :ok" do
-      max = 262_144
-      body = String.duplicate("x", max)
-      assert :ok = Validator.validate_payload_size(body)
-    end
-
-    test "over limit returns error" do
-      max = 262_144
-      body = String.duplicate("x", max + 1)
-      assert {:error, :payload_too_large} = Validator.validate_payload_size(body)
-    end
-  end
-
   describe "validate_content_size/1" do
     test "within limit returns :ok" do
       content = String.duplicate("x", 1000)
@@ -343,47 +324,6 @@ defmodule Baudrate.Federation.ValidatorTest do
     test "base URL without path returns false" do
       base = BaudrateWeb.Endpoint.url()
       refute Validator.local_actor?(base)
-    end
-  end
-
-  describe "valid_attribution?/1" do
-    test "matching actor and attributedTo returns true" do
-      activity = %{
-        "actor" => "https://remote.example/users/alice",
-        "object" => %{
-          "attributedTo" => "https://remote.example/users/alice"
-        }
-      }
-
-      assert Validator.valid_attribution?(activity)
-    end
-
-    test "mismatched actor and attributedTo returns false" do
-      activity = %{
-        "actor" => "https://remote.example/users/alice",
-        "object" => %{
-          "attributedTo" => "https://remote.example/users/bob"
-        }
-      }
-
-      refute Validator.valid_attribution?(activity)
-    end
-
-    test "URI object (string) always returns true" do
-      activity = %{
-        "actor" => "https://remote.example/users/alice",
-        "object" => "https://remote.example/posts/123"
-      }
-
-      assert Validator.valid_attribution?(activity)
-    end
-
-    test "activity without object returns true" do
-      assert Validator.valid_attribution?(%{"actor" => "https://remote.example/users/alice"})
-    end
-
-    test "nil returns true" do
-      assert Validator.valid_attribution?(nil)
     end
   end
 end
