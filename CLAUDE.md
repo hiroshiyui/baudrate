@@ -170,7 +170,8 @@ that kind goes in it.
 - Blocks refuse interaction both ways, locally only; no `Block` activity (ADR 0026).
 - Factor changes need `Auth.verify_reauthentication/5` (ADR 0022) and send an
   always-delivered security notice from the context. TOTP only via
-  `Auth.verify_totp_code/3` (single-use, ADR 0024).
+  `Auth.verify_totp_code/3` (single-use, ADR 0024). A TOTP enrolment secret is bound to
+  its account (`totp_setup_secret_for/2`); a sign-in starts with `forget_half_login/1`.
 - WebAuthn: store the full `Wax.Challenge`; `pop/3` requires the purpose; `wax_` origin
   must equal `window.location.origin` exactly.
 - Session deletion only through `Auth.Sessions`; keep "this" session by row id, never token.

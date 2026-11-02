@@ -19,7 +19,13 @@ defmodule BaudrateWeb.TotpSetupLive do
 
   @impl true
   def mount(_params, session, socket) do
-    secret = session["totp_setup_secret"]
+    # Only a secret issued to this account, for an account without a second
+    # factor (the same refusal as `SessionController.totp_enable/2`).
+    user = socket.assigns.current_user
+
+    secret =
+      unless user.totp_enabled,
+        do: BaudrateWeb.SessionController.totp_setup_secret_for(session, user)
 
     if is_nil(secret) do
       {:ok, redirect(socket, to: "/login")}

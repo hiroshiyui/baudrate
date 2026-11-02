@@ -198,6 +198,82 @@ defmodule BaudrateWeb.SessionControllerTest do
     end
   end
 
+  # Review finding (2026-11-02): `renew: true` keeps a cookie session's data,
+  # so an enrolment secret left in the browser by one account's abandoned TOTP
+  # setup survived into another account's sign-in, and `totp_enable/2` took
+  # the user and the secret from the session independently. Someone holding
+  # only a victim's password could replace the victim's second factor with
+  # one they controlled, and sign in as them.
+  describe "a TOTP enrolment secret is bound to the account it was issued to" do
+    setup do
+      attacker = setup_user("user")
+      victim = setup_user("user")
+      {:ok, victim} = Auth.enable_totp(victim, Auth.generate_totp_secret())
+      %{attacker: attacker, victim: victim}
+    end
+
+    test "a new sign-in starts without the previous enrolment secret",
+         %{conn: conn, attacker: attacker, victim: victim} do
+      stale = Auth.generate_totp_secret()
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{
+          user_id: attacker.id,
+          totp_setup_secret: stale,
+          totp_setup_user_id: attacker.id,
+          admin_totp_verified_at: System.system_time(:second)
+        })
+        |> post("/auth/session", %{
+          "token" => Phoenix.Token.sign(BaudrateWeb.Endpoint, "user_auth", victim.id)
+        })
+
+      assert redirected_to(conn) == "/totp/verify"
+      assert get_session(conn, :user_id) == victim.id
+      assert is_nil(get_session(conn, :totp_setup_secret))
+      assert is_nil(get_session(conn, :totp_setup_user_id))
+      assert is_nil(get_session(conn, :admin_totp_verified_at))
+    end
+
+    test "enrolling a secret issued to another account is refused",
+         %{conn: conn, attacker: attacker, victim: victim} do
+      stale = Auth.generate_totp_secret()
+      before = Repo.reload!(victim).totp_secret
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{
+          user_id: victim.id,
+          totp_setup_secret: stale,
+          totp_setup_user_id: attacker.id
+        })
+        |> post("/auth/totp-enable", %{"code" => totp_code(stale)})
+
+      assert redirected_to(conn) == "/login"
+      assert Repo.reload!(victim).totp_secret == before
+      assert is_nil(get_session(conn, :session_token))
+    end
+
+    test "an account that already has a second factor cannot enrol over it",
+         %{conn: conn, victim: victim} do
+      fresh = Auth.generate_totp_secret()
+      before = Repo.reload!(victim).totp_secret
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{
+          user_id: victim.id,
+          totp_setup_secret: fresh,
+          totp_setup_user_id: victim.id
+        })
+        |> post("/auth/totp-enable", %{"code" => totp_code(fresh)})
+
+      assert redirected_to(conn) == "/login"
+      assert Repo.reload!(victim).totp_secret == before
+      assert is_nil(get_session(conn, :session_token))
+    end
+  end
+
   describe "POST /auth/totp-enable" do
     test "enables TOTP with valid code (secret from session)", %{conn: conn} do
       user = setup_user("admin")
@@ -206,7 +282,11 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id, totp_setup_secret: secret})
+        |> Plug.Test.init_test_session(%{
+          user_id: user.id,
+          totp_setup_secret: secret,
+          totp_setup_user_id: user.id
+        })
         |> post("/auth/totp-enable", %{"code" => code})
 
       assert redirected_to(conn) == "/profile/security"
@@ -235,7 +315,11 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id, totp_setup_secret: secret})
+        |> Plug.Test.init_test_session(%{
+          user_id: user.id,
+          totp_setup_secret: secret,
+          totp_setup_user_id: user.id
+        })
         |> post("/auth/totp-enable", %{"code" => "000000"})
 
       assert redirected_to(conn) == "/totp/setup"
@@ -262,6 +346,7 @@ defmodule BaudrateWeb.SessionControllerTest do
         |> Plug.Test.init_test_session(%{
           user_id: user.id,
           totp_setup_secret: secret,
+          totp_setup_user_id: user.id,
           totp_attempts: 5
         })
         |> post("/auth/totp-enable", %{"code" => "000000"})
@@ -657,7 +742,6 @@ defmodule BaudrateWeb.SessionControllerTest do
     test "ignores return_to when explicit redirect_to is provided", %{conn: conn} do
       user = setup_user("admin")
       secret = Auth.generate_totp_secret()
-      {:ok, _} = Auth.enable_totp(user, secret)
       code = totp_code(secret)
 
       conn =
@@ -665,6 +749,7 @@ defmodule BaudrateWeb.SessionControllerTest do
         |> Plug.Test.init_test_session(%{
           user_id: user.id,
           totp_setup_secret: secret,
+          totp_setup_user_id: user.id,
           return_to: "/articles/new?title=Shared"
         })
         |> post("/auth/totp-enable", %{"code" => code})

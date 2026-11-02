@@ -9,6 +9,16 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Security
+
+- **A TOTP enrolment left unfinished in a browser could take over the next
+  account signed in there.** The setup secret stayed in the session across
+  sign-ins, and enrolling it was not tied to the account it was issued for, so
+  someone who knew only a victim's password could replace the victim's second
+  factor with their own and sign in as them. The secret is now bound to its
+  account, every sign-in starts without a previous one's pending state, and
+  enrolment never replaces an existing second factor.
+
 ## [2.3.1] — 2026-11-02
 
 Fixes ActivityPub fetches of articles imported from other servers. Nothing

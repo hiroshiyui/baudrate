@@ -91,6 +91,7 @@ defmodule BaudrateWeb.SessionController do
           conn =
             conn
             |> configure_session(renew: true)
+            |> forget_half_login()
             |> put_session(:user_id, user.id)
 
           case Auth.login_next_step(user) do
@@ -103,7 +104,7 @@ defmodule BaudrateWeb.SessionController do
               secret = Auth.generate_totp_secret()
 
               conn
-              |> put_session(:totp_setup_secret, secret)
+              |> put_totp_setup_secret(user, secret)
               |> delete_session(:totp_attempts)
               |> redirect(to: "/totp/setup")
 
@@ -194,11 +195,14 @@ defmodule BaudrateWeb.SessionController do
   def totp_enable(conn, %{"code" => code}) do
     user_id = get_session(conn, :user_id)
     user = user_id && Auth.get_user(user_id)
-    secret = get_session(conn, :totp_setup_secret)
+    secret = totp_setup_secret_for(conn, user)
     attempts = get_session(conn, :totp_attempts) || 0
 
     cond do
-      is_nil(user) || is_nil(secret) ->
+      # A secret only enrols the account it was issued to, and only an account
+      # without a second factor: enrolment never replaces one. Either refusal
+      # means the session is not the one that started this setup.
+      is_nil(user) || is_nil(secret) || user.totp_enabled ->
         conn
         |> put_flash(:error, gettext("Session expired. Please log in again."))
         |> redirect(to: "/login")
@@ -218,6 +222,7 @@ defmodule BaudrateWeb.SessionController do
 
             conn
             |> delete_session(:totp_setup_secret)
+            |> delete_session(:totp_setup_user_id)
             |> delete_session(:totp_attempts)
             |> put_flash(:info, gettext("Two-factor authentication enabled successfully."))
             |> establish_session(updated_user, "/profile/security")
@@ -266,8 +271,9 @@ defmodule BaudrateWeb.SessionController do
 
           conn
           |> configure_session(renew: true)
+          |> forget_half_login()
           |> put_session(:user_id, user.id)
-          |> put_session(:totp_setup_secret, secret)
+          |> put_totp_setup_secret(user, secret)
           |> delete_session(:totp_attempts)
           |> redirect(to: "/totp/setup")
         else
@@ -705,12 +711,60 @@ defmodule BaudrateWeb.SessionController do
     end
   end
 
+  # Session keys of a sign-in that has not finished: a password verified,
+  # a second factor pending or being enrolled, and admin sudo. A new sign-in
+  # starts without them. `renew: true` keeps the session's data, so before
+  # this a `:totp_setup_secret` left by one account's abandoned enrolment
+  # survived into another account's sign-in, and enrolling it replaced that
+  # account's second factor with one the first browser held.
+  @half_login_keys [
+    :user_id,
+    :totp_setup_secret,
+    :totp_setup_user_id,
+    :totp_attempts,
+    :totp_verified,
+    :admin_totp_verified_at
+  ]
+
+  defp forget_half_login(conn), do: Enum.reduce(@half_login_keys, conn, &delete_session(&2, &1))
+
+  # The enrolment secret is bound to the account it was issued for.
+  defp put_totp_setup_secret(conn, user, secret) do
+    conn
+    |> put_session(:totp_setup_secret, secret)
+    |> put_session(:totp_setup_user_id, user.id)
+  end
+
+  @doc false
+  # The pending enrolment secret, if it was issued to `user`; `nil` otherwise.
+  def totp_setup_secret_for(conn_or_session, user)
+
+  def totp_setup_secret_for(%Plug.Conn{} = conn, user) do
+    totp_setup_secret_for(
+      %{
+        "totp_setup_secret" => get_session(conn, :totp_setup_secret),
+        "totp_setup_user_id" => get_session(conn, :totp_setup_user_id)
+      },
+      user
+    )
+  end
+
+  def totp_setup_secret_for(
+        %{"totp_setup_secret" => secret, "totp_setup_user_id" => user_id},
+        %{id: user_id}
+      )
+      when is_binary(secret) and is_integer(user_id),
+      do: secret
+
+  def totp_setup_secret_for(_session, _user), do: nil
+
   # A half-finished sign-in (password verified, TOTP pending) must not
   # survive a refusal.
   defp refuse_sign_in(conn, message) do
     conn
     |> delete_session(:user_id)
     |> delete_session(:totp_setup_secret)
+    |> delete_session(:totp_setup_user_id)
     |> put_flash(:error, message)
     |> redirect(to: "/login")
   end
@@ -751,6 +805,7 @@ defmodule BaudrateWeb.SessionController do
     |> delete_session(:user_id)
     |> delete_session(:totp_verified)
     |> delete_session(:totp_setup_secret)
+    |> delete_session(:totp_setup_user_id)
     |> delete_session(:return_to)
     |> put_session(:session_token, session_token)
     |> put_session(:refresh_token, refresh_token)
