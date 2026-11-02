@@ -67,7 +67,7 @@ defmodule Baudrate.Auth.Moderation do
   names both lists, so the flash can say exactly what happened.
 
   Logged from here rather than from the LiveView, for the reason
-  `approve_user/1` gives: a second caller must not be able to skip it. Each
+  `approve_user/3` gives: a second caller must not be able to skip it. Each
   banned account gets the same `ban_user` entry `UsersLive` writes, so its own
   history is complete, and one `ban_invite_chain` entry records the action as
   a whole, including what was refused and why.

@@ -496,8 +496,10 @@ urgency [ADR 0056](adr/0056-boring-but-friendly.md) refuses. Accounts that
 predate the column were backfilled by its migration.
 
 Approval sends an always-delivered `registration_approved` notice from
-`Users.approve_user/1` — from the context, never the admin LiveView, so no
-second approval path can skip it. `pending_registration` (to staff) is
+`Users.approve_user/3` — from the context, never the admin LiveView, so no
+second approval path can skip it. The context also checks that the approving
+account holds `admin.manage_users` and writes the `approve_user` audit entry.
+`pending_registration` (to staff) is
 always-delivered too: an approval queue nobody is told about is an approval
 queue nobody empties.
 
