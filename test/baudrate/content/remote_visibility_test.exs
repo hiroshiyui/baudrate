@@ -328,6 +328,45 @@ defmodule Baudrate.Content.RemoteVisibilityTest do
     end
   end
 
+  # Review finding (2026-11-02): interactions on a comment checked only that
+  # its *article* was visible, so a hidden reply could be liked, boosted (and
+  # so re-published to the member's followers), bookmarked or forwarded by
+  # guessing its integer id. Forwarding let an admin through outright.
+  describe "interacting with a hidden remote reply" do
+    test "like, boost and bookmark refuse it as not found; a public reply is not refused", ctx do
+      {hidden, shown} = two_replies(ctx)
+
+      assert {:error, :not_found} = Content.toggle_comment_like(ctx.user.id, hidden.id)
+      assert {:error, :not_found} = Content.toggle_comment_boost(ctx.user.id, hidden.id)
+      assert {:error, :not_found} = Bookmarks.toggle_comment_bookmark(ctx.user.id, hidden.id)
+
+      refute match?({:error, :not_found}, Content.toggle_comment_like(ctx.user.id, shown.id))
+
+      refute match?(
+               {:error, :not_found},
+               Bookmarks.toggle_comment_bookmark(ctx.user.id, shown.id)
+             )
+    end
+
+    test "a reply whose author's domain is blocked is refused too", ctx do
+      {_hidden, shown} = two_replies(ctx)
+      {:ok, _} = Federation.DomainBlocks.block_domain(ctx.actor.domain)
+
+      assert {:error, :not_found} = Content.toggle_comment_like(ctx.user.id, shown.id)
+      assert {:error, :not_found} = Bookmarks.toggle_comment_bookmark(ctx.user.id, shown.id)
+    end
+
+    test "not even an admin may forward it to a board", ctx do
+      {hidden, _shown} = two_replies(ctx)
+      admin_role = Repo.one!(from r in Setup.Role, where: r.name == "admin")
+      admin = ctx.user |> Ecto.Changeset.change(role_id: admin_role.id) |> Repo.update!()
+      admin = Repo.preload(admin, :role, force: true)
+
+      refute Content.can_forward_comment?(admin, hidden)
+      assert {:error, :unauthorized} = Content.forward_comment_to_board(hidden, ctx.board, admin)
+    end
+  end
+
   describe "unread badges" do
     test "unread_board_ids/2 does not light up a board for it", ctx do
       # `create_remote_article/2` leaves `last_activity_at` nil, which alone

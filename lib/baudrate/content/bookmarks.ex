@@ -161,8 +161,11 @@ defmodule Baudrate.Content.Bookmarks do
 
       true ->
         case Repo.get(Comment, comment_id) do
-          %Comment{deleted_at: nil, article_id: article_id} ->
-            if article_readable?(user_id, article_id), do: :ok, else: {:error, :not_found}
+          %Comment{deleted_at: nil, article_id: article_id} = comment ->
+            if article_readable?(user_id, article_id) and
+                 Interactions.comment_visible_to_user?(comment, user_id),
+               do: :ok,
+               else: {:error, :not_found}
 
           _ ->
             {:error, :not_found}

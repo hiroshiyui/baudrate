@@ -827,7 +827,7 @@ defmodule Baudrate.Content.Articles do
       # forward its body into a public board — exfiltrating restricted content.
       # `comment.visibility` alone does not capture board-level restrictions
       # (local comments default to "public" regardless of the board's min role).
-      not Interactions.article_visible_to_user?(comment.article_id, user.id) ->
+      not Interactions.comment_visible_to_user?(comment, user.id) ->
         {:error, :unauthorized}
 
       not Permissions.can_forward_comment?(user, comment) ->

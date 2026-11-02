@@ -408,12 +408,18 @@ defmodule Baudrate.Content.Permissions do
   # it.
   def can_forward_comment?(nil, _comment), do: false
 
-  def can_forward_comment?(%{role: %{name: "admin"}} = user, _comment), do: unrestricted?(user)
-
-  def can_forward_comment?(%{id: uid} = user, %{user_id: uid}), do: unrestricted?(user)
-
+  # Same shape as `can_forward_article?/2`, for the same reason: forwarding
+  # re-publishes the comment to a board as `as:Public`, so a remote reply that
+  # arrived `followers_only` or `direct` is someone else's audience decision
+  # and is refused to everyone, admins included. The admin clause used to
+  # match first and return before any visibility test.
   def can_forward_comment?(user, comment) do
-    unrestricted?(user) and comment.visibility in ["public", "unlisted"]
+    cond do
+      not remote_public?(comment) -> false
+      match?(%{role: %{name: "admin"}}, user) -> unrestricted?(user)
+      Map.get(comment, :user_id) == user.id -> unrestricted?(user)
+      true -> unrestricted?(user) and comment.visibility in ["public", "unlisted"]
+    end
   end
 
   @doc """

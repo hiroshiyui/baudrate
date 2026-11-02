@@ -160,8 +160,11 @@ defmodule Baudrate.Content.Boosts do
 
               {:error, %Ecto.Changeset{} = cs} ->
                 if Interactions.has_unique_constraint_error?(cs) do
-                  unboost_article(user_id, article_id)
-                  {:ok, :removed}
+                  # A concurrent toggle added it first (a double click): the
+                  # outcome both asked for already holds, and its activity is
+                  # queued. Removing it here deleted the row without an Undo,
+                  # so peers kept a like or boost the member could never undo.
+                  {:ok, Repo.get_by!(ArticleBoost, user_id: user_id, article_id: article_id)}
                 else
                   {:error, cs}
                 end
@@ -331,7 +334,7 @@ defmodule Baudrate.Content.Boosts do
       not is_nil(comment.deleted_at) ->
         {:error, :deleted}
 
-      not Interactions.article_visible_to_user?(comment.article_id, user_id) ->
+      not Interactions.comment_visible_to_user?(comment, user_id) ->
         {:error, :not_found}
 
       gate != :ok ->
@@ -358,8 +361,11 @@ defmodule Baudrate.Content.Boosts do
 
               {:error, %Ecto.Changeset{} = cs} ->
                 if Interactions.has_unique_constraint_error?(cs) do
-                  unboost_comment(user_id, comment_id)
-                  {:ok, :removed}
+                  # A concurrent toggle added it first (a double click): the
+                  # outcome both asked for already holds, and its activity is
+                  # queued. Removing it here deleted the row without an Undo,
+                  # so peers kept a like or boost the member could never undo.
+                  {:ok, Repo.get_by!(CommentBoost, user_id: user_id, comment_id: comment_id)}
                 else
                   {:error, cs}
                 end

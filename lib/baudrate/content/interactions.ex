@@ -83,6 +83,21 @@ defmodule Baudrate.Content.Interactions do
 
   defp remote_author_hidden?(_article), do: false
 
+  @doc """
+  Whether `user_id` may interact with this comment: the comment itself is
+  servable (`remote_servable?/1` — a remote reply that arrived `followers_only`
+  or `direct`, or whose author is suspended or on a blocked domain, is
+  refused to everyone) **and** its article is visible to the user.
+
+  The article check alone let a member like, boost, bookmark or forward a
+  hidden remote reply by guessing its integer id, and a boost re-published
+  it to the member's followers.
+  """
+  @spec comment_visible_to_user?(map(), integer() | nil) :: boolean()
+  def comment_visible_to_user?(%{article_id: article_id} = comment, user_id) do
+    remote_servable?(comment) and article_visible_to_user?(article_id, user_id)
+  end
+
   defp boards_visible_to?(article_id, user_id) do
     user = user_id && Repo.get(Baudrate.Setup.User, user_id)
     user = user && Repo.preload(user, :role)
