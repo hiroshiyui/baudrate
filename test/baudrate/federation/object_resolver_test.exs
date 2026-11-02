@@ -91,6 +91,25 @@ defmodule Baudrate.Federation.ObjectResolverTest do
   end
 
   describe "fetch/1" do
+    # Review finding (2026-11-02): the preview's url became an `href` on the
+    # search page whatever its scheme. It is https-only, like every remote url,
+    # falling back to the (https) object id.
+    test "a javascript: url is not offered as the source link" do
+      {_actor, public_pem} = insert_remote_actor()
+
+      object_json =
+        "Note"
+        |> build_object_json()
+        |> Jason.decode!()
+        |> Map.put("url", "javascript:alert(1)")
+        |> Jason.encode!()
+
+      stub_object_and_actor(object_json, build_actor_json(public_pem))
+
+      assert {:ok, preview} = ObjectResolver.fetch(@remote_object_ap_id)
+      assert preview.url == @remote_object_ap_id
+    end
+
     test "returns preview map for a valid remote Note" do
       {_actor, public_pem} = insert_remote_actor()
       object_json = build_object_json("Note")

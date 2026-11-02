@@ -208,6 +208,23 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
         |> Plug.Conn.assign(:raw_body, body)
 
       assert {:error, :invalid_date} = HTTPSignature.verify(conn)
+
+      # Shaped like a date but not one: these raised in `Date.new!`/`Time.new!`,
+      # a 500 for an unauthenticated request (review finding, 2026-11-02).
+      for bad <- ["Mon, 31 Feb 2026 00:00:00 GMT", "Mon, 02 Nov 2026 99:00:00 GMT"] do
+        conn =
+          Plug.Test.conn(:post, "/ap/inbox", body)
+          |> Map.put(:req_headers, [
+            {"host", "local.example"},
+            {"date", bad},
+            {"digest", headers["digest"]},
+            {"signature", headers["signature"]},
+            {"content-type", "application/activity+json"}
+          ])
+          |> Plug.Conn.assign(:raw_body, body)
+
+        assert {:error, :invalid_date} = HTTPSignature.verify(conn)
+      end
     end
 
     test "rejects bad digest (body modified after signing)" do

@@ -318,12 +318,23 @@ defmodule Baudrate.Federation.ObjectResolver do
     |> String.replace("&apos;", "'")
   end
 
+  # Rendered as a link on the search preview and stored on materialize, so it
+  # is https-only like every remote `url` (the inbox's `extract_url/1`):
+  # `javascript:` became an `href`, and an `http://` url failed the
+  # changeset's https check instead of being dropped. The object `id` was
+  # already fetched over https, so it is the fallback.
   defp extract_source_url(object) do
-    case object do
-      %{"url" => url} when is_binary(url) -> url
-      %{"url" => [%{"href" => href} | _]} when is_binary(href) -> href
-      %{"id" => id} when is_binary(id) -> id
-      _ -> nil
+    candidate =
+      case object do
+        %{"url" => url} when is_binary(url) -> url
+        %{"url" => [%{"href" => href} | _]} when is_binary(href) -> href
+        _ -> nil
+      end
+
+    cond do
+      is_binary(candidate) and Validator.valid_https_url?(candidate) -> candidate
+      is_binary(object["id"]) and Validator.valid_https_url?(object["id"]) -> object["id"]
+      true -> nil
     end
   end
 

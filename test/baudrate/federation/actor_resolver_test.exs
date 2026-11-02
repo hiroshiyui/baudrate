@@ -76,6 +76,18 @@ defmodule Baudrate.Federation.ActorResolverTest do
 
       assert {:error, _reason} = ActorResolver.resolve(ap_id)
     end
+
+    # A list or scalar body raised in `json[key]`; from the inbound worker a
+    # raise is a retry (review finding, 2026-11-02).
+    test "a document that is not a JSON object is refused" do
+      ap_id = "https://remote.example/users/not-an-object-#{System.unique_integer([:positive])}"
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, ~s(["not", "an", "actor"]))
+      end)
+
+      assert {:error, :not_an_object} = ActorResolver.resolve(ap_id)
+    end
   end
 
   describe "resolve/1 remote fetch" do

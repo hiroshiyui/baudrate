@@ -36,7 +36,8 @@ defmodule Baudrate.Federation.AttachmentExtractor do
   def extract_image_attachments(%{"attachment" => attachments}) when is_list(attachments) do
     attachments
     |> Enum.filter(fn
-      %{"type" => type, "mediaType" => mt} when type in ["Document", "Image"] ->
+      # A `null` or non-string mediaType is not an image type (it raised).
+      %{"type" => type, "mediaType" => mt} when type in ["Document", "Image"] and is_binary(mt) ->
         String.starts_with?(mt, "image/")
 
       %{"type" => "Image", "url" => url} when is_binary(url) ->
@@ -96,8 +97,9 @@ defmodule Baudrate.Federation.AttachmentExtractor do
     url =
       case att["url"] do
         url when is_binary(url) -> url
-        [first | _] -> if(is_binary(first), do: first, else: first["href"])
-        %{"href" => href} -> href
+        [first | _] when is_binary(first) -> first
+        [%{"href" => href} | _] when is_binary(href) -> href
+        %{"href" => href} when is_binary(href) -> href
         _ -> nil
       end
 

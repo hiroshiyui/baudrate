@@ -141,6 +141,71 @@ defmodule Baudrate.Federation.ContentWarningTest do
     end
   end
 
+  # Review finding (2026-11-02): two inbound paths dropped the warning — an
+  # `Update(Note)` cast only the body, and a boosted post reached followers'
+  # timelines without one.
+  describe "inbound: the warning survives an edit and a boost" do
+    test "an Update(Note) that adds a warning stores it", ctx do
+      article = local_article(ctx.user, ctx.board)
+      :ok = deliver_note(ctx.actor, article, [])
+      comment = article |> Content.list_comments_for_article() |> hd()
+
+      update = %{
+        "id" => "https://remote.example/activities/#{System.unique_integer([:positive])}",
+        "type" => "Update",
+        "actor" => ctx.actor.ap_id,
+        "object" => %{
+          "id" => comment.ap_id,
+          "type" => "Note",
+          "content" => "<p>the actual content</p>",
+          "attributedTo" => ctx.actor.ap_id,
+          "sensitive" => true,
+          "summary" => "Added later"
+        }
+      }
+
+      assert :ok = InboxHandler.handle(update, ctx.actor, :shared)
+
+      comment = Baudrate.Repo.reload!(comment)
+      assert comment.summary == "Added later"
+      assert comment.sensitive
+    end
+
+    test "a boosted post keeps its warning in followers' timelines", ctx do
+      {:ok, _} = Federation.Follows.create_user_follow(ctx.user, ctx.actor)
+
+      Baudrate.Repo.update_all(
+        Ecto.Query.from(uf in Baudrate.Federation.UserFollow,
+          where: uf.user_id == ^ctx.user.id and uf.remote_actor_id == ^ctx.actor.id
+        ),
+        set: [state: "accepted", accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+      )
+
+      announce_id = "https://remote.example/announces/#{System.unique_integer([:positive])}"
+
+      announce = %{
+        "id" => announce_id,
+        "type" => "Announce",
+        "actor" => ctx.actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => "<p>behind the warning</p>",
+          "attributedTo" => ctx.actor.ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "sensitive" => true,
+          "summary" => "Boosted spoilers"
+        }
+      }
+
+      assert :ok = InboxHandler.handle(announce, ctx.actor, :shared)
+
+      item = Federation.get_timeline_item_by_ap_id(announce_id)
+      assert item.summary == "Boosted spoilers"
+      assert item.sensitive
+    end
+  end
+
   describe "outbound: summary is the warning and nothing else" do
     test "an article without one publishes neither field", ctx do
       article = local_article(ctx.user, ctx.board)

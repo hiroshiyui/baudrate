@@ -18,6 +18,16 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   factor with their own and sign in as them. The secret is now bound to its
   account, every sign-in starts without a previous one's pending state, and
   enrolment never replaces an existing second factor.
+- **A hidden remote reply could be liked, boosted, bookmarked or forwarded.**
+  Those actions checked only that the reply's article was visible, so a reply
+  that arrived followers-only or direct — or whose author's server is blocked —
+  could be acted on by guessing its id, and a boost re-published it to the
+  member's followers. Forwarding let an admin through outright.
+- **A shared-inbox `Follow` of a name nobody held created an accepted
+  follower** that whoever registered the name later inherited without
+  approving it.
+- **An unauthenticated request with an impossible `Date` header** (31 February,
+  hour 99) answered 500 instead of being refused.
 
 ### Fixed
 
@@ -30,6 +40,25 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - **An id too large for the database crashed the page or endpoint it was sent
   to** instead of finding nothing: the shared id parser and its copies now
   refuse anything outside the id column's range.
+- **A page left open could still comment on a thread after it was locked or
+  deleted.** Whether a thread takes comments is now decided when the comment
+  is written, not from the copy the page loaded.
+- **A double-click on like or boost could remove it locally while other
+  servers kept it.** The second request undid the first without telling them.
+- **A boost was credited to the booster when its author could not be
+  looked up**, so the author's later edits and deletions never applied. Such a
+  boost is now dropped.
+- **Content warnings were lost** on boosted posts in the timeline and on edits
+  of remote replies.
+- **Malformed posts from other servers made processing fail and retry**,
+  holding back that server's later activities: unexpected values in
+  addressing, poll options, attachments, actor documents and oversized edits
+  are now refused instead. Edited remote titles are shortened like new ones,
+  a report naming more than 20 objects is cut short, and a remote preview
+  links only over https.
+- **Focus moved to the page heading** when an action removes the button that
+  had it (moderation queue, bookmarks, following, board follows,
+  notifications).
 
 ## [2.3.1] — 2026-11-02
 

@@ -102,6 +102,46 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert Federation.follower_exists?(actor_uri, remote_actor.ap_id)
     end
 
+    # Review finding (2026-11-02): the shared inbox accepted any URI under our
+    # host, so a Follow of a name nobody held stored an accepted follower that
+    # whoever registered the name later inherited, unapproved.
+    test "a shared-inbox Follow of a user or board that does not exist stores nothing" do
+      remote_actor = create_remote_actor()
+
+      for target <- [
+            Federation.actor_uri(:user, "ghost#{System.unique_integer([:positive])}"),
+            Federation.actor_uri(:board, "ghost-#{System.unique_integer([:positive])}")
+          ] do
+        activity = %{
+          "id" =>
+            "https://remote.example/activities/follow-#{System.unique_integer([:positive])}",
+          "type" => "Follow",
+          "actor" => remote_actor.ap_id,
+          "object" => target
+        }
+
+        assert {:error, :not_found} = InboxHandler.handle(activity, remote_actor, :shared)
+        refute Federation.follower_exists?(target, remote_actor.ap_id)
+      end
+    end
+
+    test "a shared-inbox Follow of an existing user still works" do
+      user = setup_user_with_role("user")
+      {:ok, _user} = KeyStore.ensure_user_keypair(user)
+      remote_actor = create_remote_actor()
+      target = Federation.actor_uri(:user, user.username)
+
+      activity = %{
+        "id" => "https://remote.example/activities/follow-#{System.unique_integer([:positive])}",
+        "type" => "Follow",
+        "actor" => remote_actor.ap_id,
+        "object" => target
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Federation.follower_exists?(target, remote_actor.ap_id)
+    end
+
     test "idempotent Follow (duplicate) still succeeds" do
       user = setup_user_with_role("user")
       {:ok, user} = KeyStore.ensure_user_keypair(user)

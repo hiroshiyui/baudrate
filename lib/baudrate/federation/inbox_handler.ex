@@ -23,9 +23,9 @@ defmodule Baudrate.Federation.InboxHandler do
     * `Update(Person/Group)` — refresh cached RemoteActor
     * `Delete(actor)` — remove all follower records and soft-delete all content
     * `Delete(content)` — soft-delete matching remote content with authorship check
-    * `Accept(Follow)` — stub handler (future: mark outbound follow as accepted)
-    * `Reject(Follow)` — stub handler (future: mark outbound follow as rejected)
-    * `Move` — stub handler (future: migrate followers to new actor)
+    * `Accept(Follow)` / `Reject(Follow)` — mark the signer's outbound follow
+      accepted or rejected
+    * `Move` — migrate local followers to the target (`AccountMigration`, ADR 0025)
     * `QuoteRequest` — approve a quote of a local article with a stamp and
       `Accept`, or refuse it with `Reject` (FEP-044f, ADR 0082)
 
@@ -504,31 +504,14 @@ defmodule Baudrate.Federation.InboxHandler do
   # The signer is the reporter (often the remote instance actor). The Flag's
   # objects name what is reported: local accounts, articles and comments.
   # Reports about nothing local are dropped, and `content` is optional.
+  # Each object costs up to three lookups, and a 256 KB Flag can name some
+  # 15,000 of them, so the domain's budget is spent before the work
+  # (`handle_flag/2` caps the list).
   defp dispatch(%{"type" => "Flag"} = activity, remote_actor, _target) do
-    objects = List.wrap(activity["object"]) |> Enum.filter(&is_binary/1)
-    reason = flag_reason(activity["content"])
-    report_attrs = build_flag_report_attrs(objects, remote_actor, reason)
-
-    cond do
-      not flag_has_local_target?(report_attrs) ->
-        Logger.info("federation.flag_ignored: reason=no_local_target from=#{remote_actor.ap_id}")
-        :ok
-
-      RateLimits.check_inbound_flag(remote_actor.domain) != :ok ->
-        :ok
-
-      true ->
-        case Baudrate.Moderation.create_remote_flag_report(report_attrs) do
-          {:ok, :duplicate} ->
-            :ok
-
-          {:ok, _report} ->
-            Logger.info("federation.activity: type=Flag from=#{remote_actor.ap_id}")
-            :ok
-
-          {:error, _} ->
-            {:error, :flag_failed}
-        end
+    if RateLimits.check_inbound_flag(remote_actor.domain) == :ok do
+      handle_flag(activity, remote_actor)
+    else
+      :ok
     end
   end
 
@@ -694,6 +677,39 @@ defmodule Baudrate.Federation.InboxHandler do
     :ok
   end
 
+  # No genuine report names more than a handful of objects.
+  @max_flag_objects 20
+
+  defp handle_flag(activity, remote_actor) do
+    objects =
+      activity["object"]
+      |> List.wrap()
+      |> Enum.filter(&is_binary/1)
+      |> Enum.take(@max_flag_objects)
+
+    reason = flag_reason(activity["content"])
+    report_attrs = build_flag_report_attrs(objects, remote_actor, reason)
+
+    cond do
+      not flag_has_local_target?(report_attrs) ->
+        Logger.info("federation.flag_ignored: reason=no_local_target from=#{remote_actor.ap_id}")
+        :ok
+
+      true ->
+        case Baudrate.Moderation.create_remote_flag_report(report_attrs) do
+          {:ok, :duplicate} ->
+            :ok
+
+          {:ok, _report} ->
+            Logger.info("federation.activity: type=Flag from=#{remote_actor.ap_id}")
+            :ok
+
+          {:error, _} ->
+            {:error, :flag_failed}
+        end
+    end
+  end
+
   defp create_article_object(object, remote_actor, type) do
     with :ok <- validate_attribution_match(object, remote_actor),
          {:ok, body, _body_html} <- sanitize_content(object),
@@ -784,21 +800,23 @@ defmodule Baudrate.Federation.InboxHandler do
     with {:ok, ap_id} <- Validator.validate_object_id(object),
          :ok <- Validator.validate_object_origin(object, remote_actor) do
       case Content.get_comment_by_ap_id(ap_id) do
+        # `with`, not `=`: content over the size limit is an error tuple, and
+        # a MatchError raised — retrying the job and holding up the sender.
         %{remote_actor_id: actor_id} = comment when actor_id == remote_actor.id ->
-          {:ok, body, body_html} = sanitize_content(object)
+          with {:ok, body, body_html} <- sanitize_content(object) do
+            body_html =
+              body_html |> append_attachment_images(object) |> append_attachment_media(object)
 
-          body_html =
-            body_html |> append_attachment_images(object) |> append_attachment_media(object)
+            attrs = Map.merge(%{body: body, body_html: body_html}, content_warning(object))
 
-          attrs = Map.merge(%{body: body, body_html: body_html}, content_warning(object))
+            case Content.update_remote_comment(comment, attrs) do
+              {:ok, _} ->
+                Logger.info("federation.activity: type=Update(Note) ap_id=#{ap_id}")
+                :ok
 
-          case Content.update_remote_comment(comment, attrs) do
-            {:ok, _} ->
-              Logger.info("federation.activity: type=Update(Note) ap_id=#{ap_id}")
-              :ok
-
-            {:error, _} ->
-              {:error, :update_failed}
+              {:error, _} ->
+                {:error, :update_failed}
+            end
           end
 
         %{} ->
@@ -810,23 +828,35 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
+  # Truncated like the Create path's title (`TitleDeriver.truncate_title/2`):
+  # the column refuses more than 255, so an edit of a long-titled Lemmy post
+  # was rejected whole and the body stayed stale. A missing, empty or
+  # non-string name keeps the current title.
+  defp updated_title(%{"name" => name}, _article) when is_binary(name) and name != "",
+    do: Baudrate.Content.TitleDeriver.truncate_title(name, 255)
+
+  defp updated_title(_object, article), do: article.title
+
   defp handle_update_article(object, remote_actor) do
     with {:ok, ap_id} <- Validator.validate_object_id(object),
          :ok <- Validator.validate_object_origin(object, remote_actor) do
       case Content.get_article_by_ap_id(ap_id) do
         %{remote_actor_id: actor_id} = article when actor_id == remote_actor.id ->
-          {:ok, body, _body_html} = sanitize_content(object)
-          title = object["name"] || article.title
+          with {:ok, body, _body_html} <- sanitize_content(object) do
+            attrs =
+              Map.merge(
+                %{title: updated_title(object, article), body: body},
+                content_warning(object)
+              )
 
-          attrs = Map.merge(%{title: title, body: body}, content_warning(object))
+            case Content.update_remote_article(article, attrs) do
+              {:ok, _} ->
+                Logger.info("federation.activity: type=Update(Article) ap_id=#{ap_id}")
+                :ok
 
-          case Content.update_remote_article(article, attrs) do
-            {:ok, _} ->
-              Logger.info("federation.activity: type=Update(Article) ap_id=#{ap_id}")
-              :ok
-
-            {:error, _} ->
-              {:error, :update_failed}
+              {:error, _} ->
+                {:error, :update_failed}
+            end
           end
 
         %{} ->
@@ -999,16 +1029,15 @@ defmodule Baudrate.Federation.InboxHandler do
 
   # A Note is considered a DM when it has no public or followers-collection
   # addresses and is directed to at least one local user actor URI.
+  # A private message is what `Visibility.from_addressing/1` calls `direct`,
+  # with one of our users among the recipients. The hand-rolled version here
+  # matched only the full Public IRI, so a public note compacted to
+  # `as:Public` and naming a local user was stored as a private message, and
+  # a non-string `to`/`cc` entry raised in `String.ends_with?/2` — retrying
+  # every `Create(Note)` from that peer.
   defp direct_message?(object) do
-    to = List.wrap(object["to"])
-    cc = List.wrap(object["cc"])
-    all_addrs = to ++ cc
-
-    no_public = "https://www.w3.org/ns/activitystreams#Public" not in all_addrs
-    no_followers = Enum.all?(all_addrs, fn uri -> !String.ends_with?(uri, "/followers") end)
-    has_local_recipient = Enum.any?(to, &local_user_uri?/1)
-
-    no_public && no_followers && has_local_recipient
+    Visibility.from_addressing(object) == "direct" and
+      Enum.any?(List.wrap(object["to"]), &local_user_uri?/1)
   end
 
   defp local_user_uri?(uri) when is_binary(uri) do
@@ -1337,7 +1366,9 @@ defmodule Baudrate.Federation.InboxHandler do
         case HTTPClient.signed_get(object_uri, private_key, key_id, refuse_blocked: true) do
           {:ok, %{body: body, url: final_url}} ->
             case Jason.decode(body) do
-              {:ok, object} ->
+              # A JSON array or scalar is not an object; `object["id"]` on one
+              # raised (`ObjectResolver.fetch_object/1` guards the same way).
+              {:ok, object} when is_map(object) ->
                 # Origin-binding: the fetched document must be served by its own
                 # authoritative host — its `id` host must match the URL it was
                 # finally served from, after redirects. Without this, a booster
@@ -1354,7 +1385,7 @@ defmodule Baudrate.Federation.InboxHandler do
                   :ok
                 end
 
-              {:error, _} ->
+              _ ->
                 Logger.warning("federation.announce: invalid JSON from #{object_uri}")
 
                 :ok
@@ -1406,6 +1437,24 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
+  # Who wrote an announced object. The booster is credited only when the
+  # object names no author: one it names but we cannot resolve (a fetch
+  # failure, a weak key, our own host) is not the booster's, and crediting it
+  # to them made the real author's later Update and Delete fail authorship and
+  # never land. `nil` means drop.
+  defp announced_author_id(object, booster_actor) do
+    case resolve_attributed_to(object) do
+      nil ->
+        booster_actor.id
+
+      author_uri ->
+        case ActorResolver.resolve(author_uri) do
+          {:ok, actor} -> actor.id
+          _ -> nil
+        end
+    end
+  end
+
   # An announced object's author must live on the same host as the object `id`.
   # A missing `attributedTo` is permitted (authorship falls back to the booster,
   # who is the verified signer of the Announce); a present one must be same-host.
@@ -1443,15 +1492,13 @@ defmodule Baudrate.Federation.InboxHandler do
           # (`remote_actor_id` match). Any other match — a local article, or a
           # remote one by someone else — is a booster trying to re-home
           # content it does not own.
-          author_uri = resolve_attributed_to(object)
-
-          author_actor_id =
-            case if(author_uri, do: ActorResolver.resolve(author_uri)) do
-              {:ok, actor} -> actor.id
-              _ -> booster_actor.id
-            end
+          author_actor_id = announced_author_id(object, booster_actor)
 
           cond do
+            is_nil(author_actor_id) ->
+              Logger.info("federation.announce: author unresolvable, dropped ap_id=#{ap_id}")
+              :ok
+
             existing && existing.remote_actor_id == author_actor_id ->
               Content.cross_post_article(existing, Enum.map(boards, & &1.id))
 
@@ -1518,33 +1565,40 @@ defmodule Baudrate.Federation.InboxHandler do
         else
           with {:ok, body, body_html} <- sanitize_content(object) do
             # Resolve the original author
-            author_uri = resolve_attributed_to(object)
-
-            content_actor_id =
-              case if(author_uri, do: ActorResolver.resolve(author_uri)) do
-                {:ok, actor} -> actor.id
-                _ -> booster_actor.id
-              end
-
+            content_actor_id = announced_author_id(object, booster_actor)
             published_at = parse_published(object["published"])
             title = timeline_item_title(object_type, object)
             source_url = extract_url(object) || object["id"]
             visibility = Visibility.from_addressing(object)
 
-            case Federation.create_timeline_item(%{
-                   remote_actor_id: content_actor_id,
-                   boosted_by_actor_id: booster_actor.id,
-                   activity_type: "Announce",
-                   object_type: object_type,
-                   ap_id: announce_ap_id,
-                   title: title,
-                   body: body,
-                   body_html: body_html,
-                   source_url: source_url,
-                   attachments: extract_attachments(object),
-                   visibility: visibility,
-                   published_at: published_at
-                 }) do
+            # A content warning travels with a boosted post as with a followed
+            # one (ADR 0052); without it a sensitive post appeared in followers'
+            # timelines uncovered.
+            case content_actor_id &&
+                   Federation.create_timeline_item(
+                     %{
+                       remote_actor_id: content_actor_id,
+                       boosted_by_actor_id: booster_actor.id,
+                       activity_type: "Announce",
+                       object_type: object_type,
+                       ap_id: announce_ap_id,
+                       title: title,
+                       body: body,
+                       body_html: body_html,
+                       source_url: source_url,
+                       attachments: extract_attachments(object),
+                       visibility: visibility,
+                       published_at: published_at
+                     }
+                     |> Map.merge(content_warning(object))
+                   ) do
+              nil ->
+                Logger.info(
+                  "federation.announce: author unresolvable, dropped ap_id=#{announce_ap_id}"
+                )
+
+                :ok
+
               {:ok, _timeline_item} ->
                 Logger.info(
                   "federation.activity: type=Announce(#{object_type}/TimelineItem) ap_id=#{announce_ap_id}"
@@ -2057,11 +2111,34 @@ defmodule Baudrate.Federation.InboxHandler do
         if uri == object, do: uri, else: nil
 
       :shared ->
-        if Validator.local_actor?(object), do: object, else: nil
+        if Validator.local_actor?(object) and existing_local_actor?(object), do: object, else: nil
     end
   end
 
   defp resolve_target_uri(_, _), do: nil
+
+  # The shared inbox names its target by URI, and a URI under our host names
+  # nothing until a row exists. A Follow of `/ap/users/ghost` stored an
+  # *accepted* follower for a name nobody held, so whoever registered it later
+  # started with a remote follower they never approved (ADR 0073), and the
+  # follow-time block check had never run. A deleted account still exists
+  # here, so its Follow is refused with a Reject as before.
+  defp existing_local_actor?(uri) do
+    base = Federation.base_url()
+    user_prefix = "#{base}/ap/users/"
+    board_prefix = "#{base}/ap/boards/"
+
+    case uri do
+      <<^user_prefix::binary, username::binary>> ->
+        not is_nil(Baudrate.Auth.get_user_by_username(username))
+
+      <<^board_prefix::binary, slug::binary>> ->
+        not is_nil(Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug))
+
+      _ ->
+        uri == Federation.actor_uri(:site, nil)
+    end
+  end
 
   # Returns true when the URI is a local board actor for a non-federated board
   # (ap_enabled: false or min_role_to_view != "guest"). Only used on the shared
@@ -2677,9 +2754,9 @@ defmodule Baudrate.Federation.InboxHandler do
         |> Enum.with_index()
         |> Enum.map(fn {opt, idx} ->
           %{
-            text: opt["name"] || "Option #{idx + 1}",
+            text: if(is_binary(opt["name"]), do: opt["name"], else: "Option #{idx + 1}"),
             position: idx,
-            votes_count: get_in(opt, ["replies", "totalItems"]) || 0
+            votes_count: option_votes(opt)
           }
         end)
 
@@ -2705,13 +2782,20 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp find_poll_in_object(_), do: nil
 
+  # Options are remote-controlled: only maps are options, and a vote count is
+  # read only when it is an integer. A string option or a list-valued
+  # `replies` raised in `opt["name"]`/`get_in/2`, failing every
+  # `Create(Question)` and `Update(Question)` that carried one.
   defp extract_poll_options(poll_data) do
     cond do
-      is_list(poll_data["oneOf"]) -> {"single", poll_data["oneOf"]}
-      is_list(poll_data["anyOf"]) -> {"multiple", poll_data["anyOf"]}
+      is_list(poll_data["oneOf"]) -> {"single", Enum.filter(poll_data["oneOf"], &is_map/1)}
+      is_list(poll_data["anyOf"]) -> {"multiple", Enum.filter(poll_data["anyOf"], &is_map/1)}
       true -> {"single", []}
     end
   end
+
+  defp option_votes(%{"replies" => %{"totalItems" => n}}) when is_integer(n) and n >= 0, do: n
+  defp option_votes(_opt), do: 0
 
   defp parse_end_time(nil), do: nil
 
@@ -2727,8 +2811,8 @@ defmodule Baudrate.Federation.InboxHandler do
   # Handle Update(Question) — refresh poll counts
   defp handle_update_question(object, remote_actor) do
     # Find the poll by ap_id, current or previous (ADR 0050).
-    case Content.get_poll_by_ap_id(object["id"] || "") do
-      nil ->
+    case is_binary(object["id"]) && Content.get_poll_by_ap_id(object["id"]) do
+      falsy when falsy in [nil, false] ->
         # Maybe it's an embedded question — try to find via the article's ap_id
         :ok
 
@@ -2743,7 +2827,7 @@ defmodule Baudrate.Federation.InboxHandler do
             Enum.map(options, fn opt ->
               %{
                 text: opt["name"],
-                votes_count: get_in(opt, ["replies", "totalItems"]) || 0
+                votes_count: option_votes(opt)
               }
             end)
 

@@ -393,13 +393,18 @@ defmodule Baudrate.Federation.HTTPSignature do
       [_, day, month_str, year, hour, min, sec] ->
         month = Map.get(months, month_str)
 
-        if month do
-          DateTime.new(
-            Date.new!(String.to_integer(year), month, String.to_integer(day)),
-            Time.new!(String.to_integer(hour), String.to_integer(min), String.to_integer(sec))
-          )
+        # `new/3`, not `new!/3`: the digits are only shaped by the regex, and
+        # "31 Feb" or hour 99 raised — a 500 for an unauthenticated request,
+        # since the date is checked before any key is fetched.
+        with month when is_integer(month) <- month || {:error, :invalid_month},
+             {:ok, date} <-
+               Date.new(String.to_integer(year), month, String.to_integer(day)),
+             {:ok, time} <-
+               Time.new(String.to_integer(hour), String.to_integer(min), String.to_integer(sec)) do
+          DateTime.new(date, time)
         else
-          {:error, :invalid_month}
+          {:error, :invalid_month} = error -> error
+          {:error, _} -> {:error, :invalid_date}
         end
 
       _ ->

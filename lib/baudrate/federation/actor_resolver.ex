@@ -271,6 +271,10 @@ defmodule Baudrate.Federation.ActorResolver do
     end
   end
 
+  # An actor document is a JSON object; a list or scalar body raised in
+  # `json[key]`, and from the inbound worker a raise is a retry.
+  defp extract_actor_attrs(json) when not is_map(json), do: {:error, :not_an_object}
+
   defp extract_actor_attrs(json) do
     with {:ok, ap_id} <- required_string(json, "id", :missing_id),
          {:ok, actor_type} <- required_string(json, "type", :missing_type),
@@ -392,7 +396,8 @@ defmodule Baudrate.Federation.ActorResolver do
 
   defp extract_profile_fields(%{"attachment" => attachments}) when is_list(attachments) do
     attachments
-    |> Enum.filter(&(&1["type"] == "PropertyValue"))
+    # Only maps: a string entry raised in `&1["type"]`.
+    |> Enum.filter(&match?(%{"type" => "PropertyValue"}, &1))
     |> Enum.take(4)
     |> Enum.map(fn field ->
       %{
@@ -408,13 +413,15 @@ defmodule Baudrate.Federation.ActorResolver do
 
   defp extract_profile_fields(_), do: []
 
-  defp sanitize_field_name(nil), do: nil
-
   defp sanitize_field_name(name) when is_binary(name) do
     name
     |> Sanitizer.sanitize_display_name()
     |> String.slice(0, 255)
   end
+
+  # `nil` or any non-string name (a number or a map had no clause and raised);
+  # a field without a name is dropped below.
+  defp sanitize_field_name(_name), do: nil
 
   defp sanitize_field_value(value) when is_binary(value) do
     value |> Sanitizer.sanitize() |> String.slice(0, 1000)
