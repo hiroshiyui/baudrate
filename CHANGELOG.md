@@ -9,6 +9,11 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-02
+
+Mastodon users can now quote articles. This release adds a table
+(`quote_authorizations`); the deploy runs its migration.
+
 ### Added
 
 - **Mastodon users can quote articles** (FEP-044f, ADR 0082). An article in a
