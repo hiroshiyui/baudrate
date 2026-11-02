@@ -118,4 +118,56 @@ defmodule Baudrate.Content.CommentCreateTest do
       assert %Ecto.Changeset{} = changeset
     end
   end
+
+  # Review finding (2026-11-02): only the article page checked whether a
+  # thread took comments, against the copy it had loaded. A lock broadcasts
+  # to board topics the page does not hear, so an open page kept posting into
+  # a thread a moderator had just locked. The context now reads the thread.
+  describe "the thread is judged as it stands, not as a page loaded it" do
+    setup do
+      user = create_user()
+      board = create_board()
+      %{user: user, article: create_article(user, board), board: board}
+    end
+
+    defp comment(ctx, extra \\ %{}) do
+      Content.create_comment(
+        Map.merge(
+          %{"body" => "a reply", "article_id" => ctx.article.id, "user_id" => ctx.user.id},
+          extra
+        )
+      )
+    end
+
+    test "an open thread takes a comment", ctx do
+      assert {:ok, _} = comment(ctx)
+    end
+
+    test "a locked thread refuses one", ctx do
+      Repo.update_all(
+        Ecto.Query.from(a in Content.Article, where: a.id == ^ctx.article.id),
+        set: [locked: true]
+      )
+
+      assert {:error, :not_commentable} = comment(ctx)
+    end
+
+    test "a deleted thread refuses one", ctx do
+      {:ok, _} = Content.soft_delete_article(ctx.article, deleted_by: ctx.user.id)
+      assert {:error, :not_commentable} = comment(ctx)
+    end
+
+    test "a reply's parent must be in the same thread", ctx do
+      other = create_article(ctx.user, ctx.board)
+
+      {:ok, elsewhere} =
+        Content.create_comment(%{
+          "body" => "elsewhere",
+          "article_id" => other.id,
+          "user_id" => ctx.user.id
+        })
+
+      assert {:error, :not_commentable} = comment(ctx, %{"parent_id" => elsewhere.id})
+    end
+  end
 end

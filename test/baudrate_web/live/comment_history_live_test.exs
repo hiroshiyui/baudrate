@@ -119,7 +119,11 @@ defmodule BaudrateWeb.CommentHistoryLiveTest do
       assert html =~ "Edit History"
     end
 
-    test "a member who cannot open the board may not", %{user: user, article: article} do
+    test "a member who cannot open the board may not", %{article: article} do
+      # Only someone allowed to post there can write the comment: the context
+      # refuses anyone else (review finding, 2026-11-02).
+      user = setup_user("admin")
+
       private =
         %Board{}
         |> Board.changeset(%{

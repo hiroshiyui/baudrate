@@ -97,6 +97,7 @@ defmodule Baudrate.Content.Comments do
     author_id = attrs["user_id"]
 
     with :ok <- Baudrate.Auth.ensure_can_interact(author_id),
+         :ok <- ensure_commentable(attrs),
          :ok <- ensure_not_blocked(attrs),
          verdict = screen_comment(attrs, opts, if(holdable, do: :post, else: :publish)),
          :ok <- ContentFilters.refuse_blocked(verdict),
@@ -173,6 +174,35 @@ defmodule Baudrate.Content.Comments do
   end
 
   defp ensure_not_blocked(_attrs), do: :ok
+
+  # The thread is decided here, from the row as it stands, not from the copy a
+  # page loaded: a lock or a deletion broadcasts to board topics, which an
+  # open article page does not hear, so it kept posting into a thread a
+  # moderator had just locked. A reply's parent must sit in the same thread.
+  defp ensure_commentable(%{"user_id" => user_id, "article_id" => article_id} = attrs)
+       when not is_nil(user_id) and not is_nil(article_id) do
+    with %Article{deleted_at: nil} = article <- Repo.get(Article, article_id),
+         %{} = user <- Baudrate.Auth.get_user(user_id),
+         true <- Permissions.can_comment_on_article?(user, article),
+         :ok <- parent_in_thread(attrs["parent_id"], article.id) do
+      :ok
+    else
+      _ -> {:error, :not_commentable}
+    end
+  end
+
+  # Without an article or an author there is no thread to judge; the
+  # changeset reports the missing field.
+  defp ensure_commentable(_attrs), do: :ok
+
+  defp parent_in_thread(nil, _article_id), do: :ok
+
+  defp parent_in_thread(parent_id, article_id) do
+    case Repo.get(Comment, parent_id) do
+      %Comment{article_id: ^article_id} -> :ok
+      _ -> :error
+    end
+  end
 
   defp do_create_comment(attrs, opts) do
     body_html = Baudrate.Content.Markdown.to_html(attrs["body"] || "")
@@ -889,10 +919,14 @@ defmodule Baudrate.Content.Comments do
   instance; a remote author's edit history belongs to the instance that holds
   it, and `handle_update_article/2` has always worked the same way.
   """
+  # The content warning is part of an edit (ADR 0052): casting only the body
+  # dropped a warning added or removed by `Update(Note)`, though the inbox
+  # passes both.
   def update_remote_comment(%Comment{} = comment, attrs) do
     comment
-    |> Ecto.Changeset.cast(attrs, [:body, :body_html])
+    |> Ecto.Changeset.cast(attrs, [:body, :body_html | Baudrate.Content.ContentWarning.fields()])
     |> Ecto.Changeset.validate_required([:body])
+    |> Baudrate.Content.ContentWarning.validate()
     |> Repo.update()
   end
 

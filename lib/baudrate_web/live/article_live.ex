@@ -1172,6 +1172,12 @@ defmodule BaudrateWeb.ArticleLive do
       {:error, :blocked} ->
         {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
+      # The context re-reads the thread: it was locked or removed after this
+      # page loaded it.
+      {:error, :not_commentable} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("You are not allowed to comment on this article."))}
+
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :comment_form, to_form(changeset, as: :comment))}
 
