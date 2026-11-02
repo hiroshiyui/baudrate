@@ -23,6 +23,17 @@ defmodule BaudrateWeb.SearchLiveTest do
 
   # Found by the security audit before v1.39.0: each import is an outbound
   # fetch of an address the member chose, and nothing limited it.
+  # A live region inserted with its text already inside is not announced by
+  # several screen readers; these are present from the first render and only
+  # their content changes (review finding, 2026-11-02).
+  test "the status regions are in the page before anything is announced", %{conn: conn} do
+    {:ok, lv, _html} = live(conn, "/search")
+
+    for id <- ["search-remote-actor-status", "search-remote-object-status", "search-result-count"] do
+      assert has_element?(lv, "##{id}[role=status]"), "##{id} is not rendered up front"
+    end
+  end
+
   test "importing a remote post is rate limited", %{conn: conn} do
     {:ok, lv, _html} = live(conn, "/search")
     BaudrateWeb.RateLimiter.Sandbox.set_global_response({:deny, 60_000})

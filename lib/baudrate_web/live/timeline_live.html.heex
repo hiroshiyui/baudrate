@@ -699,22 +699,25 @@
                 for={%{}}
                 id={"timeline-forward-form-#{item.timeline_item.id}"}
                 phx-change="search_forward_board"
-                class="flex items-center gap-2"
+                class="timeline-forward-form flex items-center gap-2"
               >
                 <input
                   type="text"
+                  id={"timeline-forward-input-#{item.timeline_item.id}"}
                   name="query"
                   value={@forward_search_query}
                   placeholder={gettext("Search boards...")}
                   phx-debounce="300"
                   autocomplete="off"
-                  class="input input-sm input-bordered w-full"
+                  class="timeline-forward-input input input-sm input-bordered w-full"
                   aria-label={gettext("Search boards")}
+                  aria-describedby={"forward-board-results-status-#{item.timeline_item.id}"}
                 />
                 <button
                   type="button"
+                  id={"timeline-forward-cancel-#{item.timeline_item.id}"}
                   phx-click="cancel_forward_search"
-                  class="btn btn-sm btn-ghost"
+                  class="timeline-forward-cancel btn btn-sm btn-ghost"
                   aria-label={gettext("Cancel")}
                 >
                   <.icon name="hero-x-mark" class="size-4" />
@@ -744,6 +747,7 @@
                 <li :for={board <- @forward_search_results}>
                   <button
                     type="button"
+                    id={"timeline-forward-result-#{item.timeline_item.id}-#{board.id}"}
                     class="timeline-forward-result"
                     phx-click="forward_to_board"
                     phx-value-board-id={board.id}
@@ -758,12 +762,14 @@
           <%!-- Inline reply form --%>
           <div
             :if={@replying_to == item.timeline_item.id}
-            class="mt-3 border-t border-base-300 pt-3"
+            id={"timeline-reply-panel-#{item.timeline_item.id}"}
+            class="timeline-reply-panel mt-3 border-t border-base-300 pt-3"
           >
             <%!-- Existing replies --%>
             <div
               :if={Map.get(@replies, item.timeline_item.id, []) != []}
-              class="space-y-2 mb-3"
+              id={"timeline-replies-#{item.timeline_item.id}"}
+              class="timeline-replies space-y-2 mb-3"
             >
               <div
                 :for={reply <- Map.get(@replies, item.timeline_item.id, [])}
@@ -1201,22 +1207,25 @@
                 for={%{}}
                 id={"timeline-comment-forward-form-#{item.comment.id}"}
                 phx-change="search_forward_board"
-                class="flex items-center gap-2"
+                class="timeline-forward-form flex items-center gap-2"
               >
                 <input
                   type="text"
+                  id={"timeline-forward-input-comment-#{item.comment.id}"}
                   name="query"
                   value={@forward_search_query}
                   placeholder={gettext("Search boards...")}
                   phx-debounce="300"
                   autocomplete="off"
-                  class="input input-sm input-bordered w-full"
+                  class="timeline-forward-input input input-sm input-bordered w-full"
                   aria-label={gettext("Search boards")}
+                  aria-describedby={"forward-board-results-status-comment-#{item.comment.id}"}
                 />
                 <button
                   type="button"
+                  id={"timeline-forward-cancel-comment-#{item.comment.id}"}
                   phx-click="cancel_forward_search"
-                  class="btn btn-sm btn-ghost"
+                  class="timeline-forward-cancel btn btn-sm btn-ghost"
                   aria-label={gettext("Cancel")}
                 >
                   <.icon name="hero-x-mark" class="size-4" />
@@ -1246,6 +1255,7 @@
                 <li :for={board <- @forward_search_results}>
                   <button
                     type="button"
+                    id={"timeline-forward-result-comment-#{item.comment.id}-#{board.id}"}
                     class="timeline-forward-result"
                     phx-click="forward_to_board"
                     phx-value-board-id={board.id}
@@ -1441,22 +1451,25 @@
                 for={%{}}
                 id={"timeline-rcomment-forward-form-#{item.comment.id}"}
                 phx-change="search_forward_board"
-                class="flex items-center gap-2"
+                class="timeline-forward-form flex items-center gap-2"
               >
                 <input
                   type="text"
+                  id={"timeline-forward-input-rcomment-#{item.comment.id}"}
                   name="query"
                   value={@forward_search_query}
                   placeholder={gettext("Search boards...")}
                   phx-debounce="300"
                   autocomplete="off"
-                  class="input input-sm input-bordered w-full"
+                  class="timeline-forward-input input input-sm input-bordered w-full"
                   aria-label={gettext("Search boards")}
+                  aria-describedby={"forward-board-results-status-rcomment-#{item.comment.id}"}
                 />
                 <button
                   type="button"
+                  id={"timeline-forward-cancel-rcomment-#{item.comment.id}"}
                   phx-click="cancel_forward_search"
-                  class="btn btn-sm btn-ghost"
+                  class="timeline-forward-cancel btn btn-sm btn-ghost"
                   aria-label={gettext("Cancel")}
                 >
                   <.icon name="hero-x-mark" class="size-4" />
@@ -1486,6 +1499,7 @@
                 <li :for={board <- @forward_search_results}>
                   <button
                     type="button"
+                    id={"timeline-forward-result-rcomment-#{item.comment.id}-#{board.id}"}
                     class="timeline-forward-result"
                     phx-click="forward_to_board"
                     phx-value-board-id={board.id}

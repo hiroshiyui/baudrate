@@ -130,7 +130,7 @@
         <div class="flex-1 min-w-0">
           <.link
             id={"follower-local-link-#{follower.id}"}
-            navigate={~p"/users/#{follower.username}"}
+            navigate={BaudrateWeb.Helpers.author_path(follower)}
             class="follower-name font-bold truncate link link-hover block"
           >
             {display_name(follower)}

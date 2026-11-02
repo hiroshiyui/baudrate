@@ -115,7 +115,7 @@
   <.link
     :for={bm <- @board_moderators}
     id={"board-moderator-#{bm.user.username}"}
-    navigate={~p"/users/#{bm.user.username}"}
+    navigate={BaudrateWeb.Helpers.author_path(bm.user)}
     class="board-moderator inline-flex items-center gap-1 link link-hover"
   >
     <.avatar user={bm.user} size={24} />

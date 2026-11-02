@@ -184,16 +184,25 @@
   </details>
 
   <%!-- Remote actor loading indicator --%>
+  <%!-- The live region is always in the page and only its content comes and
+       goes: several screen readers announce changes to a region that already
+       exists, not a region inserted with its text already inside. --%>
   <div
-    :if={@remote_actor_loading}
-    class="card bg-base-200 shadow-sm mb-4"
+    id="search-remote-actor-status"
+    class="search-remote-actor-status"
     role="status"
     aria-live="polite"
     aria-atomic="true"
   >
-    <div class="card-body p-4 flex flex-row items-center gap-3">
-      <span class="loading loading-spinner loading-sm"></span>
-      <span class="text-base-content/70">{gettext("Looking up remote actor...")}</span>
+    <div
+      :if={@remote_actor_loading}
+      id="search-remote-actor-loading"
+      class="search-remote-actor-loading card bg-base-200 shadow-sm mb-4"
+    >
+      <div class="card-body p-4 flex flex-row items-center gap-3">
+        <span class="loading loading-spinner loading-sm"></span>
+        <span class="text-base-content/70">{gettext("Looking up remote actor...")}</span>
+      </div>
     </div>
   </div>
 
@@ -300,16 +309,25 @@
   </div>
 
   <%!-- Remote object loading indicator --%>
+  <%!-- The live region is always in the page and only its content comes and
+       goes: several screen readers announce changes to a region that already
+       exists, not a region inserted with its text already inside. --%>
   <div
-    :if={@remote_object_loading}
-    class="card bg-base-200 shadow-sm mb-4"
+    id="search-remote-object-status"
+    class="search-remote-object-status"
     role="status"
     aria-live="polite"
     aria-atomic="true"
   >
-    <div class="card-body p-4 flex flex-row items-center gap-3">
-      <span class="loading loading-spinner loading-sm"></span>
-      <span class="text-base-content/70">{gettext("Looking up remote post...")}</span>
+    <div
+      :if={@remote_object_loading}
+      id="search-remote-object-loading"
+      class="search-remote-object-loading card bg-base-200 shadow-sm mb-4"
+    >
+      <div class="card-body p-4 flex flex-row items-center gap-3">
+        <span class="loading loading-spinner loading-sm"></span>
+        <span class="text-base-content/70">{gettext("Looking up remote post...")}</span>
+      </div>
     </div>
   </div>
 
@@ -588,21 +606,26 @@
     {gettext("No users found for \"%{query}\".", query: @query)}
   </div>
 
+  <%!-- Always rendered, so a new count is announced as a change. --%>
   <div
-    :if={@query != "" && @total > 0}
     id="search-result-count"
-    class="search-result-count text-sm text-base-content/70 mb-4"
+    class={[
+      "search-result-count text-sm text-base-content/70",
+      @query != "" && @total > 0 && "mb-4"
+    ]}
     aria-live="polite"
     role="status"
   >
-    <%= if @total_pages > 1 do %>
-      {gettext("Page %{page} of %{total_pages} — %{count} results total",
-        page: @page,
-        total_pages: @total_pages,
-        count: @total
-      )}
-    <% else %>
-      {ngettext("%{count} result", "%{count} results", @total, count: @total)}
+    <%= if @query != "" and @total > 0 do %>
+      <%= if @total_pages > 1 do %>
+        {gettext("Page %{page} of %{total_pages} — %{count} results total",
+          page: @page,
+          total_pages: @total_pages,
+          count: @total
+        )}
+      <% else %>
+        {ngettext("%{count} result", "%{count} results", @total, count: @total)}
+      <% end %>
     <% end %>
   </div>
 
@@ -778,7 +801,7 @@
         <div class="flex-1 min-w-0">
           <.link
             id={"search-user-link-#{user.username}"}
-            navigate={~p"/users/#{user.username}"}
+            navigate={BaudrateWeb.Helpers.author_path(user)}
             class="search-result-title font-bold truncate link link-hover"
           >
             {display_name(user)}

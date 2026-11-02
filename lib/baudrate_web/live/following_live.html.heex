@@ -46,7 +46,7 @@
         <div class="flex-1 min-w-0">
           <.link
             id={"follow-user-link-#{follow.id}"}
-            navigate={~p"/users/#{follow.followed_user.username}"}
+            navigate={BaudrateWeb.Helpers.author_path(follow.followed_user)}
             class="follow-name font-bold truncate link link-hover"
           >
             {follow.followed_user.username}

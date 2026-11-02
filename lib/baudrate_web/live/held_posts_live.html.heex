@@ -67,7 +67,7 @@
             <.link
               :if={held.user}
               id={"held-post-author-#{held.id}"}
-              navigate={~p"/users/#{held.user.username}"}
+              navigate={BaudrateWeb.Helpers.author_path(held.user)}
               class="held-post-author-link link link-primary"
             >
               {display_name(held.user)}
