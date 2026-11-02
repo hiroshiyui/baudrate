@@ -10782,6 +10782,7 @@ msgstr "アカウントの削除を申請"
 msgid "deleted"
 msgstr "削除済み"
 
+#: lib/baudrate_web/controllers/syndication_feed_xml.ex
 #: lib/baudrate_web/helpers.ex
 #, elixir-autogen, elixir-format
 msgid "deleted account"
@@ -11905,3 +11906,8 @@ msgstr "続きを表示"
 #, elixir-autogen, elixir-format
 msgid "Could not remove bookmark."
 msgstr "ブックマークを解除できませんでした。"
+
+#: lib/baudrate_web/live/notifications_live.ex
+#, elixir-autogen, elixir-format
+msgid "a removed post"
+msgstr "削除された投稿"

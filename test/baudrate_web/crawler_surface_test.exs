@@ -289,6 +289,25 @@ defmodule BaudrateWeb.CrawlerSurfaceTest do
       assert id == article.id
     end
 
+    # The comment tab is discovery too, and it preloads the article's title
+    # and slug (review finding, 2026-11-02).
+    test "comments on an unlisted article are not found by search, except by its author", %{
+      user: user,
+      public_board: board
+    } do
+      {:ok, %{article: article}} = insert_unlisted_article(user, board, "quiet-commented")
+
+      {:ok, _} =
+        Baudrate.Content.create_comment(%{
+          "body" => "zqxquietreply",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      assert Baudrate.Content.search_comments("zqxquietreply", user: nil).comments == []
+      assert [_] = Baudrate.Content.search_comments("zqxquietreply", user: user).comments
+    end
+
     test "an ordinary article does not", %{conn: conn, article: article} do
       html = conn |> get("/articles/#{article.slug}") |> html_response(200)
 

@@ -65,9 +65,12 @@ defmodule Baudrate.Content.Boosts do
       0
   end
 
-  @doc """
-  Creates a local article boost for the given user.
-  """
+  @doc false
+  # The bare write, with no gate: no sanction or terms check (ADR 0029), no
+  # block, visibility or deletion test, and no federation. Application code
+  # goes through `toggle_*`, which checks all of that; this stays callable
+  # only for the toggle itself and as a test fixture, and is deliberately not
+  # on the `Baudrate.Content` facade (review finding, 2026-11-02).
   def boost_article(user_id, article_id) do
     result =
       %ArticleBoost{}
@@ -79,9 +82,12 @@ defmodule Baudrate.Content.Boosts do
     end
   end
 
-  @doc """
-  Removes a local article boost for the given user.
-  """
+  @doc false
+  # The bare write, with no gate: no sanction or terms check (ADR 0029), no
+  # block, visibility or deletion test, and no federation. Application code
+  # goes through `toggle_*`, which checks all of that; this stays callable
+  # only for the toggle itself and as a test fixture, and is deliberately not
+  # on the `Baudrate.Content` facade (review finding, 2026-11-02).
   def unboost_article(user_id, article_id) do
     from(b in ArticleBoost, where: b.user_id == ^user_id and b.article_id == ^article_id)
     |> Repo.delete_all()
@@ -266,9 +272,12 @@ defmodule Baudrate.Content.Boosts do
       0
   end
 
-  @doc """
-  Creates a local comment boost for the given user.
-  """
+  @doc false
+  # The bare write, with no gate: no sanction or terms check (ADR 0029), no
+  # block, visibility or deletion test, and no federation. Application code
+  # goes through `toggle_*`, which checks all of that; this stays callable
+  # only for the toggle itself and as a test fixture, and is deliberately not
+  # on the `Baudrate.Content` facade (review finding, 2026-11-02).
   def boost_comment(user_id, comment_id) do
     result =
       %CommentBoost{}
@@ -280,9 +289,12 @@ defmodule Baudrate.Content.Boosts do
     end
   end
 
-  @doc """
-  Removes a local comment boost for the given user.
-  """
+  @doc false
+  # The bare write, with no gate: no sanction or terms check (ADR 0029), no
+  # block, visibility or deletion test, and no federation. Application code
+  # goes through `toggle_*`, which checks all of that; this stays callable
+  # only for the toggle itself and as a test fixture, and is deliberately not
+  # on the `Baudrate.Content` facade (review finding, 2026-11-02).
   def unboost_comment(user_id, comment_id) do
     from(b in CommentBoost, where: b.user_id == ^user_id and b.comment_id == ^comment_id)
     |> Repo.delete_all()

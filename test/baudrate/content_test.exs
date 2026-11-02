@@ -1158,10 +1158,10 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      assert {:ok, _like} = Content.like_article(liker.id, article.id)
+      assert {:ok, _like} = Baudrate.Content.Likes.like_article(liker.id, article.id)
       assert Content.count_article_likes(article) == 1
 
-      assert {1, nil} = Content.unlike_article(liker.id, article.id)
+      assert {1, nil} = Baudrate.Content.Likes.unlike_article(liker.id, article.id)
       assert Content.count_article_likes(article) == 0
     end
   end
@@ -1179,7 +1179,7 @@ defmodule Baudrate.ContentTest do
         )
 
       refute Content.article_liked?(liker.id, article.id)
-      Content.like_article(liker.id, article.id)
+      Baudrate.Content.Likes.like_article(liker.id, article.id)
       assert Content.article_liked?(liker.id, article.id)
     end
   end
@@ -1257,10 +1257,10 @@ defmodule Baudrate.ContentTest do
           "user_id" => author.id
         })
 
-      assert {:ok, _like} = Content.like_comment(liker.id, comment.id)
+      assert {:ok, _like} = Baudrate.Content.Likes.like_comment(liker.id, comment.id)
       assert Content.count_comment_likes(comment) == 1
 
-      assert {1, nil} = Content.unlike_comment(liker.id, comment.id)
+      assert {1, nil} = Baudrate.Content.Likes.unlike_comment(liker.id, comment.id)
       assert Content.count_comment_likes(comment) == 0
     end
   end
@@ -1285,7 +1285,7 @@ defmodule Baudrate.ContentTest do
         })
 
       refute Content.comment_liked?(liker.id, comment.id)
-      Content.like_comment(liker.id, comment.id)
+      Baudrate.Content.Likes.like_comment(liker.id, comment.id)
       assert Content.comment_liked?(liker.id, comment.id)
     end
   end
@@ -1395,8 +1395,8 @@ defmodule Baudrate.ContentTest do
           "user_id" => author.id
         })
 
-      Content.like_comment(liker.id, c1.id)
-      Content.like_comment(liker.id, c3.id)
+      Baudrate.Content.Likes.like_comment(liker.id, c1.id)
+      Baudrate.Content.Likes.like_comment(liker.id, c3.id)
 
       result = Content.comment_likes_by_user(liker.id, [c1.id, c2.id, c3.id])
       assert MapSet.member?(result, c1.id)
@@ -1437,9 +1437,9 @@ defmodule Baudrate.ContentTest do
           "user_id" => author.id
         })
 
-      Content.like_comment(liker1.id, c1.id)
-      Content.like_comment(liker2.id, c1.id)
-      Content.like_comment(liker1.id, c2.id)
+      Baudrate.Content.Likes.like_comment(liker1.id, c1.id)
+      Baudrate.Content.Likes.like_comment(liker2.id, c1.id)
+      Baudrate.Content.Likes.like_comment(liker1.id, c2.id)
 
       counts = Content.comment_like_counts([c1.id, c2.id])
       assert counts[c1.id] == 2

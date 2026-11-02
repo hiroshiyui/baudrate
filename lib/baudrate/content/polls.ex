@@ -156,6 +156,11 @@ defmodule Baudrate.Content.Polls do
   Returns `{:ok, poll}` with updated counters or `{:error, reason}`.
   """
   def cast_vote(%Poll{} = poll, user, option_ids) when is_list(option_ids) do
+    # The same option twice (`vote_options[]=5&vote_options[]=5`) passed the
+    # set checks and then hit the unique index inside `insert_all`, which
+    # raised instead of returning.
+    option_ids = Enum.uniq(option_ids)
+
     # A moved, silenced or suspended account cannot vote (ADR 0029).
     gate = Baudrate.Auth.ensure_can_interact(user)
 

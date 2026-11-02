@@ -180,6 +180,12 @@ defmodule BaudrateWeb.NotificationsLive do
 
   # A comment is linked on the page it is on, for this reader — a bare
   # `#comment-N` only works when the comment is on page 1.
+  # A deleted article is named to its author only (a removal notice tells them
+  # which post went), and links nowhere for anyone else.
+  defp target_link(%{article: %{deleted_at: %DateTime{}, user_id: author}}, viewer)
+       when not is_map(viewer) or viewer.id != author,
+       do: nil
+
   defp target_link(%{article: %{slug: slug} = article, comment: %{} = comment}, viewer)
        when not is_nil(slug),
        do: BaudrateWeb.Helpers.comment_link(article, comment, viewer)
@@ -202,6 +208,13 @@ defmodule BaudrateWeb.NotificationsLive do
   defp target_link(%{type: "account_" <> _}), do: ~p"/profile/move"
   defp target_link(%{type: type}) when type in @security_types, do: ~p"/profile/security"
   defp target_link(_), do: nil
+
+  # Notices are kept for 90 days; a moderator's removal took the article down
+  # but its title stayed on every recipient's notifications until then. Only
+  # the author still sees it.
+  defp target_title(%{article: %{deleted_at: %DateTime{}, user_id: author}, user_id: recipient})
+       when author != recipient,
+       do: gettext("a removed post")
 
   defp target_title(%{article: %{title: title}}) when not is_nil(title), do: title
   defp target_title(%{type: "admin_announcement", data: %{"message" => msg}}), do: msg

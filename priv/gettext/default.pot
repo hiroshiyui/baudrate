@@ -10816,6 +10816,7 @@ msgstr ""
 msgid "deleted"
 msgstr ""
 
+#: lib/baudrate_web/controllers/syndication_feed_xml.ex
 #: lib/baudrate_web/helpers.ex
 #, elixir-autogen, elixir-format
 msgid "deleted account"
@@ -11945,4 +11946,9 @@ msgstr ""
 #: lib/baudrate_web/live/bookmarks_live.ex
 #, elixir-autogen, elixir-format
 msgid "Could not remove bookmark."
+msgstr ""
+
+#: lib/baudrate_web/live/notifications_live.ex
+#, elixir-autogen, elixir-format
+msgid "a removed post"
 msgstr ""

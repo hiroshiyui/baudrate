@@ -85,11 +85,12 @@ defmodule Baudrate.Content.Likes do
       0
   end
 
-  @doc """
-  Creates a local article like for the given user.
-
-  Returns `{:ok, like}` or `{:error, changeset}`.
-  """
+  @doc false
+  # The bare write, with no gate: no sanction or terms check (ADR 0029), no
+  # block, visibility or deletion test, and no federation. Application code
+  # goes through `toggle_*`, which checks all of that; this stays callable
+  # only for the toggle itself and as a test fixture, and is deliberately not
+  # on the `Baudrate.Content` facade (review finding, 2026-11-02).
   @spec like_article(term(), term()) :: {:ok, %ArticleLike{}} | {:error, Ecto.Changeset.t()}
   def like_article(user_id, article_id) do
     result =
@@ -102,11 +103,12 @@ defmodule Baudrate.Content.Likes do
     end
   end
 
-  @doc """
-  Removes a local article like for the given user.
-
-  Returns `{count, nil}`.
-  """
+  @doc false
+  # The bare write, with no gate: no sanction or terms check (ADR 0029), no
+  # block, visibility or deletion test, and no federation. Application code
+  # goes through `toggle_*`, which checks all of that; this stays callable
+  # only for the toggle itself and as a test fixture, and is deliberately not
+  # on the `Baudrate.Content` facade (review finding, 2026-11-02).
   @spec unlike_article(term(), term()) :: {non_neg_integer(), nil}
   def unlike_article(user_id, article_id) do
     from(l in ArticleLike, where: l.user_id == ^user_id and l.article_id == ^article_id)
@@ -291,11 +293,12 @@ defmodule Baudrate.Content.Likes do
     |> Repo.delete_all()
   end
 
-  @doc """
-  Creates a local comment like for the given user.
-
-  Returns `{:ok, like}` or `{:error, changeset}`.
-  """
+  @doc false
+  # The bare write, with no gate: no sanction or terms check (ADR 0029), no
+  # block, visibility or deletion test, and no federation. Application code
+  # goes through `toggle_*`, which checks all of that; this stays callable
+  # only for the toggle itself and as a test fixture, and is deliberately not
+  # on the `Baudrate.Content` facade (review finding, 2026-11-02).
   @spec like_comment(term(), term()) :: {:ok, %CommentLike{}} | {:error, Ecto.Changeset.t()}
   def like_comment(user_id, comment_id) do
     result =
@@ -308,11 +311,12 @@ defmodule Baudrate.Content.Likes do
     end
   end
 
-  @doc """
-  Removes a local comment like for the given user.
-
-  Returns `{count, nil}`.
-  """
+  @doc false
+  # The bare write, with no gate: no sanction or terms check (ADR 0029), no
+  # block, visibility or deletion test, and no federation. Application code
+  # goes through `toggle_*`, which checks all of that; this stays callable
+  # only for the toggle itself and as a test fixture, and is deliberately not
+  # on the `Baudrate.Content` facade (review finding, 2026-11-02).
   @spec unlike_comment(term(), term()) :: {non_neg_integer(), nil}
   def unlike_comment(user_id, comment_id) do
     from(l in CommentLike, where: l.user_id == ^user_id and l.comment_id == ^comment_id)

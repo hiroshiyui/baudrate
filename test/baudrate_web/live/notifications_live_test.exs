@@ -60,6 +60,42 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       assert html =~ ~s(href="/drafts")
     end
 
+    # Review finding (2026-11-02): a deleted article's title stayed on every
+    # recipient's notices for their 90 days. Only its author still sees it.
+    test "a deleted article is named only to its author", %{conn: conn, user: user} do
+      author = setup_user("user")
+
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{name: "B", slug: "notif-del-board"})
+        |> Repo.insert!()
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_article(
+          %{title: "Withdrawn title", body: "b", slug: "notif-del", user_id: author.id},
+          [board.id]
+        )
+
+      for {recipient, actor} <- [{user, author}, {author, user}] do
+        {:ok, _} =
+          Notification.create_notification(%{
+            type: "mention",
+            user_id: recipient.id,
+            actor_user_id: actor.id,
+            article_id: article.id
+          })
+      end
+
+      {:ok, _} = Baudrate.Content.soft_delete_article(article, deleted_by: author.id)
+
+      {:ok, _lv, html} = live(conn, "/notifications")
+      refute html =~ "Withdrawn title"
+      assert html =~ "a removed post"
+
+      {:ok, _lv, html} = live(log_in_user(build_conn(), author), "/notifications")
+      assert html =~ "Withdrawn title"
+    end
+
     # The new account is named and linked; the notice leads to the queue
     # where it is approved.
     test "a pending registration links the account and the approval queue", %{

@@ -72,7 +72,7 @@ defmodule Baudrate.Content.ArticleLikeTest do
       board = create_board()
       article = create_article(user, board)
 
-      {:ok, like} = Baudrate.Content.like_article(user.id, article.id)
+      {:ok, like} = Baudrate.Content.Likes.like_article(user.id, article.id)
 
       expected = Baudrate.Federation.actor_uri(:user, user.username) <> "#like-#{like.id}"
       assert like.ap_id == expected

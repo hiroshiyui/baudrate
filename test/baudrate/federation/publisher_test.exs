@@ -925,6 +925,38 @@ defmodule Baudrate.Federation.PublisherTest do
       assert jobs == []
     end
 
+    # Review finding (2026-11-02): moving a followers-only remote article into
+    # a federated board announced it as:Public.
+    test "skips a remote article that is not public" do
+      board = create_board()
+
+      board
+      |> Ecto.Changeset.change(%{ap_enabled: true, min_role_to_view: "guest"})
+      |> Repo.update!()
+
+      board = Repo.get!(Baudrate.Content.Board, board.id)
+      remote = create_remote_actor()
+      create_follower(Baudrate.Federation.actor_uri(:board, board.slug), remote)
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_remote_article(
+          %{
+            title: "Followers only",
+            body: "b",
+            slug: "fo-fwd-#{System.unique_integer([:positive])}",
+            ap_id: "https://remote.example/articles/fo-#{System.unique_integer([:positive])}",
+            remote_actor_id: remote.id,
+            visibility: "followers_only"
+          },
+          [board.id]
+        )
+
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+      Publisher.publish_article_forwarded(article, board)
+
+      assert Repo.all(Baudrate.Federation.DeliveryJob) == []
+    end
+
     test "skips non-ap-enabled board" do
       user = create_user()
       board = create_board()

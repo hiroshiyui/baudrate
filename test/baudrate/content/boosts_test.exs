@@ -40,7 +40,7 @@ defmodule Baudrate.Content.BoostsTest do
   describe "boost_article/2" do
     test "creates a boost with an AP ID", %{user: user, other: other} do
       article = create_test_article(user)
-      {:ok, boost} = Content.boost_article(other.id, article.id)
+      {:ok, boost} = Baudrate.Content.Boosts.boost_article(other.id, article.id)
       assert boost.article_id == article.id
       assert boost.user_id == other.id
       assert boost.ap_id =~ "#announce-"
@@ -48,17 +48,17 @@ defmodule Baudrate.Content.BoostsTest do
 
     test "returns error on duplicate boost", %{user: user, other: other} do
       article = create_test_article(user)
-      {:ok, _} = Content.boost_article(other.id, article.id)
-      {:error, _changeset} = Content.boost_article(other.id, article.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(other.id, article.id)
+      {:error, _changeset} = Baudrate.Content.Boosts.boost_article(other.id, article.id)
     end
   end
 
   describe "unboost_article/2" do
     test "removes the boost", %{user: user, other: other} do
       article = create_test_article(user)
-      {:ok, _} = Content.boost_article(other.id, article.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(other.id, article.id)
       assert Content.article_boosted?(other.id, article.id)
-      {1, _} = Content.unboost_article(other.id, article.id)
+      {1, _} = Baudrate.Content.Boosts.unboost_article(other.id, article.id)
       refute Content.article_boosted?(other.id, article.id)
     end
   end
@@ -67,7 +67,7 @@ defmodule Baudrate.Content.BoostsTest do
     test "returns true when boosted, false otherwise", %{user: user, other: other} do
       article = create_test_article(user)
       refute Content.article_boosted?(other.id, article.id)
-      {:ok, _} = Content.boost_article(other.id, article.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(other.id, article.id)
       assert Content.article_boosted?(other.id, article.id)
     end
   end
@@ -76,7 +76,7 @@ defmodule Baudrate.Content.BoostsTest do
     test "counts boosts on an article", %{user: user, other: other} do
       article = create_test_article(user)
       assert Content.count_article_boosts(article) == 0
-      {:ok, _} = Content.boost_article(other.id, article.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(other.id, article.id)
       assert Content.count_article_boosts(article) == 1
     end
   end
@@ -111,7 +111,7 @@ defmodule Baudrate.Content.BoostsTest do
     test "returns MapSet of boosted article IDs", %{user: user, other: other} do
       a1 = create_test_article(user)
       a2 = create_test_article(user)
-      {:ok, _} = Content.boost_article(other.id, a1.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(other.id, a1.id)
 
       result = Content.article_boosts_by_user(other.id, [a1.id, a2.id])
       assert MapSet.member?(result, a1.id)
@@ -126,7 +126,7 @@ defmodule Baudrate.Content.BoostsTest do
   describe "article_boost_counts/1" do
     test "returns map of boost counts", %{user: user, other: other} do
       a1 = create_test_article(user)
-      {:ok, _} = Content.boost_article(other.id, a1.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(other.id, a1.id)
 
       counts = Content.article_boost_counts([a1.id])
       assert Map.get(counts, a1.id) == 1
@@ -143,7 +143,7 @@ defmodule Baudrate.Content.BoostsTest do
     test "creates a boost with an AP ID", %{user: user, other: other} do
       article = create_test_article(user)
       comment = create_test_comment(user, article)
-      {:ok, boost} = Content.boost_comment(other.id, comment.id)
+      {:ok, boost} = Baudrate.Content.Boosts.boost_comment(other.id, comment.id)
       assert boost.comment_id == comment.id
       assert boost.user_id == other.id
       assert boost.ap_id =~ "#comment-announce-"
@@ -185,7 +185,7 @@ defmodule Baudrate.Content.BoostsTest do
       article = create_test_article(user)
       c1 = create_test_comment(user, article)
       c2 = create_test_comment(user, article)
-      {:ok, _} = Content.boost_comment(other.id, c1.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_comment(other.id, c1.id)
 
       result = Content.comment_boosts_by_user(other.id, [c1.id, c2.id])
       assert MapSet.member?(result, c1.id)
@@ -197,7 +197,7 @@ defmodule Baudrate.Content.BoostsTest do
     test "returns map of boost counts", %{user: user, other: other} do
       article = create_test_article(user)
       c1 = create_test_comment(user, article)
-      {:ok, _} = Content.boost_comment(other.id, c1.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_comment(other.id, c1.id)
 
       counts = Content.comment_boost_counts([c1.id])
       assert Map.get(counts, c1.id) == 1
@@ -244,7 +244,7 @@ defmodule Baudrate.Content.BoostsTest do
   describe "delete_article_boost_by_ap_id/1" do
     test "deletes by ap_id", %{user: user, other: other} do
       article = create_test_article(user)
-      {:ok, boost} = Content.boost_article(other.id, article.id)
+      {:ok, boost} = Baudrate.Content.Boosts.boost_article(other.id, article.id)
       assert Content.article_boosted?(other.id, article.id)
 
       {1, _} = Content.delete_article_boost_by_ap_id(boost.ap_id)
@@ -256,7 +256,7 @@ defmodule Baudrate.Content.BoostsTest do
     test "deletes by ap_id", %{user: user, other: other} do
       article = create_test_article(user)
       comment = create_test_comment(user, article)
-      {:ok, boost} = Content.boost_comment(other.id, comment.id)
+      {:ok, boost} = Baudrate.Content.Boosts.boost_comment(other.id, comment.id)
       assert Content.comment_boosted?(other.id, comment.id)
 
       {1, _} = Content.delete_comment_boost_by_ap_id(boost.ap_id)

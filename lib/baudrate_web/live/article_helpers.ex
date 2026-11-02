@@ -141,12 +141,18 @@ defmodule BaudrateWeb.ArticleHelpers do
 
   # --- Private ---
 
-  defp parse_int_list(strings) do
-    Enum.flat_map(strings, fn s ->
-      case Integer.parse(s) do
-        {n, ""} -> [n]
-        _ -> []
-      end
+  # Form values are whatever the client sent: a map or a nested list raised in
+  # `Integer.parse/1`. Only strings that parse as ids count.
+  defp parse_int_list(values) do
+    Enum.flat_map(values, fn
+      s when is_binary(s) ->
+        case BaudrateWeb.Helpers.parse_id(s) do
+          {:ok, n} -> [n]
+          :error -> []
+        end
+
+      _ ->
+        []
     end)
   end
 end

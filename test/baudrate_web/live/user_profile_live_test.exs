@@ -304,7 +304,7 @@ defmodule BaudrateWeb.UserProfileLiveTest do
           [board.id]
         )
 
-      {:ok, _boost} = Content.boost_article(user.id, article.id)
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_article(user.id, article.id)
 
       {:ok, _lv, html} = live(conn, "/users/#{user.username}")
       assert html =~ "Boosted Articles"
@@ -342,7 +342,7 @@ defmodule BaudrateWeb.UserProfileLiveTest do
           user_id: other_user.id
         })
 
-      {:ok, _boost} = Content.boost_comment(user.id, comment.id)
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_comment(user.id, comment.id)
 
       {:ok, _lv, html} = live(conn, "/users/#{user.username}")
       assert html =~ "Boosted Articles"
@@ -380,7 +380,7 @@ defmodule BaudrateWeb.UserProfileLiveTest do
           [board.id]
         )
 
-      {:ok, _boost} = Content.boost_article(user.id, article.id)
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_article(user.id, article.id)
 
       {:ok, _lv, html} = live(conn, "/users/#{user.username}")
       assert html =~ "Boost Board"
@@ -410,7 +410,7 @@ defmodule BaudrateWeb.UserProfileLiveTest do
             [board.id]
           )
 
-        Content.boost_article(user.id, article.id)
+        Baudrate.Content.Boosts.boost_article(user.id, article.id)
       end
 
       {:ok, lv, html} = live(conn, "/users/#{user.username}")

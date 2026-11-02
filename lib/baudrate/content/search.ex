@@ -241,6 +241,23 @@ defmodule Baudrate.Content.Search do
     from(a in query, where: not is_nil(a.remote_actor_id) or a.visibility != "unlisted")
   end
 
+  # The same rule for the comment tab: a comment search returned comments on
+  # a local unlisted article and preloaded its title and slug, undoing what
+  # `exclude_unlisted/2` keeps out of the article tab. Its author still finds
+  # them.
+  defp exclude_comments_on_unlisted(query, %{id: viewer_id}) do
+    from([article: a] in query,
+      where:
+        not is_nil(a.remote_actor_id) or a.visibility != "unlisted" or a.user_id == ^viewer_id
+    )
+  end
+
+  defp exclude_comments_on_unlisted(query, _guest) do
+    from([article: a] in query,
+      where: not is_nil(a.remote_actor_id) or a.visibility != "unlisted"
+    )
+  end
+
   @doc """
   The order clause a given surface and sort produce, exposed so a test can
   assert the `id` tiebreaker is still on the end of it.
@@ -460,6 +477,7 @@ defmodule Baudrate.Content.Search do
         |> apply_comment_operators(operators)
         |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
         |> Filters.exclude_unservable_remote()
+        |> exclude_comments_on_unlisted(user)
 
       Pagination.paginate_query(base_query, pagination,
         result_key: :comments,

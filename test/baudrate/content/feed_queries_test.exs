@@ -213,7 +213,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
     test "returns articles boosted by the user", %{user: user, public_board: board} do
       other_user = setup_user("user")
       {:ok, %{article: article}} = insert_article(other_user, board, "boosted-by-user")
-      {:ok, _boost} = Content.boost_article(user.id, article.id)
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_article(user.id, article.id)
 
       result = Content.list_recent_boosted_articles_by_user(user.id)
       assert length(result) == 1
@@ -228,7 +228,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
     test "excludes soft-deleted articles", %{user: user, public_board: board} do
       other_user = setup_user("user")
       {:ok, %{article: article}} = insert_article(other_user, board, "boosted-deleted")
-      {:ok, _boost} = Content.boost_article(user.id, article.id)
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_article(user.id, article.id)
       Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert Content.list_recent_boosted_articles_by_user(user.id) == []
@@ -237,7 +237,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
     test "preloads boards and article_images", %{user: user, public_board: board} do
       other_user = setup_user("user")
       {:ok, %{article: article}} = insert_article(other_user, board, "boosted-preload")
-      {:ok, _boost} = Content.boost_article(user.id, article.id)
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_article(user.id, article.id)
 
       [{_boosted_at, boosted_article}] = Content.list_recent_boosted_articles_by_user(user.id)
       assert [%Board{} | _] = boosted_article.boards
@@ -249,7 +249,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
 
       for i <- 1..5 do
         {:ok, %{article: article}} = insert_article(other_user, board, "boosted-limit-#{i}")
-        {:ok, _boost} = Content.boost_article(user.id, article.id)
+        {:ok, _boost} = Baudrate.Content.Boosts.boost_article(user.id, article.id)
       end
 
       assert length(Content.list_recent_boosted_articles_by_user(user.id, 3)) == 3
@@ -260,8 +260,8 @@ defmodule Baudrate.Content.FeedQueriesTest do
       {:ok, %{article: a1}} = insert_article(other_user, board, "boost-order-1")
       {:ok, %{article: a2}} = insert_article(other_user, board, "boost-order-2")
 
-      {:ok, _} = Content.boost_article(user.id, a1.id)
-      {:ok, _} = Content.boost_article(user.id, a2.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(user.id, a1.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(user.id, a2.id)
 
       result = Content.list_recent_boosted_articles_by_user(user.id)
       ids = Enum.map(result, fn {_, a} -> a.id end)
@@ -282,8 +282,8 @@ defmodule Baudrate.Content.FeedQueriesTest do
           user_id: other_user.id
         })
 
-      {:ok, _} = Content.boost_article(user.id, article.id)
-      {:ok, _} = Content.boost_comment(user.id, comment.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(user.id, article.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_comment(user.id, comment.id)
 
       result = Content.list_recent_boosted_by_user(user.id)
       types = Enum.map(result, fn {type, _, _} -> type end)
@@ -298,7 +298,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
     test "excludes soft-deleted content", %{user: user, public_board: board} do
       other_user = setup_user("user")
       {:ok, %{article: article}} = insert_article(other_user, board, "boosted-del")
-      {:ok, _} = Content.boost_article(user.id, article.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(user.id, article.id)
       Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert Content.list_recent_boosted_by_user(user.id) == []
@@ -309,7 +309,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
 
       for i <- 1..5 do
         {:ok, %{article: article}} = insert_article(other_user, board, "boosted-lim-#{i}")
-        {:ok, _} = Content.boost_article(user.id, article.id)
+        {:ok, _} = Baudrate.Content.Boosts.boost_article(user.id, article.id)
       end
 
       assert length(Content.list_recent_boosted_by_user(user.id, 3)) == 3
@@ -396,8 +396,8 @@ defmodule Baudrate.Content.FeedQueriesTest do
       # board made private would leave the boost rows in place.
       booster = setup_user("admin")
       admin = setup_user("admin")
-      {:ok, _} = Content.boost_article(booster.id, secret.id)
-      {:ok, _} = Content.boost_comment(booster.id, sc.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_article(booster.id, secret.id)
+      {:ok, _} = Baudrate.Content.Boosts.boost_comment(booster.id, sc.id)
 
       assert Content.list_recent_boosted_by_user(booster.id, 10, viewer: nil) == []
       assert Content.list_recent_boosted_by_user(booster.id, 10, viewer: user) == []

@@ -226,8 +226,6 @@ defmodule Baudrate.Content do
   defdelegate create_remote_article_like(attrs), to: Likes
   defdelegate count_article_likes(article), to: Likes
   defdelegate count_article_likes_for(article_ids), to: Likes
-  defdelegate like_article(user_id, article_id), to: Likes
-  defdelegate unlike_article(user_id, article_id), to: Likes
   defdelegate article_liked?(user_id, article_id), to: Likes
   defdelegate toggle_article_like(user_id, article_id), to: Likes
 
@@ -239,8 +237,6 @@ defmodule Baudrate.Content do
 
   # --- Comment Likes ---
 
-  defdelegate like_comment(user_id, comment_id), to: Likes
-  defdelegate unlike_comment(user_id, comment_id), to: Likes
   defdelegate comment_liked?(user_id, comment_id), to: Likes
   defdelegate count_comment_likes(comment), to: Likes
   defdelegate toggle_comment_like(user_id, comment_id), to: Likes
@@ -260,8 +256,6 @@ defmodule Baudrate.Content do
 
   defdelegate create_remote_article_boost(attrs), to: Boosts
   defdelegate count_article_boosts(article), to: Boosts
-  defdelegate boost_article(user_id, article_id), to: Boosts
-  defdelegate unboost_article(user_id, article_id), to: Boosts
   defdelegate article_boosted?(user_id, article_id), to: Boosts
   defdelegate toggle_article_boost(user_id, article_id), to: Boosts
   defdelegate article_boosts_by_user(user_id, article_ids), to: Boosts
@@ -277,8 +271,6 @@ defmodule Baudrate.Content do
 
   defdelegate create_remote_comment_boost(attrs), to: Boosts
   defdelegate count_comment_boosts(comment), to: Boosts
-  defdelegate boost_comment(user_id, comment_id), to: Boosts
-  defdelegate unboost_comment(user_id, comment_id), to: Boosts
   defdelegate comment_boosted?(user_id, comment_id), to: Boosts
   defdelegate toggle_comment_boost(user_id, comment_id), to: Boosts
   defdelegate comment_boosts_by_user(user_id, comment_ids), to: Boosts

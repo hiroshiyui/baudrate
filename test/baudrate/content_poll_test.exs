@@ -155,6 +155,24 @@ defmodule Baudrate.ContentPollTest do
       assert voted_option.votes_count == 1
     end
 
+    # A crafted form can name an option twice; that hit the unique index
+    # inside the transaction and raised (review finding, 2026-11-02).
+    test "the same option named twice counts once" do
+      user = create_user()
+      voter = create_user()
+      board = create_board()
+
+      {:ok, %{poll: poll}} =
+        create_article_with_poll(user, board, %{
+          mode: "multiple",
+          options: [%{text: "A", position: 0}, %{text: "B", position: 1}]
+        })
+
+      option = List.first(poll.options)
+      assert {:ok, updated} = Content.cast_vote(poll, voter, [option.id, option.id])
+      assert Enum.find(updated.options, &(&1.id == option.id)).votes_count == 1
+    end
+
     test "rejects multiple options for single-choice poll" do
       user = create_user()
       voter = create_user()

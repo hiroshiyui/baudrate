@@ -10782,6 +10782,7 @@ msgstr "已申請刪除帳號"
 msgid "deleted"
 msgstr "已刪除"
 
+#: lib/baudrate_web/controllers/syndication_feed_xml.ex
 #: lib/baudrate_web/helpers.ex
 #, elixir-autogen, elixir-format
 msgid "deleted account"
@@ -11905,3 +11906,8 @@ msgstr "顯示其餘內容"
 #, elixir-autogen, elixir-format
 msgid "Could not remove bookmark."
 msgstr "無法移除書籤。"
+
+#: lib/baudrate_web/live/notifications_live.ex
+#, elixir-autogen, elixir-format
+msgid "a removed post"
+msgstr "一篇已移除的文章"
