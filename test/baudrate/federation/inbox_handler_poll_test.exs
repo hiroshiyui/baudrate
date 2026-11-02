@@ -64,6 +64,62 @@ defmodule Baudrate.Federation.InboxHandlerPollTest do
     |> Repo.insert!()
   end
 
+  # Review finding (2026-11-02): `build_create_vote/3` addressed the vote to
+  # `article.user.username`, which an imported article does not have — and
+  # imported polls are the only ones whose votes are federated. Every vote on
+  # one raised inside `cast_vote/3` and was rolled back.
+  describe "a local member votes on an imported poll" do
+    test "the vote is recorded and a Create(Note) goes to the poll's author" do
+      board = create_board()
+      remote_actor = create_remote_actor()
+      ap_id = "https://remote.example/articles/vote-#{System.unique_integer([:positive])}"
+
+      :ok =
+        InboxHandler.handle(
+          %{
+            "type" => "Create",
+            "id" => "#{ap_id}#create",
+            "actor" => remote_actor.ap_id,
+            "object" => %{
+              "type" => "Question",
+              "id" => ap_id,
+              "name" => "Tea or coffee?",
+              "content" => "<p>Pick</p>",
+              "attributedTo" => remote_actor.ap_id,
+              "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+              "cc" => [Federation.actor_uri(:board, board.slug)],
+              "audience" => [Federation.actor_uri(:board, board.slug)],
+              "oneOf" => [
+                %{"type" => "Note", "name" => "Tea", "replies" => %{"totalItems" => 0}},
+                %{"type" => "Note", "name" => "Coffee", "replies" => %{"totalItems" => 0}}
+              ]
+            }
+          },
+          remote_actor,
+          :shared
+        )
+
+      poll = Content.get_poll_for_article(Content.get_article_by_ap_id(ap_id).id)
+      tea = Enum.find(poll.options, &(&1.text == "Tea"))
+      voter = create_user()
+
+      assert {:ok, _} = Content.Polls.cast_vote(poll, voter, [tea.id])
+
+      [job] =
+        Repo.all(
+          from(j in Baudrate.Federation.DeliveryJob,
+            where: j.inbox_url == ^(remote_actor.shared_inbox || remote_actor.inbox)
+          )
+        )
+
+      vote = Jason.decode!(job.activity_json)
+      assert vote["type"] == "Create"
+      assert vote["to"] == [remote_actor.ap_id]
+      assert vote["object"]["name"] == "Tea"
+      assert vote["object"]["inReplyTo"] == ap_id
+    end
+  end
+
   describe "Create(Question) — inbound poll" do
     test "creates article with poll from Question object" do
       board = create_board()

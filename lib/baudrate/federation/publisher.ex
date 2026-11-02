@@ -1286,9 +1286,10 @@ defmodule Baudrate.Federation.Publisher do
   Returns a list of `{activity_map, actor_uri}` tuples (one per option).
   """
   def build_create_vote(user, article, voted_options) do
-    article = Repo.preload(article, [:user])
+    article = Repo.preload(article, [:user, :remote_actor])
     actor_uri = Federation.actor_uri(:user, user.username)
     article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
+    poll_author = poll_author_uri(article)
 
     Enum.map(voted_options, fn option ->
       activity = %{
@@ -1296,20 +1297,28 @@ defmodule Baudrate.Federation.Publisher do
         "id" => "#{actor_uri}#vote-#{Ecto.UUID.generate()}",
         "type" => "Create",
         "actor" => actor_uri,
-        "to" => [Federation.actor_uri(:user, article.user.username)],
+        "to" => [poll_author],
         "object" => %{
           "id" => "#{actor_uri}#vote-note-#{Ecto.UUID.generate()}",
           "type" => "Note",
           "name" => option.text,
           "inReplyTo" => article_uri,
           "attributedTo" => actor_uri,
-          "to" => [Federation.actor_uri(:user, article.user.username)]
+          "to" => [poll_author]
         }
       }
 
       {activity, actor_uri}
     end)
   end
+
+  # A vote goes to whoever asked: the remote author of an imported poll (the
+  # only votes that are federated, `Polls.federate_vote/4`), else the local
+  # author. An imported article has no local user, so reading
+  # `article.user.username` crashed every vote on an imported poll and rolled
+  # the vote back.
+  defp poll_author_uri(%{remote_actor: %{ap_id: ap_id}}) when is_binary(ap_id), do: ap_id
+  defp poll_author_uri(%{user: %{username: username}}), do: Federation.actor_uri(:user, username)
 
   @doc """
   Builds an `Update(Question)` carrying a closed poll's final counts.
@@ -1355,12 +1364,12 @@ defmodule Baudrate.Federation.Publisher do
   to the remote author's inbox. For local articles, delivers to followers.
   """
   def publish_vote(user, article, voted_options) do
-    article = Repo.preload(article, [:user])
+    article = Repo.preload(article, [:user, :remote_actor])
     vote_activities = build_create_vote(user, article, voted_options)
 
     for {activity, actor_uri} <- vote_activities do
       if article.remote_actor_id do
-        remote_actor = Repo.get!(Baudrate.Federation.RemoteActor, article.remote_actor_id)
+        remote_actor = article.remote_actor
         inbox = remote_actor.shared_inbox || remote_actor.inbox
 
         if inbox do
