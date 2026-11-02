@@ -2415,10 +2415,10 @@ wrong.
 - `/ap/users/:username` — Person actor with publicKey, inbox, outbox, published, icon
 - `/ap/boards/:slug` — Group actor with sub-board/parent-board links
 - `/ap/site` — Organization actor (instance actor, discoverable as `acct:site@host`)
-- `/ap/articles/:slug` — Article object with replies link and `baudrate:*` extensions
+- `/ap/articles/:slug` — Article object with replies link and `baudrate:*` extensions; local articles only — an imported article is another server's object and answers 404 (ADR 0046), as does its `/replies`
 - `/articles/:slug` — content-negotiated: AP `Accept` headers (`application/activity+json`, `application/ld+json`, `application/json`) are forwarded to the AS2 article endpoint by `BaudrateWeb.Plugs.ArticleApContentNeg`; browser requests fall through to `ArticleLive`. The article LiveView also emits `<link rel="alternate" type="application/activity+json" href="…/ap/articles/:slug">` for federated articles, so remote implementations can discover the AP `id` from the human URL when content negotiation isn't attempted
 - `/ap/users/:username/outbox` — paginated `OrderedCollection` of `Create(Article)`, counting and listing only the user's articles in **federated** boards (`min_role_to_view == "guest"` and `ap_enabled`, an `exists` on `board_articles`); a board-less article is not in the outbox at all
-- `/ap/boards/:slug/outbox` — paginated `OrderedCollection` of `Announce(Article)`
+- `/ap/boards/:slug/outbox` — paginated `OrderedCollection` of `Announce(Article)`; an imported article is named by its own `ap_id`, as `Publisher.build_announce_article/2` does, never by a local URI
 - `/ap/site/outbox` — empty `OrderedCollection`. The site actor signs instance-level activities and publishes no content of its own, but an actor that advertises an `outbox` it does not serve fails a peer's discovery: Mastodon fetches it when the actor is first seen. An explicit empty collection is the answer, not a 404
 - `/ap/users/:username/followers`, `/ap/boards/:slug/followers`, `/ap/site/followers` — `OrderedCollection` of follower actor URIs (the site actor's is empty, for the same reason as its outbox)
 - `/ap/users/:username/following`, `/ap/boards/:slug/following` — `OrderedCollection` of outbound follows
@@ -2427,7 +2427,7 @@ wrong.
 - `/ap/comments/:id` — a local comment as a `Note`, gated by its **article's** `publicly_servable?/1` plus three refusals of its own: soft-deleted, remote (its id belongs to another host), or a non-public `visibility`
 - `/ap/polls/:id` — a local poll as a standalone `Question`, the same object the Article embeds and with the same `id`, gated by its article
 - `/ap/quote_authorizations/:id` — a `QuoteAuthorization` stamp approving one remote quote of a local article (`Federation.Quotes`, ADR 0082), served only while `Quotes.servable/1` holds: the article still `quotable?/1` and the quoting actor not hidden
-- `/ap/search?q=...` — paginated full-text article search, over **federated** boards only (ADR 0043), pinned newest-first
+- `/ap/search?q=...` — paginated full-text article search, over **federated** boards only (ADR 0043), pinned newest-first; an imported article is listed as its `ap_id` string, not as a full object
 
 **Inbox endpoints** (HTTP Signature verified, per-domain rate-limited):
 - `/ap/inbox` — shared inbox

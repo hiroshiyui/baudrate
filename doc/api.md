@@ -540,10 +540,11 @@ GET /ap/articles/:slug
 **Access control:** Returns 404 unless the article is board-less or sits in at
 least one **federated** board (`min_role_to_view == "guest"` **and**
 `ap_enabled == true`) — turning a board's federation off stops its articles
-being served as AP objects, not just announced. A remote article is also
-refused when it was ingested as `followers_only`/`direct`, and when its actor
-is suspended or its domain blocked (ADR 0030). These refusals apply to every
-requester, signed or not, including one whose signature belongs to an admin.
+being served as AP objects, not just announced. An article imported from
+another server is always 404 here: it is that server's object, fetchable at its
+own `id`, and this instance never re-serves it as its own (ADR 0046; until
+v2.3.1 such a slug answered 500). These refusals apply to every requester,
+signed or not, including one whose signature belongs to an admin.
 
 **Example response:**
 
@@ -890,7 +891,9 @@ GET /ap/boards/:slug/outbox?page=true
 **Rate limit:** 120 req/min per IP
 **Access control:** Returns 404 if board is private or AP disabled.
 
-Returns `Announce` activities for articles posted to the board.
+Returns `Announce` activities for articles posted to the board. An article
+imported from another server is announced by its own `id`, under an activity id
+on the board (`<board>#announce-article-<n>`), never by a URI on this host.
 
 **Item structure:**
 
@@ -1042,8 +1045,8 @@ GET /ap/articles/:slug/replies?page=true
 **Auth:** HTTP Signature required if authorized fetch is enabled
 **Rate limit:** 120 req/min per IP
 **Access control:** Returns 404 under exactly the same conditions as
-`GET /ap/articles/:slug` (no federated board, non-public remote visibility, or a
-suspended actor / blocked domain).
+`GET /ap/articles/:slug` (no federated board, or an article imported from
+another server).
 
 Returns an `OrderedCollection` of comments as Note objects, paged oldest
 first (`?page=true`, then `?page=true&min_id=<id>`); until v2.0.0 every
@@ -1079,7 +1082,8 @@ GET /ap/search?q=elixir&page=1
 Full-text search across articles in **federated** boards — `min_role_to_view
 == "guest"` *and* `ap_enabled == true`, the same gate
 `GET /ap/articles/:slug` applies. Returns a paginated `OrderedCollection` of
-Article objects.
+Article objects. An article imported from another server appears as its `id`
+(a URI string) instead of a full object: it is that server's to serve.
 
 **Access control:** an article in a guest-readable board whose federation is
 switched off is absent from these results, as it is from every other AP

@@ -314,7 +314,7 @@ defmodule Baudrate.Federation.Collections do
         sort: :newest
       )
 
-    items = ObjectBuilder.article_objects(result.articles)
+    items = article_items(result.articles)
     has_next = page < result.total_pages
 
     if page == 1 and parse_page(page_params) == nil do
@@ -355,15 +355,51 @@ defmodule Baudrate.Federation.Collections do
     }
   end
 
+  # A board announces remote articles too (a board follows remote actors),
+  # and names each by its own `id`, as `Publisher.build_announce_article/2`
+  # does — never by a local URI, which would re-home another server's object
+  # under ours (ADR 0046). The local article's announce id is unchanged; a
+  # remote article's hangs off the board, since the article URI is not ours.
+  # Search results in collection order: a local article as its full object, a
+  # remote one by its `id` alone. Re-serving another server's article in full
+  # would publish it under our host (ADR 0046), and building one raised for
+  # want of a local author, so a query matching any remote article was a 500.
+  defp article_items(articles) do
+    local =
+      articles |> Enum.filter(&is_nil(&1.remote_actor_id)) |> ObjectBuilder.article_objects()
+
+    {items, []} =
+      Enum.map_reduce(articles, local, fn
+        %{remote_actor_id: nil}, [object | rest] -> {object, rest}
+        article, rest -> {article.ap_id, rest}
+      end)
+
+    items
+  end
+
+  defp wrap_announce_activity(%{remote_actor_id: nil} = article, board) do
+    announce(
+      "#{actor_uri(:article, article.slug)}#announce",
+      article.ap_id || actor_uri(:article, article.slug),
+      article,
+      board
+    )
+  end
+
   defp wrap_announce_activity(article, board) do
+    board_uri = actor_uri(:board, board.slug)
+    announce("#{board_uri}#announce-article-#{article.id}", article.ap_id, article, board)
+  end
+
+  defp announce(id, object, article, board) do
     %{
       "@context" => @as_context,
-      "id" => "#{actor_uri(:article, article.slug)}#announce",
+      "id" => id,
       "type" => "Announce",
       "actor" => actor_uri(:board, board.slug),
       "published" => DateTime.to_iso8601(article.inserted_at),
       "to" => [@as_public],
-      "object" => actor_uri(:article, article.slug)
+      "object" => object
     }
   end
 

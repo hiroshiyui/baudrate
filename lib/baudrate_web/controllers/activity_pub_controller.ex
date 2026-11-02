@@ -333,7 +333,7 @@ defmodule BaudrateWeb.ActivityPubController do
         try do
           article = Baudrate.Content.get_article_by_slug!(slug)
 
-          if publicly_servable?(article) do
+          if local_and_servable?(article) do
             conn
             |> put_resp_content_type(@activity_json)
             |> json(Federation.article_object(article))
@@ -461,7 +461,7 @@ defmodule BaudrateWeb.ActivityPubController do
       try do
         article = Baudrate.Content.get_article_by_slug!(slug)
 
-        if publicly_servable?(article) do
+        if local_and_servable?(article) do
           conn
           |> put_resp_content_type(@activity_json)
           |> json(Federation.article_replies(article, params))
@@ -571,6 +571,13 @@ defmodule BaudrateWeb.ActivityPubController do
 
     board_ok and visibility_ok and not_hidden
   end
+
+  # An article from another server is that server's object, published under
+  # its own `id`. Serving it here would re-home it under our host (ADR 0046),
+  # and it has no local author to attribute it to: building it raised, so
+  # every such slug answered 500. It is refused like a remote comment or poll.
+  defp local_and_servable?(article),
+    do: is_nil(article.remote_actor_id) and publicly_servable?(article)
 
   defp comment_servable?(comment, article) do
     is_nil(comment.remote_actor_id) and is_nil(comment.deleted_at) and

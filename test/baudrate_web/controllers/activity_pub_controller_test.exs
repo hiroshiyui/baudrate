@@ -671,6 +671,70 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     end
   end
 
+  # An article imported from another server is that server's object. Serving
+  # it here re-homed it under our host (ADR 0046) and, with no local author to
+  # attribute it to, raised: every such slug answered 500 in production, and so
+  # did every board outbox URI and search page that named one.
+  describe "an imported (remote) article" do
+    test "GET /ap/articles/:slug is 404, not served as ours", %{conn: conn} do
+      article = setup_remote_article(setup_board())
+
+      conn = conn |> ap_conn() |> get("/ap/articles/#{article.slug}")
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+
+    test "its replies collection is 404 too", %{conn: conn} do
+      article = setup_remote_article(setup_board())
+
+      conn = conn |> ap_conn() |> get("/ap/articles/#{article.slug}/replies")
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+
+    test "a board outbox announces it by its own id", %{conn: conn} do
+      board = setup_board()
+      article = setup_remote_article(board)
+
+      body =
+        conn |> json_conn() |> get("/ap/boards/#{board.slug}/outbox?page=1") |> json_response(200)
+
+      [announce] = body["orderedItems"]
+
+      assert announce["object"] == article.ap_id
+      refute announce["id"] =~ "/ap/articles/"
+      assert announce["id"] =~ "/ap/boards/#{board.slug}"
+    end
+
+    test "a local article in the same outbox keeps its local URI", %{conn: conn} do
+      board = setup_board()
+      article = setup_article(setup_user("user"), board)
+
+      body =
+        conn |> json_conn() |> get("/ap/boards/#{board.slug}/outbox?page=1") |> json_response(200)
+
+      [announce] = body["orderedItems"]
+
+      assert announce["object"] == article.ap_id
+      assert announce["id"] == "#{Baudrate.Federation.actor_uri(:article, article.slug)}#announce"
+    end
+
+    test "a search page names it by its id and still serves local articles in full",
+         %{conn: conn} do
+      board = setup_board()
+      remote = setup_remote_article(board)
+      local = setup_article(setup_user("user"), board)
+
+      body = conn |> json_conn() |> get("/ap/search?q=Test+Article&page=1") |> json_response(200)
+      items = body["orderedItems"]
+
+      assert remote.ap_id in items
+
+      assert Enum.any?(
+               items,
+               &match?(%{"type" => "Article", "id" => id} when id == local.ap_id, &1)
+             )
+    end
+  end
+
   # --- Article Replies ---
 
   describe "GET /ap/articles/:slug/replies" do
@@ -1183,6 +1247,37 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       )
 
     Baudrate.Repo.preload(article, [:boards, :user])
+  end
+
+  defp setup_remote_article(board) do
+    uid = System.unique_integer([:positive])
+
+    actor =
+      %Baudrate.Federation.RemoteActor{}
+      |> Baudrate.Federation.RemoteActor.changeset(%{
+        ap_id: "https://remote.example/users/ra-#{uid}",
+        username: "ra_#{uid}",
+        domain: "remote.example",
+        public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+        inbox: "https://remote.example/users/ra-#{uid}/inbox",
+        actor_type: "Person",
+        fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+      |> Repo.insert!()
+
+    {:ok, %{article: article}} =
+      Baudrate.Content.create_remote_article(
+        %{
+          title: "Test Article from afar",
+          body: "Imported",
+          slug: "ra-#{uid}",
+          ap_id: "https://remote.example/articles/ra-#{uid}",
+          remote_actor_id: actor.id
+        },
+        [board.id]
+      )
+
+    article
   end
 
   defp setup_boardless_article(user) do

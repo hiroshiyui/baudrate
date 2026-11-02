@@ -84,6 +84,9 @@ that kind goes in it.
   or content the booster does not own. An embedded object body is believed only from a
   booster on the object's own host; otherwise the `id` is fetched (also for a group-carried
   `Create`). `Accept`/`Reject(Follow)` match the signer.
+- An imported article is never served as ours: `/ap/articles/:slug` 404s it; outboxes
+  and `/ap/search` name it by `ap_id`; `ObjectBuilder.article_objects/1` takes local
+  articles only (`activity_pub_controller_test.exs`).
 - Inbound `Move` needs the target's `alsoKnownAs` and the signer as `object`; followers
   send `Undo(Follow)` + a pending `Follow`; timeline items move with the follow; one Move
   per origin per 30 days (ADR 0025).

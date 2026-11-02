@@ -9,6 +9,15 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Fixed
+
+- **Articles imported from other servers no longer break ActivityPub
+  fetches.** `/ap/articles/:slug` answered 500 for every article that came from
+  another server, and board outboxes and AP search pages pointed peers at
+  exactly those URIs. Such an article is now 404 at our address, and outboxes
+  and search name it by its own id, since it is the other server's object
+  (ADR 0046).
+
 ## [2.3.0] — 2026-11-02
 
 Mastodon users can now quote articles. This release adds a table
