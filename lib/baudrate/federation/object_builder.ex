@@ -17,7 +17,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
   alias Baudrate.Content.Board
   alias Baudrate.Content.ContentWarning
   alias Baudrate.Content.Markdown
-  alias Baudrate.Federation.{Context, Delivery, Mentions, Visibility}
+  alias Baudrate.Federation.{Context, Delivery, Mentions, Quotes, Visibility}
   alias Baudrate.Repo
 
   @as_public "https://www.w3.org/ns/activitystreams#Public"
@@ -113,6 +113,14 @@ defmodule Baudrate.Federation.ObjectBuilder do
     map = put_updated(map, article, article.id in stats.edited)
 
     map = if tags == [], do: map, else: Map.put(map, "tag", tags)
+
+    # Without a policy a peer reads "nobody may quote" (ADR 0082). Only an
+    # article that may leave carries one, so the policy never invites a
+    # request the inbox would refuse.
+    map =
+      if Quotes.quotable?(article),
+        do: Map.put(map, "interactionPolicy", Quotes.policy()),
+        else: map
 
     map
     |> put_content_warning(article)

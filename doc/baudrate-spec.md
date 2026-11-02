@@ -115,6 +115,8 @@ The trust boundary. Everything here is reachable by an unauthenticated remote in
 | A comment Update is gated by the board like a publication, not exempt like a withdrawal | [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md) | `Baudrate.Federation.Publisher.publish_comment_updated/2` | [`publisher_test.exs`](../test/baudrate/federation/publisher_test.exs) |
 | The federated `updated` field is derived from a revision existing, never from updated_at | [0060](adr/0060-an-edit-is-kept-and-the-history-is-public.md) | `Baudrate.Content.Comments.comment_edited?/1`, `Baudrate.Content.Articles.article_edited?/1` | [`object_builder_test.exs`](../test/baudrate/federation/object_builder_test.exs) |
 | A described image federates as the attachment name; an undescribed one carries none rather than an empty one | [0061](adr/0061-an-image-description-is-not-a-form-field.md) | `Baudrate.Federation.ObjectBuilder.comment_object/1`, `Baudrate.Federation.ObjectBuilder.article_object/1` | [`object_builder_test.exs`](../test/baudrate/federation/object_builder_test.exs) |
+| A federated local article carries canQuote automaticApproval Public; a QuoteRequest from the quoting post's own host gets a stored stamp and an Accept signed by the author; a non-federated article's request is dropped unanswered; a stamp is served only while its article is quotable | [0082](adr/0082-federated-articles-may-be-quoted.md) | `Baudrate.Federation.Quotes.quotable?/1`, `Baudrate.Federation.Quotes.authorize/4`, `Baudrate.Federation.Quotes.servable/1`, `BaudrateWeb.ActivityPubController.quote_authorization/2` | [`quotes_test.exs`](../test/baudrate/federation/quotes_test.exs) |
+
 
 ## Auth
 

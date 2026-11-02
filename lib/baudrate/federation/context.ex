@@ -41,6 +41,20 @@ defmodule Baudrate.Federation.Context do
   | `manuallyApprovesFollowers` | `as:manuallyApprovesFollowers` | follows wait for the member's approval |
   | `discoverable` | `toot:discoverable` | may be listed in directories and member search |
   | `indexable` | `toot:indexable` | may be indexed by search |
+
+  Quote posts (FEP-044f, ADR 0082) use GoToSocial's interaction-policy
+  vocabulary and FEP-044f's types, declared as Mastodon declares them:
+
+  | Term | Expands to | Meaning |
+  |---|---|---|
+  | `interactionPolicy` | `gts:interactionPolicy` | who may interact with an Article, and how |
+  | `canQuote` | `gts:canQuote` | who may quote it |
+  | `automaticApproval` | `gts:automaticApproval` | approved without the author's review |
+  | `manualApproval` | `gts:manualApproval` | approved after the author's review (unused) |
+  | `QuoteRequest` | `https://w3id.org/fep/044f#QuoteRequest` | a remote post asks to quote ours |
+  | `QuoteAuthorization` | `https://w3id.org/fep/044f#QuoteAuthorization` | the stamp approving one quote |
+  | `interactingObject` | `gts:interactingObject` | a stamp's quoting post |
+  | `interactionTarget` | `gts:interactionTarget` | a stamp's quoted Article |
   """
 
   @as "https://www.w3.org/ns/activitystreams"
@@ -56,7 +70,16 @@ defmodule Baudrate.Federation.Context do
     "manuallyApprovesFollowers" => "as:manuallyApprovesFollowers",
     "toot" => "http://joinmastodon.org/ns#",
     "discoverable" => "toot:discoverable",
-    "indexable" => "toot:indexable"
+    "indexable" => "toot:indexable",
+    "gts" => "https://gotosocial.org/ns#",
+    "interactionPolicy" => %{"@id" => "gts:interactionPolicy", "@type" => "@id"},
+    "canQuote" => %{"@id" => "gts:canQuote", "@type" => "@id"},
+    "automaticApproval" => %{"@id" => "gts:automaticApproval", "@type" => "@id"},
+    "manualApproval" => %{"@id" => "gts:manualApproval", "@type" => "@id"},
+    "interactingObject" => %{"@id" => "gts:interactingObject", "@type" => "@id"},
+    "interactionTarget" => %{"@id" => "gts:interactionTarget", "@type" => "@id"},
+    "QuoteRequest" => "https://w3id.org/fep/044f#QuoteRequest",
+    "QuoteAuthorization" => "https://w3id.org/fep/044f#QuoteAuthorization"
   }
 
   @doc "The ActivityStreams 2.0 context URI."

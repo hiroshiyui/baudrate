@@ -101,6 +101,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0079](0079-a-bound-is-checked-before-the-work-it-bounds.md) | A bound is checked before the work it bounds | Accepted |
 | [0080](0080-a-revoked-session-s-pages-leave-by-redirect.md) | A revoked session's pages leave by redirect | Accepted |
 | [0081](0081-a-syndicated-article-shows-its-lead-and-sends-readers-to-the-source.md) | A syndicated article shows its lead and sends readers to the source | Accepted |
+| [0082](0082-federated-articles-may-be-quoted.md) | Federated articles may be quoted | Accepted |
 
 ## Writing a new ADR
 

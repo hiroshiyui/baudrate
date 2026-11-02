@@ -418,6 +418,32 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
+  @doc """
+  Returns a `QuoteAuthorization` stamp (FEP-044f, ADR 0082): the proof that a
+  remote post's quote of a local article was approved. Servers that see the
+  quote fetch it to check that.
+
+  Served only while the article is still quotable, so an article withdrawn
+  from federation, deleted, or by a deleted account takes its stamps with it.
+  The stamp has no page of its own; a browser is sent to the article.
+  """
+  def quote_authorization(conn, %{"id" => id}) do
+    conn = put_resp_header(conn, "vary", "Accept")
+
+    with {stamp_id, ""} <- Integer.parse(id),
+         %{} = stamp <- Federation.Quotes.servable(stamp_id) do
+      if wants_json?(conn) do
+        conn
+        |> put_resp_content_type(@activity_json)
+        |> json(Federation.Quotes.stamp_object(stamp))
+      else
+        redirect(conn, to: ~p"/articles/#{stamp.article.slug}")
+      end
+    else
+      _ -> not_found(conn)
+    end
+  end
+
   # --- Boards Index ---
 
   @doc "Returns a collection of all public AP-enabled boards."

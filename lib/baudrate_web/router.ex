@@ -225,6 +225,7 @@ defmodule BaudrateWeb.Router do
     get "/articles/:slug/replies", ActivityPubController, :article_replies
     get "/comments/:id", ActivityPubController, :comment
     get "/polls/:id", ActivityPubController, :poll
+    get "/quote_authorizations/:id", ActivityPubController, :quote_authorization
     get "/search", ActivityPubController, :search
   end
 

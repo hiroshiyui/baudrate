@@ -145,6 +145,7 @@ defmodule Baudrate.Federation do
   def actor_uri(:article, slug), do: "#{base_url()}/ap/articles/#{slug}"
   def actor_uri(:comment, id), do: "#{base_url()}/ap/comments/#{id}"
   def actor_uri(:poll, id), do: "#{base_url()}/ap/polls/#{id}"
+  def actor_uri(:quote_authorization, id), do: "#{base_url()}/ap/quote_authorizations/#{id}"
 
   # --- Discovery ---
 

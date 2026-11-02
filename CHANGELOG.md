@@ -9,6 +9,15 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Added
+
+- **Mastodon users can quote articles** (FEP-044f, ADR 0082). An article in a
+  federated board says anyone may quote it, and a quote request is approved
+  automatically with a stamp at `/ap/quote_authorizations/:id`. Articles in
+  boards that do not federate cannot be quoted, an author's block refuses the
+  quote, and a stamp stops being served when its article is deleted or leaves
+  federation. Adds the `quote_authorizations` table; run the migration.
+
 ## [2.2.0] — 2026-11-01
 
 Syndicated articles now send readers to the sites that wrote them. Nothing

@@ -119,6 +119,10 @@ that kind goes in it.
 - Mentions (ADR 0051): `warm/2` before the transaction, `known/1` after; the board gate
   applies to tag, `cc`, delivery and lookup; callers preload `:boards`. Gate:
   `mentions_test.exs`. A comment's `inReplyTo` is `ObjectBuilder.reply_target_uri/2`.
+- Quotes (ADR 0082, FEP-044f): a federated article carries `canQuote` public;
+  `QuoteRequest` → stamp row + author-signed `Accept` in one transaction; the
+  quoting post must be on the signer's host; a non-federated article is dropped
+  unanswered. Stamps serve only while `Quotes.quotable?/1`. Gate: `quotes_test.exs`.
 - Actor updates: `Federation.update_actor/3` publishes only when the rendered document
   changed; compare documents, never field lists.
 - Content warnings are `summary`/`sensitive` fields, never a body prefix (ADR 0052,

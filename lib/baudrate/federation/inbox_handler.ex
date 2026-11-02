@@ -26,6 +26,8 @@ defmodule Baudrate.Federation.InboxHandler do
     * `Accept(Follow)` — stub handler (future: mark outbound follow as accepted)
     * `Reject(Follow)` — stub handler (future: mark outbound follow as rejected)
     * `Move` — stub handler (future: migrate followers to new actor)
+    * `QuoteRequest` — approve a quote of a local article with a stamp and
+      `Accept`, or refuse it with `Reject` (FEP-044f, ADR 0082)
 
   ## Mastodon/Lemmy Compatibility
 
@@ -643,6 +645,48 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
+  # --- QuoteRequest (FEP-044f, ADR 0082) ---
+
+  # `object` is the article to be quoted, `instrument` the quoting post (a URI
+  # or the embedded post). An article that may not federate, or is not ours,
+  # is dropped without an answer: a Reject would confirm that a private
+  # board's slug exists. One we refuse for a block or a deleted author gets a
+  # Reject, so the quoting server stops waiting.
+  defp dispatch(%{"type" => "QuoteRequest", "object" => object} = activity, remote_actor, _target) do
+    instrument_uri = id_of(activity["instrument"])
+
+    with object_uri when is_binary(object_uri) <- id_of(object),
+         %Content.Article{remote_actor_id: nil} = article <-
+           resolve_local_article_by_ap_or_uri(object_uri),
+         article = Baudrate.Repo.preload(article, [:boards, :user]),
+         true <- Delivery.article_boards_federated?(article) and is_nil(article.deleted_at),
+         true <- Federation.Quotes.valid_instrument?(instrument_uri, remote_actor) do
+      if blocked_by_author?(article, remote_actor) or not Federation.Quotes.quotable?(article) do
+        Logger.info(
+          "federation.activity: type=QuoteRequest refused actor=#{remote_actor.ap_id} article=#{article.id}"
+        )
+
+        Federation.Quotes.refuse(article, activity, remote_actor)
+      else
+        case Federation.Quotes.authorize(article, activity, instrument_uri, remote_actor) do
+          {:ok, stamp} ->
+            Logger.info(
+              "federation.activity: type=QuoteRequest accepted stamp=#{stamp.id} article=#{article.id}"
+            )
+
+            :ok
+
+          {:error, _} ->
+            {:error, :quote_authorization_failed}
+        end
+      end
+    else
+      _ ->
+        Logger.info("federation.activity: type=QuoteRequest dropped actor=#{remote_actor.ap_id}")
+        :ok
+    end
+  end
+
   # --- Catch-all ---
 
   defp dispatch(%{"type" => type} = _activity, _remote_actor, _target) do
@@ -797,6 +841,10 @@ defmodule Baudrate.Federation.InboxHandler do
   # --- Delete helpers ---
 
   defp handle_delete_content(object_uri, remote_actor) do
+    # The deleted post may have quoted one of our articles, whether or not we
+    # also stored it; its stamp goes with it (ADR 0082).
+    Federation.Quotes.revoke_for_object(object_uri, remote_actor)
+
     # Try article first, then comment, then direct message
     cond do
       article = Content.get_article_by_ap_id(object_uri) ->
@@ -843,6 +891,10 @@ defmodule Baudrate.Federation.InboxHandler do
         :ok
     end
   end
+
+  defp id_of(uri) when is_binary(uri), do: uri
+  defp id_of(%{"id" => uri}) when is_binary(uri), do: uri
+  defp id_of(_), do: nil
 
   # --- Create(Note) comment helper ---
 
