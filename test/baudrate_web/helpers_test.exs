@@ -3,6 +3,38 @@ defmodule BaudrateWeb.HelpersTest do
 
   alias BaudrateWeb.Helpers
 
+  describe "parse_id/1 and the bigint bound" do
+    # An id no bigint column holds raised in the query (review, 2026-11-02).
+    test "refuses an id past PostgreSQL's bigint" do
+      assert {:ok, 9_223_372_036_854_775_807} = Helpers.parse_id("9223372036854775807")
+      assert :error = Helpers.parse_id("9223372036854775808")
+      assert :error = Helpers.parse_id("99999999999999999999999")
+    end
+  end
+
+  describe "local_admin_path/1" do
+    test "keeps a path in the admin area" do
+      assert Helpers.local_admin_path("/admin") == "/admin"
+      assert Helpers.local_admin_path("/admin/users?page=2") == "/admin/users?page=2"
+    end
+
+    test "sends anything else to /admin" do
+      for bad <- [
+            nil,
+            "/boards/x",
+            "//evil.example/admin/",
+            "/admin/../x",
+            "/admin//evil",
+            "/admin/a@b",
+            "/admin/x\0y",
+            "/admin/x\ny",
+            "/administrator"
+          ] do
+        assert Helpers.local_admin_path(bad) == "/admin", "accepted #{inspect(bad)}"
+      end
+    end
+  end
+
   describe "parse_id/1" do
     test "parses valid positive integer strings" do
       assert {:ok, 1} = Helpers.parse_id("1")

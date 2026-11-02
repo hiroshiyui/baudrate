@@ -56,6 +56,7 @@ defmodule Baudrate.Auth.Recovery do
     RecoveryChallenge,
     RecoveryCode,
     RecoveryContact,
+    Sanctions,
     SecondFactor,
     Sessions,
     WebAuthn
@@ -485,12 +486,17 @@ defmodule Baudrate.Auth.Recovery do
 
   defp apply_reset(%AccountReset{} = reset, password, password_confirmation) do
     user = Repo.get!(User, reset.user_id) |> Repo.preload(:role)
+    issuer = reset.issued_by_id && Repo.get(User, reset.issued_by_id)
 
     # The status is re-checked at redemption, not only at issue: a link is
     # good for 24 hours and an account can be banned inside that window.
-    # `SessionController.create/2` re-checks for the same reason. The refusal
-    # is `:invalid`, like every other one, so the page stays uninformative.
-    if user.status in ["banned", "deleted"] do
+    # `SessionController.create/2` re-checks for the same reason. So is the
+    # rank: an account promoted to the issuer's level (or above) inside the
+    # window is one the issuer may no longer reset, and a link that would
+    # clear its second factors must not still work. The refusal is
+    # `:invalid`, like every other one, so the page stays uninformative.
+    if user.status in ["banned", "deleted"] or is_nil(issuer) or
+         outranks_or_equals?(user, issuer) do
       {:error, :invalid}
     else
       do_apply_reset(user, reset, password, password_confirmation)
@@ -619,6 +625,9 @@ defmodule Baudrate.Auth.Recovery do
   end
 
   defp authorize_issue(%User{} = admin, %User{} = user) do
+    # Rank and status as they stand, not as the admin page loaded them.
+    {admin, user} = {Sanctions.fresh(admin), Sanctions.fresh(user)}
+
     cond do
       admin.id == user.id -> {:error, :self_action}
       not permitted?(admin) -> {:error, :unauthorized}

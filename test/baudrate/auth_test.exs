@@ -384,7 +384,7 @@ defmodule Baudrate.AuthTest do
     end
   end
 
-  describe "approve_user/1" do
+  describe "approve_user/3" do
     test "sets pending user to active" do
       {:ok, user, _codes} =
         Auth.register_user(%{
@@ -395,10 +395,29 @@ defmodule Baudrate.AuthTest do
         })
 
       assert user.status == "pending"
+      admin = create_user("admin")
 
-      {:ok, approved} = Auth.approve_user(user)
+      {:ok, approved} = Auth.approve_user(admin, user)
       assert approved.status == "active"
-      assert {:error, :not_pending} = Auth.approve_user(approved)
+      assert {:error, :not_pending} = Auth.approve_user(admin, approved)
+    end
+
+    # ADR 0016: the context decides. The permission check used to live only in
+    # the admin pages (review finding, 2026-11-02).
+    test "only an actor holding admin.manage_users may approve" do
+      {:ok, user, _codes} =
+        Auth.register_user(%{
+          "username" => "approvemeplease",
+          "password" => "SecurePass1!!",
+          "password_confirmation" => "SecurePass1!!",
+          "terms_accepted" => "true"
+        })
+
+      for role <- ["user", "moderator"] do
+        assert {:error, :unauthorized} = Auth.approve_user(create_user(role), user)
+      end
+
+      assert Repo.get!(User, user.id).status == "pending"
     end
 
     # The id comes from the client: approving a banned account would be an
@@ -408,12 +427,12 @@ defmodule Baudrate.AuthTest do
       target = create_user("user")
       {:ok, banned, _} = Auth.ban_user(target, admin, "spam")
 
-      assert {:error, :not_pending} = Auth.approve_user(banned)
+      assert {:error, :not_pending} = Auth.approve_user(admin, banned)
       assert Repo.get!(User, banned.id).status == "banned"
 
       tomb = create_user("user")
       tomb |> Ecto.Changeset.change(status: "deleted") |> Repo.update!()
-      assert {:error, :not_pending} = Auth.approve_user(tomb)
+      assert {:error, :not_pending} = Auth.approve_user(admin, tomb)
     end
   end
 

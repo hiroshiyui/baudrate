@@ -171,6 +171,40 @@ defmodule Baudrate.Auth.SecondFactor do
   end
 
   @doc """
+  The sign-in TOTP step, decided under a lock on the account's row.
+
+  Returns `:ok`, `:invalid` (the failure is recorded) or `{:delay, seconds}`
+  while the per-account throttle holds. The throttle used to be read, the code
+  verified and the failure recorded as three separate steps, so parallel
+  requests could all pass the read before any failure was counted, bounded
+  only by the per-IP rate limit. Serialising one account's attempts makes the
+  throttle count every one of them.
+  """
+  @spec verify_login_totp(User.t(), term(), String.t() | nil) ::
+          :ok | :invalid | {:delay, pos_integer()}
+  def verify_login_totp(%User{} = user, code, ip_address) do
+    {:ok, result} =
+      Repo.transaction(fn ->
+        Repo.one!(from(u in User, where: u.id == ^user.id, lock: "FOR UPDATE", select: u.id))
+
+        case Sessions.check_login_throttle(user.username) do
+          {:delay, seconds} ->
+            {:delay, seconds}
+
+          :ok ->
+            if verify_totp_code(user, code) do
+              :ok
+            else
+              record_login_totp_failure(user, ip_address)
+              :invalid
+            end
+        end
+      end)
+
+    result
+  end
+
+  @doc """
   Records a failed TOTP code at the login step and warns the account owner
   when it keeps happening.
 

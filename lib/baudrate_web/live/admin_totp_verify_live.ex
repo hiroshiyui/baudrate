@@ -102,20 +102,5 @@ defmodule BaudrateWeb.AdminTotpVerifyLive do
   end
 
   @doc false
-  defp sanitize_return_to(nil), do: "/admin"
-  defp sanitize_return_to("/admin"), do: "/admin"
-
-  defp sanitize_return_to(path) when is_binary(path) do
-    if String.starts_with?(path, "/admin/") &&
-         !String.contains?(path, "..") &&
-         !String.contains?(path, "//") &&
-         !String.contains?(path, "\\") &&
-         !String.contains?(path, "\n") &&
-         !String.contains?(path, "\r") &&
-         !String.contains?(path, "@") do
-      path
-    else
-      "/admin"
-    end
-  end
+  defp sanitize_return_to(path), do: BaudrateWeb.Helpers.local_admin_path(path)
 end

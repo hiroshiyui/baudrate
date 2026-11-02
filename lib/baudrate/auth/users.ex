@@ -193,19 +193,47 @@ defmodule Baudrate.Auth.Users do
   `active` with its ban fields still set — an unban that skipped
   `Auth.unban_user/2`'s rank check, its log line and its notice. Anything
   but `pending` returns `{:error, :not_pending}`.
-  """
-  @spec approve_user(User.t()) :: {:ok, User.t()} | {:error, :not_pending}
-  def approve_user(%User{id: id}) do
-    from(u in User, where: u.id == ^id and u.status == "pending", select: u)
-    |> Repo.update_all(set: [status: "active", updated_at: DateTime.utc_now(:second)])
-    |> case do
-      {1, [approved]} ->
-        Baudrate.Notification.Hooks.notify_account_security(approved.id, "registration_approved")
-        {:ok, Repo.preload(approved, :role)}
 
-      _ ->
-        {:error, :not_pending}
+  **The context decides who may approve** (ADR 0016): `actor` must hold
+  `admin.manage_users` as their role stands now, else `{:error,
+  :unauthorized}`. The check used to live only in the admin pages, computed
+  at mount. The audit entry is written here too, so no caller can approve
+  without one; `bulk: true` marks it as part of a bulk action.
+  """
+  @spec approve_user(User.t(), User.t(), keyword()) ::
+          {:ok, User.t()} | {:error, :not_pending | :unauthorized}
+  def approve_user(%User{} = actor, %User{id: id} = user, opts \\ []) do
+    actor = Baudrate.Auth.Sanctions.fresh(actor)
+
+    if Setup.has_permission?(actor.role.name, "admin.manage_users") do
+      from(u in User, where: u.id == ^id and u.status == "pending", select: u)
+      |> Repo.update_all(set: [status: "active", updated_at: DateTime.utc_now(:second)])
+      |> case do
+        {1, [approved]} ->
+          Baudrate.Moderation.log_action(actor.id, "approve_user",
+            target_type: "user",
+            target_id: id,
+            details: approve_details(user, opts)
+          )
+
+          Baudrate.Notification.Hooks.notify_account_security(
+            approved.id,
+            "registration_approved"
+          )
+
+          {:ok, Repo.preload(approved, :role)}
+
+        _ ->
+          {:error, :not_pending}
+      end
+    else
+      {:error, :unauthorized}
     end
+  end
+
+  defp approve_details(user, opts) do
+    details = %{"username" => user.username}
+    if Keyword.get(opts, :bulk, false), do: Map.put(details, "bulk", true), else: details
   end
 
   @doc """

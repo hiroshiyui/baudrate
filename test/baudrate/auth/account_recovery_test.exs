@@ -494,6 +494,18 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
       assert {:ok, _} = Auth.authenticate_by_password(ctx.user.username, "BrandNew123!xy")
     end
 
+    # Review finding (2026-11-02): the rank was checked only at issue. A link
+    # lives 24 hours, so an account promoted to the issuer's level inside the
+    # window could still be reset — second factors cleared — by it.
+    test "is refused once the account has been promoted to the issuer's level", ctx do
+      {:ok, token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
+
+      admin_role = Repo.one!(from r in Baudrate.Setup.Role, where: r.name == "admin")
+      Repo.update_all(from(u in User, where: u.id == ^ctx.user.id), set: [role_id: admin_role.id])
+
+      assert {:error, :invalid} = Recovery.redeem(token, "BrandNew123!xy", "BrandNew123!xy")
+    end
+
     test "works exactly once", ctx do
       {:ok, token, _} = issue_with_challenge(ctx.admin, ctx.user, ctx.contact.id)
 

@@ -16,7 +16,6 @@ defmodule BaudrateWeb.Admin.PendingUsersLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Auth
-  alias Baudrate.Moderation
   alias Baudrate.Setup
   alias BaudrateWeb.RateLimits
 
@@ -38,12 +37,7 @@ defmodule BaudrateWeb.Admin.PendingUsersLive do
     with true <- socket.assigns.can_approve?,
          {:ok, user_id} <- parse_id(id),
          %{} = user <- Auth.get_user(user_id),
-         {:ok, _user} <- Auth.approve_user(user) do
-      Moderation.log_action(socket.assigns.current_user.id, "approve_user",
-        target_type: "user",
-        target_id: user.id
-      )
-
+         {:ok, _user} <- Auth.approve_user(socket.assigns.current_user, user) do
       {:noreply,
        socket
        |> put_flash(:info, gettext("User approved successfully."))

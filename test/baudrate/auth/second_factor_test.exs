@@ -154,6 +154,38 @@ defmodule Baudrate.Auth.SecondFactorTest do
     end
   end
 
+  # Review finding (2026-11-02): the throttle was read, the code checked and
+  # the failure recorded in three steps, so parallel requests could all pass
+  # the read. They now happen under one row lock; this is the contract.
+  describe "verify_login_totp/3" do
+    test "a wrong code is recorded as a failure" do
+      {user, _secret} = user_with_totp()
+
+      assert :invalid = SecondFactor.verify_login_totp(user, "000000", @ip)
+
+      assert Repo.exists?(
+               from(a in Baudrate.Auth.LoginAttempt,
+                 where: a.username == ^String.downcase(user.username) and a.factor == "totp"
+               )
+             )
+    end
+
+    test "once the account is throttled, even a right code is refused" do
+      {user, secret} = user_with_totp()
+      for _ <- 1..10, do: SecondFactor.record_login_totp_failure(user, @ip)
+
+      assert {:delay, seconds} =
+               SecondFactor.verify_login_totp(user, NimbleTOTP.verification_code(secret), @ip)
+
+      assert seconds > 0
+    end
+
+    test "a right code passes" do
+      {user, secret} = user_with_totp()
+      assert :ok = SecondFactor.verify_login_totp(user, NimbleTOTP.verification_code(secret), @ip)
+    end
+  end
+
   describe "record_login_totp_failure/2" do
     defp totp_notices(user) do
       Repo.all(

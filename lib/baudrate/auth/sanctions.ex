@@ -457,6 +457,20 @@ defmodule Baudrate.Auth.Sanctions do
     end
   end
 
+  @doc false
+  # Rank and status as they stand now (ADR 0016: "against freshly loaded
+  # state"). Callers pass the struct a page loaded, which may predate a
+  # promotion: a moderator with a user's page open could still sanction
+  # them after an admin had made them a moderator too. A row that has gone
+  # keeps the caller's copy; the action itself then fails on it.
+  @spec fresh(User.t()) :: User.t()
+  def fresh(%User{id: id} = user) do
+    case Repo.one(from u in User, where: u.id == ^id, preload: :role) do
+      %User{} = current -> current
+      nil -> user
+    end
+  end
+
   defp ensure_pending(%User{status: "pending"}), do: :ok
   defp ensure_pending(_user), do: {:error, :not_pending}
 
@@ -468,6 +482,8 @@ defmodule Baudrate.Auth.Sanctions do
   """
   @spec authorize(User.t(), User.t(), String.t()) :: :ok | {:error, atom()}
   def authorize(%User{} = actor, %User{} = target, _kind) do
+    {actor, target} = {fresh(actor), fresh(target)}
+
     cond do
       actor.id == target.id -> {:error, :self_action}
       not permitted?(actor, @sanction_permission) -> {:error, :unauthorized}
@@ -499,6 +515,8 @@ defmodule Baudrate.Auth.Sanctions do
   """
   @spec authorize_ban(User.t(), User.t()) :: :ok | {:error, atom()}
   def authorize_ban(%User{} = actor, %User{} = target) do
+    {actor, target} = {fresh(actor), fresh(target)}
+
     cond do
       actor.id == target.id -> {:error, :self_action}
       not permitted?(actor, @unrestricted_permission) -> {:error, :unauthorized}

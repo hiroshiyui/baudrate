@@ -1115,4 +1115,27 @@ defmodule BaudrateWeb.Helpers do
   end
 
   def local_path(_path, fallback), do: fallback
+
+  @doc """
+  `local_path/2` narrowed to the admin area: the path itself if it is
+  `/admin` or under `/admin/` (with no `//` anywhere), `"/admin"` otherwise.
+
+  The admin sudo step sends a member back to where they were going. It had two
+  hand-kept copies of this check, one of which had lost the NUL test; both now
+  go through the one guard.
+
+      iex> BaudrateWeb.Helpers.local_admin_path("/admin/users?page=2")
+      "/admin/users?page=2"
+
+      iex> BaudrateWeb.Helpers.local_admin_path("/boards/x")
+      "/admin"
+  """
+  @spec local_admin_path(term()) :: String.t()
+  def local_admin_path(path) do
+    case local_path(path, nil) do
+      "/admin" = admin -> admin
+      "/admin/" <> _ = local -> if String.contains?(local, "//"), do: "/admin", else: local
+      _ -> "/admin"
+    end
+  end
 end

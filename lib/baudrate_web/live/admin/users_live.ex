@@ -120,14 +120,8 @@ defmodule BaudrateWeb.Admin.UsersLive do
             {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
           user ->
-            case Auth.approve_user(user) do
+            case Auth.approve_user(socket.assigns.current_user, user) do
               {:ok, _user} ->
-                Moderation.log_action(socket.assigns.current_user.id, "approve_user",
-                  target_type: "user",
-                  target_id: user.id,
-                  details: %{"username" => user.username}
-                )
-
                 {:noreply,
                  socket
                  |> put_flash(:info, gettext("User approved successfully."))
@@ -260,7 +254,6 @@ defmodule BaudrateWeb.Admin.UsersLive do
 
   @impl true
   def handle_event("bulk_approve", _params, socket) do
-    admin_id = socket.assigns.current_user.id
     selected = socket.assigns.selected_ids
 
     count =
@@ -270,14 +263,8 @@ defmodule BaudrateWeb.Admin.UsersLive do
             acc
 
           user ->
-            case Auth.approve_user(user) do
+            case Auth.approve_user(socket.assigns.current_user, user, bulk: true) do
               {:ok, _} ->
-                Moderation.log_action(admin_id, "approve_user",
-                  target_type: "user",
-                  target_id: user.id,
-                  details: %{"username" => user.username, "bulk" => true}
-                )
-
                 acc + 1
 
               {:error, _} ->

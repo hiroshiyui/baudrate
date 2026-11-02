@@ -52,7 +52,7 @@ defmodule Baudrate.Auth do
   defdelegate register_user(attrs), to: Users
   defdelegate accept_current_terms(user), to: Users
   defdelegate terms_pending?(user), to: Users
-  defdelegate approve_user(user), to: Users
+  defdelegate approve_user(actor, user, opts \\ []), to: Users
   defdelegate onboarded?(user), to: Users
   defdelegate mark_onboarded(user), to: Users
   defdelegate dismiss_recovery_notice(user), to: Users
@@ -103,6 +103,7 @@ defmodule Baudrate.Auth do
   defdelegate match_totp_step(secret, code), to: SecondFactor
   defdelegate verify_totp_code(user, code, opts \\ []), to: SecondFactor
   defdelegate record_login_totp_failure(user, ip_address), to: SecondFactor
+  defdelegate verify_login_totp(user, code, ip_address), to: SecondFactor
   defdelegate enable_totp(user, secret, opts \\ []), to: SecondFactor
   defdelegate decrypt_totp_secret(user), to: SecondFactor
   defdelegate disable_totp(user), to: SecondFactor

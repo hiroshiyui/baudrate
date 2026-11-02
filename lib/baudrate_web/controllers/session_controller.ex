@@ -158,36 +158,39 @@ defmodule BaudrateWeb.SessionController do
         |> put_flash(:error, gettext("Too many failed attempts. Please log in again."))
         |> redirect(to: "/login")
 
-      seconds = login_throttle_seconds(user) ->
-        Logger.warning("auth.totp_verify_throttled: user_id=#{user.id} ip=#{remote_ip(conn)}")
-
-        conn
-        |> put_flash(
-          :error,
-          gettext("Account temporarily locked. Try again in %{seconds} seconds.",
-            seconds: seconds
-          )
-        )
-        |> redirect(to: "/totp/verify")
-
-      Auth.verify_totp_code(user, code) ->
-        Logger.info("auth.totp_verify_success: user_id=#{user.id} ip=#{remote_ip(conn)}")
-
-        conn
-        |> delete_session(:totp_attempts)
-        |> establish_session(user)
-
       true ->
-        Logger.warning(
-          "auth.totp_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}"
-        )
+        # Throttle, verification and the failure record happen under one lock
+        # on the account (`Auth.verify_login_totp/3`).
+        case Auth.verify_login_totp(user, code, remote_ip(conn)) do
+          {:delay, seconds} ->
+            Logger.warning("auth.totp_verify_throttled: user_id=#{user.id} ip=#{remote_ip(conn)}")
 
-        Auth.record_login_totp_failure(user, remote_ip(conn))
+            conn
+            |> put_flash(
+              :error,
+              gettext("Account temporarily locked. Try again in %{seconds} seconds.",
+                seconds: seconds
+              )
+            )
+            |> redirect(to: "/totp/verify")
 
-        conn
-        |> put_session(:totp_attempts, attempts + 1)
-        |> put_flash(:error, gettext("Invalid verification code. Please try again."))
-        |> redirect(to: "/totp/verify")
+          :ok ->
+            Logger.info("auth.totp_verify_success: user_id=#{user.id} ip=#{remote_ip(conn)}")
+
+            conn
+            |> delete_session(:totp_attempts)
+            |> establish_session(user)
+
+          :invalid ->
+            Logger.warning(
+              "auth.totp_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}"
+            )
+
+            conn
+            |> put_session(:totp_attempts, attempts + 1)
+            |> put_flash(:error, gettext("Invalid verification code. Please try again."))
+            |> redirect(to: "/totp/verify")
+        end
     end
   end
 
@@ -859,21 +862,5 @@ defmodule BaudrateWeb.SessionController do
   # same one, and an open-redirect guard kept in two places is kept in one.
   defp sanitize_return_to(path), do: BaudrateWeb.Helpers.local_path(path, "/")
 
-  defp sanitize_admin_return_to(nil), do: "/admin"
-  defp sanitize_admin_return_to("/admin"), do: "/admin"
-
-  defp sanitize_admin_return_to(path) when is_binary(path) do
-    if String.starts_with?(path, "/admin/") &&
-         !String.contains?(path, "..") &&
-         !String.contains?(path, "//") &&
-         !String.contains?(path, "\\") &&
-         !String.contains?(path, "\n") &&
-         !String.contains?(path, "\r") &&
-         !String.contains?(path, "@") &&
-         !String.contains?(path, "\0") do
-      path
-    else
-      "/admin"
-    end
-  end
+  defp sanitize_admin_return_to(path), do: BaudrateWeb.Helpers.local_admin_path(path)
 end

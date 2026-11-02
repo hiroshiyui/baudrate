@@ -44,6 +44,23 @@ defmodule Baudrate.Auth.SanctionsTest do
       assert Auth.issue_sanction(mod, admin, "silence") == {:error, :role_too_high}
     end
 
+    # Review finding (2026-11-02): the rank was read from the struct the
+    # caller passed — the one a moderator's page loaded — so a promotion made
+    # since was not seen (ADR 0016: decide against freshly loaded state).
+    test "a promotion made after the page loaded the target is honoured", %{
+      moderator: mod,
+      member: stale_member
+    } do
+      mod_role = Repo.one!(from r in Setup.Role, where: r.name == "moderator")
+
+      Repo.update_all(from(u in Setup.User, where: u.id == ^stale_member.id),
+        set: [role_id: mod_role.id]
+      )
+
+      assert Auth.authorize_sanction(mod, stale_member, "silence") == {:error, :role_too_high}
+      assert Auth.issue_sanction(mod, stale_member, "silence") == {:error, :role_too_high}
+    end
+
     test "an ordinary member cannot sanction anyone", %{member: member} do
       target = user("user")
       assert Auth.issue_sanction(member, target, "warn") == {:error, :unauthorized}
