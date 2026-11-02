@@ -9,6 +9,11 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.3.2] — 2026-11-02
+
+Fixes from a project-wide code review, one of them a security fix: deploy
+promptly. Nothing here changes a schema or a setting.
+
 ### Security
 
 - **A TOTP enrolment left unfinished in a browser could take over the next
