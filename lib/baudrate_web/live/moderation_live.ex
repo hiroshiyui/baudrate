@@ -71,7 +71,12 @@ defmodule BaudrateWeb.ModerationLive do
         {:ok, resolved} ->
           log(socket, "resolve_report", report)
           Hooks.notify_report_reviewed(resolved)
-          {:noreply, socket |> put_flash(:info, gettext("Report resolved.")) |> load_reports() |> focus_heading()}
+
+          {:noreply,
+           socket
+           |> put_flash(:info, gettext("Report resolved."))
+           |> load_reports()
+           |> focus_heading()}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to resolve report."))}
@@ -85,7 +90,12 @@ defmodule BaudrateWeb.ModerationLive do
       case Moderation.dismiss_report(report, socket.assigns.current_user.id) do
         {:ok, _} ->
           log(socket, "dismiss_report", report)
-          {:noreply, socket |> put_flash(:info, gettext("Report dismissed.")) |> load_reports() |> focus_heading()}
+
+          {:noreply,
+           socket
+           |> put_flash(:info, gettext("Report dismissed."))
+           |> load_reports()
+           |> focus_heading()}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to dismiss report."))}
@@ -113,7 +123,11 @@ defmodule BaudrateWeb.ModerationLive do
             details: %{"title" => article.title}
           )
 
-          {:noreply, socket |> put_flash(:info, gettext("Article deleted.")) |> load_reports() |> focus_heading()}
+          {:noreply,
+           socket
+           |> put_flash(:info, gettext("Article deleted."))
+           |> load_reports()
+           |> focus_heading()}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to delete article."))}
@@ -143,7 +157,11 @@ defmodule BaudrateWeb.ModerationLive do
             target_id: comment.id
           )
 
-          {:noreply, socket |> put_flash(:info, gettext("Comment deleted.")) |> load_reports() |> focus_heading()}
+          {:noreply,
+           socket
+           |> put_flash(:info, gettext("Comment deleted."))
+           |> load_reports()
+           |> focus_heading()}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
