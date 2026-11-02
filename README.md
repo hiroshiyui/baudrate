@@ -45,6 +45,7 @@ third party on your behalf.
   - Outbound delivery of articles, deletes, announces, and Flag reports to remote instances
   - Threaded conversations: a reply names the comment it answers, so discussions keep their shape on Mastodon instead of arriving flat
   - Comments and polls are fetchable objects with URIs of their own (`/ap/comments/:id`, `/ap/polls/:id`)
+  - Quotable articles: Mastodon users can quote an article from a federated board; each quote is approved automatically with a stamp (FEP-044f, [ADR 0082](doc/adr/0082-federated-articles-may-be-quoted.md))
   - Profile and board edits reach followers as `Update(Person)` / `Update(Group)`; a closed poll publishes its final counts
   - DB-backed delivery queue written in the same transaction as the post, sent as soon as it commits, with exponential backoff retry and a per-instance circuit breaker
   - Inbound activities stored and acknowledged at once, then processed in order per remote account with bounded concurrency

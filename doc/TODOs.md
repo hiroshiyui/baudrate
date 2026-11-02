@@ -147,7 +147,7 @@ None of these are scheduled; propose moving one into a phase before working on i
 
 - **Scale and storage:** multi-node clustering (ruled out by D2), S3-compatible storage, a CDN.
 - **APIs:** a Mastodon-compatible client API, OAuth, a REST API, webhooks, plugins or themes.
-- **Federation:** custom emoji and quote posts; relays and backfilling remote outboxes or threads; the `featured` collection, `Add`/`Remove` and `contentMap`; RFC 9421 signatures; silence and reject-media domain levels; outbound `Block` (ruled out by P1-D1).
+- **Federation:** custom emoji; showing the quote in an incoming quote post, quotable comments, and telling an author they were quoted (quoting articles is ADR 0082); relays and backfilling remote outboxes or threads; the `featured` collection, `Add`/`Remove` and `contentMap`; RFC 9421 signatures; silence and reject-media domain levels; outbound `Block` (ruled out by P1-D1).
 - **Members:** group DMs, read receipts, emoji reactions, inline image placement, reply depth beyond 5, RTL layout, `hreflang` links.
 - **Content tools:** splitting and merging threads, custom pages beyond Rules, Terms and Privacy.
 - **Extensions:** interactive "door apps" (WASM plug-ins; P8-D3).

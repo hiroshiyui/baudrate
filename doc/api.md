@@ -46,6 +46,7 @@ domain the visitor typed.
   - [Article](#article)
   - [Comment](#comment)
   - [Poll](#poll)
+  - [Quote Authorization](#quote-authorization)
 - [Collections](#collections)
   - [User Outbox](#user-outbox)
   - [Board Outbox](#board-outbox)
@@ -119,6 +120,14 @@ The namespace identifies the **software**, not the instance — every Baudrate
 instance uses the same prefix, so the terms mean the same thing everywhere.
 Like Mastodon's `http://joinmastodon.org/ns#`, it is an identifier rather
 than a document and does not have to resolve.
+
+The same context also declares the terms of other vocabularies that Baudrate
+publishes: `manuallyApprovesFollowers`, `discoverable` and `indexable` on a
+`Person`, and the quote-post terms (`interactionPolicy`, `canQuote`,
+`automaticApproval`, `manualApproval`, `interactingObject`,
+`interactionTarget` from `https://gotosocial.org/ns#`; `QuoteRequest` and
+`QuoteAuthorization` from FEP-044f), declared as Mastodon declares them.
+`Baudrate.Federation.Context` is the full list.
 
 ---
 
@@ -607,6 +616,7 @@ requester, signed or not, including one whose signature belongs to an admin.
 | `baudrate:locked` | boolean | Whether the article is locked from new comments |
 | `baudrate:commentCount` | integer | Number of comments |
 | `baudrate:likeCount` | integer | Number of likes |
+| `interactionPolicy` | object | `{"canQuote": {"automaticApproval": ["https://www.w3.org/ns/activitystreams#Public"]}}`: anyone may quote the article, approved automatically (FEP-044f, ADR 0082). Present only when the article may federate; without it, Mastodon lets nobody quote |
 
 **Hashtag extraction:**
 - Pattern: `#` then a Unicode letter (`\p{L}`) and up to 63 further word
@@ -749,6 +759,41 @@ deliberately **no** `items` — the counts are public, the voters are not
 whose `inReplyTo` is either this poll's `id` or the owning article's. Both are
 accepted: the article URI is what this instance published before polls had
 their own id.
+
+---
+
+### Quote Authorization
+
+```
+GET /ap/quote_authorizations/:id
+```
+
+**Content-Type:** `application/activity+json` (content-negotiated — a browser
+is redirected to the article)
+**Auth:** HTTP Signature required if authorized fetch is enabled
+**Rate limit:** 120 req/min per IP
+
+The stamp approving one remote post's quote of a local article (FEP-044f,
+ADR 0082). It is minted when a `QuoteRequest` is approved and named as the
+`result` of the `Accept` sent back. A server that sees the quote fetches the
+stamp to check it.
+
+**Access control:** served only while the article may still be quoted (local,
+undeleted, in a federated board, by an account that is not deleted) and the
+quoting actor is not domain-blocked or suspended; otherwise 404.
+
+**Example response:**
+
+```json
+{
+  "@context": ["https://www.w3.org/ns/activitystreams", {"gts": "https://gotosocial.org/ns#", "...": "..."}],
+  "id": "https://example.com/ap/quote_authorizations/42",
+  "type": "QuoteAuthorization",
+  "attributedTo": "https://example.com/ap/users/alice",
+  "interactingObject": "https://mastodon.example/users/bob/statuses/1234",
+  "interactionTarget": "https://example.com/ap/articles/hello-world-a1b2c3"
+}
+```
 
 ---
 
@@ -1191,13 +1236,14 @@ target host, and a failed fetch is not retried for ten minutes.
 | `Update` | `Article`, `Page`, or `Note` | Updates remote content (authorship verified) |
 | `Update` | `Question` | Refreshes a remote poll's vote and voter counts |
 | `Update` | `Person` or `Group` | Refreshes cached remote actor profile |
-| `Delete` | content URI or `Tombstone` | Soft-deletes matching article, comment, or DM (authorship verified) |
+| `Delete` | content URI or `Tombstone` | Soft-deletes matching article, comment, or DM (authorship verified). A post on the signer's host that quoted a local article loses its quote stamp |
 | `Delete` | actor URI | Removes all follower relationships for the deleted actor |
 | `Flag` | array of URIs | Creates a moderation report |
 | `Block` | actor URI | Logged for informational purposes |
 | `Undo` | `Block` | Logged for informational purposes |
 | `Accept` | `Follow` | Marks a pending outbound user follow as accepted |
 | `Reject` | `Follow` | Marks a pending outbound user follow as rejected |
+| `QuoteRequest` | article URI (`object`), quoting post (`instrument`, a URI or an embedded object) | Approves a quote of a local article: stores a stamp and answers `Accept` with `result` naming [its URI](#quote-authorization), signed by the article's author. The quoting post must be on the signer's host. An actor the author blocked, or an article by a deleted account, gets `Reject(QuoteRequest)`. A request for an article that does not federate or is deleted is dropped without an answer |
 | `Move` | actor URI (`target`) | Migrates local users' follows to the target actor. Authorized only when the signer is the Move `actor` **and** the target's `alsoKnownAs` claims the moving actor; otherwise rejected |
 
 **Unrecognized activity types** are logged and ignored (no error returned).
@@ -1319,6 +1365,7 @@ software:
 - **Content warnings** — `sensitive` + `summary` are stored in their own fields and rendered collapsed, and are published back the same way. Objects ingested before v1.31.0 carry the warning inside the body as `[CW: …]`, and were deliberately not rewritten (ADR 0052)
 - **Mentions** — `@user@domain` handles become `Mention` tags with `cc` addressing, resolved once when the post is written (ADR 0051)
 - **Threading** — a comment's `inReplyTo` names the comment it answers, so a discussion keeps its shape rather than arriving flat
+- **Quote posts (FEP-044f)** — a federated article carries `interactionPolicy.canQuote`, and a `QuoteRequest` is answered automatically with an `Accept` and a [`QuoteAuthorization`](#quote-authorization) stamp, which is what Mastodon 4.5 needs to show the quote (ADR 0082). Quotes inside incoming posts are not rendered yet
 - **Lemmy `Page` objects** — Treated identically to `Article` for `Create` and `Update`
 - **Lemmy `Announce` with embedded objects** — Extracts the inner `id` field (not just bare URIs); the embedded body is believed only from a booster on the object's own host, otherwise the `id` is fetched
 - **Lemmy group relays (FEP-1b12)** — An `Announce` wrapping a `Create`, `Update`, `Delete`, `Like` or `Undo` is unwrapped one level. A `Create` is verified through its object's own origin and routed to the boards following the group; the others are honoured only when the inner actor is on the group's own host, which is all the group's signature can prove (ADR 0053)

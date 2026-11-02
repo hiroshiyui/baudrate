@@ -2285,6 +2285,7 @@ The `Baudrate.Federation` context handles all federation logic.
 | Article | Article | `/ap/articles/:slug` |
 | Comment | Note | `/ap/comments/:id` |
 | Poll | Question | `/ap/polls/:id` |
+| Quote stamp | QuoteAuthorization | `/ap/quote_authorizations/:id` |
 
 **AP ID stamping** — all local AP objects receive a canonical `ap_id` immediately after creation:
 
@@ -2425,6 +2426,7 @@ wrong.
 - `/ap/articles/:slug/replies` — `OrderedCollection` of comments as Note objects
 - `/ap/comments/:id` — a local comment as a `Note`, gated by its **article's** `publicly_servable?/1` plus three refusals of its own: soft-deleted, remote (its id belongs to another host), or a non-public `visibility`
 - `/ap/polls/:id` — a local poll as a standalone `Question`, the same object the Article embeds and with the same `id`, gated by its article
+- `/ap/quote_authorizations/:id` — a `QuoteAuthorization` stamp approving one remote quote of a local article (`Federation.Quotes`, ADR 0082), served only while `Quotes.servable/1` holds: the article still `quotable?/1` and the quoting actor not hidden
 - `/ap/search?q=...` — paginated full-text article search, over **federated** boards only (ADR 0043), pinned newest-first
 
 **Inbox endpoints** (HTTP Signature verified, per-domain rate-limited):
@@ -2488,6 +2490,7 @@ once; `:discard` stores it without processing. Handler tests call
 - `Block` / `Undo(Block)` — remote actor blocks (logged for informational purposes)
 - Local user blocks (ADR 0026): a remote actor's `Follow` of a user who blocked it is answered with `Reject(Follow)`, and its `Like`, `Announce` and replies on that user's articles and comments are dropped with `:ok`
 - `Accept(Follow)` / `Reject(Follow)` — mark outbound user follows as accepted/rejected
+- `QuoteRequest` — FEP-044f quote approval for local articles (ADR 0082). A federated article advertises `interactionPolicy.canQuote` with `automaticApproval: [as:Public]` (`Quotes.policy/0`, added by `ObjectBuilder` when `Quotes.quotable?/1`). The handler drops a request for an article that is not local, does not federate or is deleted (no answer, so a private slug is never confirmed); requires the `instrument` on the signer's host (`Quotes.valid_instrument?/2`); answers a blocked actor or a tombstoned author's article with `Reject`; and otherwise `Quotes.authorize/4` upserts a `quote_authorizations` row on `(article_id, interacting_object_ap_id)` and enqueues an `Accept` signed by the **author**, whose `result` is the stamp URI, in one `Federation.federate/2`. Every content `Delete` first runs `Quotes.revoke_for_object/2`, removing the stamps of a quoting post deleted by its own host. Rows go with their article or remote actor by foreign key
 - `Move` — handled by `AccountMigration.handle_inbound_move/2` (ADR 0025). Authorized only when the signer matches the Move `actor` and `object`, **and** the target claims the moving actor in `alsoKnownAs` (force-refreshed with `ActorResolver.refresh/1`; a local target is checked against `users.also_known_as`), otherwise `{:error, :move_not_authorized}`, so a remote actor cannot redirect its local followers onto a non-consenting target. Each active local follower sends `Undo(Follow)` to the old actor and a pending `Follow` to the new one (a local target gets a local follow), with an `actor_moved` notice. Timeline items are repointed (`migrate_timeline_items/2`, both `remote_actor_id` and `boosted_by_actor_id`) so history shows again once the new follow is accepted. Board follows are not repointed; admins get `board_actor_moved`. A target that has itself moved is ignored, and one Move per origin is processed every 30 days (`remote_actors.moved_at`). Articles and comments keep their original `remote_actor_id`: they are board content with their own permalinks and remain published under the old actor upstream.
 
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
