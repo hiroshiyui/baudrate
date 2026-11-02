@@ -52,10 +52,6 @@ defmodule BaudrateWeb.DmImageController do
     end
   end
 
-  defp parse_id(value) do
-    case Integer.parse(to_string(value)) do
-      {id, ""} when id > 0 -> {:ok, id}
-      _ -> :error
-    end
-  end
+  # Bounded to a bigint by the shared parser; a copy of it here was not.
+  defp parse_id(value), do: BaudrateWeb.Helpers.parse_id(to_string(value))
 end

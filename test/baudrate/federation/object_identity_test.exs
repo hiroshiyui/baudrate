@@ -121,6 +121,22 @@ defmodule Baudrate.Federation.ObjectIdentityTest do
     test "404 for an id that names no row", ctx do
       assert_not_found(Federation.actor_uri(:comment, ctx.comment.id + 100_000))
     end
+
+    # Review finding (2026-11-02): the comment and poll endpoints load their
+    # article with a bare `Repo.get`, which does not filter `deleted_at`, so
+    # a moderator's removal left both fetchable until `Retention` ran.
+    test "404 once its article is soft-deleted", ctx do
+      {:ok, _} = Content.soft_delete_article(ctx.article, deleted_by: ctx.author.id)
+      assert_not_found(ctx.comment.ap_id)
+      assert_not_found(ctx.poll.ap_id)
+    end
+
+    # An id no bigint column holds raised in the query: a 500, not a 404.
+    test "404, not 500, for ids out of a bigint's range", _ctx do
+      for path <- ["comments", "polls"], id <- ["99999999999999999999", "9223372036854775808"] do
+        assert_not_found("#{Federation.base_url()}/ap/#{path}/#{id}")
+      end
+    end
   end
 
   describe "GET /ap/polls/:id" do

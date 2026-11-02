@@ -243,9 +243,11 @@ defmodule Baudrate.Moderation do
 
   defp cast_id(id) when is_integer(id), do: {:ok, id}
 
+  # A bigint, like the column it is compared with: a larger value raised in
+  # the query instead of matching nothing.
   defp cast_id(id) when is_binary(id) do
     case Integer.parse(id) do
-      {int, ""} -> {:ok, int}
+      {int, ""} when int > 0 and int <= 9_223_372_036_854_775_807 -> {:ok, int}
       _ -> :error
     end
   end

@@ -29,7 +29,7 @@ defmodule BaudrateWeb.AnnouncementNoticeHook do
 
   defp handle_event("dismiss_announcement", %{"id" => id}, socket) do
     with %{} = user <- socket.assigns[:current_user],
-         {id, ""} <- Integer.parse(to_string(id)) do
+         {:ok, id} <- BaudrateWeb.Helpers.parse_id(to_string(id)) do
       :ok = Announcements.dismiss(user, id)
       remaining = Enum.reject(socket.assigns[:announcements] || [], &(&1.id == id))
 

@@ -1858,7 +1858,10 @@ defmodule Baudrate.Federation.InboxHandler do
   # id lives in `legacy_ap_id` and `get_comment_by_ap_id/1` already matches it.
   defp resolve_local_comment_by_fragment(uri) do
     with %URI{fragment: "note-" <> id_str} <- URI.parse(uri),
-         {comment_id, ""} <- Integer.parse(id_str),
+         # Bounded to a bigint: a larger fragment raised in the query, and a
+         # raise retries the inbound job instead of dropping the reply.
+         {comment_id, ""} when comment_id > 0 and comment_id <= 9_223_372_036_854_775_807 <-
+           Integer.parse(id_str),
          %{article_id: article_id, deleted_at: nil, user_id: user_id} = comment
          when not is_nil(user_id) <- Content.get_comment(comment_id),
          %{username: username} <- Baudrate.Repo.get(Baudrate.Setup.User, user_id),

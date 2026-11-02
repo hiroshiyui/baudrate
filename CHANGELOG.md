@@ -19,6 +19,18 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   account, every sign-in starts without a previous one's pending state, and
   enrolment never replaces an existing second factor.
 
+### Fixed
+
+- **Voting on a poll imported from another server failed.** The vote was
+  addressed to a local author the imported poll does not have, which raised and
+  rolled the vote back. It is now recorded and sent to the poll's author.
+- **A deleted article's poll and comments stayed fetchable over ActivityPub**
+  at `/ap/polls/:id` and `/ap/comments/:id` until the retention sweep removed
+  them; they now answer 404 with the article.
+- **An id too large for the database crashed the page or endpoint it was sent
+  to** instead of finding nothing: the shared id parser and its copies now
+  refuse anything outside the id column's range.
+
 ## [2.3.1] — 2026-11-02
 
 Fixes ActivityPub fetches of articles imported from other servers. Nothing

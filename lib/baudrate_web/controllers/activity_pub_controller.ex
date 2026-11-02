@@ -374,7 +374,7 @@ defmodule BaudrateWeb.ActivityPubController do
   def comment(conn, %{"id" => id}) do
     conn = put_resp_header(conn, "vary", "Accept")
 
-    with {comment_id, ""} <- Integer.parse(id),
+    with {:ok, comment_id} <- BaudrateWeb.Helpers.parse_id(id),
          %{} = comment <- Baudrate.Content.get_comment(comment_id),
          %{} = article <- Baudrate.Content.get_article(comment.article_id),
          true <- comment_servable?(comment, article) do
@@ -401,7 +401,7 @@ defmodule BaudrateWeb.ActivityPubController do
   def poll(conn, %{"id" => id}) do
     conn = put_resp_header(conn, "vary", "Accept")
 
-    with {poll_id, ""} <- Integer.parse(id),
+    with {:ok, poll_id} <- BaudrateWeb.Helpers.parse_id(id),
          %{} = poll <- Baudrate.Repo.get(Baudrate.Content.Poll, poll_id),
          %{} = article <- Baudrate.Content.get_article(poll.article_id),
          true <- is_nil(article.remote_actor_id),
@@ -430,7 +430,7 @@ defmodule BaudrateWeb.ActivityPubController do
   def quote_authorization(conn, %{"id" => id}) do
     conn = put_resp_header(conn, "vary", "Accept")
 
-    with {stamp_id, ""} <- Integer.parse(id),
+    with {:ok, stamp_id} <- BaudrateWeb.Helpers.parse_id(id),
          %{} = stamp <- Federation.Quotes.servable(stamp_id) do
       if wants_json?(conn) do
         conn
@@ -569,7 +569,14 @@ defmodule BaudrateWeb.ActivityPubController do
     # content back out over AP would keep it circulating under our name.
     not_hidden = not Baudrate.Federation.DomainBlocks.actor_hidden?(article.remote_actor_id)
 
-    board_ok and visibility_ok and not_hidden
+    # A deleted article's poll and comments go with it. `/ap/articles/:slug`
+    # loads through `get_article_by_slug!/1`, which filters `deleted_at`, but
+    # the poll and comment endpoints load the article with a bare `Repo.get`,
+    # so a moderator's removal left its poll (title and options) and its
+    # comments fetchable at their own URIs until `Retention` purged them.
+    not_deleted = is_nil(article.deleted_at)
+
+    board_ok and visibility_ok and not_hidden and not_deleted
   end
 
   # An article from another server is that server's object, published under

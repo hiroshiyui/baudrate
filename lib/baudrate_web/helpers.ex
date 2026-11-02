@@ -78,9 +78,15 @@ defmodule BaudrateWeb.Helpers do
     format_datetime(datetime, "%Y-%m-%d")
   end
 
+  @max_bigint 9_223_372_036_854_775_807
+
   @doc """
   Safely parses a string parameter to a positive integer.
   Returns `{:ok, integer}` on success, `:error` on failure.
+
+  The integer must fit a PostgreSQL `bigint`, the type of every id column:
+  a larger one raised `DBConnection.EncodeError` in the query it was handed
+  to, so a crafted id was a 500 or a crashed LiveView instead of "not found".
 
   ## Examples
 
@@ -95,10 +101,13 @@ defmodule BaudrateWeb.Helpers do
 
       iex> BaudrateWeb.Helpers.parse_id("0")
       :error
+
+      iex> BaudrateWeb.Helpers.parse_id("9223372036854775808")
+      :error
   """
   def parse_id(str) when is_binary(str) do
     case Integer.parse(str) do
-      {n, ""} when n > 0 -> {:ok, n}
+      {n, ""} when n > 0 and n <= @max_bigint -> {:ok, n}
       _ -> :error
     end
   end
