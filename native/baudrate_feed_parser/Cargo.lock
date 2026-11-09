@@ -159,9 +159,9 @@ checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
 name = "feedparser-rs"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "341996377e680e0b23a0de77cf033e230a54b723c48365ef06f163dced6b1f86"
+checksum = "56b64601480f1b6f422dd667e75207677f05dccad2d9dcf7bc22ec14df6c0a96"
 dependencies = [
  "ammonia",
  "chrono",
