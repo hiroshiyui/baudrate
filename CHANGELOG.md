@@ -9,6 +9,32 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.3.3] — 2026-11-09
+
+A dependency release: it closes a memory-exhaustion advisory in Ecto and brings
+the rest of the dependencies and the CI images up to date. There are no
+migrations, and deploying it needs nothing by hand.
+
+### Security
+
+- `ecto` 3.14.2 → 3.14.3 ([CVE-2026-118391](https://osv.dev/vulnerability/EEF-CVE-2026-118391)):
+  a request that chose an interpolated JSON path or the length of a `splice/1`
+  list could grow the query cache, and the database's prepared statements,
+  without limit. Nothing in Baudrate builds a query that way, so the fix is
+  taken as a precaution.
+
+### Changed
+
+- Dependencies: `vix` 0.42.0 → 0.43.0, `websock_adapter` 0.7.0 → 0.7.1,
+  `nimble_options` 1.1.1 → 1.2.0, `h2` 0.12.5 → 0.12.7, `quic` 2.1.3 → 2.1.4,
+  and `feedparser-rs` 0.7.1 → 0.7.2 in the feed parser NIF. Test only:
+  `lazy_html` 0.1.13 → 0.1.14 (with `fine` 0.2.0) and `tesla` 1.20.0 → 1.23.0.
+- Tailwind CSS 4.3.5 (from 4.3.3), from the dependency drift report (#53).
+  Nothing visible changes in the themes.
+- The CI images build on the current Debian 13 base and carry rustup 1.29.3
+  (from 1.29.1) and Selenium Server 4.52.0 (from 4.51.0), also from the drift
+  report (#53); `mix selenium.setup` installs the same Selenium.
+
 ## [2.3.2] — 2026-11-02
 
 Fixes from a project-wide code review, one of them a security fix: deploy
