@@ -5,7 +5,7 @@ defmodule Mix.Tasks.Selenium.Setup do
       mix selenium.setup
 
   Installs into `tmp/selenium/`:
-  - Selenium Server 4.51.0 JAR, from the Selenium GitHub release
+  - Selenium Server 4.52.0 JAR, from the Selenium GitHub release
   - GeckoDriver 0.37.1, built from its crates.io source crate (needs `cargo`)
 
   Existing files are kept when they match these versions; an older GeckoDriver
@@ -24,9 +24,9 @@ defmodule Mix.Tasks.Selenium.Setup do
 
   use Mix.Task
 
-  @selenium_version "4.51.0"
+  @selenium_version "4.52.0"
   @geckodriver_version "0.37.1"
-  @selenium_sha256 "f4ddbb992fd99c4152934b832c5fe5502a5ca207a1d1cb96af8e5068955c5037"
+  @selenium_sha256 "cd167b9a5d405e8e59fa316f949f7af256834545d0631d72224500dafbc79d0f"
   @geckodriver_crate_sha256 "79f38cf1541aaf57f6f7eb270f691bcb702485a95dbaaefe740141a8ea46f0ef"
   @dest_dir "tmp/selenium"
 
