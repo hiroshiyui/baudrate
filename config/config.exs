@@ -65,7 +65,7 @@ config :esbuild,
 
 # Configure tailwind (the version is required)
 config :tailwind,
-  version: "4.3.3",
+  version: "4.3.5",
   path: System.get_env("MIX_TAILWIND_PATH"),
   baudrate: [
     args: ~w(
