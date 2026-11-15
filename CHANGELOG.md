@@ -9,6 +9,83 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.4.0] — 2026-11-15
+
+A security release from a project-wide audit: one critical and seven major
+issues, thirteen hardening fixes, and the `ammonia` sanitizer advisory. Deploy
+promptly. There are no migrations and no settings to change, but four
+behaviours change, recorded in ADRs 0083–0086 (see **Changed**).
+
+### Security
+
+- **Remote servers could write into private boards.** A local article in a
+  members-only, staff-only or non-federating board accepted replies, likes,
+  boosts and poll votes from the network once its author had any accepted
+  remote follower. Follows are auto-accepted by default and comment ids are
+  sequential, so any server could follow a member and post into their private
+  threads. Inbound interactions now follow the same rule as outbound delivery
+  (ADR 0083).
+- `ammonia` 4.2.4 → 4.2.5 in both the sanitizer and the feed parser NIFs
+  ([RUSTSEC-2026-0533](https://rustsec.org/advisories/RUSTSEC-2026-0533)):
+  embedded SVG and MathML could produce mutation XSS.
+- **A half-finished sign-in never expired.** The state between the password
+  and the second factor lived in the cookie with no time limit, so a kept copy
+  outlived a password change: one phished TOTP or recovery code, or enrolling
+  one's own TOTP after an admin cleared the account's, made it a session. It
+  now lasts ten minutes and ends with any credential change (ADR 0084).
+- **A single-use invite code could register several accounts** when the
+  registrations were submitted together. Claiming a code is now one
+  conditional update inside the registration.
+- **Likes, boosts and poll votes had no rate limit**, so toggling one in a loop
+  made the server send unlimited signed deliveries to other servers. Adding one
+  is now limited to 30 a minute; undoing is never limited.
+- **Composer images were decoded before any check.** Article, comment and
+  timeline-reply images are now charged against the interaction gate and an
+  hourly (5 for a new account) and daily limit before processing, and the
+  composer says when one is refused.
+- **Comments under a deleted thread stayed reachable**: they could be liked,
+  boosted and forwarded, and their history page showed the removed article's
+  title to anyone.
+- **Another member's comment could be republished under its author's name**
+  from a members-only or non-federating thread, silenced authors included
+  (ADR 0085).
+- **A removed board moderator kept their powers in open tabs** on the
+  moderation queue and the board follows page. Both now check again on every
+  action.
+- Hardening:
+  - An encoded path such as `/uploads/dm%5Fimages/…` no longer gets past the
+    private-files check (nginx already refused it); static files send
+    `nosniff`.
+  - An admin cannot verify their own recovery contact.
+  - With authorized fetch on, a blocked or suspended actor's signature is
+    refused.
+  - An inbox delivery must be signed for this site's host, so another
+    server's delivery cannot be replayed here.
+  - Outbound fetches refuse three more IPv6 ranges (`::ffff:0:a.b.c.d`,
+    `5f00::/16`, `3fff::/20`) and every port but 443.
+  - Our own actor URL in another letter case is no longer mistaken for a
+    remote one.
+  - A cross-site POST to `/share` no longer signs the member out.
+  - The content security policy no longer allows WebSockets to other hosts.
+  - Bookmarks and notifications stop naming content the reader can no longer
+    open.
+  - A hashtag or mention inside an image description no longer breaks the
+    image.
+  - A control character in a title no longer makes a feed invalid XML.
+
+### Changed
+
+- A session ends 90 days after sign-in, however often it is used (ADR 0086,
+  amending ADR 0008). Members sign in again at least once a quarter.
+- Outbound fetches (federation, feeds, link previews, the media proxy) use
+  HTTPS on port 443 only.
+- A board's posting role is raised to its viewing role when it is saved, and
+  posting in a board needs view rights too.
+- Someone other than the author may forward a local comment only from a
+  thread that federates, and only while its author may still act (ADR 0085).
+- Dependencies: `mdex` 0.14.7 (`mdex_native` 0.3.2), `websock_adapter` 0.7.2,
+  daisyUI 5.8.0 (vendored); dev only: `sobelow` 0.19.0, `dialyxir` 1.4.9.
+
 ## [2.3.3] — 2026-11-09
 
 A dependency release: it closes a memory-exhaustion advisory in Ecto and brings
