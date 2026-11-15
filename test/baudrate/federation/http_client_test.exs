@@ -25,6 +25,15 @@ defmodule Baudrate.Federation.HTTPClientTest do
       assert {:error, _} = HTTPClient.validate_url("https://")
     end
 
+    # A handle like `@x@victim.example:25`, a feed or a link preview could
+    # make this instance connect to any port on a public host.
+    test "rejects any port but 443 for a remote host" do
+      for port <- [25, 22, 80, 8080, 8443, 6379] do
+        assert {:error, :invalid_port} =
+                 HTTPClient.validate_url("https://remote.example:#{port}/users/alice")
+      end
+    end
+
     test "rejects ftp scheme" do
       assert {:error, :https_required} = HTTPClient.validate_url("ftp://remote.example/file")
     end
@@ -502,6 +511,21 @@ defmodule Baudrate.Federation.HTTPClientTest do
       # pair rather than a plain copy, so the prefix is rejected wholesale.
       assert HTTPClient.private_ip?({0x2001, 0, 0, 0, 0, 0, 0, 1})
       assert HTTPClient.private_ip?({0x2001, 0, 0x4136, 0xE378, 0x8000, 0, 0, 0})
+    end
+
+    test "the IPv4-translated form is decoded and re-checked" do
+      # ::ffff:0:127.0.0.1 and ::ffff:0:10.0.0.1 — one group further in than
+      # the mapped form, and missed by it.
+      assert HTTPClient.private_ip?({0, 0, 0, 0, 0xFFFF, 0, 0x7F00, 0x0001})
+      assert HTTPClient.private_ip?({0, 0, 0, 0, 0xFFFF, 0, 0x0A00, 0x0001})
+      refute HTTPClient.private_ip?({0, 0, 0, 0, 0xFFFF, 0, 0x0808, 0x0808})
+    end
+
+    test "SRv6 5f00::/16 and documentation 3fff::/20 are private" do
+      assert HTTPClient.private_ip?({0x5F00, 0, 0, 0, 0, 0, 0, 1})
+      assert HTTPClient.private_ip?({0x3FFF, 0x0FFF, 0, 0, 0, 0, 0, 1})
+      # 3fff:1000:: is past the /20 and stays ordinary unicast.
+      refute HTTPClient.private_ip?({0x3FFF, 0x1000, 0, 0, 0, 0, 0, 1})
     end
 
     test "IPv6 documentation and discard prefixes are private" do

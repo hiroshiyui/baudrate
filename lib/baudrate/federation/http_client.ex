@@ -342,6 +342,7 @@ defmodule Baudrate.Federation.HTTPClient do
 
     with :ok <- validate_scheme(uri),
          :ok <- validate_host(uri),
+         :ok <- validate_port(uri),
          :ok <- validate_no_userinfo(uri),
          :ok <- validate_not_blocked(uri.host, block_check?),
          {:ok, ip} <- safe_resolve_ip(uri.host) do
@@ -519,6 +520,23 @@ defmodule Baudrate.Federation.HTTPClient do
 
   defp validate_scheme(_), do: {:error, :https_required}
 
+  # HTTPS on its own port only. Any port used to be accepted, and a remote
+  # handle (`@x@victim.example:25`), a feed or a link preview could have this
+  # instance open connections to arbitrary ports on public hosts — a port
+  # scanner with our address on it. Federation runs on 443; the localhost
+  # exception is the one `validate_scheme/1` makes for development and tests.
+  defp validate_port(%URI{scheme: "https", port: 443}), do: :ok
+
+  defp validate_port(%URI{scheme: "http", host: host})
+       when host in ["localhost", "127.0.0.1"],
+       do: if(@allow_http_localhost, do: :ok, else: {:error, :invalid_port})
+
+  defp validate_port(%URI{scheme: "https", host: host})
+       when host in ["localhost", "127.0.0.1"],
+       do: if(@allow_http_localhost, do: :ok, else: {:error, :invalid_port})
+
+  defp validate_port(_), do: {:error, :invalid_port}
+
   defp validate_host(%URI{host: nil}), do: {:error, :invalid_host}
   defp validate_host(%URI{host: ""}), do: {:error, :invalid_host}
   defp validate_host(_), do: :ok
@@ -597,6 +615,19 @@ defmodule Baudrate.Federation.HTTPClient do
     import Bitwise
     private_ip?({hi >>> 8, hi &&& 0xFF, lo >>> 8, lo &&& 0xFF})
   end
+
+  # IPv4-translated (::ffff:0:a.b.c.d, RFC 2765 SIIT) — not the mapped form
+  # above, one group further in; decoded and re-checked the same way.
+  def private_ip?({0, 0, 0, 0, 0xFFFF, 0, hi, lo}) do
+    import Bitwise
+    private_ip?({hi >>> 8, hi &&& 0xFF, lo >>> 8, lo &&& 0xFF})
+  end
+
+  # 5f00::/16 — SRv6 SIDs (RFC 9602), never a public web server.
+  def private_ip?({0x5F00, _, _, _, _, _, _, _}), do: true
+
+  # 3fff::/20 — documentation (RFC 9637), like 2001:db8::/32 below.
+  def private_ip?({0x3FFF, b, _, _, _, _, _, _}) when b < 0x1000, do: true
 
   # NAT64 (64:ff9b::/96, RFC 6052) — extract embedded IPv4 and re-check, so a
   # host resolving to e.g. 64:ff9b::7f00:1 cannot reach 127.0.0.1 via a NAT64 gateway.
