@@ -69,6 +69,30 @@ defmodule BaudrateWeb.ShareTargetControllerTest do
       assert return_to =~ "title=Shared"
     end
 
+    # A cross-site POST arrives without the Lax session cookie; writing
+    # `:return_to` answered with a fresh cookie that replaced the member's
+    # session (a forced logout) and pre-filled their next composer.
+    test "a cross-site post writes no session and sends the visitor home", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("sec-fetch-site", "cross-site")
+        |> post("/share", %{"title" => "Planted", "text" => "From another site"})
+
+      assert redirected_to(conn) == "/"
+      assert get_session(conn, :return_to) == nil
+      assert get_resp_header(conn, "set-cookie") == []
+    end
+
+    test "a share from the installed app still works", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("sec-fetch-site", "none")
+        |> post("/share", %{"title" => "Shared Title"})
+
+      assert redirected_to(conn) == "/login"
+      assert get_session(conn, :return_to) =~ "title=Shared"
+    end
+
     test "params are truncated to limits", %{conn: conn} do
       user = setup_user("user")
       conn = log_in_user(conn, user)

@@ -19,6 +19,8 @@ defmodule BaudrateWeb.ShareTargetController do
   - Parameters are truncated to prevent abuse: title (200 chars),
     text (64 KB), url (2048 chars)
   - Only local paths starting with `/` are stored in `:return_to`
+  - A request another site made (`Sec-Fetch-Site: cross-site`/`same-site`) is
+    sent home without touching the session
   """
 
   use BaudrateWeb, :controller
@@ -36,6 +38,29 @@ defmodule BaudrateWeb.ShareTargetController do
   If not authenticated, stores the target path in `:return_to` and redirects to `/login`.
   """
   def create(conn, params) do
+    if cross_site?(conn) do
+      # Never write the session for a request another site made. The route
+      # is CSRF-exempt and the cookie is `SameSite=Lax`, so a cross-site POST
+      # arrives without it: writing `:return_to` used to answer with a fresh
+      # cookie holding nothing else, which replaced the member's session — a
+      # forced logout — and pre-filled their next composer with the other
+      # site's text. A share from the installed app is `none` or
+      # `same-origin`; a browser that sends no fetch metadata is let through.
+      # `ignore: true` because the pipeline has already written one key
+      # (`SetLocale` stores the locale), and any cookie at all replaces theirs.
+      conn
+      |> configure_session(ignore: true)
+      |> redirect(to: "/")
+    else
+      handle_share(conn, params)
+    end
+  end
+
+  defp cross_site?(conn) do
+    get_req_header(conn, "sec-fetch-site") in [["cross-site"], ["same-site"]]
+  end
+
+  defp handle_share(conn, params) do
     title = truncate_param(params["title"], @max_title_length)
     text = truncate_param(params["text"], @max_text_length)
     url = truncate_param(params["url"], @max_url_length)
