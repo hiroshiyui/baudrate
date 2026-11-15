@@ -41,7 +41,12 @@ defmodule BaudrateWeb.AuthHooksTest do
   describe "on_mount :require_password_auth" do
     test "assigns current_user when user_id is valid", %{user: user} do
       socket = %Phoenix.LiveView.Socket{}
-      session = %{"user_id" => user.id}
+
+      session =
+        user
+        |> Baudrate.Repo.reload!()
+        |> BaudrateWeb.HalfLogin.session()
+        |> Map.new(fn {k, v} -> {to_string(k), v} end)
 
       assert {:cont, socket} =
                AuthHooks.on_mount(:require_password_auth, %{}, session, socket)
@@ -185,7 +190,12 @@ defmodule BaudrateWeb.AuthHooksTest do
       banned_user: banned_user
     } do
       socket = %Phoenix.LiveView.Socket{}
-      session = %{"user_id" => banned_user.id}
+      # A live half-login, so the refusal is the ban's and not the session's.
+      session =
+        banned_user
+        |> Baudrate.Repo.reload!()
+        |> BaudrateWeb.HalfLogin.session()
+        |> Map.new(fn {k, v} -> {to_string(k), v} end)
 
       assert {:halt, socket} =
                AuthHooks.on_mount(:require_password_auth, %{}, session, socket)

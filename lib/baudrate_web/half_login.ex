@@ -28,13 +28,13 @@ defmodule BaudrateWeb.HalfLogin do
   @max_age_seconds 600
 
   @doc "Starts a half-login for `user`. The caller renews the session first."
-  @spec put(Plug.Conn.t(), %{id: integer()}) :: Plug.Conn.t()
+  @spec put(Plug.Conn.t(), %Baudrate.Setup.User{}) :: Plug.Conn.t()
   def put(conn, user) do
     Enum.reduce(session(user), conn, fn {k, v}, conn -> put_session(conn, k, v) end)
   end
 
   @doc "The session values of a half-login for `user` started now."
-  @spec session(%{id: integer()}) :: %{atom() => term()}
+  @spec session(%Baudrate.Setup.User{}) :: %{atom() => term()}
   def session(user) do
     %{
       user_id: user.id,
