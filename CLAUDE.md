@@ -209,7 +209,8 @@ that kind goes in it.
   which check the reporter can see the target. Site rules are retired, never deleted
   (ADR 0032).
 - Forwarding checks the source board's view gate and refuses soft-deleted sources, in
-  the context (clients supply the id).
+  the context (clients supply the id). Another member's local comment forwards only from
+  a thread that federates, and only while its author may act (ADR 0085).
 - A locked or soft-deleted article refuses inbound replies.
 - Only the author edits a comment; edits keep a revision (ADR 0060). Image descriptions
   save against the upload row, never as form fields (ADR 0061).

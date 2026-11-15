@@ -833,6 +833,9 @@ defmodule Baudrate.Content.Articles do
       not Permissions.can_forward_comment?(user, comment) ->
         {:error, :unauthorized}
 
+      not local_comment_forwardable_by?(comment, user) ->
+        {:error, :unauthorized}
+
       Baudrate.Auth.blocked_with_author?(user.id, comment) ->
         {:error, :unauthorized}
 
@@ -867,6 +870,34 @@ defmodule Baudrate.Content.Articles do
         else
           do_materialize_comment(comment, board)
         end
+    end
+  end
+
+  # A local comment forwarded by someone else becomes an article in its
+  # author's name, published to the target board's followers (ADR 0085). That
+  # is the author's words reaching an audience they did not choose, so it is
+  # allowed only when the thread already federates — the words are already
+  # public under their name, and forwarding exposes nothing new — and only
+  # while the author may still act (ADR 0029): a silenced, suspended, moved or
+  # deleted member is not made to publish. Admins are held to it too. The
+  # author forwarding their own comment chooses for themselves.
+  defp local_comment_forwardable_by?(%Comment{remote_actor_id: rid}, _user)
+       when not is_nil(rid),
+       do: true
+
+  defp local_comment_forwardable_by?(%Comment{user_id: author_id}, %{id: author_id}),
+    do: true
+
+  defp local_comment_forwardable_by?(%Comment{} = comment, _user) do
+    case Repo.get(Article, comment.article_id) do
+      nil ->
+        false
+
+      article ->
+        article
+        |> Repo.preload(:boards)
+        |> Baudrate.Federation.Delivery.article_boards_federated?() and
+          Baudrate.Auth.ensure_can_interact(comment.user_id) == :ok
     end
   end
 

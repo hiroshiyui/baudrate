@@ -2792,6 +2792,92 @@ defmodule Baudrate.ContentTest do
       assert hd(new_article.boards).id == board.id
     end
 
+    # ADR 0085: a local comment forwarded by someone else becomes an article
+    # in its author's name. Only words the network already has, from an
+    # author who may still act.
+    defp comment_in_board(author, board_attrs) do
+      thread_board =
+        create_board(
+          Map.merge(
+            %{name: "Thread", slug: "thread-#{System.unique_integer([:positive])}"},
+            board_attrs
+          )
+        )
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Thread",
+            body: "body",
+            slug: "thread-art-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [thread_board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          body: "Said among members",
+          article_id: article.id,
+          user_id: author.id
+        })
+
+      comment
+    end
+
+    test "refuses another member's comment from a members-only thread", %{
+      user: user,
+      board: board
+    } do
+      comment = comment_in_board(create_user("user"), %{min_role_to_view: "user"})
+
+      assert {:error, :unauthorized} = Content.forward_comment_to_board(comment, board, user)
+    end
+
+    test "refuses another member's comment from a thread that does not federate", %{
+      user: user,
+      board: board
+    } do
+      comment = comment_in_board(create_user("user"), %{ap_enabled: false})
+
+      assert {:error, :unauthorized} = Content.forward_comment_to_board(comment, board, user)
+    end
+
+    test "holds an admin to the same rule", %{board: board} do
+      comment = comment_in_board(create_user("user"), %{min_role_to_view: "user"})
+
+      assert {:error, :unauthorized} =
+               Content.forward_comment_to_board(comment, board, create_user("admin"))
+    end
+
+    test "refuses a comment whose author may not act", %{user: user, board: board} do
+      author = create_user("user")
+      comment = comment_in_board(author, %{})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert!(%Baudrate.Auth.Sanction{
+        user_id: author.id,
+        kind: "suspend",
+        reason: "test",
+        issued_at: now,
+        expires_at: DateTime.add(now, 3600, :second),
+        inserted_at: now,
+        updated_at: now
+      })
+
+      assert {:error, :unauthorized} = Content.forward_comment_to_board(comment, board, user)
+    end
+
+    test "lets the author forward their own comment from a members-only thread", %{
+      board: board
+    } do
+      author = create_user("user")
+      comment = comment_in_board(author, %{min_role_to_view: "user"})
+
+      assert {:ok, article} = Content.forward_comment_to_board(comment, board, author)
+      assert article.user_id == author.id
+    end
+
     test "materializes remote comment as remote article", %{user: user, board: board} do
       remote_actor =
         %Baudrate.Federation.RemoteActor{}

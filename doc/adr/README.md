@@ -104,6 +104,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0082](0082-federated-articles-may-be-quoted.md) | Federated articles may be quoted | Accepted |
 | [0083](0083-the-inbound-gate-is-the-outbound-gate.md) | The inbound gate is the outbound gate | Accepted |
 | [0084](0084-a-half-finished-sign-in-expires-and-is-bound-to-the-credentials.md) | A half-finished sign-in expires, and is bound to the credentials | Accepted |
+| [0085](0085-a-members-comment-is-forwarded-by-others-only-from-a-thread-that-federates.md) | A member's comment is forwarded by others only from a thread that federates | Accepted |
 
 ## Writing a new ADR
 
