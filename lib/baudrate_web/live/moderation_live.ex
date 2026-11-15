@@ -36,7 +36,9 @@ defmodule BaudrateWeb.ModerationLive do
 
       board_ids ->
         {:ok,
-         assign(socket,
+         socket
+         |> attach_hook(:moderation_scope, :handle_event, &refresh_scope_for_event/3)
+         |> assign(
            board_ids: board_ids,
            status_filter: "open",
            page: 1,
@@ -53,10 +55,40 @@ defmodule BaudrateWeb.ModerationLive do
   def handle_params(params, _uri, socket) do
     status = if params["status"] in @statuses, do: params["status"], else: "open"
 
-    {:noreply,
-     socket
-     |> assign(status_filter: status, page: parse_page(params["page"]))
-     |> load_reports()}
+    case refresh_scope(socket) do
+      {:ok, socket} ->
+        {:noreply,
+         socket
+         |> assign(status_filter: status, page: parse_page(params["page"]))
+         |> load_reports()}
+
+      {:lost, socket} ->
+        {:noreply, socket}
+    end
+  end
+
+  # The boards this member moderates, read again for every event and every
+  # params change rather than kept from mount. Removing a board moderator
+  # revokes no session, so an open tab used to keep reading that board's
+  # report queue and resolving its reports.
+  defp refresh_scope_for_event(_event, _params, socket) do
+    case refresh_scope(socket) do
+      {:ok, socket} -> {:cont, socket}
+      {:lost, socket} -> {:halt, socket}
+    end
+  end
+
+  defp refresh_scope(socket) do
+    case Content.moderated_board_ids(socket.assigns.current_user) do
+      [] ->
+        {:lost,
+         socket
+         |> put_flash(:error, gettext("You do not moderate any boards."))
+         |> push_navigate(to: ~p"/")}
+
+      board_ids ->
+        {:ok, assign(socket, :board_ids, board_ids)}
+    end
   end
 
   @impl true

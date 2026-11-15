@@ -162,4 +162,38 @@ defmodule BaudrateWeb.BoardFollowsLiveTest do
       assert_push_event(lv, "focus", %{id: "board-follows-heading"})
     end
   end
+
+  # Removing a board moderator revokes no session; the page re-reads the
+  # member's authority before every event.
+  describe "a board moderator whose role was taken away" do
+    test "cannot change the accept policy from a tab opened before", %{conn: conn} do
+      board = create_board(%{ap_accept_policy: "followers_only"})
+      user = setup_user("user")
+      {:ok, _} = Content.add_board_moderator(board.id, user.id)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/boards/#{board.slug}/follows")
+      {1, _} = Content.remove_board_moderator(board.id, user.id)
+
+      assert {:error, {:live_redirect, %{to: to}}} =
+               render_click(lv, "update_policy", %{"policy" => "open"})
+
+      assert to == "/boards/#{board.slug}"
+      assert Repo.reload!(board).ap_accept_policy == "followers_only"
+    end
+
+    test "cannot follow a remote actor as the board", %{conn: conn} do
+      board = create_board()
+      user = setup_user("user")
+      actor = create_remote_actor()
+      {:ok, _} = Content.add_board_moderator(board.id, user.id)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/boards/#{board.slug}/follows")
+      {1, _} = Content.remove_board_moderator(board.id, user.id)
+
+      assert {:error, {:live_redirect, _}} =
+               render_click(lv, "follow", %{"id" => to_string(actor.id)})
+
+      assert Federation.list_board_follows(board.id) == []
+    end
+  end
 end

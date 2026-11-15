@@ -56,6 +56,7 @@ defmodule BaudrateWeb.BoardFollowsLive do
 
         {:ok,
          socket
+         |> attach_hook(:board_authority, :handle_event, &recheck_authority/3)
          |> assign(:board, board)
          |> assign(:follows, follows)
          |> assign(:search_query, "")
@@ -63,6 +64,24 @@ defmodule BaudrateWeb.BoardFollowsLive do
          |> assign(:search_loading, false)
          |> assign(:search_error, nil)
          |> assign(:page_title, gettext("Board Follows"))}
+    end
+  end
+
+  # Read again before every event, from a fresh board row: removing a board
+  # moderator revokes no session, so an open tab used to keep changing the
+  # board's accept policy and its follows. A board that stopped federating
+  # meanwhile is refused the same way mount refuses it.
+  defp recheck_authority(_event, _params, socket) do
+    board = Content.get_board_by_slug(socket.assigns.board.slug)
+
+    if board && Content.board_moderator?(board, socket.assigns.current_user) &&
+         Board.federated?(board) do
+      {:cont, assign(socket, :board, board)}
+    else
+      {:halt,
+       socket
+       |> put_flash(:error, gettext("You don't have permission to manage this board."))
+       |> push_navigate(to: ~p"/boards/#{socket.assigns.board.slug}")}
     end
   end
 

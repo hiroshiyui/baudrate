@@ -247,4 +247,35 @@ defmodule BaudrateWeb.ModerationLiveTest do
       )
     )
   end
+
+  # Removing a board moderator revokes no session. The page reads the
+  # moderator's boards again for every event and params change, so a tab
+  # left open does not keep the authority it was mounted with.
+  describe "a moderator whose board was taken away" do
+    test "cannot dismiss a report from a tab opened before", %{conn: conn} do
+      mine = board("mine")
+      moderator = moderator_of(mine)
+      report = report_article(article_in(mine, setup_user("user")), setup_user("user"))
+
+      {:ok, lv, _html} = live(log_in_user(conn, moderator), "/moderation")
+      {1, _} = Content.remove_board_moderator(mine.id, moderator.id)
+
+      assert {:error, {:live_redirect, %{to: "/"}}} =
+               render_click(lv, "dismiss", %{"id" => to_string(report.id)})
+
+      assert Moderation.get_report(report.id).status == "open"
+    end
+
+    test "cannot keep reading the queue by changing its filter", %{conn: conn} do
+      mine = board("mine")
+      moderator = moderator_of(mine)
+      report_article(article_in(mine, setup_user("user")), setup_user("user"))
+
+      {:ok, lv, _html} = live(log_in_user(conn, moderator), "/moderation")
+      {1, _} = Content.remove_board_moderator(mine.id, moderator.id)
+
+      assert {:error, {:live_redirect, %{to: "/"}}} =
+               render_patch(lv, "/moderation?status=resolved")
+    end
+  end
 end
