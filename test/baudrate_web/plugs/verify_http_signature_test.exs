@@ -95,6 +95,36 @@ defmodule BaudrateWeb.Plugs.VerifyHTTPSignatureTest do
 
   # --- Success path ---
 
+  # The signature covers `host`, and that host must be ours: a delivery
+  # another server received could otherwise be replayed to this inbox within
+  # the date window, with its original Host header.
+  describe "call/2 refuses a delivery signed for another host" do
+    defp signed_for(host, private_pem) do
+      body = Jason.encode!(%{"type" => "Create", "actor" => @actor_ap_id})
+
+      signed_headers =
+        HTTPSignature.sign(:post, "https://#{host}#{@inbox_path}", body, private_pem, @key_id)
+
+      build_inbox_conn(body, host: host)
+      |> Plug.Conn.assign(:raw_body, body)
+      |> Plug.Conn.put_req_header("signature", signed_headers["signature"])
+      |> Plug.Conn.put_req_header("date", signed_headers["date"])
+      |> Plug.Conn.put_req_header("digest", signed_headers["digest"])
+      |> call_plug()
+    end
+
+    test "a valid signature for another server's host is refused", %{private_pem: private_pem} do
+      conn = signed_for("other-instance.example", private_pem)
+
+      assert conn.halted
+      assert conn.status == 401
+    end
+
+    test "our host in another case is still ours", %{private_pem: private_pem} do
+      refute signed_for("LocalHost", private_pem).halted
+    end
+  end
+
   describe "call/2 success path" do
     test "full crypto roundtrip: assigns remote_actor on valid signature", %{
       actor: actor,
