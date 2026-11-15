@@ -103,6 +103,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0081](0081-a-syndicated-article-shows-its-lead-and-sends-readers-to-the-source.md) | A syndicated article shows its lead and sends readers to the source | Accepted |
 | [0082](0082-federated-articles-may-be-quoted.md) | Federated articles may be quoted | Accepted |
 | [0083](0083-the-inbound-gate-is-the-outbound-gate.md) | The inbound gate is the outbound gate | Accepted |
+| [0084](0084-a-half-finished-sign-in-expires-and-is-bound-to-the-credentials.md) | A half-finished sign-in expires, and is bound to the credentials | Accepted |
 
 ## Writing a new ADR
 

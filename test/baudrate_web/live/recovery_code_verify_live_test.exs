@@ -21,7 +21,12 @@ defmodule BaudrateWeb.RecoveryCodeVerifyLiveTest do
     secret = Auth.generate_totp_secret()
     {:ok, _} = Auth.enable_totp(user, secret)
 
-    conn = Plug.Test.init_test_session(conn, %{user_id: user.id})
+    conn =
+      Plug.Test.init_test_session(
+        conn,
+        BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user))
+      )
+
     {:ok, _lv, html} = live(conn, "/totp/recovery")
 
     assert html =~ "Recovery Code"
@@ -33,7 +38,12 @@ defmodule BaudrateWeb.RecoveryCodeVerifyLiveTest do
     secret = Auth.generate_totp_secret()
     {:ok, _} = Auth.enable_totp(user, secret)
 
-    conn = Plug.Test.init_test_session(conn, %{user_id: user.id})
+    conn =
+      Plug.Test.init_test_session(
+        conn,
+        BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user))
+      )
+
     {:ok, lv, _html} = live(conn, "/totp/recovery")
 
     html =
@@ -49,7 +59,12 @@ defmodule BaudrateWeb.RecoveryCodeVerifyLiveTest do
     secret = Auth.generate_totp_secret()
     {:ok, _} = Auth.enable_totp(user, secret)
 
-    conn = Plug.Test.init_test_session(conn, %{user_id: user.id})
+    conn =
+      Plug.Test.init_test_session(
+        conn,
+        BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user))
+      )
+
     {:ok, lv, _html} = live(conn, "/totp/recovery")
 
     html =

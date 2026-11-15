@@ -71,6 +71,7 @@ defmodule BaudrateWeb.SessionController do
   require Logger
 
   alias Baudrate.Auth
+  alias BaudrateWeb.HalfLogin
   alias BaudrateWeb.RateLimits
 
   @max_totp_attempts 5
@@ -92,7 +93,7 @@ defmodule BaudrateWeb.SessionController do
             conn
             |> configure_session(renew: true)
             |> forget_half_login()
-            |> put_session(:user_id, user.id)
+            |> HalfLogin.put(user)
 
           case Auth.login_next_step(user) do
             :totp_verify ->
@@ -128,8 +129,7 @@ defmodule BaudrateWeb.SessionController do
 
   @doc "Verifies a TOTP code during login and establishes the session on success."
   def totp_verify(conn, %{"code" => code}) do
-    user_id = get_session(conn, :user_id)
-    user = user_id && Auth.get_user(user_id)
+    user = HalfLogin.user(conn)
     attempts = get_session(conn, :totp_attempts) || 0
     secret = user && Auth.decrypt_totp_secret(user)
 
@@ -196,8 +196,7 @@ defmodule BaudrateWeb.SessionController do
 
   @doc "Verifies a TOTP code during first-time setup, enables TOTP, and generates recovery codes."
   def totp_enable(conn, %{"code" => code}) do
-    user_id = get_session(conn, :user_id)
-    user = user_id && Auth.get_user(user_id)
+    user = HalfLogin.user(conn)
     secret = totp_setup_secret_for(conn, user)
     attempts = get_session(conn, :totp_attempts) || 0
 
@@ -264,10 +263,16 @@ defmodule BaudrateWeb.SessionController do
           # Delete all existing sessions for this user
           Auth.delete_all_sessions_for_user(user.id)
 
-          # Disable TOTP if resetting (not enabling for first time)
-          if mode == :reset do
-            Auth.disable_totp(user)
-          end
+          # Disable TOTP if resetting (not enabling for first time). The
+          # half-login below is bound to the account as it is *after* this,
+          # so it is started from the reloaded row.
+          user =
+            if mode == :reset do
+              {:ok, updated} = Auth.disable_totp(user)
+              updated
+            else
+              user
+            end
 
           # Generate new TOTP secret and put in session for /totp/setup
           secret = Auth.generate_totp_secret()
@@ -275,7 +280,7 @@ defmodule BaudrateWeb.SessionController do
           conn
           |> configure_session(renew: true)
           |> forget_half_login()
-          |> put_session(:user_id, user.id)
+          |> HalfLogin.put(user)
           |> put_totp_setup_secret(user, secret)
           |> delete_session(:totp_attempts)
           |> redirect(to: "/totp/setup")
@@ -296,8 +301,7 @@ defmodule BaudrateWeb.SessionController do
 
   @doc "Verifies a one-time recovery code and establishes the session on success."
   def recovery_verify(conn, %{"code" => code}) do
-    user_id = get_session(conn, :user_id)
-    user = user_id && Auth.get_user(user_id)
+    user = HalfLogin.user(conn)
     attempts = get_session(conn, :totp_attempts) || 0
 
     cond do
@@ -720,14 +724,14 @@ defmodule BaudrateWeb.SessionController do
   # this a `:totp_setup_secret` left by one account's abandoned enrolment
   # survived into another account's sign-in, and enrolling it replaced that
   # account's second factor with one the first browser held.
-  @half_login_keys [
-    :user_id,
-    :totp_setup_secret,
-    :totp_setup_user_id,
-    :totp_attempts,
-    :totp_verified,
-    :admin_totp_verified_at
-  ]
+  @half_login_keys HalfLogin.keys() ++
+                     [
+                       :totp_setup_secret,
+                       :totp_setup_user_id,
+                       :totp_attempts,
+                       :totp_verified,
+                       :admin_totp_verified_at
+                     ]
 
   defp forget_half_login(conn), do: Enum.reduce(@half_login_keys, conn, &delete_session(&2, &1))
 
@@ -765,9 +769,7 @@ defmodule BaudrateWeb.SessionController do
   # survive a refusal.
   defp refuse_sign_in(conn, message) do
     conn
-    |> delete_session(:user_id)
-    |> delete_session(:totp_setup_secret)
-    |> delete_session(:totp_setup_user_id)
+    |> forget_half_login()
     |> put_flash(:error, message)
     |> redirect(to: "/login")
   end
@@ -805,10 +807,7 @@ defmodule BaudrateWeb.SessionController do
 
     conn
     |> configure_session(renew: true)
-    |> delete_session(:user_id)
-    |> delete_session(:totp_verified)
-    |> delete_session(:totp_setup_secret)
-    |> delete_session(:totp_setup_user_id)
+    |> forget_half_login()
     |> delete_session(:return_to)
     |> put_session(:session_token, session_token)
     |> put_session(:refresh_token, refresh_token)

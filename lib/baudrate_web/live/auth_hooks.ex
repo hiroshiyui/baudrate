@@ -216,12 +216,11 @@ defmodule BaudrateWeb.AuthHooks do
 
   def on_mount(:require_password_auth, _params, session, socket) do
     apply_session_locale(session)
-    user_id = session["user_id"]
 
-    if user_id do
-      user = Auth.get_user(user_id)
-
-      if user && user.status not in ["banned", "deleted"] && not suspended?(user) do
+    # The same limits as the controller's steps: a half-login is at most ten
+    # minutes old and bound to the credentials it was started with.
+    if user = BaudrateWeb.HalfLogin.user(session) do
+      if user.status not in ["banned", "deleted"] && not suspended?(user) do
         locale = resolve_user_locale(user)
 
         socket =

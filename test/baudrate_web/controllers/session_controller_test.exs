@@ -63,7 +63,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/totp-verify", %{"code" => code})
 
       assert redirected_to(conn) == "/"
@@ -79,7 +79,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/totp-verify", %{"code" => "000000"})
 
       assert redirected_to(conn) == "/totp/verify"
@@ -93,7 +93,9 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id, totp_attempts: 5})
+        |> Plug.Test.init_test_session(
+          Map.put(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)), :totp_attempts, 5)
+        )
         |> post("/auth/totp-verify", %{"code" => "000000"})
 
       assert redirected_to(conn) == "/login"
@@ -113,14 +115,14 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       first =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/totp-verify", %{"code" => code})
 
       assert redirected_to(first) == "/"
 
       replay =
         build_conn()
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/totp-verify", %{"code" => code})
 
       assert redirected_to(replay) == "/totp/verify"
@@ -135,7 +137,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/totp-verify", %{"code" => code})
 
       assert redirected_to(conn) == "/"
@@ -149,7 +151,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       for _ <- 1..3 do
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/totp-verify", %{"code" => wrong})
       end
 
@@ -188,7 +190,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/totp-verify", %{"code" => totp_code(secret)})
 
       assert redirected_to(conn) == "/totp/verify"
@@ -218,12 +220,13 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{
-          user_id: attacker.id,
-          totp_setup_secret: stale,
-          totp_setup_user_id: attacker.id,
-          admin_totp_verified_at: System.system_time(:second)
-        })
+        |> Plug.Test.init_test_session(
+          Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(attacker)), %{
+            totp_setup_secret: stale,
+            totp_setup_user_id: attacker.id,
+            admin_totp_verified_at: System.system_time(:second)
+          })
+        )
         |> post("/auth/session", %{
           "token" => Phoenix.Token.sign(BaudrateWeb.Endpoint, "user_auth", victim.id)
         })
@@ -242,11 +245,12 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{
-          user_id: victim.id,
-          totp_setup_secret: stale,
-          totp_setup_user_id: attacker.id
-        })
+        |> Plug.Test.init_test_session(
+          Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(victim)), %{
+            totp_setup_secret: stale,
+            totp_setup_user_id: attacker.id
+          })
+        )
         |> post("/auth/totp-enable", %{"code" => totp_code(stale)})
 
       assert redirected_to(conn) == "/login"
@@ -261,15 +265,123 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{
-          user_id: victim.id,
-          totp_setup_secret: fresh,
-          totp_setup_user_id: victim.id
-        })
+        |> Plug.Test.init_test_session(
+          Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(victim)), %{
+            totp_setup_secret: fresh,
+            totp_setup_user_id: victim.id
+          })
+        )
         |> post("/auth/totp-enable", %{"code" => totp_code(fresh)})
 
       assert redirected_to(conn) == "/login"
       assert Repo.reload!(victim).totp_secret == before
+      assert is_nil(get_session(conn, :session_token))
+    end
+  end
+
+  # `Plug.Session.COOKIE` never expires a cookie it can decrypt, so a kept
+  # copy of a half-login used to outlive any password change. Every case
+  # presents a valid second factor and must still be refused.
+  describe "a half-login expires and is bound to the credentials" do
+    defp change_hashed_password(user) do
+      Repo.update_all(
+        from(u in Baudrate.Setup.User, where: u.id == ^user.id),
+        set: [hashed_password: Bcrypt.hash_pwd_salt("a different password 123")]
+      )
+    end
+
+    test "refuses a TOTP code after the password changed", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+      stale = BaudrateWeb.HalfLogin.session(Repo.reload!(user))
+
+      change_hashed_password(user)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(stale)
+        |> post("/auth/totp-verify", %{"code" => totp_code(secret)})
+
+      assert redirected_to(conn) == "/login"
+      assert is_nil(get_session(conn, :session_token))
+    end
+
+    test "refuses a TOTP code more than ten minutes after the password step", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+
+      old =
+        user
+        |> Repo.reload!()
+        |> BaudrateWeb.HalfLogin.session()
+        |> Map.put(:half_login_at, System.system_time(:second) - 601)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(old)
+        |> post("/auth/totp-verify", %{"code" => totp_code(secret)})
+
+      assert redirected_to(conn) == "/login"
+      assert is_nil(get_session(conn, :session_token))
+    end
+
+    test "refuses a session that carries only a user id", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> post("/auth/totp-verify", %{"code" => totp_code(secret)})
+
+      assert redirected_to(conn) == "/login"
+      assert is_nil(get_session(conn, :session_token))
+    end
+
+    # The enrolment attack: a half-login kept from before an admin cleared the
+    # account's second factor enrols the holder's own secret.
+    test "refuses enrolment after the account's second factor changed", %{conn: conn} do
+      user = setup_user("user")
+      attacker_secret = Auth.generate_totp_secret()
+
+      stale =
+        user
+        |> Repo.reload!()
+        |> BaudrateWeb.HalfLogin.session()
+        |> Map.merge(%{totp_setup_secret: attacker_secret, totp_setup_user_id: user.id})
+
+      {:ok, _} = Auth.enable_totp(Repo.reload!(user), Auth.generate_totp_secret())
+      {:ok, _} = Auth.disable_totp(Repo.reload!(user))
+
+      change_hashed_password(user)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(stale)
+        |> post("/auth/totp-enable", %{"code" => totp_code(attacker_secret)})
+
+      assert redirected_to(conn) == "/login"
+      refute Auth.get_user(user.id).totp_enabled
+      assert is_nil(get_session(conn, :session_token))
+    end
+
+    test "refuses a recovery code after the password changed", %{conn: conn} do
+      user = setup_user("user")
+      {:ok, _} = Auth.enable_totp(user, Auth.generate_totp_secret())
+      [code | _] = Auth.generate_recovery_codes(Repo.reload!(user))
+      stale = BaudrateWeb.HalfLogin.session(Repo.reload!(user))
+
+      change_hashed_password(user)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(stale)
+        |> post("/auth/recovery-verify", %{"code" => code})
+
+      assert redirected_to(conn) == "/login"
       assert is_nil(get_session(conn, :session_token))
     end
   end
@@ -282,11 +394,12 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{
-          user_id: user.id,
-          totp_setup_secret: secret,
-          totp_setup_user_id: user.id
-        })
+        |> Plug.Test.init_test_session(
+          Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)), %{
+            totp_setup_secret: secret,
+            totp_setup_user_id: user.id
+          })
+        )
         |> post("/auth/totp-enable", %{"code" => code})
 
       assert redirected_to(conn) == "/profile/security"
@@ -303,7 +416,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       replay =
         build_conn()
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/totp-verify", %{"code" => code})
 
       assert redirected_to(replay) == "/totp/verify"
@@ -315,11 +428,12 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{
-          user_id: user.id,
-          totp_setup_secret: secret,
-          totp_setup_user_id: user.id
-        })
+        |> Plug.Test.init_test_session(
+          Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)), %{
+            totp_setup_secret: secret,
+            totp_setup_user_id: user.id
+          })
+        )
         |> post("/auth/totp-enable", %{"code" => "000000"})
 
       assert redirected_to(conn) == "/totp/setup"
@@ -331,7 +445,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/totp-enable", %{"code" => "123456"})
 
       assert redirected_to(conn) == "/login"
@@ -343,12 +457,13 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{
-          user_id: user.id,
-          totp_setup_secret: secret,
-          totp_setup_user_id: user.id,
-          totp_attempts: 5
-        })
+        |> Plug.Test.init_test_session(
+          Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)), %{
+            totp_setup_secret: secret,
+            totp_setup_user_id: user.id,
+            totp_attempts: 5
+          })
+        )
         |> post("/auth/totp-enable", %{"code" => "000000"})
 
       assert redirected_to(conn) == "/login"
@@ -373,6 +488,18 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       updated_user = Auth.get_user(user.id)
       refute updated_user.totp_enabled
+
+      # The half-login it starts is bound to the account after the reset, so
+      # enrolling the new secret completes.
+      secret = get_session(conn, :totp_setup_secret)
+
+      conn =
+        conn
+        |> recycle()
+        |> post("/auth/totp-enable", %{"code" => NimbleTOTP.verification_code(secret)})
+
+      assert Auth.get_user(user.id).totp_enabled
+      assert get_session(conn, :session_token)
     end
 
     test "valid token with mode :enable redirects to setup without disabling TOTP", %{conn: conn} do
@@ -418,7 +545,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/recovery-verify", %{"code" => code})
 
       assert redirected_to(conn) == "/"
@@ -434,7 +561,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/recovery-verify", %{"code" => "wrong-code-here"})
 
       assert redirected_to(conn) == "/totp/recovery"
@@ -449,7 +576,9 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id, totp_attempts: 5})
+        |> Plug.Test.init_test_session(
+          Map.put(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)), :totp_attempts, 5)
+        )
         |> post("/auth/recovery-verify", %{"code" => "any-code"})
 
       assert redirected_to(conn) == "/login"
@@ -464,7 +593,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
         |> post("/auth/recovery-verify", %{"code" => code})
 
       assert redirected_to(conn) == "/login"
@@ -478,7 +607,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       Auth.generate_recovery_codes(user)
 
       conn
-      |> Plug.Test.init_test_session(%{user_id: user.id})
+      |> Plug.Test.init_test_session(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)))
       |> post("/auth/recovery-verify", %{"code" => "wrong-code-here"})
 
       assert Repo.exists?(
@@ -746,12 +875,13 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{
-          user_id: user.id,
-          totp_setup_secret: secret,
-          totp_setup_user_id: user.id,
-          return_to: "/articles/new?title=Shared"
-        })
+        |> Plug.Test.init_test_session(
+          Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)), %{
+            totp_setup_secret: secret,
+            totp_setup_user_id: user.id,
+            return_to: "/articles/new?title=Shared"
+          })
+        )
         |> post("/auth/totp-enable", %{"code" => code})
 
       # totp_enable passes "/profile/security" as redirect_to,

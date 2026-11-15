@@ -17,11 +17,13 @@ defmodule BaudrateWeb.TotpSetupLiveTest do
     secret = Auth.generate_totp_secret()
 
     conn =
-      Plug.Test.init_test_session(conn, %{
-        user_id: user.id,
-        totp_setup_secret: secret,
-        totp_setup_user_id: user.id
-      })
+      Plug.Test.init_test_session(
+        conn,
+        Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)), %{
+          totp_setup_secret: secret,
+          totp_setup_user_id: user.id
+        })
+      )
 
     {:ok, _lv, html} = live(conn, "/totp/setup")
 
@@ -36,11 +38,13 @@ defmodule BaudrateWeb.TotpSetupLiveTest do
     secret = Auth.generate_totp_secret()
 
     conn =
-      Plug.Test.init_test_session(conn, %{
-        user_id: user.id,
-        totp_setup_secret: secret,
-        totp_setup_user_id: user.id
-      })
+      Plug.Test.init_test_session(
+        conn,
+        Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)), %{
+          totp_setup_secret: secret,
+          totp_setup_user_id: user.id
+        })
+      )
 
     {:ok, _lv, html} = live(conn, "/totp/setup")
 
@@ -60,11 +64,13 @@ defmodule BaudrateWeb.TotpSetupLiveTest do
     other = setup_user("user")
 
     conn =
-      Plug.Test.init_test_session(conn, %{
-        user_id: other.id,
-        totp_setup_secret: Auth.generate_totp_secret(),
-        totp_setup_user_id: owner.id
-      })
+      Plug.Test.init_test_session(
+        conn,
+        Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(other)), %{
+          totp_setup_secret: Auth.generate_totp_secret(),
+          totp_setup_user_id: owner.id
+        })
+      )
 
     assert {:error, {:redirect, %{to: "/login"}}} = live(conn, "/totp/setup")
   end
@@ -74,18 +80,26 @@ defmodule BaudrateWeb.TotpSetupLiveTest do
     {:ok, user} = Auth.enable_totp(user, Auth.generate_totp_secret())
 
     conn =
-      Plug.Test.init_test_session(conn, %{
-        user_id: user.id,
-        totp_setup_secret: Auth.generate_totp_secret(),
-        totp_setup_user_id: user.id
-      })
+      Plug.Test.init_test_session(
+        conn,
+        Map.merge(BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user)), %{
+          totp_setup_secret: Auth.generate_totp_secret(),
+          totp_setup_user_id: user.id
+        })
+      )
 
     assert {:error, {:redirect, %{to: "/login"}}} = live(conn, "/totp/setup")
   end
 
   test "redirects to /login without totp_setup_secret in session", %{conn: conn} do
     user = setup_user("admin")
-    conn = Plug.Test.init_test_session(conn, %{user_id: user.id})
+
+    conn =
+      Plug.Test.init_test_session(
+        conn,
+        BaudrateWeb.HalfLogin.session(Baudrate.Repo.reload!(user))
+      )
+
     assert {:error, {:redirect, %{to: "/login" <> _}}} = live(conn, "/totp/setup")
   end
 end
