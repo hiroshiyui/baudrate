@@ -46,6 +46,12 @@ defmodule Baudrate.Content.Interactions do
       # An id that resolves to nothing used to count as visible: the board
       # count came back 0, which is also how a legitimate quick post looks.
       nil -> false
+      # A soft-deleted article keeps its title and body until retention
+      # (ADR 0040), and its page answers 404. It used to count as visible
+      # here, so a comment under a moderator-removed thread could still be
+      # liked, boosted (federating an Announce) and forwarded into a public
+      # board as a new article.
+      %{deleted_at: %DateTime{}} -> false
       article -> remote_servable?(article) and boards_visible_to?(article_id, user_id)
     end
   end

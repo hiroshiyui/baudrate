@@ -106,6 +106,34 @@ defmodule Baudrate.Content.InteractionsTest do
   end
 
   describe "article_visible_to_user?/2" do
+    # A soft-deleted article keeps its title and body until retention, and
+    # its page answers 404; nothing can be done to it or its comments.
+    test "a soft-deleted article and its comments are not visible" do
+      author = create_user("user")
+      board = create_board(%{min_role_to_view: "guest"})
+      article = create_article(author, board)
+
+      {:ok, comment} =
+        Baudrate.Content.create_comment(%{
+          "body" => "under a removed thread",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      viewer = create_user("user")
+
+      Repo.update_all(
+        from(a in Baudrate.Content.Article, where: a.id == ^article.id),
+        set: [deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+      )
+
+      refute Interactions.article_visible_to_user?(article.id, viewer.id)
+      refute Interactions.comment_visible_to_user?(comment, viewer.id)
+
+      assert {:error, :not_found} = Baudrate.Content.toggle_comment_boost(viewer.id, comment.id)
+      assert {:error, :not_found} = Baudrate.Content.toggle_comment_like(viewer.id, comment.id)
+    end
+
     test "article in guest-visible board is visible to any user" do
       user = create_user("user")
       board = create_board(%{min_role_to_view: "guest"})

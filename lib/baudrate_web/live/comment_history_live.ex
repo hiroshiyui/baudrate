@@ -56,7 +56,10 @@ defmodule BaudrateWeb.CommentHistoryLive do
     article =
       Baudrate.Repo.get!(Content.Article, comment.article_id) |> Baudrate.Repo.preload(:boards)
 
-    if not ArticleHelpers.user_can_view_article?(article, socket.assigns.current_user) do
+    # A removed article's page is a 404, and so is its comments' history: the
+    # row keeps its title until retention, and comment ids are sequential.
+    if not is_nil(article.deleted_at) or
+         not ArticleHelpers.user_can_view_article?(article, socket.assigns.current_user) do
       raise BaudrateWeb.NotFoundError
     end
 

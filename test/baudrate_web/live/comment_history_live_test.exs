@@ -4,6 +4,7 @@ defmodule BaudrateWeb.CommentHistoryLiveTest do
   """
   use BaudrateWeb.ConnCase
 
+  import Ecto.Query, only: [where: 2]
   import Phoenix.LiveViewTest
 
   alias Baudrate.Content
@@ -205,6 +206,24 @@ defmodule BaudrateWeb.CommentHistoryLiveTest do
 
       assert_raise BaudrateWeb.NotFoundError, fn ->
         live(conn, "/comments/#{remote_comment.id}/history")
+      end
+    end
+
+    # A removed article keeps its title until retention, and comment ids are
+    # sequential: an anonymous visitor walking /comments/N/history read
+    # removed threads' titles and every revision of their comments.
+    test "a comment under a soft-deleted article", %{
+      guest_conn: guest_conn,
+      article: article,
+      comment: comment
+    } do
+      Repo.update_all(
+        where(Content.Article, id: ^article.id),
+        set: [deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+      )
+
+      assert_raise BaudrateWeb.NotFoundError, fn ->
+        live(guest_conn, "/comments/#{comment.id}/history")
       end
     end
 
