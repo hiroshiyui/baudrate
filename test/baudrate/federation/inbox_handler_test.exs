@@ -1131,7 +1131,9 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert Content.count_article_likes(article) == 0
     end
 
-    test "accepts like for local article in non-federated board when author has remote followers" do
+    # ADR 0083: inbound is never wider than outbound. An author's remote
+    # followers never received this article, so a follower may not like it.
+    test "refuses like for local article in non-federated board even when author has remote followers" do
       user = setup_user_with_role("user")
       remote_actor = create_remote_actor()
 
@@ -1163,7 +1165,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       }
 
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
-      assert Content.count_article_likes(article) == 1
+      assert Content.count_article_likes(article) == 0
     end
   end
 
@@ -1370,7 +1372,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert Content.count_article_boosts(article) == 1
     end
 
-    test "accepts boost for local article in non-federated board when author has remote followers" do
+    test "refuses boost for local article in non-federated board even when author has remote followers" do
       user = setup_user_with_role("user")
       booster = create_remote_actor()
       follower_actor = create_remote_actor()
@@ -1404,7 +1406,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       }
 
       assert :ok = InboxHandler.handle(activity, booster, :shared)
-      assert Content.count_article_boosts(article) == 1
+      assert Content.count_article_boosts(article) == 0
     end
   end
 
@@ -2982,9 +2984,10 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert Content.list_comments_for_article(article) == []
     end
 
-    test "still accepts a reply when the author has remote followers" do
-      # Mirrors the documented Like/Announce exception: user-actor fan-out may
-      # already have published the article, so inbound replies must be honored.
+    # ADR 0083: the author's followers never received an article from a board
+    # that does not federate (`Delivery.enqueue_for_article/4`), so following
+    # the author first must not open it to replies.
+    test "refuses a reply even when the author has remote followers" do
       user = setup_user_with_role("user")
       board = create_gated_board(%{ap_enabled: false})
       article = create_article_for_board(user, board)
@@ -3001,7 +3004,56 @@ defmodule Baudrate.Federation.InboxHandlerTest do
         note_reply_activity(remote_actor, Federation.actor_uri(:article, article.slug))
 
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
-      assert length(Content.list_comments_for_article(article)) == 1
+      assert Content.list_comments_for_article(article) == []
+    end
+
+    test "refuses a reply into a staff-only board when the author has remote followers" do
+      user = setup_user_with_role("user")
+      board = create_gated_board(%{min_role_to_view: "moderator", ap_enabled: true})
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      {:ok, _follower} =
+        Federation.create_follower(
+          Federation.actor_uri(:user, user.username),
+          remote_actor,
+          "https://remote.example/follows/#{System.unique_integer([:positive])}"
+        )
+
+      activity =
+        note_reply_activity(remote_actor, Federation.actor_uri(:article, article.slug))
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.list_comments_for_article(article) == []
+    end
+
+    # Comment ids are sequential, so `/ap/comments/<N>` is an enumerable way in
+    # to every thread, with no slug to guess.
+    test "refuses a reply addressed to a comment URI in a private board" do
+      user = setup_user_with_role("user")
+      board = create_gated_board(%{min_role_to_view: "user", ap_enabled: true})
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Members only",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, _follower} =
+        Federation.create_follower(
+          Federation.actor_uri(:user, user.username),
+          remote_actor,
+          "https://remote.example/follows/#{System.unique_integer([:positive])}"
+        )
+
+      activity = note_reply_activity(remote_actor, Federation.actor_uri(:comment, comment.id))
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert [%{id: id}] = Content.list_comments_for_article(article)
+      assert id == comment.id
     end
   end
 

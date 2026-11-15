@@ -2253,16 +2253,17 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  # Returns true if the article can participate in federation.
+  # Returns true if the article can participate in federation (ADR 0004, 0083).
   # Remote articles (received via federation) always qualify regardless of which
   # boards they reside in — they already exist on the fediverse and remote actors
   # should be able to Like, Boost, or Reply to them even if the board has
   # ap_enabled: false.
-  # Local articles qualify if either:
-  #   (a) they are in at least one public, AP-enabled board, or
-  #   (b) their author has remote followers — user-actor federation may have
-  #       already published the article via follower fan-out, so inbound
-  #       interactions on it must be honored regardless of board AP status.
+  # A local article qualifies exactly when the outbound gate would publish it:
+  # board-less, or in at least one federated board
+  # (`Delivery.article_boards_federated?/1`). Inbound must never be wider than
+  # outbound. It used to be — an author with any accepted remote follower opened
+  # every article they wrote, private and staff boards included, to replies,
+  # likes, boosts and poll votes from anyone who followed them first.
   # A deleted article takes no interaction, local or remote: likes, boosts and
   # poll votes on one were accepted, though replies and quotes were refused.
   defp article_federated?(%{deleted_at: %DateTime{}}), do: false
@@ -2270,44 +2271,13 @@ defmodule Baudrate.Federation.InboxHandler do
   defp article_federated?(%{remote_actor_id: remote_actor_id}) when not is_nil(remote_actor_id),
     do: true
 
-  defp article_federated?(article) do
-    article_in_federated_board?(article) or author_has_remote_followers?(article)
+  defp article_federated?(%Content.Article{} = article) do
+    article
+    |> Baudrate.Repo.preload(:boards)
+    |> Delivery.article_boards_federated?()
   end
 
-  defp article_in_federated_board?(article) do
-    import Ecto.Query
-
-    Baudrate.Repo.exists?(
-      from(ba in Baudrate.Content.BoardArticle,
-        join: b in Baudrate.Content.Board,
-        on: b.id == ba.board_id,
-        where:
-          ba.article_id == ^article.id and
-            b.min_role_to_view == "guest" and
-            b.ap_enabled == true
-      )
-    )
-  end
-
-  defp author_has_remote_followers?(%{user_id: user_id}) when is_integer(user_id) do
-    import Ecto.Query
-
-    case Baudrate.Repo.get(Baudrate.Setup.User, user_id) do
-      %{username: username} when is_binary(username) ->
-        actor_uri = Federation.actor_uri(:user, username)
-
-        Baudrate.Repo.exists?(
-          from(f in Baudrate.Federation.Follower,
-            where: f.actor_uri == ^actor_uri and not is_nil(f.accepted_at)
-          )
-        )
-
-      _ ->
-        false
-    end
-  end
-
-  defp author_has_remote_followers?(_), do: false
+  defp article_federated?(_), do: false
 
   # --- Follow helpers (Accept/Reject) ---
 

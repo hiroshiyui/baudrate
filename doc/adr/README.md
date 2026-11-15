@@ -23,7 +23,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0001](0001-elixir-phoenix-liveview-platform.md) | Elixir / Phoenix / LiveView on Bandit as the application platform | Accepted; `FeedWorker` renamed by [0041](0041-rss-and-atom-are-syndication.md) |
 | [0002](0002-context-facades.md) | Context facades over focused sub-modules | Accepted; `Federation.Feed` renamed by [0039](0039-the-personal-stream-is-a-timeline.md) and [0041](0041-rss-and-atom-are-syndication.md); the no-sub-module rule amended by [0047](0047-the-facade-lists-every-way-a-context-changes-the-world.md) |
 | [0003](0003-activitypub-federation.md) | Federate over ActivityPub, mapping boards to Group actors | Accepted |
-| [0004](0004-federation-gate-for-non-public-boards.md) | A single federation gate for every inbound interaction | Accepted; the outbound half is [0043](0043-the-outbound-federation-gate-and-withdrawals.md) |
+| [0004](0004-federation-gate-for-non-public-boards.md) | A single federation gate for every inbound interaction | Accepted, except exception 2, superseded by [0083](0083-the-inbound-gate-is-the-outbound-gate.md); the outbound half is [0043](0043-the-outbound-federation-gate-and-withdrawals.md) |
 | [0005](0005-rust-nifs-for-untrusted-parsing.md) | Rust NIFs (Rustler) for sanitizing and parsing untrusted input | Accepted; the NIF table is a 2026-08-09 snapshot and is now incomplete |
 | [0006](0006-media-proxy-no-third-party-subresources.md) | No third-party subresources: proxy all remote media | Accepted; click-to-load embeds refined by [0045](0045-the-video-player-loads-on-a-click.md) |
 | [0007](0007-single-ssrf-safe-http-client.md) | One SSRF-safe, DNS-pinned HTTP client for all outbound requests | Accepted |
@@ -102,6 +102,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0080](0080-a-revoked-session-s-pages-leave-by-redirect.md) | A revoked session's pages leave by redirect | Accepted |
 | [0081](0081-a-syndicated-article-shows-its-lead-and-sends-readers-to-the-source.md) | A syndicated article shows its lead and sends readers to the source | Accepted |
 | [0082](0082-federated-articles-may-be-quoted.md) | Federated articles may be quoted | Accepted |
+| [0083](0083-the-inbound-gate-is-the-outbound-gate.md) | The inbound gate is the outbound gate | Accepted |
 
 ## Writing a new ADR
 

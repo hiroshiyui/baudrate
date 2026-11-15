@@ -101,10 +101,11 @@ that kind goes in it.
   at verify. `sign/5`/`sign_get/3` never return a `host` header.
 
 ### Federation — gates and delivery
-- **Inbound gate** (ADR 0004): only boards with `min_role_to_view == "guest"` and
+- **Inbound gate** (ADR 0004/0083): only boards with `min_role_to_view == "guest"` and
   `ap_enabled` federate; `InboxHandler.article_federated?/1` gates every Like, Announce,
-  reply and poll vote on a local article (exceptions: remote articles; authors with
-  remote followers). Refusals drop with `:ok`.
+  reply and poll vote on a local article with the outbound predicate
+  (`Delivery.article_boards_federated?/1`) — never wider than outbound; only remote
+  articles are exempt. Refusals drop with `:ok`.
 - **Outbound gate** is `Board.federated?/1` everywhere (ADR 0043), never `public?/1`;
   withdrawals (`Delete`, `Undo`) pass `intent: :withdraw` and are never gated. Gate:
   `publisher_test.exs`.

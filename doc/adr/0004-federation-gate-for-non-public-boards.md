@@ -1,8 +1,9 @@
 # 0004 — A single federation gate for every inbound interaction
 
-- **Status:** Accepted. This record covers the *inbound* half; the outbound
-  half its Context assumes is recorded in
-  [0043](0043-the-outbound-federation-gate-and-withdrawals.md)
+- **Status:** Accepted, except exception 2 (authors with remote followers),
+  superseded by [0083](0083-the-inbound-gate-is-the-outbound-gate.md). This
+  record covers the *inbound* half; the outbound half its Context assumes is
+  recorded in [0043](0043-the-outbound-federation-gate-and-withdrawals.md)
 - **Date:** 2026-08-08 (v1.12.0) — hardened; gate itself predates it
 
 ## Context
