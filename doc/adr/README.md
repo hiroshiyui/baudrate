@@ -27,7 +27,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0005](0005-rust-nifs-for-untrusted-parsing.md) | Rust NIFs (Rustler) for sanitizing and parsing untrusted input | Accepted; the NIF table is a 2026-08-09 snapshot and is now incomplete |
 | [0006](0006-media-proxy-no-third-party-subresources.md) | No third-party subresources: proxy all remote media | Accepted; click-to-load embeds refined by [0045](0045-the-video-player-loads-on-a-click.md) |
 | [0007](0007-single-ssrf-safe-http-client.md) | One SSRF-safe, DNS-pinned HTTP client for all outbound requests | Accepted |
-| [0008](0008-server-side-dual-token-sessions.md) | Server-side sessions with dual rotating tokens | Accepted |
+| [0008](0008-server-side-dual-token-sessions.md) | Server-side sessions with dual rotating tokens | Accepted; amended by [0086](0086-a-session-ends-ninety-days-after-sign-in.md) |
 | [0009](0009-mandatory-2fa-and-admin-sudo-mode.md) | Mandatory 2FA for privileged roles, plus admin sudo mode | Accepted |
 | [0010](0010-encrypt-secrets-at-rest.md) | Encrypt TOTP secrets and federation private keys at rest | Accepted; amended by [0038](0038-encryption-keys-are-separate-and-rotatable.md); `send_accept`/`send_reject` queued by [0034](0034-federation-work-is-committed-before-it-is-acknowledged.md) |
 | [0011](0011-role-levels-for-board-authorization.md) | Ordered role levels plus per-board minimums for authorization | Accepted, except the configurable-capabilities half, superseded by [0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md) |
@@ -105,6 +105,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0083](0083-the-inbound-gate-is-the-outbound-gate.md) | The inbound gate is the outbound gate | Accepted |
 | [0084](0084-a-half-finished-sign-in-expires-and-is-bound-to-the-credentials.md) | A half-finished sign-in expires, and is bound to the credentials | Accepted |
 | [0085](0085-a-members-comment-is-forwarded-by-others-only-from-a-thread-that-federates.md) | A member's comment is forwarded by others only from a thread that federates | Accepted |
+| [0086](0086-a-session-ends-ninety-days-after-sign-in.md) | A session ends ninety days after sign-in | Accepted |
 
 ## Writing a new ADR
 

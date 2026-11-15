@@ -10,6 +10,8 @@ defmodule Baudrate.Auth.Sessions do
   alias Baudrate.Setup.User
 
   @session_ttl_seconds 14 * 86_400
+  # However often it is refreshed, a session ends this long after sign-in.
+  @session_max_lifetime_seconds 90 * 86_400
   @max_sessions_per_user 3
 
   @login_throttle_window_seconds 3600
@@ -143,8 +145,11 @@ defmodule Baudrate.Auth.Sessions do
   Rotates both session and refresh tokens using the current refresh token.
 
   Generates new random tokens, updates their hashes in the database, and resets
-  `expires_at` to #{@session_ttl_seconds} seconds from now. The old tokens become
-  immediately invalid after rotation.
+  `expires_at` to #{@session_ttl_seconds} seconds from now — but never past
+  #{@session_max_lifetime_seconds} seconds after the session was created. Each
+  daily rotation used to push the expiry out again, so a stolen cookie kept in
+  use never expired; now every session ends with a fresh sign-in. The old
+  tokens become immediately invalid after rotation.
 
   If the session has expired, it is deleted and `{:error, :expired}` is returned.
 
@@ -160,11 +165,16 @@ defmodule Baudrate.Auth.Sessions do
         {:error, :not_found}
 
       session ->
-        if DateTime.compare(session.expires_at, DateTime.utc_now()) == :gt do
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
+        hard_end = DateTime.add(session.inserted_at, @session_max_lifetime_seconds, :second)
+
+        if DateTime.compare(session.expires_at, now) == :gt and
+             DateTime.compare(hard_end, now) == :gt do
           new_session_token = generate_token()
           new_refresh_token = generate_token()
-          now = DateTime.utc_now() |> DateTime.truncate(:second)
-          new_expires_at = DateTime.add(now, @session_ttl_seconds, :second)
+
+          new_expires_at =
+            Enum.min([DateTime.add(now, @session_ttl_seconds, :second), hard_end], DateTime)
 
           session
           |> Ecto.Changeset.change(%{

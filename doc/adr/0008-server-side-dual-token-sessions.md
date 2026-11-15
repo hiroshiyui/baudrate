@@ -1,6 +1,7 @@
 # 0008 — Server-side sessions with dual rotating tokens
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by [0086](0086-a-session-ends-ninety-days-after-sign-in.md)
+  (an absolute end ninety days after sign-in)
 - **Date:** Recorded retroactively 2026-08-09
 
 ## Context

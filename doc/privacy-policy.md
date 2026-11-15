@@ -357,7 +357,7 @@ Cleared automatically:
 | What | After |
 |------|-------|
 | Sign-in attempts, with their IP addresses | 7 days |
-| Expired sessions, with their IP and browser | at session expiry; 14 days from last use |
+| Expired sessions, with their IP and browser | at session expiry; 14 days from last use, and never more than 90 days after sign-in |
 | Notifications | 90 days |
 | Content copied into a report as evidence, and any reported direct message | 90 days after the report is closed |
 | Queued federation deliveries, which contain the message being delivered | 7 days delivered, 30 days abandoned |

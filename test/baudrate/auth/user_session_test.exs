@@ -139,6 +139,36 @@ defmodule Baudrate.Auth.UserSessionTest do
       assert {:error, :expired} = Auth.refresh_user_session(refresh_token)
       assert session_count(user.id) == 0
     end
+
+    # Each daily rotation pushed the expiry out again, so a stolen cookie kept
+    # in use never expired. A session ends 90 days after sign-in regardless.
+    defp backdate_session(user, days) do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(s in UserSession, where: s.user_id == ^user.id),
+        set: [inserted_at: DateTime.add(now, -days * 86_400, :second)]
+      )
+    end
+
+    test "never extends a session past 90 days from sign-in", %{user: user} do
+      {:ok, _session_token, refresh_token} = Auth.create_user_session(user.id)
+      backdate_session(user, 85)
+
+      assert {:ok, _, _} = Auth.refresh_user_session(refresh_token)
+
+      session = Repo.one!(from s in UserSession, where: s.user_id == ^user.id)
+      hard_end = DateTime.add(session.inserted_at, 90 * 86_400, :second)
+      assert DateTime.compare(session.expires_at, hard_end) != :gt
+    end
+
+    test "refuses to refresh a session older than 90 days", %{user: user} do
+      {:ok, _session_token, refresh_token} = Auth.create_user_session(user.id)
+      backdate_session(user, 91)
+
+      assert {:error, :expired} = Auth.refresh_user_session(refresh_token)
+      assert session_count(user.id) == 0
+    end
   end
 
   describe "delete_session_by_token/1" do
