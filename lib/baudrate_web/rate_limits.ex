@@ -36,6 +36,8 @@ defmodule BaudrateWeb.RateLimits do
   | `check_outbound_follow/1`| `outbound_follow:` | 1 hour  | 10    |
   | `check_create_report/1` | `report_create:`   | 15 min  | 5     |
   | `check_interaction/1`   | `interaction:`     | 1 min   | 30    |
+  | `check_composer_image_upload/2` | `composer_image:` | 1 hour | 30 (5 for a new account) |
+  | `check_composer_image_upload_daily/1` | `composer_image_day:` | 1 day | 100 |
   | `check_mention_resolve/1` | `mention_resolve:` | 1 hour | 30   |
   | `check_timeline_reply/1`   | `timeline_reply:`      | 5 min   | 20    |
   | `check_link_preview_domain/1` | `lp_domain:` | 1 min   | 10    |
@@ -327,6 +329,27 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_interaction(integer()) :: :ok | {:error, :rate_limited}
   def check_interaction(user_id) do
     check("interaction:#{user_id}", 60_000, 30, :interaction)
+  end
+
+  @doc """
+  Attaching an image in a composer (article, comment, timeline reply): 30
+  per hour per member, and 5 for an account still under the new-account
+  limits (ADR 0064).
+
+  Taken **before** the upload is decoded, by
+  `Baudrate.Content.Images.process_composer_image/2`: each one costs a
+  libvips decode of up to 40 MP and a WebP encode.
+  """
+  @spec check_composer_image_upload(integer(), boolean()) :: :ok | {:error, :rate_limited}
+  def check_composer_image_upload(user_id, trusted?) do
+    limit = if trusted?, do: 30, else: 5
+    check("composer_image:#{user_id}", 3_600_000, limit, :composer_image_upload)
+  end
+
+  @doc "Attaching an image in a composer: 100 per day per member."
+  @spec check_composer_image_upload_daily(integer()) :: :ok | {:error, :rate_limited}
+  def check_composer_image_upload_daily(user_id) do
+    check("composer_image_day:#{user_id}", 86_400_000, 100, :composer_image_upload_day)
   end
 
   @doc "Outbound follow: 10 per hour per user."

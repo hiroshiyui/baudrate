@@ -299,6 +299,7 @@ defmodule Baudrate.Content do
   # --- Article Images ---
 
   defdelegate create_article_image(attrs), to: Images
+  defdelegate process_composer_image(user, upload_path), to: Images
   defdelegate authorize_article_image(article, user), to: Images
   defdelegate add_article_image(article, file_info, user), to: Images
   defdelegate list_article_images(article_id), to: Images

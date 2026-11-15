@@ -31,7 +31,6 @@ defmodule BaudrateWeb.ArticleNewLive do
 
   alias Baudrate.Auth
   alias Baudrate.Content
-  alias Baudrate.Content.ArticleImageStorage
   alias BaudrateWeb.{PollComposer, RateLimits}
   import BaudrateWeb.Helpers, only: [parse_id: 1, interaction_refused_message: 2]
 
@@ -479,7 +478,7 @@ defmodule BaudrateWeb.ArticleNewLive do
       user = socket.assigns.current_user
 
       case consume_uploaded_entry(socket, entry, fn %{path: path} ->
-             case ArticleImageStorage.process_upload(path) do
+             case Content.process_composer_image(user, path) do
                {:ok, file_info} ->
                  attrs = Map.merge(file_info, %{user_id: user.id})
 
@@ -488,12 +487,26 @@ defmodule BaudrateWeb.ArticleNewLive do
                    {:error, _} -> {:ok, :error}
                  end
 
-               {:error, _} ->
-                 {:ok, :error}
+               {:error, reason} ->
+                 {:ok, {:refused, reason}}
              end
            end) do
         :error ->
           {:noreply, socket}
+
+        # Refused before the decode (the interaction gate or the upload
+        # limits), or not an image we can read: say so instead of dropping it.
+        {:refused, reason} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             BaudrateWeb.Helpers.refusal_message(
+               reason,
+               user,
+               gettext("The image could not be added.")
+             )
+           )}
 
         image ->
           {:noreply, assign(socket, :uploaded_images, socket.assigns.uploaded_images ++ [image])}

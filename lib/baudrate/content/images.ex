@@ -23,6 +23,36 @@ defmodule Baudrate.Content.Images do
   alias Baudrate.Moderation.ContentFilters
 
   @doc """
+  Decodes and stores an image a member attached in a composer (a new
+  article, a comment, a timeline reply), after charging for it.
+
+  Before this the composers called `ArticleImageStorage.process_upload/1`
+  directly: no interaction gate and no limit but the composer's own count of
+  four, which lives in the socket and resets on removal or remount. A
+  restricted account could have the server run a 40 MP libvips decode and a
+  WebP encode for every 8 MB file it pushed. Now, **before** the decode: the
+  interaction gate (ADR 0029), then an hourly bucket (smaller for a new
+  account, ADR 0064) and a daily one — the shape DM images already have
+  (ADR 0071).
+
+  Returns what `ArticleImageStorage.process_upload/1` returns, or
+  `{:error, reason}` from the gate or `{:error, :rate_limited}`.
+  """
+  @spec process_composer_image(%Baudrate.Setup.User{}, Path.t()) ::
+          {:ok, map()} | {:error, term()}
+  def process_composer_image(%Baudrate.Setup.User{} = user, upload_path) do
+    with :ok <- Baudrate.Auth.ensure_can_interact(user),
+         :ok <-
+           BaudrateWeb.RateLimits.check_composer_image_upload(
+             user.id,
+             Baudrate.Auth.trusted?(user)
+           ),
+         :ok <- BaudrateWeb.RateLimits.check_composer_image_upload_daily(user.id) do
+      ArticleImageStorage.process_upload(upload_path)
+    end
+  end
+
+  @doc """
   Creates an article image record.
   """
   def create_article_image(attrs) do
