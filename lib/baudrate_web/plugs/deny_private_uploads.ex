@@ -23,11 +23,25 @@ defmodule BaudrateWeb.Plugs.DenyPrivateUploads do
   @impl true
   def init(opts), do: opts
 
+  # Compared after percent-decoding, because `Plug.Static` decodes each
+  # segment before it touches the disk: `/uploads/dm%5Fimages/<file>` used to
+  # pass the raw comparison here and then be served from `dm_images/`.
   @impl true
-  def call(%Plug.Conn{path_info: [a, b | _]} = conn, _opts)
-      when [a, b] in @prefixes do
-    conn |> send_resp(404, "") |> halt()
+  def call(%Plug.Conn{path_info: [a, b | _]} = conn, _opts) do
+    if [decode(a), decode(b)] in @prefixes do
+      conn |> send_resp(404, "") |> halt()
+    else
+      conn
+    end
   end
 
   def call(conn, _opts), do: conn
+
+  # A malformed escape cannot name a directory `Plug.Static` would serve
+  # (it refuses the request itself), so the raw segment is compared.
+  defp decode(segment) do
+    URI.decode(segment)
+  rescue
+    ArgumentError -> segment
+  end
 end

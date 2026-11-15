@@ -73,7 +73,10 @@ defmodule BaudrateWeb.Endpoint do
     from: :baudrate,
     gzip: not code_reloading?,
     only: BaudrateWeb.static_paths(),
-    raise_on_missing_only: code_reloading?
+    raise_on_missing_only: code_reloading?,
+    # nginx adds this in production; without it in front (a bare release,
+    # development) an upload must still never be sniffed into another type.
+    headers: %{"x-content-type-options" => "nosniff"}
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
