@@ -1727,7 +1727,7 @@ timer. Verify renewal works: `sudo certbot renew --dry-run`.
 | Aspect | Detail |
 |--------|--------|
 | Cookie | Signed + encrypted (separate salts), `SameSite=Lax`, `Secure` in production |
-| TTL | 14 days from creation or last rotation |
+| TTL | 14 days from creation or last rotation, and never more than 90 days after sign-in (ADR 0086) |
 | Rotation | Tokens rotated every 24 hours |
 | Concurrency | Max 3 sessions per user; oldest evicted on 4th login |
 | Banning | Invalidates all existing sessions immediately |

@@ -675,7 +675,7 @@ touches it
 | Setting | Value |
 |---------|-------|
 | Cookie name | `_baudrate_key` |
-| Cookie lifetime | 14 days |
+| Cookie lifetime | 14 days, renewed on use, at most 90 days after sign-in (ADR 0086) |
 | Same-site policy | `Lax` |
 | Encryption | Signed + encrypted (separate salts) |
 | Token rotation | Every 24 hours (via `RefreshSession` plug) |

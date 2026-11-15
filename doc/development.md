@@ -157,6 +157,12 @@ same throttle. After 3 failed codes in an hour the owner gets a
 `totp_login_failed` security notice, at most once an hour
 ([ADR 0024](adr/0024-totp-codes-are-single-use-with-a-one-period-grace-window.md)).
 
+Between the password and the second factor the sign-in is a *half-login* in
+the cookie, written by `BaudrateWeb.HalfLogin.put/2` and read only through
+`HalfLogin.user/1`: ten minutes, and bound to the account's password hash and
+TOTP enrolment, so a kept copy dies with any credential change
+([ADR 0084](adr/0084-a-half-finished-sign-in-expires-and-is-bound-to-the-credentials.md)).
+
 Key functions in `Auth`:
 - `record_login_attempt/4` — records an attempt (username lowercased; `factor` is
   `"password"` (default), `"totp"` or `"reauth"`)
@@ -1474,6 +1480,13 @@ or switched off the push-only `"direct_message"` preference
   `with_images: true`). Deleting a message deletes its images and clears its
   link preview; unsent uploads are swept after 24 h.
 - Export: only the member's own sent images, as `media/dm_images/<id>.webp`.
+
+Composer images (articles, comments, timeline replies) are charged the same
+way before the decode, by `Content.process_composer_image/2`: the interaction
+gate, `check_composer_image_upload/2` (30/h, 5/h for a new account) and
+`check_composer_image_upload_daily/1` (100/day). Adding a like, a boost or a
+poll vote takes a place in `check_interaction/1` (30/min, every kind
+together), in the context; undoing never does.
 
 **Search** (`Messaging.Search`): `search_messages/3` matches `ILIKE` (escaped)
 over the member's own conversations, using the trigram index on
