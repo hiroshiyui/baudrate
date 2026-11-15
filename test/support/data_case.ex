@@ -29,6 +29,12 @@ defmodule Baudrate.DataCase do
 
   setup tags do
     Baudrate.DataCase.setup_sandbox(tags)
+
+    # As in ConnCase: every test starts from "allow". A synchronous test that
+    # sets a global deny (to reach a refusal in a process outside its
+    # `$callers`) used to leave it for whichever context test ran next, which
+    # then failed on its first rate-limited call, depending on the order.
+    BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
     :ok
   end
 

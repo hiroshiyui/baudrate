@@ -136,6 +136,7 @@ defmodule BaudrateWeb.TimelineLiveTest do
 
       {:ok, lv, _html} = live(conn, "/timeline")
       BaudrateWeb.RateLimiter.Sandbox.set_global_response({:deny, 1_000})
+      on_exit(fn -> BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1}) end)
 
       assert lv |> element("#timeline-item-#{item.id}-block-actor") |> render_click() =~
                "Too many actions"

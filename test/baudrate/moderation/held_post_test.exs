@@ -318,6 +318,7 @@ defmodule Baudrate.Moderation.HeldPostTest do
 
       # From here on, any place taken in a bucket is refused.
       BaudrateWeb.RateLimiter.Sandbox.set_global_response({:deny, 60_000})
+      on_exit(fn -> BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1}) end)
       assert {:ok, _} = HeldPosts.approve(held, ctx.admin)
     end
   end

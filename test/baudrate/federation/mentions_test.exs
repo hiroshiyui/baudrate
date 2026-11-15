@@ -253,6 +253,8 @@ defmodule Baudrate.Federation.MentionsTest do
 
       BaudrateWeb.RateLimiter.Sandbox.set_global_response({:deny, 60_000})
 
+      on_exit(fn -> BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1}) end)
+
       assert {:ok, _} =
                create_article(ctx.author, ctx.open, body: "hi @stranger@unreachable.example")
 

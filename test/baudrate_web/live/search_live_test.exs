@@ -37,6 +37,7 @@ defmodule BaudrateWeb.SearchLiveTest do
   test "importing a remote post is rate limited", %{conn: conn} do
     {:ok, lv, _html} = live(conn, "/search")
     BaudrateWeb.RateLimiter.Sandbox.set_global_response({:deny, 60_000})
+    on_exit(fn -> BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1}) end)
 
     html = render_click(lv, "import_remote_object", %{"url" => "https://remote.example/posts/1"})
 

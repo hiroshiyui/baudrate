@@ -119,6 +119,8 @@ defmodule BaudrateWeb.UserProfileLiveTest do
       {:ok, lv, _html} = live(conn, "/users/#{other.username}")
 
       BaudrateWeb.RateLimiter.Sandbox.set_global_response({:deny, 1_000})
+
+      on_exit(fn -> BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1}) end)
       assert render_hook(lv, :block_user, %{}) =~ "Too many actions"
       refute Auth.blocked?(me, other)
     end
