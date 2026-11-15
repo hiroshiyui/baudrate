@@ -18,10 +18,21 @@ defmodule BaudrateWeb.XML do
 
   def escape(text) when is_binary(text) do
     text
+    |> strip_invalid()
     |> String.replace("&", "&amp;")
     |> String.replace("<", "&lt;")
     |> String.replace(">", "&gt;")
     |> String.replace("\"", "&quot;")
     |> String.replace("'", "&apos;")
   end
+
+  @doc """
+  Removes the characters XML 1.0 forbids outright: the C0 controls except
+  tab, newline and carriage return, and U+FFFE/U+FFFF. No escape can make
+  them legal — `&#1;` is as invalid as the byte — so one in a member's title
+  used to make the whole board, site or user feed malformed for every reader.
+  """
+  @spec strip_invalid(String.t()) :: String.t()
+  def strip_invalid(text) when is_binary(text),
+    do: String.replace(text, ~r/[\x{0}-\x{8}\x{B}\x{C}\x{E}-\x{1F}\x{FFFE}\x{FFFF}]/u, "")
 end

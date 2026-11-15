@@ -21,6 +21,27 @@ defmodule BaudrateWeb.FeedXMLTest do
     test "returns empty string for nil" do
       assert SyndicationFeedXML.escape_cdata(nil) == ""
     end
+
+    test "drops characters XML 1.0 forbids" do
+      assert SyndicationFeedXML.escape_cdata("a\x01b\x1Fc\td\ne") == "abc\td\ne"
+    end
+  end
+
+  # No escape makes a C0 control legal in XML 1.0 (`&#1;` is as invalid as the
+  # byte), so one in a member's title made the whole feed malformed.
+  describe "XML.escape/1 and strip_invalid/1" do
+    test "drop C0 controls but keep tab, newline and carriage return" do
+      assert BaudrateWeb.XML.escape("T\x00i\x08t\x0Bl\x0Ce\x7F <b>") ==
+               "Title\x7F &lt;b&gt;"
+
+      assert BaudrateWeb.XML.strip_invalid("a\tb\nc\rd") == "a\tb\nc\rd"
+    end
+
+    test "the result parses as XML" do
+      title = BaudrateWeb.XML.escape("Bad\x01title & more")
+      doc = ~c"<t>" ++ String.to_charlist(title) ++ ~c"</t>"
+      assert {{:xmlElement, :t, _, _, _, _, _, _, _, _, _, _}, _} = :xmerl_scan.string(doc)
+    end
   end
 
   describe "xml_escape/1" do

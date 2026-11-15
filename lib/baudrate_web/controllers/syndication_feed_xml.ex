@@ -64,7 +64,9 @@ defmodule BaudrateWeb.SyndicationFeedXML do
   and re-opens it, producing the literal text `]]>` in the output.
   """
   def escape_cdata(text) when is_binary(text) do
-    String.replace(text, "]]>", "]]]]><![CDATA[>")
+    text
+    |> BaudrateWeb.XML.strip_invalid()
+    |> String.replace("]]>", "]]]]><![CDATA[>")
   end
 
   def escape_cdata(nil), do: ""
