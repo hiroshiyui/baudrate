@@ -9,6 +9,35 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.4.1] — 2026-11-15
+
+No change to the application: this release exists so that the deployed tag is
+one whose tests pass. v2.4.0's test run failed on two faults in the tests
+themselves, both fixed here, and the Rust toolchain moves to 1.100.0. Deploy
+this in place of v2.4.0; it carries all of v2.4.0's security fixes. There are
+no migrations.
+
+### Fixed
+
+- **Tests: a rate-limit refusal leaked from one test into the next.** A test
+  that switched the test rate limiter to "deny" for every process never
+  switched it back, so whichever context test ran after it failed on its first
+  rate-limited call — the like and boost tests, once v2.4.0 gave those a limit.
+  Which test ran next depended on the order test files finished loading, so it
+  failed on CI and passed locally. Every context test now starts from "allow",
+  and each test that sets a global refusal restores it.
+- **Browser tests: a form could be filled in before the page was live.** A
+  LiveView page re-renders when its socket connects and resets inputs typed
+  into before that; on a loaded machine the sign-in helper submitted the form
+  with the username wiped. The browser tests' `visit` now waits for the
+  page's LiveView to connect.
+
+### Changed
+
+- Rust 1.100.0 (from 1.99.1) builds the three NIFs, and the CI image carries
+  cargo-audit 0.23.0 (from 0.22.2), from the dependency drift report (#53).
+  The deploy installs the new toolchain on the server before compiling.
+
 ## [2.4.0] — 2026-11-15
 
 A security release from a project-wide audit: one critical and seven major

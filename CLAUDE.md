@@ -346,9 +346,13 @@ that kind goes in it.
 - Roles and permissions are seeded once in `test_helper.exs`; a test's own role uses a
   unique name.
 - Rate limits: `RateLimiter.Sandbox.set_global_response({:allow, 1})`; real backend tests
-  call `RateLimit.reset_all/0`.
+  call `RateLimit.reset_all/0`. `DataCase` and `ConnCase` start every test from "allow";
+  prefer the per-process `set_response/1`/`set_fun/1`, and restore a global deny with
+  `on_exit` (a leaked one fails whichever test runs next).
 - Browser tests beside the partitioned suite run as `MIX_TEST_PARTITION=5` (own DB and
   port; unset shares partition 1's port).
+- Browser tests use `FeatureCase.visit/2`, which waits for the LiveView to connect: an
+  input typed into before the socket connects is reset by the connect's re-render.
 - Browser tests (`--include feature`): after JS/hook changes run `js_errors_test.exs`;
   after CSS/layout changes `layout_test.exs`. Delete stale `priv/static/assets/*.gz` and
   `cache_manifest.json` first.
