@@ -169,6 +169,7 @@ defmodule Baudrate.Notification do
         preload: [:actor_user, :actor_remote_actor, :article, :comment]
       )
       |> Repo.all()
+      |> Enum.map(&withhold_unviewable_target(&1, user_id))
       |> Map.new(&{&1.id, &1})
 
     groups =
@@ -192,6 +193,24 @@ defmodule Baudrate.Notification do
       total_pages: max(ceil(total / per_page), 1)
     }
   end
+
+  # A notice is kept for 90 days, but what it names (an article's title, a
+  # comment) must pass the article's own gates *now*. A role change, a board's
+  # view role raised, or a move into a restricted board (ADR 0075) used to
+  # leave the title on the reader's notifications. The notice stays; its
+  # target is withheld. A deleted article is the page's to word ("a removed
+  # post", or the title for its author), and an author always sees their own.
+  defp withhold_unviewable_target(
+         %Notification{article: %{deleted_at: nil} = article} = n,
+         user_id
+       )
+       when article.user_id != user_id do
+    if Baudrate.Content.Interactions.article_visible_to_user?(article.id, user_id),
+      do: n,
+      else: %{n | article: nil, comment: nil}
+  end
+
+  defp withhold_unviewable_target(n, _user_id), do: n
 
   @doc """
   Marks read the group `notification` is listed in (see

@@ -3995,6 +3995,82 @@ defmodule Baudrate.ContentTest do
   end
 
   describe "list_bookmarks/2" do
+    # A bookmark renders its target's title (and a comment's first 200
+    # characters); it must pass the target page's gates *now*, not only when
+    # it was made.
+    test "drops an article whose board the member can no longer view" do
+      user = create_user("user")
+
+      board =
+        create_board(%{name: "Was open", slug: "was-open-#{System.unique_integer([:positive])}"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Now staff only",
+            body: "b",
+            slug: "nso-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, _} = Content.bookmark_article(user.id, article.id)
+      assert length(Content.list_bookmarks(user.id).bookmarks) == 1
+
+      Repo.update_all(from(b in Board, where: b.id == ^board.id),
+        set: [min_role_to_view: "moderator"]
+      )
+
+      assert %{bookmarks: [], total_pages: 1} = Content.list_bookmarks(user.id)
+    end
+
+    test "drops a comment whose article was removed or became unviewable" do
+      user = create_user("user")
+
+      board =
+        create_board(%{name: "Thread", slug: "bm-thread-#{System.unique_integer([:positive])}"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Removed thread",
+            body: "b",
+            slug: "rt-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "kept",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, _} = Content.bookmark_comment(user.id, comment.id)
+      assert length(Content.list_bookmarks(user.id).bookmarks) == 1
+
+      Repo.update_all(from(b in Board, where: b.id == ^board.id),
+        set: [min_role_to_view: "admin"]
+      )
+
+      assert Content.list_bookmarks(user.id).bookmarks == []
+
+      Repo.update_all(from(b in Board, where: b.id == ^board.id),
+        set: [min_role_to_view: "guest"]
+      )
+
+      assert length(Content.list_bookmarks(user.id).bookmarks) == 1
+
+      Repo.update_all(from(a in Article, where: a.id == ^article.id),
+        set: [deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+      )
+
+      assert Content.list_bookmarks(user.id).bookmarks == []
+    end
+
     test "returns paginated bookmarks" do
       user = create_user("user")
 

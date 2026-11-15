@@ -16,7 +16,7 @@ defmodule Baudrate.Content.Bookmarks do
 
   import Ecto.Query
   alias Baudrate.Repo
-  alias Baudrate.Content.{Article, Bookmark, Comment, Filters, Interactions}
+  alias Baudrate.Content.{Article, Board, BoardArticle, Bookmark, Comment, Filters, Interactions}
 
   @bookmarks_per_page 20
   @max_bookmarks_per_page 100
@@ -222,37 +222,13 @@ defmodule Baudrate.Content.Bookmarks do
 
     # Resolved once: both the count and the page need the same set.
     hidden_actors = Filters.hidden_actor_ids()
-
-    base_query =
-      from(b in Bookmark,
-        left_join: a in assoc(b, :article),
-        left_join: c in assoc(b, :comment),
-        where: b.user_id == ^user_id,
-        where:
-          (not is_nil(b.article_id) and is_nil(a.deleted_at)) or
-            (not is_nil(b.comment_id) and is_nil(c.deleted_at)),
-        # A bookmark made while a remote row was public keeps rendering it, so
-        # the visibility gate has to be here and not only at creation time.
-        where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
-        where: is_nil(c.remote_actor_id) or c.visibility in ["public", "unlisted"],
-        where: is_nil(a.remote_actor_id) or a.remote_actor_id not in subquery(hidden_actors),
-        where: is_nil(c.remote_actor_id) or c.remote_actor_id not in subquery(hidden_actors)
-      )
+    allowed_roles = user_id |> viewer() |> Filters.allowed_view_roles()
+    base_query = listable_bookmarks(user_id, hidden_actors, allowed_roles)
 
     total = Repo.one(from(b in subquery(base_query), select: count()))
 
     bookmarks =
-      from(b in Bookmark,
-        left_join: a in assoc(b, :article),
-        left_join: c in assoc(b, :comment),
-        where: b.user_id == ^user_id,
-        where:
-          (not is_nil(b.article_id) and is_nil(a.deleted_at)) or
-            (not is_nil(b.comment_id) and is_nil(c.deleted_at)),
-        where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
-        where: is_nil(c.remote_actor_id) or c.visibility in ["public", "unlisted"],
-        where: is_nil(a.remote_actor_id) or a.remote_actor_id not in subquery(hidden_actors),
-        where: is_nil(c.remote_actor_id) or c.remote_actor_id not in subquery(hidden_actors),
+      from(b in base_query,
         order_by: [desc: b.inserted_at, desc: b.id],
         offset: ^offset,
         limit: ^per_page,
@@ -266,5 +242,67 @@ defmodule Baudrate.Content.Bookmarks do
     total_pages = max(ceil(total / per_page), 1)
 
     %{bookmarks: bookmarks, page: page, total_pages: total_pages}
+  end
+
+  defp viewer(user_id) do
+    case Repo.get(Baudrate.Setup.User, user_id) do
+      nil -> nil
+      user -> Repo.preload(user, :role)
+    end
+  end
+
+  # The bookmarks a member may still be shown. A bookmark is a pointer made
+  # when its target was visible; what it renders (a title, a comment excerpt)
+  # must pass the same gates as the target's own page *now*. It used to check
+  # only deletion and remote audience, so a role change, a board's view role
+  # raised, or a move into a restricted board (ADR 0075) left the title and
+  # the first 200 characters of a comment on this page — and a comment under
+  # a soft-deleted article too.
+  defp listable_bookmarks(user_id, hidden_actors, allowed_roles) do
+    from(b in Bookmark,
+      left_join: a in assoc(b, :article),
+      as: :article,
+      left_join: c in assoc(b, :comment),
+      left_join: ca in assoc(c, :article),
+      as: :comment_article,
+      where: b.user_id == ^user_id,
+      where:
+        (not is_nil(b.article_id) and is_nil(a.deleted_at)) or
+          (not is_nil(b.comment_id) and is_nil(c.deleted_at) and is_nil(ca.deleted_at)),
+      # A bookmark made while a remote row was public keeps rendering it, so
+      # the visibility gate has to be here and not only at creation time.
+      where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
+      where: is_nil(c.remote_actor_id) or c.visibility in ["public", "unlisted"],
+      where: is_nil(a.remote_actor_id) or a.remote_actor_id not in subquery(hidden_actors),
+      where: is_nil(c.remote_actor_id) or c.remote_actor_id not in subquery(hidden_actors),
+      # Board gate, as `ArticleHelpers.user_can_view_article?/2`: an article
+      # in no board passes; otherwise one of its boards must be viewable.
+      where:
+        is_nil(b.article_id) or
+          not exists(from(ba in BoardArticle, where: ba.article_id == parent_as(:article).id)) or
+          exists(
+            from(ba in BoardArticle,
+              join: bd in Board,
+              on: bd.id == ba.board_id,
+              where:
+                ba.article_id == parent_as(:article).id and
+                  bd.min_role_to_view in ^allowed_roles
+            )
+          ),
+      where:
+        is_nil(b.comment_id) or
+          not exists(
+            from(ba in BoardArticle, where: ba.article_id == parent_as(:comment_article).id)
+          ) or
+          exists(
+            from(ba in BoardArticle,
+              join: bd in Board,
+              on: bd.id == ba.board_id,
+              where:
+                ba.article_id == parent_as(:comment_article).id and
+                  bd.min_role_to_view in ^allowed_roles
+            )
+          )
+    )
   end
 end

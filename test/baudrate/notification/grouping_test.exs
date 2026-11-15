@@ -28,6 +28,29 @@ defmodule Baudrate.Notification.GroupingTest do
   end
 
   describe "list_notification_groups/2" do
+    # A notice outlives a change of who may see what it names. The notice
+    # stays; the target's title and comment are withheld from a reader who
+    # can no longer view the article — never from its author.
+    test "withholds an article the reader can no longer view", %{author: author, first: first} do
+      watcher = create_user("watcher")
+      replier = create_user("replier")
+      notify!(watcher, "reply_to_watched", replier, first, 1)
+      notify!(author, "article_liked", replier, first, 2)
+
+      [board] = Repo.preload(first, :boards).boards
+
+      Repo.update_all(from(b in Content.Board, where: b.id == ^board.id),
+        set: [min_role_to_view: "admin"]
+      )
+
+      assert %{groups: [group]} = Notification.list_notification_groups(watcher.id)
+      assert group.notification.article == nil
+      assert group.notification.comment == nil
+
+      assert %{groups: [own]} = Notification.list_notification_groups(author.id)
+      assert own.notification.article.id == first.id
+    end
+
     test "likes of one article are one group, newest actors first", %{
       author: author,
       first: first
