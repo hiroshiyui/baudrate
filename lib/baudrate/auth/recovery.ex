@@ -221,7 +221,8 @@ defmodule Baudrate.Auth.Recovery do
   def issue_challenge(%User{} = admin, contact_id) do
     with :ok <- authorize_verify(admin),
          %RecoveryContact{} = contact <- Repo.get(RecoveryContact, contact_id),
-         %User{} = owner <- Repo.get(User, contact.user_id) do
+         %User{} = owner <- Repo.get(User, contact.user_id),
+         :ok <- refuse_own_anchor(admin, owner) do
       contact
       |> RecoveryChallenge.build(owner, admin, Setup.get_setting("site_name"))
       |> Repo.insert()
@@ -291,6 +292,12 @@ defmodule Baudrate.Auth.Recovery do
       when status in ["pending", "verified"] do
     with :ok <- authorize_verify(admin),
          %RecoveryContact{} = contact <- Repo.get(RecoveryContact, contact_id),
+         %User{} = owner <- Repo.get(User, contact.user_id),
+         # Another person confirms an anchor, never its owner (ADR 0067): a
+         # stolen admin session could otherwise add a key it holds and vouch
+         # for it itself. A peer's anchor may be verified — what a peer may
+         # not do is reset that account (`authorize_issue/2`).
+         :ok <- refuse_own_anchor(admin, owner),
          :ok <- consume_challenge_for(status, contact, admin) do
       contact
       |> RecoveryContact.verification_changeset(status, admin)
@@ -623,6 +630,9 @@ defmodule Baudrate.Auth.Recovery do
         if count == 1, do: :ok, else: {:error, :no_live_challenge}
     end
   end
+
+  defp refuse_own_anchor(%User{id: id}, %User{id: id}), do: {:error, :self_action}
+  defp refuse_own_anchor(_admin, _owner), do: :ok
 
   defp authorize_issue(%User{} = admin, %User{} = user) do
     # Rank and status as they stand, not as the admin page loaded them.

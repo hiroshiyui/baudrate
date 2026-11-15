@@ -241,6 +241,20 @@ defmodule Baudrate.Auth.AccountRecoveryTest do
       assert {:error, :not_found} = Recovery.issue_challenge(ctx.admin, 0)
     end
 
+    # Another person confirms an anchor, never its owner (ADR 0067): a stolen
+    # admin session could add a key it holds and vouch for it itself.
+    test "is refused for the admin's own contact, and confirming it too", ctx do
+      {:ok, own} =
+        Recovery.add_contact(ctx.admin, %{
+          "email" => "admin@example.com",
+          "pgp_public_key" => @key
+        })
+
+      assert {:error, :self_action} = Recovery.issue_challenge(ctx.admin, own.id)
+      assert {:error, :self_action} = Recovery.set_verification(ctx.admin, own.id, "verified")
+      assert Repo.reload!(own).status == "pending"
+    end
+
     test "is what verifying spends, and it is spent once", ctx do
       assert {:error, :no_live_challenge} =
                Recovery.set_verification(ctx.admin, ctx.contact.id, "verified"),
