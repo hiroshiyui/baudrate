@@ -141,8 +141,8 @@ that kind goes in it.
 - Remote follow (visitor's instance): template from their WebFinger, HTTPS, on the typed
   host, `refuse_blocked: true`; render a link, never redirect off-site
   (`remote_follow_test.exs`).
-- Only `Federation.HTTPClient` fetches: SSRF-safe, DNS-pinned, bodies capped while
-  streaming; non-AP POSTs use `post_raw/3`. `HTTPClient.private_ip?/1` is the single
+- Only `Federation.HTTPClient` fetches: SSRF-safe, DNS-pinned, HTTPS on 443 only, bodies
+  capped while streaming; non-AP POSTs use `post_raw/3`. `HTTPClient.private_ip?/1` is the single
   deny-list (every IPv4-in-IPv6 form decoded; Teredo refused).
 
 ### Visibility and domain blocks
@@ -177,6 +177,7 @@ that kind goes in it.
 - WebAuthn: store the full `Wax.Challenge`; `pop/3` requires the purpose; `wax_` origin
   must equal `window.location.origin` exactly.
 - Session deletion only through `Auth.Sessions`; keep "this" session by row id, never token.
+  A session ends 90 days after sign-in however it is refreshed (ADR 0086).
   Revoked pages leave by an `AuthHooks` redirect, `disconnect` 1 s later is the backstop;
   only revocations send `disconnect` (ADR 0080).
 - The permission catalogue is fixed at compile time; four permissions enforce anything
