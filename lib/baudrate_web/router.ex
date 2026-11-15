@@ -60,7 +60,9 @@ defmodule BaudrateWeb.Router do
 
   # The only inline script allowed is the root layout's theme bootstrap, by
   # hash (`BaudrateWeb.ThemeBootstrap`); everything else must come from 'self'.
-  @content_security_policy "default-src 'self'; script-src 'self' #{BaudrateWeb.ThemeBootstrap.csp_source()}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'"
+  # `connect-src` names no `ws:`/`wss:` scheme: CSP3 'self' covers the
+  # same-origin LiveView socket, and the bare schemes allowed one to any host.
+  @content_security_policy "default-src 'self'; script-src 'self' #{BaudrateWeb.ThemeBootstrap.csp_source()}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob:; worker-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'"
 
   # Sobelow cannot read the policy from `@content_security_policy`.
   # sobelow_skip ["Config.CSP"]

@@ -35,7 +35,18 @@ defmodule BaudrateWeb.SecurityHeadersTest do
     test "allows blob: in connect-src for CropperJS", %{conn: conn} do
       conn = get(conn, "/login")
       [csp] = get_resp_header(conn, "content-security-policy")
-      assert csp =~ "connect-src 'self' blob: ws: wss:"
+      assert csp =~ "connect-src 'self' blob:;"
+    end
+
+    # CSP3 'self' already matches the same-origin ws:/wss: LiveView uses. The
+    # bare schemes allowed a socket to any host, a channel out for anything
+    # that ever ran in the page.
+    test "connect-src allows no WebSocket to another host", %{conn: conn} do
+      conn = get(conn, "/login")
+      [csp] = get_resp_header(conn, "content-security-policy")
+      [connect] = Regex.run(~r/connect-src [^;]*/, csp)
+      refute connect =~ "ws:"
+      refute connect =~ "wss:"
     end
 
     # `app.js` registers the service worker on every page (ADR 0059). Dropping
