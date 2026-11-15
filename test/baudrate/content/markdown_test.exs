@@ -123,6 +123,19 @@ defmodule Baudrate.Content.MarkdownTest do
   end
 
   describe "hashtag linkification" do
+    # The passes ran over attribute values too: an image whose alt text was
+    # a hashtag got a whole `<a>` element inside `alt`, which broke the tag.
+    test "leaves a hashtag or a mention inside an attribute alone" do
+      html = Markdown.to_html("![#foo and @alice](https://example.com/y.png) #bar")
+
+      [img] = Regex.run(~r/<img[^>]*>/, html)
+      refute img =~ "hashtag"
+      refute img =~ "mention"
+      assert img =~ ~s(alt="#foo and @alice")
+      assert img =~ "src="
+      assert html =~ ~s(<a href="/tags/bar" class="hashtag">#bar</a>)
+    end
+
     test "linkifies #tag to clickable link" do
       html = Markdown.to_html("Check out #elixir")
       assert html =~ ~s[<a href="/tags/elixir" class="hashtag">#elixir</a>]

@@ -108,10 +108,12 @@ defmodule Baudrate.Content.Markdown do
       if Regex.match?(~r/\A<(pre|code|a)[\s>]/s, part) do
         part
       else
-        Regex.replace(@hashtag_re, part, fn full, tag ->
-          prefix = String.slice(full, 0, String.length(full) - String.length(tag) - 1)
-          downcased = String.downcase(tag)
-          ~s[#{prefix}<a href="/tags/#{downcased}" class="hashtag">##{tag}</a>]
+        text_nodes_only(part, fn text ->
+          Regex.replace(@hashtag_re, text, fn full, tag ->
+            prefix = String.slice(full, 0, String.length(full) - String.length(tag) - 1)
+            downcased = String.downcase(tag)
+            ~s[#{prefix}<a href="/tags/#{downcased}" class="hashtag">##{tag}</a>]
+          end)
         end)
       end
     end)
@@ -154,7 +156,25 @@ defmodule Baudrate.Content.Markdown do
     @skip_re
     |> Regex.split(html, include_captures: true)
     |> Enum.map(fn part ->
-      if Regex.match?(~r/\A<(pre|code|a)[\s>]/s, part), do: part, else: fun.(part)
+      if Regex.match?(~r/\A<(pre|code|a)[\s>]/s, part),
+        do: part,
+        else: text_nodes_only(part, fun)
+    end)
+    |> Enum.join()
+  end
+
+  # Applies `fun` to the text between tags, never to a tag itself. The passes
+  # run on sanitized HTML and used to rewrite whatever matched, attribute
+  # values included: `![#foo](https://x/y.png)` became an `<img alt="…">`
+  # holding a whole `<a>` element, which broke the tag — the image lost its
+  # `src` and markup leaked out as text. (Not an injection: html5ever escapes
+  # what lands in an attribute, and the inserted text is fixed.)
+  defp text_nodes_only(html, fun) do
+    ~r/<[^>]*>/
+    |> Regex.split(html, include_captures: true)
+    |> Enum.map(fn
+      "<" <> _ = tag -> tag
+      text -> fun.(text)
     end)
     |> Enum.join()
   end
