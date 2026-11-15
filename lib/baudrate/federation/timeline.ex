@@ -611,7 +611,8 @@ defmodule Baudrate.Federation.Timeline do
         # A restricted account and a blocked author are the same shape here:
         # both can undo an earlier like, not add a new one (ADR 0029).
         with :ok <- Baudrate.Auth.ensure_can_interact(user),
-             :ok <- ensure_author_not_blocked(user, timeline_item) do
+             :ok <- ensure_author_not_blocked(user, timeline_item),
+             :ok <- BaudrateWeb.RateLimits.check_interaction(user.id) do
           Baudrate.Federation.federate(
             fn ->
               with {:ok, like} <-
@@ -653,7 +654,8 @@ defmodule Baudrate.Federation.Timeline do
         # A restricted account and a blocked author are the same shape here:
         # both can undo an earlier boost, not add a new one (ADR 0029).
         with :ok <- Baudrate.Auth.ensure_can_interact(user),
-             :ok <- ensure_author_not_blocked(user, timeline_item) do
+             :ok <- ensure_author_not_blocked(user, timeline_item),
+             :ok <- BaudrateWeb.RateLimits.check_interaction(user.id) do
           Baudrate.Federation.federate(
             fn ->
               with {:ok, boost} <-

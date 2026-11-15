@@ -35,6 +35,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_dm_image_view/1` | `dm_image_view:`   | 5 min   | 300   |
   | `check_outbound_follow/1`| `outbound_follow:` | 1 hour  | 10    |
   | `check_create_report/1` | `report_create:`   | 15 min  | 5     |
+  | `check_interaction/1`   | `interaction:`     | 1 min   | 30    |
   | `check_mention_resolve/1` | `mention_resolve:` | 1 hour | 30   |
   | `check_timeline_reply/1`   | `timeline_reply:`      | 5 min   | 20    |
   | `check_link_preview_domain/1` | `lp_domain:` | 1 min   | 10    |
@@ -310,6 +311,22 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_dm_image_view(integer()) :: :ok | {:error, :rate_limited}
   def check_dm_image_view(user_id) do
     check("dm_image_view:#{user_id}", 300_000, 300, :dm_image_view)
+  end
+
+  @doc """
+  Adding a like, a boost or a poll vote: 30 per minute per member, every kind
+  together.
+
+  Each one commits a signed activity to every follower inbox and to the
+  remote author's server, with a fresh activity id, so delivery dedup does
+  not collapse them. Toggling one on and off in a loop had our instance send a
+  third party unbounded signed traffic — the kind of thing that gets a server
+  defederated. Taken in the context when one is *added*: undoing stays open
+  (ADR 0029), and every on-off cycle needs an add.
+  """
+  @spec check_interaction(integer()) :: :ok | {:error, :rate_limited}
+  def check_interaction(user_id) do
+    check("interaction:#{user_id}", 60_000, 30, :interaction)
   end
 
   @doc "Outbound follow: 10 per hour per user."

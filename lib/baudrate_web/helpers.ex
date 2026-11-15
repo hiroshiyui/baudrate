@@ -683,6 +683,7 @@ defmodule BaudrateWeb.Helpers do
       reason in @gate_refusals -> interaction_refused_message(reason, user)
       reason in @new_account_refusals -> new_account_message(reason, user)
       reason == :content_filtered -> content_filtered_message()
+      reason == :rate_limited -> gettext("Too many actions. Please try again later.")
       true -> fallback
     end
   end

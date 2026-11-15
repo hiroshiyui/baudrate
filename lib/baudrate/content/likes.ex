@@ -157,7 +157,10 @@ defmodule Baudrate.Content.Likes do
 
     # A moved, silenced or suspended account can undo an earlier like, not add
     # a new one (ADR 0029), so the gate only runs when one is being added.
-    gate = if liked?, do: :ok, else: Baudrate.Auth.ensure_can_interact(user_id)
+    gate =
+      if liked?,
+        do: :ok,
+        else: Baudrate.Auth.ensure_can_interact(user_id) |> then_check_interaction(user_id)
 
     cond do
       article.user_id == user_id ->
@@ -374,7 +377,10 @@ defmodule Baudrate.Content.Likes do
 
     # A moved, silenced or suspended account can undo an earlier like, not add
     # a new one (ADR 0029), so the gate only runs when one is being added.
-    gate = if liked?, do: :ok, else: Baudrate.Auth.ensure_can_interact(user_id)
+    gate =
+      if liked?,
+        do: :ok,
+        else: Baudrate.Auth.ensure_can_interact(user_id) |> then_check_interaction(user_id)
 
     cond do
       comment.user_id == user_id ->
@@ -474,4 +480,11 @@ defmodule Baudrate.Content.Likes do
     |> Repo.all()
     |> Map.new()
   end
+
+  # A new like or boost also takes a place in the per-member interaction
+  # bucket (`RateLimits.check_interaction/1`); a refused gate takes none.
+  defp then_check_interaction(:ok, user_id),
+    do: BaudrateWeb.RateLimits.check_interaction(user_id)
+
+  defp then_check_interaction(refusal, _user_id), do: refusal
 end

@@ -161,8 +161,12 @@ defmodule Baudrate.Content.Polls do
     # raised instead of returning.
     option_ids = Enum.uniq(option_ids)
 
-    # A moved, silenced or suspended account cannot vote (ADR 0029).
-    gate = Baudrate.Auth.ensure_can_interact(user)
+    # A moved, silenced or suspended account cannot vote (ADR 0029). A vote
+    # on a remote poll is a signed activity too, so it shares the interaction
+    # bucket with likes and boosts.
+    gate =
+      with :ok <- Baudrate.Auth.ensure_can_interact(user),
+           do: BaudrateWeb.RateLimits.check_interaction(user.id)
 
     cond do
       Poll.closed?(poll) -> {:error, :poll_closed}
