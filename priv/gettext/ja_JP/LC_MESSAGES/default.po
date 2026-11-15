@@ -3284,6 +3284,7 @@ msgstr "自分の招待コードのみ取り消しできます。"
 msgid "You haven't generated any invite codes yet."
 msgstr "まだ招待コードを生成していません。"
 
+#: lib/baudrate_web/helpers.ex
 #: lib/baudrate_web/live/article_live.ex
 #: lib/baudrate_web/live/safety_actions.ex
 #: lib/baudrate_web/live/user_profile_live.ex
@@ -9538,6 +9539,9 @@ msgid "Posts before a new account is trusted"
 msgstr "新規アカウントが信頼されるまでの投稿数"
 
 #: lib/baudrate_web/live/article_edit_live.ex
+#: lib/baudrate_web/live/article_live.ex
+#: lib/baudrate_web/live/article_new_live.ex
+#: lib/baudrate_web/live/timeline_live.ex
 #, elixir-autogen, elixir-format
 msgid "The image could not be added."
 msgstr "画像を追加できませんでした。"

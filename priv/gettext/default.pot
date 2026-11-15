@@ -3293,6 +3293,7 @@ msgstr ""
 msgid "You haven't generated any invite codes yet."
 msgstr ""
 
+#: lib/baudrate_web/helpers.ex
 #: lib/baudrate_web/live/article_live.ex
 #: lib/baudrate_web/live/safety_actions.ex
 #: lib/baudrate_web/live/user_profile_live.ex
@@ -9565,6 +9566,9 @@ msgid "Posts before a new account is trusted"
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.ex
+#: lib/baudrate_web/live/article_live.ex
+#: lib/baudrate_web/live/article_new_live.ex
+#: lib/baudrate_web/live/timeline_live.ex
 #, elixir-autogen, elixir-format
 msgid "The image could not be added."
 msgstr ""
