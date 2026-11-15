@@ -152,8 +152,22 @@ defmodule Baudrate.Federation.Validator do
   Returns true if the URI refers to a local actor (self-referencing).
   """
   def local_actor?(uri) when is_binary(uri) do
-    base = BaudrateWeb.Endpoint.url()
-    String.starts_with?(uri, base <> "/")
+    ours = URI.parse(BaudrateWeb.Endpoint.url())
+
+    # Scheme and host compared case-insensitively, as `ActorResolver` and
+    # `same_host?/2` compare them. A prefix test let
+    # `https://OUR.HOST/ap/users/admin` through as remote: an inbox POST with
+    # that keyId made us fetch our own actor and cache a `remote_actors` row
+    # for a local user.
+    case URI.parse(uri) do
+      %URI{scheme: scheme, host: host, port: port, path: "/" <> _}
+      when is_binary(scheme) and is_binary(host) ->
+        String.downcase(scheme) == ours.scheme and
+          String.downcase(host) == String.downcase(ours.host) and port == ours.port
+
+      _ ->
+        false
+    end
   end
 
   def local_actor?(_), do: false

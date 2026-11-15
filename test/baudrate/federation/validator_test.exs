@@ -325,5 +325,27 @@ defmodule Baudrate.Federation.ValidatorTest do
       base = BaudrateWeb.Endpoint.url()
       refute Validator.local_actor?(base)
     end
+
+    # A prefix test let our own actor in another case through as remote, so an
+    # inbox POST naming it made us fetch ourselves and cache a remote row for a
+    # local user. Hosts compare case-insensitively everywhere else.
+    test "our host in another case is still local" do
+      base = URI.parse(BaudrateWeb.Endpoint.url())
+      shouted = %URI{base | host: String.upcase(base.host), path: "/ap/users/admin"}
+
+      assert Validator.local_actor?(URI.to_string(shouted))
+    end
+
+    test "our host on another port, or under another name, is not local" do
+      base = URI.parse(BaudrateWeb.Endpoint.url())
+
+      refute Validator.local_actor?(
+               URI.to_string(%URI{base | port: base.port + 1, path: "/ap/users/admin"})
+             )
+
+      refute Validator.local_actor?(
+               URI.to_string(%URI{base | host: base.host <> ".evil.example", path: "/ap/users/a"})
+             )
+    end
   end
 end
