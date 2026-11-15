@@ -13,7 +13,7 @@ defmodule BaudrateWeb.Plugs.AuthorizedFetch do
 
   import Plug.Conn
 
-  alias Baudrate.Federation.HTTPSignature
+  alias Baudrate.Federation.{HTTPSignature, RemoteActors, Validator}
   alias Baudrate.Setup
 
   @exempt_prefixes ["/.well-known", "/nodeinfo"]
@@ -26,16 +26,30 @@ defmodule BaudrateWeb.Plugs.AuthorizedFetch do
     if exempt?(conn.request_path) or not authorized_fetch_enabled?() do
       conn
     else
-      case HTTPSignature.verify_get(conn) do
-        {:ok, remote_actor} ->
-          assign(conn, :remote_actor, remote_actor)
-
+      with {:ok, remote_actor} <- HTTPSignature.verify_get(conn),
+           :ok <- admit(remote_actor) do
+        assign(conn, :remote_actor, remote_actor)
+      else
         {:error, _reason} ->
           conn
           |> put_resp_content_type("application/json")
           |> send_resp(401, Jason.encode!(%{"error" => "Signature required"}))
           |> halt()
       end
+    end
+  end
+
+  # A valid signature from a blocked domain or a suspended actor is refused,
+  # as the inbox refuses one (`InboxHandler.admit/2`). The resolver hands
+  # back a cached actor without asking about blocks, so an instance blocked
+  # after we had cached one of its actors kept signing GETs with that key and
+  # was served every document — defeating the reason to turn this on. The
+  # answer is the unsigned one: a blocked server learns nothing more.
+  defp admit(remote_actor) do
+    cond do
+      Validator.domain_blocked?(remote_actor.domain) -> {:error, :blocked}
+      RemoteActors.suspended?(remote_actor) -> {:error, :suspended}
+      true -> :ok
     end
   end
 
