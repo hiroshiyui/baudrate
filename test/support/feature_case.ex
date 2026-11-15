@@ -23,17 +23,29 @@ defmodule BaudrateWeb.FeatureCase do
   """
 
   use ExUnit.CaseTemplate
-  use Wallaby.DSL
+
+  # `use Wallaby.DSL`, except that `visit/2` is this module's own (below).
+  alias Wallaby.Query
+  import Kernel, except: [tap: 2]
+  import Wallaby.Browser, except: [visit: 2]
 
   using do
     quote do
-      use Wallaby.DSL
+      # `use Wallaby.DSL`, except that `visit/2` is `FeatureCase.visit/2`,
+      # which waits for the page's LiveView to connect.
+      alias Wallaby.Browser
+      alias Wallaby.Element
+      alias Wallaby.Query
+      import Kernel, except: [tap: 2]
+      import Wallaby.Browser, except: [visit: 2]
 
       import Wallaby.Feature
       import BaudrateWeb.ConnCase, only: [setup_user: 1, log_in_user: 2]
 
       import BaudrateWeb.FeatureCase,
         only: [
+          visit: 2,
+          wait_for_liveview: 1,
           log_in_via_browser: 2,
           submit_login_form: 3,
           log_out_via_browser: 1,
@@ -98,6 +110,36 @@ defmodule BaudrateWeb.FeatureCase do
 
     ExUnit.Callbacks.on_exit(fn -> Wallaby.end_session(session) end)
     session
+  end
+
+  @doc """
+  Visits `path` and waits until the page can be used.
+
+  A LiveView page is served as static HTML first and becomes interactive only
+  when its socket connects; the connect re-renders the page, and an input
+  filled in before it — other than the focused one — is reset to the server's
+  value. A test that typed straight after Wallaby's `visit/2` raced that: on a
+  loaded machine the sign-in helper submitted the form with the username
+  wiped, and the failure read as "the Welcome heading never appeared". Every
+  feature test gets this `visit/2` instead of Wallaby's, so nothing is typed
+  or clicked on a page that is not live yet.
+  """
+  def visit(session, path) do
+    session
+    |> Wallaby.Browser.visit(path)
+    |> wait_for_liveview()
+  end
+
+  @doc """
+  Waits for the page's LiveView to connect. A page without one (a controller
+  page, a download) is returned as it is.
+  """
+  def wait_for_liveview(session) do
+    if js_value(session, "return !!document.querySelector('[data-phx-main]')") do
+      assert_has(session, Query.css("[data-phx-main].phx-connected"))
+    else
+      session
+    end
   end
 
   @doc """
