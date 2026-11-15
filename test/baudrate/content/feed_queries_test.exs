@@ -345,7 +345,9 @@ defmodule Baudrate.Content.FeedQueriesTest do
 
   describe "user-page listings respect the viewer's board visibility" do
     setup %{user: user} do
-      admin_board = insert_board("admin-only-feed", min_role_to_view: "admin")
+      # Written while the board was open, then made admin-only: a member
+      # cannot post into a board they cannot read.
+      admin_board = insert_board("admin-only-feed", [])
       {:ok, %{article: secret}} = insert_article(user, admin_board, "secret-article")
 
       {:ok, secret_comment} =
@@ -354,6 +356,12 @@ defmodule Baudrate.Content.FeedQueriesTest do
           "article_id" => secret.id,
           "user_id" => user.id
         })
+
+      Repo.update_all(from(b in Board, where: b.id == ^admin_board.id),
+        set: [min_role_to_view: "admin", min_role_to_post: "admin"]
+      )
+
+      admin_board = Repo.reload!(admin_board)
 
       {:ok, admin_board: admin_board, secret: secret, secret_comment: secret_comment}
     end

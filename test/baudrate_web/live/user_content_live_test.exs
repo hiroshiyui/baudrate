@@ -148,15 +148,17 @@ defmodule BaudrateWeb.UserContentLiveTest do
     test "guest does not see admin-only board articles or comments on user pages", %{conn: conn} do
       user = setup_user("user")
 
+      # Written while the board was open, then made admin-only: a member
+      # cannot post into a board they cannot read.
       {:ok, board} =
         Content.create_board(%{
           name: "Secret Admin Board",
-          slug: "secret-#{System.unique_integer([:positive])}",
-          min_role_to_view: "admin"
+          slug: "secret-#{System.unique_integer([:positive])}"
         })
 
       article = create_article(user, board, "Top Secret Title")
       create_comment(user, article, "Top secret comment body")
+      {:ok, _} = Content.update_board(board, %{min_role_to_view: "admin"})
 
       {:ok, _lv, html} = live(conn, "/users/#{user.username}/articles")
       refute html =~ "Top Secret Title"

@@ -78,6 +78,7 @@ defmodule Baudrate.Content.Board do
     |> validate_inclusion(:min_role_to_view, ~w(guest user moderator admin))
     |> validate_inclusion(:min_role_to_post, ~w(user moderator admin))
     |> validate_inclusion(:ap_accept_policy, ~w(open followers_only))
+    |> validate_post_role_not_below_view()
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
@@ -127,8 +128,28 @@ defmodule Baudrate.Content.Board do
     |> validate_inclusion(:min_role_to_view, ~w(guest user moderator admin))
     |> validate_inclusion(:min_role_to_post, ~w(user moderator admin))
     |> validate_inclusion(:ap_accept_policy, ~w(open followers_only))
+    |> validate_post_role_not_below_view()
     |> validate_no_parent_cycle(board)
     |> assoc_constraint(:parent)
+  end
+
+  # Whoever may post in a board must be able to read it. A board viewed by
+  # moderators but posted to by members let a member write into a board they
+  # could not see — and the forwarding pickers named it to them. Raising the
+  # view role raises the post role with it: a board made staff-only to read
+  # is staff-only to write, which is what the admin meant.
+  # `Permissions.can_post_in_board?/2` checks the view role too, for rows
+  # saved before this.
+  defp validate_post_role_not_below_view(changeset) do
+    view = get_field(changeset, :min_role_to_view)
+    post = get_field(changeset, :min_role_to_post)
+
+    if is_binary(view) and is_binary(post) and view != "guest" and
+         Baudrate.Setup.role_level(post) < Baudrate.Setup.role_level(view) do
+      put_change(changeset, :min_role_to_post, view)
+    else
+      changeset
+    end
   end
 
   defp validate_no_parent_cycle(changeset, board) do

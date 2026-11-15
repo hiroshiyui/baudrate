@@ -351,7 +351,8 @@ defmodule Baudrate.Content.SearchTest do
     end
 
     test "respects board visibility" do
-      user = create_user()
+      # Only someone who can read a board can write in it.
+      user = create_user("admin")
       restricted_board = create_board(%{min_role_to_view: "admin"})
       article = create_article(user, restricted_board)
       _comment = create_comment(user, article, "Hidden admin comment content")
@@ -711,7 +712,9 @@ defmodule Baudrate.Content.SearchTest do
     end
 
     test "board: narrows and never widens", ctx do
-      private = create_board(%{min_role_to_view: "admin"})
+      # Written while the board was open, then made admin-only: a member
+      # cannot post into a board they cannot read.
+      private = create_board(%{})
 
       {:ok, %{article: hidden_article}} =
         Content.create_article(
@@ -725,6 +728,10 @@ defmodule Baudrate.Content.SearchTest do
         )
 
       create_comment(ctx.author, hidden_article, "a remark about phalaropes")
+
+      Repo.update_all(from(b in Content.Board, where: b.id == ^private.id),
+        set: [min_role_to_view: "admin", min_role_to_post: "admin"]
+      )
 
       # The author is an ordinary member, so the board gate refuses it whether
       # or not the operator names the board.

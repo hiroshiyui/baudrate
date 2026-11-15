@@ -149,6 +149,37 @@ defmodule Baudrate.Content.BoardPermissionsTest do
   end
 
   describe "can_post_in_board?/2" do
+    # Whoever may post must be able to read: a board viewed by moderators but
+    # posted to by members let a member write into a board they could not see.
+    test "raising the view role raises the post role with it" do
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Staff",
+          slug: "staff-#{System.unique_integer([:positive])}",
+          min_role_to_view: "moderator",
+          min_role_to_post: "user"
+        })
+
+      assert board.min_role_to_post == "moderator"
+
+      {:ok, board} = Content.update_board(board, %{min_role_to_view: "admin"})
+      assert board.min_role_to_post == "admin"
+    end
+
+    test "a member cannot post in a board they cannot view, whatever the row says", %{
+      user: user
+    } do
+      {:ok, board} =
+        Content.create_board(%{name: "Old", slug: "old-#{System.unique_integer([:positive])}"})
+
+      # A row saved before the changeset rule: view moderator, post user.
+      Repo.update_all(from(b in Content.Board, where: b.id == ^board.id),
+        set: [min_role_to_view: "moderator", min_role_to_post: "user"]
+      )
+
+      refute Content.can_post_in_board?(Repo.reload!(board), user)
+    end
+
     test "nil user cannot post" do
       {:ok, board} =
         Content.create_board(%{

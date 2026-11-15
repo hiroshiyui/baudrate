@@ -39,7 +39,8 @@ defmodule Baudrate.Content.Permissions do
 
   def can_post_in_board?(board, user) do
     Auth.can_create_content?(user) and
-      Setup.role_meets_minimum?(user.role.name, board.min_role_to_post)
+      Setup.role_meets_minimum?(user.role.name, board.min_role_to_post) and
+      can_view_board?(board, user)
   end
 
   @doc """
