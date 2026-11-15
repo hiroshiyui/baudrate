@@ -254,18 +254,41 @@ defmodule Baudrate.Auth.Invites do
   defp check_uses(invite), do: {:ok, invite}
 
   @doc """
-  Records the use of an invite code by a new user.
+  Claims one use of an invite code for a new user.
+
+  One conditional `UPDATE`: the count is incremented in the database, and only
+  while the code is still unrevoked, unexpired and under `max_uses`. It used
+  to write `use_count + 1` from the struct `validate_invite_code/1` had read,
+  so registrations submitted together all passed validation and all wrote the
+  same count — one single-use code made several active accounts. Called inside
+  the registration transaction, so a refused claim rolls the account back.
+
+  Returns `{:ok, invite}` with the updated row, or `{:error, :fully_used}`.
   """
-  def use_invite_code(%InviteCode{} = invite, user_id) do
+  @spec use_invite_code(InviteCode.t(), integer()) ::
+          {:ok, InviteCode.t()} | {:error, :fully_used}
+  def use_invite_code(%InviteCode{id: id}, user_id) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    invite
-    |> InviteCode.use_changeset(%{
-      used_by_id: user_id,
-      used_at: now,
-      use_count: invite.use_count + 1
-    })
-    |> Repo.update()
+    query =
+      from(i in InviteCode,
+        where:
+          i.id == ^id and i.use_count < i.max_uses and not i.revoked and
+            (is_nil(i.expires_at) or i.expires_at > ^now),
+        select: i
+      )
+
+    case Repo.update_all(query,
+           inc: [use_count: 1],
+           set: [
+             used_by_id: user_id,
+             used_at: now,
+             updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+           ]
+         ) do
+      {1, [invite]} -> {:ok, invite}
+      {0, _} -> {:error, :fully_used}
+    end
   end
 
   @doc """

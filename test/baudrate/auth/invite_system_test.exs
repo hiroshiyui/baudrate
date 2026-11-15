@@ -74,6 +74,42 @@ defmodule Baudrate.Auth.InviteSystemTest do
       assert used.used_by_id == other_user.id
       assert used.used_at != nil
     end
+
+    # Registrations submitted together each validate the code, then each claim
+    # it with the struct they read. The claim must decide in the database: the
+    # stale struct here is exactly what the second registration holds.
+    test "refuses a second claim of a single-use code made with a stale struct", %{admin: admin} do
+      {:ok, invite} = Auth.generate_invite_code(admin)
+      first = setup_user("user")
+      second = setup_user("user")
+
+      assert {:ok, %{use_count: 1}} = Auth.use_invite_code(invite, first.id)
+      assert {:error, :fully_used} = Auth.use_invite_code(invite, second.id)
+
+      reloaded = Repo.get!(Baudrate.Auth.InviteCode, invite.id)
+      assert reloaded.use_count == 1
+      assert reloaded.used_by_id == first.id
+    end
+
+    test "refuses to claim a revoked or expired code", %{admin: admin} do
+      user = setup_user("user")
+
+      {:ok, revoked} = Auth.generate_invite_code(admin)
+      {:ok, _} = Auth.revoke_invite_code(revoked)
+      assert {:error, :fully_used} = Auth.use_invite_code(revoked, user.id)
+
+      {:ok, expired} = Auth.generate_invite_code(admin)
+
+      past =
+        DateTime.utc_now() |> DateTime.add(-60, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(i in Baudrate.Auth.InviteCode, where: i.id == ^expired.id),
+        set: [expires_at: past]
+      )
+
+      assert {:error, :fully_used} = Auth.use_invite_code(expired, user.id)
+    end
   end
 
   describe "revoke_invite_code/1" do

@@ -160,9 +160,12 @@ defmodule Baudrate.Auth.Users do
           Repo.transaction(fn ->
             case Repo.insert(changeset) do
               {:ok, user} ->
-                Invites.use_invite_code(invite, user.id)
-                codes = SecondFactor.generate_recovery_codes(user)
-                {user, codes}
+                # The claim, not the validation above, decides: it is the one
+                # step that cannot be passed by two registrations at once.
+                case Invites.use_invite_code(invite, user.id) do
+                  {:ok, _} -> {user, SecondFactor.generate_recovery_codes(user)}
+                  {:error, reason} -> Repo.rollback({:invalid_invite, reason})
+                end
 
               {:error, changeset} ->
                 Repo.rollback(changeset)
