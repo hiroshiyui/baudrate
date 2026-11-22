@@ -1632,7 +1632,9 @@ A complete nginx configuration is provided at
 
 - HTTP → HTTPS redirect with ACME challenge passthrough
 - TLS 1.2/1.3 (Mozilla Intermediate profile) with OCSP stapling
-- Security headers (HSTS, nosniff, DENY framing, referrer policy)
+- Security headers (HSTS, nosniff, DENY framing, referrer policy) as a
+  baseline added only when Phoenix sent none — Phoenix sets its own per
+  route, and nginx's `add_header` would otherwise append a second copy
 - Gzip compression for HTML, CSS, JS, JSON, and ActivityPub payloads
 - LiveView WebSocket proxy (`/live/websocket`) with 24h timeouts
 - **Direct static asset serving** — fingerprinted assets (`/assets/`) with

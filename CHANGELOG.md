@@ -9,6 +9,17 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Fixed
+
+- **nginx overrode the application's Referrer-Policy.** The nginx config
+  added HSTS, `X-Content-Type-Options`, `X-Frame-Options` and
+  `Referrer-Policy` to every response, after the copies Phoenix had already
+  set, so each came twice and, on feeds, ActivityPub and the media proxy,
+  nginx's `strict-origin-when-cross-origin` won over the application's
+  `no-referrer`. nginx now adds each only when the application sent none.
+  Apply with `ansible-playbook playbooks/setup-server.yml --tags nginx`; the
+  deploy playbook does not touch nginx.
+
 ## [2.4.2] — 2026-11-22
 
 A security release of dependency updates: Phoenix fixes two high-severity

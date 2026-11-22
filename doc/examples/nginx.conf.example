@@ -23,6 +23,33 @@ upstream baudrate {
     keepalive 32;
 }
 
+# --- Security headers: nginx's baseline, sent only when Phoenix sent none ---
+# Phoenix sets these on its own responses, per pipeline and sometimes
+# stricter than this baseline (feeds, ActivityPub and the media proxy send
+# `Referrer-Policy: no-referrer`). nginx's `add_header` appends rather than
+# replaces, and a browser honours the last Referrer-Policy it can parse, so an
+# unconditional nginx copy overrode the application's choice with a weaker one
+# and duplicated the other three. Each variable is empty when the upstream
+# response already carries the header, and `add_header` skips an empty value;
+# responses nginx answers itself (static files, refusals, the 502 page) have
+# no upstream header and get the baseline.
+map $upstream_http_strict_transport_security $baudrate_hsts {
+    ""      "max-age=63072000; includeSubDomains; preload";
+    default "";
+}
+map $upstream_http_x_content_type_options $baudrate_nosniff {
+    ""      "nosniff";
+    default "";
+}
+map $upstream_http_x_frame_options $baudrate_frame_options {
+    ""      "DENY";
+    default "";
+}
+map $upstream_http_referrer_policy $baudrate_referrer_policy {
+    ""      "strict-origin-when-cross-origin";
+    default "";
+}
+
 # Redirect HTTP → HTTPS
 server {
     server_tokens off;
@@ -67,10 +94,10 @@ server {
     # --- Security headers ---
     # NOTE: add_header in location blocks REPLACES server-level headers (nginx
     # quirk). Static asset locations below must re-include essential headers.
-    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-    add_header X-Content-Type-Options    "nosniff" always;
-    add_header X-Frame-Options           "DENY" always;
-    add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security $baudrate_hsts always;
+    add_header X-Content-Type-Options $baudrate_nosniff always;
+    add_header X-Frame-Options $baudrate_frame_options always;
+    add_header Referrer-Policy $baudrate_referrer_policy always;
 
     # --- Gzip compression ---
     # Compress text-based responses at the nginx layer. Significantly reduces
@@ -132,8 +159,8 @@ server {
         alias /path/to/baudrate/priv/static/assets/;
         expires 1y;
         add_header Cache-Control "public, immutable";
-        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security $baudrate_hsts always;
+        add_header X-Content-Type-Options $baudrate_nosniff always;
         access_log off;
     }
 
@@ -158,8 +185,8 @@ server {
         alias /path/to/baudrate/priv/static/uploads/;
         expires 1h;
         add_header Cache-Control "public";
-        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security $baudrate_hsts always;
+        add_header X-Content-Type-Options $baudrate_nosniff always;
         access_log off;
     }
 
@@ -180,8 +207,8 @@ server {
         root /path/to/baudrate/priv/static;
         expires 1h;
         add_header Cache-Control "public";
-        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security $baudrate_hsts always;
+        add_header X-Content-Type-Options $baudrate_nosniff always;
         access_log off;
     }
 
@@ -201,8 +228,8 @@ server {
         default_type application/manifest+json;
         expires 1h;
         add_header Cache-Control "public";
-        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security $baudrate_hsts always;
+        add_header X-Content-Type-Options $baudrate_nosniff always;
         access_log off;
     }
 
@@ -249,8 +276,8 @@ server {
         proxy_cache off;
 
         add_header Cache-Control "no-store" always;
-        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security $baudrate_hsts always;
+        add_header X-Content-Type-Options $baudrate_nosniff always;
     }
 
     # --- Application ---
