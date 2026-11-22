@@ -9,6 +9,34 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.4.2] — 2026-11-22
+
+A security release of dependency updates: Phoenix fixes two high-severity
+denial-of-service advisories and LiveView one that skipped `on_mount` hooks.
+Deploy promptly. There are no migrations and no settings to change.
+
+### Security
+
+- **Phoenix 1.8.17** (from 1.8.16) fixes CVE-2026-129344 (a channel message
+  that cannot be serialized could crash broadcast dispatch for every client on
+  a shared topic) and CVE-2026-128361 (an unsanitized presence key crashed the
+  Presence tracker), both rated high.
+- **Phoenix LiveView 1.2.15** (from 1.2.13) fixes CVE-2026-126334: a LiveView
+  joined by hand without a `url` skipped its `live_session`'s `on_mount`
+  hooks, which is where `AuthHooks` signs a page in and checks terms and
+  revocation.
+- **Plug 1.20.4** (from 1.20.3) fixes CVE-2026-120287: the multipart `:length`
+  limit did not count part and header framing.
+- hackney 4.12.3 and idna 8.0.0 clear CVE-2026-117678 from the test-only
+  browser driver's dependencies; nothing in production used them.
+
+### Changed
+
+- Bandit 1.15.0 (from 1.14.1) and Hammer 7.6.0 (from 7.5.1). Hammer's
+  behaviour changes are in the leaky- and token-bucket algorithms; Baudrate's
+  limiter uses the ETS fixed window, which is unchanged.
+- daisyUI 5.8.2 (from 5.8.0), vendored; theme colours are unchanged.
+
 ## [2.4.1] — 2026-11-15
 
 No change to the application: this release exists so that the deployed tag is
