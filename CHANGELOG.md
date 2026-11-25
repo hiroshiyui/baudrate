@@ -9,6 +9,15 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.4.3] — 2026-11-25
+
+A security release: Erlang/OTP 29.1.3 fixes nine CVEs in ssl, crypto,
+public_key, ssh, inets and xmerl, and two dependency advisories are cleared.
+nginx no longer overrides the application's `Referrer-Policy`. Deploy
+promptly. There are no migrations. The first deploy builds OTP 29.1.3 on the
+server unless `setup-server.yml --tags elixir` already installed it, and the
+nginx change needs `setup-server.yml --tags nginx`.
+
 ### Security
 
 - **Erlang/OTP 29.1.3** (from 29.1.2), a patch release with fixes for
