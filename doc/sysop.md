@@ -1878,8 +1878,9 @@ page. There is no admin action that deletes an account on someone's behalf.
   third-party host — there is deliberately no `https:` source), `object-src 'none'`
   (blocks plugins entirely), `frame-src https://www.youtube-nocookie.com`
   (YouTube embeds only, privacy-enhanced domain), `frame-ancestors 'none'`
-- **Referrer-Policy** — `strict-origin-when-cross-origin` prevents leaking full
-  URL paths to external sites
+- **Referrer-Policy** — `strict-origin-when-cross-origin` on pages prevents
+  leaking full URL paths to external sites; feeds, ActivityPub and the media
+  proxy send `no-referrer` (`ApiHeaders`), which nginx never overrides
 - **X-Frame-Options** — DENY
 
 ### Bot & Scanner Blocking (Nginx)
