@@ -41,8 +41,8 @@
 # ---------------------------------------------------------------------------
 FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS otp
 
-ARG OTP_VERSION=29.1.2
-ARG OTP_SHA256=c79966661e35fe4aff8ec003db63682e3b33b10b672220d51bf93c0a9244b049
+ARG OTP_VERSION=29.1.3
+ARG OTP_SHA256=44d8ee7f0964537ddb328fe2f6307d3338c3fdd1b2826938d490907771ba70d2
 
 RUN apt-get update \
  && apt-get upgrade -y \
