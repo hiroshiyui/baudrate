@@ -9,6 +9,32 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Security
+
+- **Erlang/OTP 29.1.3** (from 29.1.2), a patch release with fixes for
+  CVE-2026-115747, CVE-2026-116225, CVE-2026-116293, CVE-2026-116295,
+  CVE-2026-116382, CVE-2026-117642, CVE-2026-119443, CVE-2026-120961 and
+  CVE-2026-125658 across ssl, crypto, public_key, ssh, inets and xmerl, in
+  `.tool-versions`, the CI images and the Ansible inventory. The deploy
+  installs it on the server before building; the first deploy of this release
+  builds OTP 29.1.3 there once, so it takes longer than usual.
+- **db_connection 2.10.3** (from 2.10.2) fixes EEF-CVE-2026-133555 (high):
+  code execution through the `:log` option of a forged `DBConnection.Stream`
+  struct.
+- **url 2.5.9** (from 2.5.8) in all three Rust NIFs fixes RUSTSEC-2026-0592,
+  a stack overflow in `Url::origin()` on nested `blob:` URLs, reached through
+  `ammonia` and `feedparser-rs`.
+
+### Changed
+
+- postgrex 0.23.0 (from 0.22.4), image 0.74.0 (from 0.73.0; libvips binding
+  vix 0.44.0), mdex 0.14.8 and finch 0.25.0 (Req's HTTP client; fixes
+  HTTP/2 pool hangs).
+- bcrypt_elixir 4.0.0 (from 3.3.2) drops its `comeonin` dependency; the
+  hash format and the C implementation are unchanged, so stored passwords
+  verify as before. eqrcode 0.3.0 (from 0.2.1) for the TOTP enrolment QR
+  code, with no change to its output.
+
 ### Fixed
 
 - **nginx overrode the application's Referrer-Policy.** The nginx config
