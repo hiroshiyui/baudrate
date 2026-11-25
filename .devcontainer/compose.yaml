@@ -7,7 +7,7 @@
 # ci/image/image.lock or from the workflows' postgres service.
 services:
   app:
-    image: ghcr.io/hiroshiyui/baudrate-ci@sha256:7e4a4d2e0af88e7a55d1a53c09110f223f1dac13982e77fc3d99fc3e14d78fda
+    image: ghcr.io/hiroshiyui/baudrate-ci@sha256:7073fcbd4a565d1e6ab431a21f9d24bb28f552a98aa6175779d1fcee4ddfe025
     command: sleep infinity
     working_dir: /workspaces/baudrate
     volumes:
