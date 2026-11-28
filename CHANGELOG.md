@@ -9,6 +9,12 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+## [2.4.4] — 2026-11-28
+
+The bot feed parser moves to `feed-rs`, which takes the unmaintained `chrono`
+crate out of the build. There are no migrations and no server setup changes;
+the deploy rebuilds the feed parser NIF on the server as usual.
+
 ### Changed
 
 - The bot feed parser is built on `feed-rs` instead of `feedparser-rs`, which
@@ -17,6 +23,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   feed URL that serves something other than a feed is now a failed fetch, so
   it shows in the bot's last error and counts toward the automatic switch-off.
   Tags given only as `dc:subject`, and Atom 0.3 feeds, are no longer read.
+  `doc/troubleshooting.md` covers the new "unable to parse feed" error.
 - Dependencies: image 0.75.0, mdex 0.14.9, lazy_html 0.1.16 (test only),
   daisyUI 5.8.3.
 
