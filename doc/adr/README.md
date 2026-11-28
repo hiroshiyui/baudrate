@@ -24,7 +24,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0002](0002-context-facades.md) | Context facades over focused sub-modules | Accepted; `Federation.Feed` renamed by [0039](0039-the-personal-stream-is-a-timeline.md) and [0041](0041-rss-and-atom-are-syndication.md); the no-sub-module rule amended by [0047](0047-the-facade-lists-every-way-a-context-changes-the-world.md) |
 | [0003](0003-activitypub-federation.md) | Federate over ActivityPub, mapping boards to Group actors | Accepted |
 | [0004](0004-federation-gate-for-non-public-boards.md) | A single federation gate for every inbound interaction | Accepted, except exception 2, superseded by [0083](0083-the-inbound-gate-is-the-outbound-gate.md); the outbound half is [0043](0043-the-outbound-federation-gate-and-withdrawals.md) |
-| [0005](0005-rust-nifs-for-untrusted-parsing.md) | Rust NIFs (Rustler) for sanitizing and parsing untrusted input | Accepted; the NIF table is a 2026-08-09 snapshot and is now incomplete |
+| [0005](0005-rust-nifs-for-untrusted-parsing.md) | Rust NIFs (Rustler) for sanitizing and parsing untrusted input | Accepted; the NIF table is a 2026-08-09 snapshot and is now incomplete; amended by [0087](0087-the-feed-parser-nif-is-built-on-feed-rs.md) |
 | [0006](0006-media-proxy-no-third-party-subresources.md) | No third-party subresources: proxy all remote media | Accepted; click-to-load embeds refined by [0045](0045-the-video-player-loads-on-a-click.md) |
 | [0007](0007-single-ssrf-safe-http-client.md) | One SSRF-safe, DNS-pinned HTTP client for all outbound requests | Accepted |
 | [0008](0008-server-side-dual-token-sessions.md) | Server-side sessions with dual rotating tokens | Accepted; amended by [0086](0086-a-session-ends-ninety-days-after-sign-in.md) |
@@ -106,6 +106,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0084](0084-a-half-finished-sign-in-expires-and-is-bound-to-the-credentials.md) | A half-finished sign-in expires, and is bound to the credentials | Accepted |
 | [0085](0085-a-members-comment-is-forwarded-by-others-only-from-a-thread-that-federates.md) | A member's comment is forwarded by others only from a thread that federates | Accepted |
 | [0086](0086-a-session-ends-ninety-days-after-sign-in.md) | A session ends ninety days after sign-in | Accepted |
+| [0087](0087-the-feed-parser-nif-is-built-on-feed-rs.md) | The feed parser NIF is built on feed-rs | Accepted |
 
 ## Writing a new ADR
 

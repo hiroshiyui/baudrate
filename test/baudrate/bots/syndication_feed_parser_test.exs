@@ -135,7 +135,7 @@ defmodule Baudrate.Bots.FeedParserTest do
     test "strips HTML tags from title" do
       {:ok, entries} = SyndicationFeedParser.parse(@drupal_rss_feed)
       second = Enum.find(entries, &(&1.guid == "https://example.com/news/456"))
-      # feedparser-rs decodes &amp; → & but trims whitespace from individual text
+      # The parser decodes &amp; → & but may trim whitespace from individual text
       # segments, so spaces adjacent to entity references may be lost.
       refute second.title =~ "<a"
       assert String.contains?(second.title, "Title with")
@@ -197,7 +197,7 @@ defmodule Baudrate.Bots.FeedParserTest do
     test "decodes XML entities in title" do
       {:ok, entries} = SyndicationFeedParser.parse(@rss1_feed)
       second = Enum.find(entries, &(&1.guid == "https://example.com/articles/2"))
-      # feedparser-rs resolves &amp; → & but trims whitespace from individual XML
+      # The parser resolves &amp; → & but may trim whitespace from individual XML
       # text segments, so spaces adjacent to entity references may be collapsed.
       refute second.title =~ "&amp;"
       assert String.contains?(second.title, "Second Article with")
@@ -261,10 +261,15 @@ defmodule Baudrate.Bots.FeedParserTest do
   end
 
   describe "parse/1 error handling" do
-    test "returns empty list for unrecognized content" do
-      # feedparser-rs operates in lenient "bozo" mode: unrecognized content is
-      # not rejected outright but returns an empty entry list instead.
-      assert {:ok, []} = SyndicationFeedParser.parse("this is not xml")
+    # A feed URL that serves something else is a failed fetch, so it reaches
+    # the bot's `last_error` and its failure count instead of passing as a
+    # feed with no entries.
+    test "rejects content that is not a feed" do
+      assert {:error, reason} = SyndicationFeedParser.parse("this is not xml")
+      assert is_binary(reason)
+
+      assert {:error, _} =
+               SyndicationFeedParser.parse("<html><body>not a feed</body></html>")
     end
 
     test "filters out entries with no guid" do

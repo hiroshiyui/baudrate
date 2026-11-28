@@ -22,7 +22,7 @@ visibility. Design decisions should reflect this philosophy.
 | HTML sanitization | Ammonia (Rust NIF via Rustler) |
 | Rate limiting | Hammer |
 | Timezone data | tz (`Baudrate.Timezone`) |
-| Syndication parsing | feedparser-rs (Rust NIF via Rustler) — RSS 0.9x/2.0, RSS 1.0 (RDF), Atom 0.3/1.0, JSON Feed |
+| Syndication parsing | feed-rs (Rust NIF via Rustler) — RSS 0.9x/2.0, RSS 1.0 (RDF), Atom 1.0, JSON Feed ([ADR 0087](adr/0087-the-feed-parser-nif-is-built-on-feed-rs.md)) |
 | i18n | Gettext (en, zh_TW, ja_JP) |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 
@@ -38,7 +38,7 @@ was read.
 native/                    # Rust NIFs (Rustler)
 ├── baudrate_sanitizer/    #   Ammonia: sanitize_federation, sanitize_markdown, strip_tags
 ├── baudrate_html_parser/  #   scraper/html5ever: Open Graph, URL extraction, image counts
-└── baudrate_feed_parser/  #   feedparser-rs: RSS / Atom / JSON Feed
+└── baudrate_feed_parser/  #   feed-rs: RSS / Atom / JSON Feed
 lib/
 ├── baudrate/              # Contexts: one facade module per context (auth.ex, content.ex,
 │   │                      #   federation.ex, …) over a directory of focused sub-modules
@@ -2152,8 +2152,11 @@ Each bot consists of:
    control characters, since they are sent back verbatim. The raw bytes are
    parsed by `SyndicationFeedParser.parse/1`.
 4. `SyndicationFeedParser` delegates to the `baudrate_feed_parser` Rustler NIF (backed by
-   the `feedparser-rs` Rust crate), which natively supports RSS 0.9x/2.0,
-   RSS 1.0 (RDF), Atom 0.3/1.0, and JSON Feed in a single pass. Each entry is
+   the `feed-rs` Rust crate, [ADR 0087](adr/0087-the-feed-parser-nif-is-built-on-feed-rs.md)),
+   which supports RSS 0.9x/2.0, RSS 1.0 (RDF), Atom 1.0, and JSON Feed in a
+   single pass (not Atom 0.3, and `dc:subject` is not read as a tag). The NIF
+   neither sanitizes nor invents an id for an entry without one; input that is
+   not a feed is an error, so it counts as a failed fetch. Each entry is
    normalized to `%{guid, title, body, link, tags, published_at}`.
    HTML content is sanitized via `Baudrate.Sanitizer.Native.sanitize_markdown/1`.
    `published_at` is clamped: dates more than 10 years in the past or in the

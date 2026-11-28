@@ -3,8 +3,8 @@ defmodule Baudrate.Bots.SyndicationFeedParser do
   Parses RSS 2.0, RSS 1.0 (RDF), Atom 1.0, and JSON Feed documents.
 
   Delegates feed parsing to the `baudrate_feed_parser` Rustler NIF, which is
-  backed by the [`feedparser-rs`](https://github.com/bug-ops/feedparser-rs) Rust
-  library.  Raw field values returned by the NIF are then normalized here:
+  backed by the [`feed-rs`](https://github.com/feed-rs/feed-rs) Rust library
+  (ADR 0087). Input that is not a feed is `{:error, reason}`.  Raw field values returned by the NIF are then normalized here:
 
   - Titles: HTML stripped via `Baudrate.Sanitizer.Native.strip_tags/1`, HTML
     entities decoded, whitespace trimmed, truncated to 255 characters.
@@ -80,7 +80,7 @@ defmodule Baudrate.Bots.SyndicationFeedParser do
 
     # Strip HTML tags if present (Ammonia's strip_tags re-encodes entities, so
     # decode them afterwards).  Also decode entities on plain-text titles —
-    # feedparser-rs decodes XML entities for most feeds, but some feeds supply
+    # The parser decodes XML entities for most feeds, but some feeds supply
     # HTML-encoded titles (e.g. "Rust &amp; Ruby") without any markup, so the
     # entity decode must always run.
     text =

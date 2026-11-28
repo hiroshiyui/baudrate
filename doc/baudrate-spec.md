@@ -242,6 +242,7 @@ What a member may write, and what happens to it afterwards.
 | Invariant | Why | Enforced in | Gate |
 |---|---|---|---|
 | Sanitization, Open Graph parsing and feed parsing are Rust NIFs via Rustler, not pure-Elixir libraries | [0005](adr/0005-rust-nifs-for-untrusted-parsing.md) | — | **none** |
+| The feed parser neither sanitizes nor invents entry ids, and a document that is not a feed is an error | [0087](adr/0087-the-feed-parser-nif-is-built-on-feed-rs.md) | `Baudrate.Bots.SyndicationFeedParser.parse/1` | [`syndication_feed_parser_test.exs`](../test/baudrate/bots/syndication_feed_parser_test.exs) |
 | Forwarding a soft-deleted article or comment to a board fails with {:error, :not_found} | [0015](adr/0015-soft-deletion.md) | `Baudrate.Content.forward_article_to_board/3`, `Baudrate.Content.forward_comment_to_board/3` | [`content_test.exs`](../test/baudrate/content_test.exs) |
 | A soft-deleted timeline item is inaccessible, so no reply, like, boost or forward can reach it | [0015](adr/0015-soft-deletion.md) | `Baudrate.Federation.timeline_item_accessible?/2` | [`timeline_item_reply_test.exs`](../test/baudrate/federation/timeline_item_reply_test.exs) |
 | The published terms version moves only when an admin publishes it, and an unreadable value reads as zero | [0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md) | `Baudrate.Setup.publish_terms_version/0` | [`terms_acceptance_test.exs`](../test/baudrate/auth/terms_acceptance_test.exs) |

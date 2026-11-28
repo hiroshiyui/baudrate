@@ -4,7 +4,9 @@
   fallen behind — `baudrate_sanitizer` gained a fourth function,
   `normalize_feed_html/1` (syndication body HTML), and the HTML parser's
   `extract_first_url` takes an origin, so it is `/2`. `doc/development.md` has
-  the current list; the decision itself is unchanged
+  the current list; the decision itself is unchanged. Amended by
+  [0087](0087-the-feed-parser-nif-is-built-on-feed-rs.md): the feed parser is
+  now built on `feed-rs`, not `feedparser-rs`
 - **Date:** Recorded retroactively 2026-08-09
 
 ## Context

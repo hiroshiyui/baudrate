@@ -2,16 +2,17 @@ defmodule Baudrate.Bots.SyndicationFeedParserNative do
   @moduledoc """
   Rustler NIF bindings to the `baudrate_feed_parser` Rust crate.
 
-  Wraps the [`feedparser-rs`](https://github.com/bug-ops/feedparser-rs) library
-  which supports RSS 2.0, RSS 1.0 (RDF), Atom 1.0, and JSON Feed formats.
+  Wraps the [`feed-rs`](https://github.com/feed-rs/feed-rs) library
+  (ADR 0087), which supports RSS 0.9x/2.0, RSS 1.0 (RDF), Atom 1.0, and JSON
+  Feed formats.
 
   The single public function `parse_feed/1` accepts raw feed bytes and returns a
   list of `Entry` structs with raw (unsanitized) field values.  Post-processing
   (HTML sanitization, title normalization, date clamping) is handled by
-  `Baudrate.Bots.SyndicationFeedParser`.  The crate's own HTML sanitizer (on by default
-  since feedparser-rs 0.6) is explicitly disabled in the NIF so that Ammonia
-  remains the single sanitizer of record and plain-text titles are not
-  double-escaped.
+  `Baudrate.Bots.SyndicationFeedParser`.  The crate's own HTML sanitizer is
+  disabled in the NIF so that Ammonia remains the single sanitizer of record,
+  and so is its id generator: an entry without an id gets `nil`, never a hash
+  of its title.
   """
 
   use Rustler, otp_app: :baudrate, crate: "baudrate_feed_parser"

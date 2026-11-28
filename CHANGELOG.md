@@ -9,6 +9,17 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
+### Changed
+
+- The bot feed parser is built on `feed-rs` instead of `feedparser-rs`, which
+  removes the unmaintained `chrono` crate (RUSTSEC-2026-0543) from the build
+  ([ADR 0087](doc/adr/0087-the-feed-parser-nif-is-built-on-feed-rs.md)). A
+  feed URL that serves something other than a feed is now a failed fetch, so
+  it shows in the bot's last error and counts toward the automatic switch-off.
+  Tags given only as `dc:subject`, and Atom 0.3 feeds, are no longer read.
+- Dependencies: image 0.75.0, mdex 0.14.9, lazy_html 0.1.16 (test only),
+  daisyUI 5.8.3.
+
 ## [2.4.3] — 2026-11-25
 
 A security release: Erlang/OTP 29.1.3 fixes nine CVEs in ssl, crypto,

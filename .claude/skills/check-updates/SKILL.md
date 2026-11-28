@@ -31,15 +31,15 @@ Tailwind/daisyUI bump needs a visual check of the themes.
 
 ## 3. Rust crates
 ```bash
-grep -E '^(ammonia|scraper|feedparser-rs|rustler)\b' native/*/Cargo.toml
-for c in ammonia scraper feedparser-rs rustler; do
+grep -E '^(ammonia|scraper|feed-rs|rustler)\b' native/*/Cargo.toml
+for c in ammonia scraper feed-rs rustler; do
   echo "$c → $(curl -sS -H 'User-Agent: baudrate-dep-check/1.0' \
     https://crates.io/api/v1/crates/$c | grep -oE '"max_stable_version":"[^"]+"' | head -1)"
 done
 for d in native/*/; do (cd "$d" && cargo audit -q) || echo "^ advisories in $d"; done
 ```
-`cargo audit` reads each `Cargo.lock` (transitive crates too, e.g. `feedparser-rs`'s
-`ammonia`); a hit is Security even when the direct crate is current.
+`cargo audit` reads each `Cargo.lock` (transitive crates too, e.g. `feed-rs`'s
+`quick-xml` and `jiff`); a hit is Security even when the direct crate is current.
 The Hex `rustler` and every crate's `rustler` move together. `ammonia` and
 `scraper`/`html5ever` are on the XSS boundary: security-relevant.
 

@@ -1,4 +1,5 @@
-use feedparser_rs::{parse_with_options, Entry, ParseOptions};
+use feed_rs::model::Entry;
+use feed_rs::parser::{Builder, Parser};
 
 /// Normalized feed entry returned to Elixir.
 ///
@@ -8,7 +9,7 @@ use feedparser_rs::{parse_with_options, Entry, ParseOptions};
 #[cfg_attr(not(test), module = "Baudrate.Bots.SyndicationFeedParserNative.Entry")]
 struct NifEntry {
     /// Unique identifier (guid / entry id).  `None` means the entry has no
-    /// usable id and should be skipped on the Elixir side.
+    /// usable id; the Elixir side falls back to the link.
     id: Option<String>,
     /// Raw title string (may contain HTML entities; strip_tags applied on
     /// the Elixir side via the existing Ammonia NIF).
@@ -41,47 +42,48 @@ fn parse_feed(data: rustler::Binary) -> Result<Vec<NifEntry>, String> {
 // since rustler 0.39 it links the `enif_*` symbols the BEAM provides, which a
 // test binary has no BEAM to supply.
 fn parse(data: &[u8]) -> Result<Vec<NifEntry>, String> {
-    // feedparser-rs >= 0.6 sanitizes HTML-bearing fields itself by default.
-    // Baudrate runs every title and body through Ammonia on the Elixir side
-    // (`Baudrate.Bots.FeedParser`), which is the single sanitizer of record, so
-    // the crate-side pass is disabled: two allowlists would disagree, and its
-    // entity escaping would double-encode plain-text titles. Relative-URI
-    // resolution and the default parser limits are kept.
-    let options = ParseOptions {
-        sanitize_html: false,
-        ..ParseOptions::default()
-    };
+    let feed = parser().parse(data).map_err(|e| e.to_string())?;
 
-    let feed = parse_with_options(data, &options).map_err(|e| e.to_string())?;
+    Ok(feed.entries.iter().map(nif_entry_from).collect())
+}
 
-    let entries = feed.entries.iter().map(nif_entry_from).collect();
-
-    Ok(entries)
+fn parser() -> Parser {
+    Builder::new()
+        // feed-rs invents an id (a hash of link and title) for an entry that
+        // has none. An invented id changes whenever the title is edited, so
+        // the same post would be syndicated twice; an empty id instead makes
+        // the Elixir side key the entry by its link, as it always has.
+        .id_generator(|_links, _title, _uri| String::new())
+        // Baudrate runs every title and body through Ammonia on the Elixir
+        // side (`Baudrate.Bots.SyndicationFeedParser`), the single sanitizer
+        // of record. The crate's own pass needs its `sanitize` feature, which
+        // is off; the flag is cleared too so enabling it never sanitizes twice.
+        .sanitize_content(false)
+        .build()
 }
 
 fn nif_entry_from(entry: &Entry) -> NifEntry {
-    let id = entry
-        .id
-        .as_deref()
+    let id = Some(entry.id.trim())
         .filter(|s| !s.is_empty())
         .map(|s| s.to_owned());
 
-    let title = entry.title.as_deref().map(|s| s.to_owned());
+    let title = entry.title.as_ref().map(|t| t.content.clone());
 
     let link = pick_link(entry);
 
     // Prefer content:encoded / full content over summary.
-    let content = entry.content.first().map(|c| c.value.clone());
-    let summary = entry.summary.as_deref().map(|s| s.to_owned());
+    let content = entry.content.as_ref().and_then(|c| c.body.clone());
+    let summary = entry.summary.as_ref().map(|t| t.content.clone());
 
     let tags = collect_tags(entry);
 
-    // Prefer published, fall back to dc_date, then updated.
+    // `published` already covers `dc:date`; fall back to `updated`.
+    // The instant is sent in UTC (`…Z`), which `DateTime.from_iso8601/1` reads.
     let published_rfc3339 = entry
         .published
-        .or(entry.dc_date)
-        .or(entry.updated)
-        .map(|dt| dt.to_rfc3339());
+        .as_ref()
+        .or(entry.updated.as_ref())
+        .map(|dt| dt.timestamp().to_string());
 
     NifEntry {
         id,
@@ -95,66 +97,42 @@ fn nif_entry_from(entry: &Entry) -> NifEntry {
 }
 
 fn pick_link(entry: &Entry) -> Option<String> {
-    // 1. Try explicit primary link field.
-    if let Some(l) = &entry.link {
-        if !l.is_empty() {
-            return Some(l.clone());
-        }
-    }
+    // Prefer rel="alternate", then the first link without a rel (an RSS
+    // <link> or a JSON Feed `url`), then anything. Comment links
+    // (`<comments>`, `wfw:commentRss`) carry a target and are skipped.
+    let usable = || {
+        entry
+            .links
+            .iter()
+            .filter(|l| l.target.is_none() && !l.href.is_empty())
+    };
 
-    // 2. Walk `links` array: prefer rel="alternate", then no rel, then anything.
-    let mut fallback: Option<String> = None;
-
-    for link in &entry.links {
-        let href = link.href.as_str();
-        if href.is_empty() {
-            continue;
-        }
-        match link.rel.as_deref() {
-            Some("alternate") => return Some(href.to_owned()),
-            None => {
-                if fallback.is_none() {
-                    fallback = Some(href.to_owned());
-                }
-            }
-            _ => {
-                if fallback.is_none() {
-                    fallback = Some(href.to_owned());
-                }
-            }
-        }
-    }
-
-    fallback
+    usable()
+        .find(|l| l.rel.as_deref() == Some("alternate"))
+        .or_else(|| usable().find(|l| l.rel.is_none()))
+        .or_else(|| usable().next())
+        .map(|l| l.href.clone())
 }
 
 fn collect_tags(entry: &Entry) -> Vec<String> {
-    let mut tags: Vec<String> = entry
-        .tags
+    let mut seen = std::collections::HashSet::new();
+
+    entry
+        .categories
         .iter()
-        .map(|t| {
+        .map(|c| {
             // Prefer human-readable label; fall back to term.
-            t.label
+            c.label
                 .as_deref()
                 .filter(|s| !s.is_empty())
-                .unwrap_or_else(|| t.term.as_str())
+                .unwrap_or(c.term.as_str())
                 .to_owned()
         })
         .filter(|s| !s.is_empty())
-        .collect();
-
-    // Also include dc:subject entries as tags.
-    for subject in &entry.dc_subject {
-        if !subject.is_empty() && !tags.contains(subject) {
-            tags.push(subject.clone());
-        }
-    }
-
-    // `Vec::dedup` removes only *adjacent* repeats, so `a, b, a` kept both
-    // `a`s; keep the first of each, in order.
-    let mut seen = std::collections::HashSet::new();
-    tags.retain(|t| seen.insert(t.clone()));
-    tags
+        // Keep the first of each, in order (`Vec::dedup` would remove only
+        // *adjacent* repeats).
+        .filter(|s| seen.insert(s.clone()))
+        .collect()
 }
 
 #[cfg(not(test))]
@@ -238,8 +216,51 @@ mod tests {
     }
 
     #[test]
-    fn something_that_is_not_a_feed_has_no_entries() {
-        let entries = parse(b"<html><body>not a feed</body></html>").unwrap_or_default();
-        assert!(entries.is_empty());
+    fn something_that_is_not_a_feed_is_an_error() {
+        assert!(parse(b"<html><body>not a feed</body></html>").is_err());
+        assert!(parse(b"this is not xml").is_err());
+    }
+
+    #[test]
+    fn an_rss_comments_link_is_not_the_entry_link() {
+        let e = one(
+            r#"<rss version="2.0"><channel><title>F</title><item><guid>c</guid><title>t</title>
+            <comments>https://f.example/c#comments</comments><link>https://f.example/c</link></item></channel></rss>"#,
+        );
+        assert_eq!(e.link.as_deref(), Some("https://f.example/c"));
+    }
+
+    #[test]
+    fn rss1_items_with_dc_date() {
+        let e = one(
+            r#"<?xml version="1.0"?><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <channel rdf:about="https://f.example/"><title>F</title><link>https://f.example/</link></channel>
+            <item rdf:about="https://f.example/r1"><title>R</title><link>https://f.example/r1</link><description>d</description>
+            <dc:date>2026-09-03T08:00:00+09:00</dc:date></item></rdf:RDF>"#,
+        );
+        assert_eq!(e.link.as_deref(), Some("https://f.example/r1"));
+        assert_eq!(e.summary.as_deref(), Some("d"));
+        // Sent as the same instant in UTC.
+        assert_eq!(e.published_rfc3339.as_deref(), Some("2026-09-02T23:00:00Z"));
+    }
+
+    // A NIF that overflows its stack takes the whole BEAM down, so deep
+    // nesting from a hostile feed must not recurse.
+    #[test]
+    fn deeply_nested_markup_does_not_overflow_the_stack() {
+        let depth = 200_000;
+        let xml = format!(
+            r#"<rss version="2.0"><channel><title>F</title><item><guid>d</guid><title>t</title><description>{}{}</description>{}{}</item></channel></rss>"#,
+            "<x>".repeat(depth),
+            "</x>".repeat(depth),
+            "<y>".repeat(depth),
+            "</y>".repeat(depth),
+        );
+        // Run on a small stack, like a dirty scheduler's.
+        let handle = std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(move || parse(xml.as_bytes()).map(|e| e.len()))
+            .unwrap();
+        let _ = handle.join().expect("no stack overflow");
     }
 }

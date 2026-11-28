@@ -101,7 +101,7 @@ runtime is all you need. See [CONTRIBUTING.md](CONTRIBUTING.md). Otherwise:
   what CI, the release build and production all install
 - PostgreSQL 17 (production's version and the one CI tests; older servers are untested)
 - libvips (for image processing)
-- Rust via rustup (to compile the scraper, Ammonia, and feedparser-rs NIFs;
+- Rust via rustup (to compile the scraper, Ammonia, and feed-rs NIFs;
   there are no precompiled binaries, on purpose). `rust-toolchain.toml` pins
   the version, and rustup installs it on the first build
 
@@ -194,6 +194,6 @@ Built with these excellent open-source projects:
 - [scraper](https://crates.io/crates/scraper) (Rust HTML parser NIF for link preview extraction and link counting, built on [html5ever](https://github.com/servo/html5ever))
 - [url](https://crates.io/crates/url) (the WHATWG URL parser behind it, from Servo, which resolves each link the way a browser would)
 - [Ammonia](https://crates.io/crates/ammonia) (Rust HTML sanitizer)
-- [feedparser-rs](https://crates.io/crates/feedparser-rs) (Rust feed parser NIF for RSS/Atom/JSON Feed)
+- [feed-rs](https://crates.io/crates/feed-rs) (Rust feed parser NIF for RSS/Atom/JSON Feed)
 - [Rustler](https://crates.io/crates/rustler) (Rust NIF bindings for Erlang/Elixir)
 - [regex](https://crates.io/crates/regex) (Rust regular expressions)
