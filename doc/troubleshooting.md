@@ -645,6 +645,17 @@ That prefix changed in v1.28.0 — it was `bots.feed_worker` before
 vocabulary to "syndication". The worker's heartbeat key in the health report
 changed with it, to `syndication_feed_worker`.
 
+### `last_error` says "unable to parse feed"
+
+The URL answered, but not with a feed: usually an HTML page (the site moved
+its feed, or put a bot challenge in front of it), sometimes an Atom 0.3 feed,
+which the parser does not read. Since v2.4.4 this is a failed fetch that backs
+off and counts toward the switch-off; before, it passed as a feed with no
+entries and the bot silently posted nothing
+([ADR 0087](adr/0087-the-feed-parser-nif-is-built-on-feed-rs.md)). Open the URL
+and point the bot at the real feed. The same ADR explains why tags given only
+as `dc:subject` no longer arrive.
+
 ### A bot's avatar never appears
 
 Favicon fetching gives up after **three** failures
